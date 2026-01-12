@@ -1196,6 +1196,16 @@ void MissionTimerDisplay() {
 	unsigned int minutes = (unsigned int)(fmod(shownTimer, 3600.0f) / 60.0f);
 	unsigned int seconds = (unsigned int)fmod(shownTimer, 60.0f);
 
+	auto& config = activeCrimsonConfig.CrimsonHudAddons.missionTimerDisplay;
+
+	// Display conditions
+	if (eventData.event != EVENT::MAIN ||
+		g_inGameCutscene ||
+		config == MISSIONTIMERDISPLAY::OFF ||
+		(config == MISSIONTIMERDISPLAY::ONLY_IN_BP && sessionData.mission != MISSION::BLOODY_PALACE)) {
+		return;
+	}
+
 	float fontSize = 44.0f;
 	ImGui::PushFont(UI::g_ImGuiFont_RedOrbRusso[fontSize * 0.9f]);
 	char timeText[32];
@@ -1207,14 +1217,7 @@ void MissionTimerDisplay() {
 
 	ImGui::SetNextWindowPos(adjustedWindowPos, ImGuiCond_Always);
 	ImGui::SetNextWindowSize(adjustedWindowSize, ImGuiCond_Always);
-	auto& config = activeCrimsonConfig.CrimsonHudAddons.missionTimerDisplay;
-
-	if (eventData.event != EVENT::MAIN || 
-		g_inGameCutscene || 
-		config == MISSIONTIMERDISPLAY::OFF ||
-		(config == MISSIONTIMERDISPLAY::ONLY_IN_BP && sessionData.mission != MISSION::BLOODY_PALACE)) {
-		return;
-	}
+	
 
 	ImGui::Begin("MissionTimerDisplayWindow", nullptr,
 		ImGuiWindowFlags_NoTitleBar |
