@@ -9842,6 +9842,11 @@ void SystemSection(size_t defaultFontSize) {
 				"(without Frame Rate-Responsive Game Speed on) will tag you at the Mission End screen.");
 			GUI_PopDisable(!IsTurbo());
 
+			ImGui::TableNextColumn();
+
+			bool* turboSetting = reinterpret_cast<bool*>(appBaseAddr + 0xD6CEA9);
+
+			GUI_Checkbox("Turbo Mode", *turboSetting);
 
 			ImGui::EndTable();
 		}
