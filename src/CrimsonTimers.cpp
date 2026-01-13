@@ -21,6 +21,43 @@
 
 namespace CrimsonTimers {
 
+void MissionTimer() {
+	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+	if (!(pool_10222 && pool_10222[3])) return;
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
+	auto name_10723 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_10723) return;
+	auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
+	auto  pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_10298 || !pool_10298[8]) return;
+	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	static bool inGame = false;
+
+	float frameRate = ImGui::GetIO().Framerate;
+
+	if (g_scene == SCENE::GAME) {
+		inGame = true;
+	}
+
+	if (inGame && g_scene == SCENE::MISSION_RESULT) {
+		// convert shownTimer to frameCount and apply it to missionData.frameCount
+		int convertedFrames = static_cast<int>(g_missionTimer * ImGui::GetIO().Framerate + 0.5f); // round
+		missionData.frameCount = convertedFrames;
+		inGame = false;
+	}
+
+	// Reset shownTimer if frameCount is reset (new mission start)
+	if (missionData.frameCount <= 0) {
+        g_missionTimer = 0.0f;
+	}
+
+	// Always update timer if frameCount > 0 and not in cutscene and not paused
+	if (missionData.frameCount > 0 && eventData.event == EVENT::MAIN && !g_inGameCutscene) {
+        g_missionTimer += ImGui::GetIO().DeltaTime;
+	}
+}
+
 void ActionTimers() {
 	auto pool_10371 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
 	if (!pool_10371 || !pool_10371[8]) return;
@@ -504,6 +541,7 @@ void StyleRankAnnouncerCDTimers() {
 
 void CallAllTimers() {
 	BackToForwardTimers();
+    MissionTimer();
 	ActionTimers();
 	AnimTimers();
     EventTimers();
