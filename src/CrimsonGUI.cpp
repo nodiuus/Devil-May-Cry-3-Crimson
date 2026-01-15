@@ -10672,7 +10672,49 @@ void VisualSection(size_t defaultFontSize) {
 
 	ImGui::Text("");
 
-	GUI_TitleCheckbox2("DELAYED COMBO VFX / VIBRATION", activeCrimsonConfig.VFX.delayedComboVFX, queuedCrimsonConfig.VFX.delayedComboVFX, true);
+	GUI_Title("VFX OPTIONS");
+
+	{
+		const float columnWidth = 0.5f * queuedConfig.globalScale;
+		const float rowWidth = 40.0f * queuedConfig.globalScale;
+
+
+		if (ImGui::BeginTable("MiscVisualOptionsTable", 3)) {
+
+			ImGui::TableSetupColumn("h1", 0, columnWidth * 2.0f);
+			ImGui::TableNextRow(0, rowWidth * 0.1f);
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Delayed Combo VFX / Vibration", activeCrimsonConfig.VFX.delayedComboVFX, queuedCrimsonConfig.VFX.delayedComboVFX);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Royal Block VFX", activeCrimsonConfig.VFX.royalBlockVFX, queuedCrimsonConfig.VFX.royalBlockVFX);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.royalBlockColor, queuedCrimsonConfig.VFX.royalBlockColor);
+			ImGui::SameLine();
+			if (GUI_Button("D")) {
+				CopyMemory(&activeCrimsonConfig.VFX.royalBlockColor, &defaultCrimsonConfig.VFX.royalBlockColor,
+					sizeof(activeCrimsonConfig.VFX.royalBlockColor));
+				CopyMemory(&queuedCrimsonConfig.VFX.royalBlockColor, &defaultCrimsonConfig.VFX.royalBlockColor,
+					sizeof(queuedCrimsonConfig.VFX.royalBlockColor));
+			}
+
+			ImGui::PopItemWidth();
+
+			ImGui::EndTable();
+		}
+	}
+	
+	ImGui::Text("");
+
 
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
 

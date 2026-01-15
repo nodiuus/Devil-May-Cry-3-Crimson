@@ -385,11 +385,10 @@ void RoyalBlockFX(byte8* actorBaseAddr) {
 
 		// ROYAL BLOCK SFX
 		if (inRoyalBlock) {
-			if (!royalBlockPlayed[playerIndex]) {
+			if (!royalBlockPlayed[playerIndex] && activeCrimsonConfig.VFX.royalBlockVFX) {
 				//std::cout << "royal block played" << std::endl;
 				CrimsonSDL::PlayRoyalBlock(playerIndex);
-				uint8 vfxColor[4] = { 226, 4, 50, 255 };
-				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(vfxColor);
+				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.royalBlockColor);
 				CrimsonDetours::CreateEffectDetour(actorBaseAddr, 3, 61, 15, true, actualColor, 1.7f);
 				royalBlockPlayed[playerIndex] = true;
 			}
@@ -414,7 +413,7 @@ void RoyalBlockFX(byte8* actorBaseAddr) {
 
 		if (actorData.magicPoints >= 2000) {
 			// GUARD BREAK
-			// for Royalguard Rebalanced only
+			// for DT-Infused Royalguard only
 			if (actorData.royalBlock == 1) {
 				if (!guardPlayed[playerIndex]) {
 					CrimsonSDL::PlayNormalBlock(playerIndex);
