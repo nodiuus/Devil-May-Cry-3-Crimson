@@ -506,8 +506,7 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
             // VFX
 			if (activeCrimsonConfig.VFX.delayedComboVFX) {
 				auto pPlayer = (void*)crimsonPlayer[playerIndex].playerPtr;
-				uint8 vfxColor[4] = { 48, 0, 10, 255 };
-				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(vfxColor);
+				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.delayedComboColor);
 				CrimsonDetours::CreateEffectDetour(pPlayer, delayedComboFX.bank, delayedComboFX.id, 1, true, actualColor, 1.2f);
 
 				// VIBRATION

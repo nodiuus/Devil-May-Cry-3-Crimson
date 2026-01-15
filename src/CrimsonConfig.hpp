@@ -281,12 +281,14 @@ struct CrimsonConfig {
 
 	struct VFX {
 		bool delayedComboVFX = true;
+		uint8 delayedComboColor[4] = { 48, 0, 10, 255 };
 		bool royalBlockVFX = true;
 		uint8 royalBlockColor[4] = { 226, 4, 50, 255 };
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("delayedComboVFX", &VFX::delayedComboVFX),
+				std::make_pair("delayedComboColor", &VFX::delayedComboColor),
 				std::make_pair("royalBlockVFX", &VFX::royalBlockVFX),
 				std::make_pair("royalBlockColor", &VFX::royalBlockColor)
 			);

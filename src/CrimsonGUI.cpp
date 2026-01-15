@@ -10681,7 +10681,7 @@ void VisualSection(size_t defaultFontSize) {
 
 		if (ImGui::BeginTable("MiscVisualOptionsTable", 3)) {
 
-			ImGui::TableSetupColumn("h1", 0, columnWidth * 2.0f);
+			ImGui::TableSetupColumn("h1", 0, columnWidth * 2.5f);
 			ImGui::TableNextRow(0, rowWidth * 0.1f);
 
 			ImGui::TableNextColumn();
@@ -10690,6 +10690,15 @@ void VisualSection(size_t defaultFontSize) {
 
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.delayedComboColor, queuedCrimsonConfig.VFX.delayedComboColor);
+			ImGui::SameLine();
+			if (GUI_Button("D")) {
+				CopyMemory(&activeCrimsonConfig.VFX.delayedComboColor, &defaultCrimsonConfig.VFX.delayedComboColor,
+					sizeof(activeCrimsonConfig.VFX.delayedComboColor));
+				CopyMemory(&queuedCrimsonConfig.VFX.delayedComboColor, &defaultCrimsonConfig.VFX.delayedComboColor,
+					sizeof(queuedCrimsonConfig.VFX.delayedComboColor));
+			}
 
 			ImGui::TableNextColumn();
 
