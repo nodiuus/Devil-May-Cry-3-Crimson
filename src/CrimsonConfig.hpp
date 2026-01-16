@@ -284,13 +284,21 @@ struct CrimsonConfig {
 		uint8 delayedComboColor[4] = { 48, 0, 10, 255 };
 		bool royalBlockVFX = true;
 		uint8 royalBlockColor[4] = { 226, 4, 50, 255 };
+		bool dtExplosionVFX = true;
+		uint8 dtExplosionColorDante[4] = { 48, 0, 10, 255 };
+		uint8 dtExplosionColorVergil[4] = { 2, 16, 43, 255 };
+		bool dtActivationVibration = true;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("delayedComboVFX", &VFX::delayedComboVFX),
 				std::make_pair("delayedComboColor", &VFX::delayedComboColor),
 				std::make_pair("royalBlockVFX", &VFX::royalBlockVFX),
-				std::make_pair("royalBlockColor", &VFX::royalBlockColor)
+				std::make_pair("royalBlockColor", &VFX::royalBlockColor),
+				std::make_pair("dtExplosionVFX", &VFX::dtExplosionVFX),
+				std::make_pair("dtExplosionColorDante", &VFX::dtExplosionColorDante),
+				std::make_pair("dtExplosionColorVergil", &VFX::dtExplosionColorVergil),
+				std::make_pair("dtActivationVibration", &VFX::dtActivationVibration)
 			);
 		}
 	} VFX;

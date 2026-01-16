@@ -52,9 +52,13 @@ void MissionTimer() {
         g_missionTimer = 0.0f;
 	}
 
+	float gameSpeedBase = IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+
+	float gameSpeedMultiplier = (gameSpeedBase / g_FrameRateTimeMultiplier);
+
 	// Always update timer if frameCount > 0 and not in cutscene and not paused
 	if (missionData.frameCount > 0 && eventData.event == EVENT::MAIN && !g_inGameCutscene) {
-        g_missionTimer += ImGui::GetIO().DeltaTime;
+        g_missionTimer += ImGui::GetIO().DeltaTime * gameSpeedMultiplier;
 	}
 }
 

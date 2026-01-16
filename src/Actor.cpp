@@ -2939,7 +2939,9 @@ void ActivateDevil(PlayerActorData& actorData, bool playSFX) {
     }
 
     //VIBRATE
-    CrimsonSDL::VibrateController(actorData.newPlayerIndex, 0, 0x2222, 300);
+    if (activeCrimsonConfig.VFX.dtActivationVibration) {
+        CrimsonSDL::VibrateController(actorData.newPlayerIndex, 0, 0x2222, 300);
+    }
     // PlayDevilTriggerLoop();
 }
 

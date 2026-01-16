@@ -10672,7 +10672,7 @@ void VisualSection(size_t defaultFontSize) {
 
 	ImGui::Text("");
 
-	GUI_Title("VFX OPTIONS");
+	GUI_Title("CRIMSON VFX OPTIONS");
 
 	{
 		const float columnWidth = 0.5f * queuedConfig.globalScale;
@@ -10715,6 +10715,37 @@ void VisualSection(size_t defaultFontSize) {
 				CopyMemory(&queuedCrimsonConfig.VFX.royalBlockColor, &defaultCrimsonConfig.VFX.royalBlockColor,
 					sizeof(queuedCrimsonConfig.VFX.royalBlockColor));
 			}
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("DT Explosion VFX", activeCrimsonConfig.VFX.dtExplosionVFX, queuedCrimsonConfig.VFX.dtExplosionVFX);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.dtExplosionColorDante, queuedCrimsonConfig.VFX.dtExplosionColorDante);
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.dtExplosionColorVergil, queuedCrimsonConfig.VFX.dtExplosionColorVergil);
+			ImGui::SameLine();
+			if (GUI_Button("D")) {
+				CopyMemory(&activeCrimsonConfig.VFX.dtExplosionColorDante, &defaultCrimsonConfig.VFX.dtExplosionColorDante,
+					sizeof(activeCrimsonConfig.VFX.dtExplosionColorDante));
+				CopyMemory(&queuedCrimsonConfig.VFX.dtExplosionColorDante, &defaultCrimsonConfig.VFX.dtExplosionColorDante,
+					sizeof(queuedCrimsonConfig.VFX.dtExplosionColorDante));
+				
+				CopyMemory(&activeCrimsonConfig.VFX.dtExplosionColorVergil, &defaultCrimsonConfig.VFX.dtExplosionColorVergil,
+					sizeof(activeCrimsonConfig.VFX.dtExplosionColorVergil));
+				CopyMemory(&queuedCrimsonConfig.VFX.dtExplosionColorVergil, &defaultCrimsonConfig.VFX.dtExplosionColorVergil,
+					sizeof(queuedCrimsonConfig.VFX.dtExplosionColorVergil));
+			}
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("DT Activation Vibration", activeCrimsonConfig.VFX.dtActivationVibration, queuedCrimsonConfig.VFX.dtActivationVibration);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+
 
 			ImGui::PopItemWidth();
 
