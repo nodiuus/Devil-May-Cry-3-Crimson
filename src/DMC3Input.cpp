@@ -10,11 +10,166 @@
 #include "Utility/Detour.hpp"
 #include "Xinput.h"
 
-static std::unique_ptr<Utility::Detour_t> s_GetBindingHook;
+#define MAX_PLAYERS 4
+#define NUM_BINDS 16
 
-struct CrimsonXinputBinding {
-    uint16 source, target;
-    const char* name;
+// NOTE(): writing bind table at that particular place seems to work fine for me... idk, needs testing?
+static std::unique_ptr<Utility::Detour_t> s_ButtonToActionHook;
+// NOTE(): to show custom imgoo menu when opening settings, idk if there is a better way tbqh
+static std::unique_ptr<Utility::Detour_t> s_CUIDControlConsHook; // Constructor
+static std::unique_ptr<Utility::Detour_t> s_CUIDControlDestHook; // Destructor
+
+static BindTable s_CoopPlayerBinds[MAX_PLAYERS] = {
+    {
+        .up = 0x1000,
+        .down = 0x4000,
+        .right = 0x2000,
+        .left = 0x8000,
+        .melee_atk = 0x10,
+        .jump = 0x40,
+        .style = 0x20,
+        .shoot = 0x80,
+        .dt = 0x4,
+        .change_gun = 0x1,
+        .change_target = 0x200,
+        .lock_on = 0x8,
+        .change_sword = 0x2,
+        .default_camera = 0x400,
+        .taunt = 0x100,
+        .start = 0x800
+    },
+#ifdef MY_BINDS_TEST
+    {
+        .up = 0x1000,
+        .down = 0x4000,
+        .right = 0x2000,
+        .left = 0x8000,
+        .melee_atk = 0x40,
+        .jump = 0x20,
+        .style = 0x10,
+        .shoot = 0x80,
+        .dt = 0x4,
+        .change_gun = 0x1,
+        .change_target = 0x200,
+        .lock_on = 0x8,
+        .change_sword = 0x2,
+        .default_camera = 0x400,
+        .taunt = 0x100,
+        .start = 0x800
+    },
+#else
+        {
+        .up = 0x1000,
+        .down = 0x4000,
+        .right = 0x2000,
+        .left = 0x8000,
+        .melee_atk = 0x10,
+        .jump = 0x40,
+        .style = 0x20,
+        .shoot = 0x80,
+        .dt = 0x4,
+        .change_gun = 0x1,
+        .change_target = 0x200,
+        .lock_on = 0x8,
+        .change_sword = 0x2,
+        .default_camera = 0x400,
+        .taunt = 0x100,
+        .start = 0x800
+    },
+#endif
+    {
+        .up = 0x1000,
+        .down = 0x4000,
+        .right = 0x2000,
+        .left = 0x8000,
+        .melee_atk = 0x10,
+        .jump = 0x40,
+        .style = 0x20,
+        .shoot = 0x80,
+        .dt = 0x4,
+        .change_gun = 0x1,
+        .change_target = 0x200,
+        .lock_on = 0x8,
+        .change_sword = 0x2,
+        .default_camera = 0x400,
+        .taunt = 0x100,
+        .start = 0x800
+    },
+    {
+        .up = 0x1000,
+        .down = 0x4000,
+        .right = 0x2000,
+        .left = 0x8000,
+        .melee_atk = 0x10,
+        .jump = 0x40,
+        .style = 0x20,
+        .shoot = 0x80,
+        .dt = 0x4,
+        .change_gun = 0x1,
+        .change_target = 0x200,
+        .lock_on = 0x8,
+        .change_sword = 0x2,
+        .default_camera = 0x400,
+        .taunt = 0x100,
+        .start = 0x800
+    },
+};
+
+struct BTImGuiCtx {
+    const char* actions[NUM_BINDS] = {
+        "UP",
+        "DOWN",
+        "RIGHT",
+        "LEFT",
+        "MELEE_ATK",
+        "JUMP",
+        "STYLE",
+        "SHOOT",
+        "DT",
+        "CHANGE_GUN",
+        "CHANGE_TARGET",
+        "LOCK_ON",
+        "CHANGE_SWORD",
+        "DEFAULT_CAMERA",
+        "TAUNT",
+        "START",
+    };
+    const char* items[NUM_BINDS] = {
+        "DPAD_UP",
+        "DPAD_DOWN",
+        "DPAD_RIGHT",
+        "DPAD_LEFT",
+        "Y",
+        "A",
+        "B",
+        "X",
+        "LEFT_SHOULDER",
+        "LEFT TRIGGER",
+        "LEFT_THUMB",
+        "RIGHT_SHOULDER",
+        "RIGHT TRIGGER",
+        "RIGHT_THUMB",
+        "BACK",
+        "START"
+    };
+    uint16_t values[NUM_BINDS] = {
+        0x1000,
+        0x4000,
+        0x2000,
+        0x8000,
+        0x10,
+        0x40,
+        0x20,
+        0x80,
+        0x4,
+        0x1,
+        0x200,
+        0x8,
+        0x2,
+        0x400,
+        0x100,
+        0x800
+    };
 };
 
 static BindTable s_defaultBinds = {
@@ -25,6 +180,7 @@ static BindTable s_defaultBinds = {
     .melee_atk = 0x10,
     .jump = 0x40,
     .style = 0x20,
+    .shoot = 0x80,
     .dt = 0x4,
     .change_gun = 0x1,
     .change_target = 0x200,
@@ -35,110 +191,132 @@ static BindTable s_defaultBinds = {
     .start = 0x800
 };
 
-static std::array<std::vector<CrimsonXinputBinding>, 4> s_bindsPlayer = {{
+static void __fastcall sub_1401EB170(PlayerActorData* a1) {
 
-    // first player 
-    {
-        { XINPUT_GAMEPAD_DPAD_UP,        XINPUT_GAMEPAD_DPAD_UP,        "ITEM SCREEN (UP)" },
-        { XINPUT_GAMEPAD_DPAD_DOWN,      XINPUT_GAMEPAD_DPAD_DOWN,      "EQUIP SCREEN (DOWN)" },
-        { XINPUT_GAMEPAD_DPAD_RIGHT,     XINPUT_GAMEPAD_DPAD_RIGHT,     "MAP SCREEN (RIGHT)" },
-        { XINPUT_GAMEPAD_DPAD_LEFT,      XINPUT_GAMEPAD_DPAD_LEFT,      "FILE SCREEN (LEFT)" },
-        { XINPUT_GAMEPAD_Y,              XINPUT_GAMEPAD_Y,              "MEELE ATTACK"},
-        { XINPUT_GAMEPAD_A,              XINPUT_GAMEPAD_A,              "JUMP" },
-        { XINPUT_GAMEPAD_B,              XINPUT_GAMEPAD_B,              "STYLE ACTION" },
-        { XINPUT_GAMEPAD_X,              XINPUT_GAMEPAD_X,              "SHOOT" },
-        { XINPUT_GAMEPAD_LEFT_SHOULDER,  XINPUT_GAMEPAD_LEFT_SHOULDER,  "DEVIL TRIGGER" },
-        { XINPUT_GAMEPAD_LEFT_THUMB,     XINPUT_GAMEPAD_LEFT_THUMB,     "CHANGE TARGET" },
-        { XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, "LOCK ON" },
-        { XINPUT_GAMEPAD_RIGHT_THUMB,    XINPUT_GAMEPAD_RIGHT_THUMB,    "DEFAULT CAMERA" },
-        { XINPUT_GAMEPAD_BACK,           XINPUT_GAMEPAD_BACK,           "TAUNT" },
-        { XINPUT_GAMEPAD_START,          XINPUT_GAMEPAD_START,          "START" }
-    },
-    // second player
-    {
-        { XINPUT_GAMEPAD_DPAD_UP,        XINPUT_GAMEPAD_DPAD_UP,        "ITEM SCREEN (UP)" },
-        { XINPUT_GAMEPAD_DPAD_DOWN,      XINPUT_GAMEPAD_DPAD_DOWN,      "EQUIP SCREEN (DOWN)" },
-        { XINPUT_GAMEPAD_DPAD_RIGHT,     XINPUT_GAMEPAD_DPAD_RIGHT,     "MAP SCREEN (RIGHT)" },
-        { XINPUT_GAMEPAD_DPAD_LEFT,      XINPUT_GAMEPAD_DPAD_LEFT,      "FILE SCREEN (LEFT)" },
-        { XINPUT_GAMEPAD_Y,              XINPUT_GAMEPAD_Y,              "MEELE ATTACK"},
-        { XINPUT_GAMEPAD_A,              XINPUT_GAMEPAD_A,              "JUMP" },
-        { XINPUT_GAMEPAD_B,              XINPUT_GAMEPAD_B,              "STYLE ACTION" },
-        { XINPUT_GAMEPAD_X,              XINPUT_GAMEPAD_X,              "SHOOT" },
-        { XINPUT_GAMEPAD_LEFT_SHOULDER,  XINPUT_GAMEPAD_LEFT_SHOULDER,  "DEVIL TRIGGER" },
-        { XINPUT_GAMEPAD_LEFT_THUMB,     XINPUT_GAMEPAD_LEFT_THUMB,     "CHANGE TARGET" },
-        { XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, "LOCK ON" },
-        { XINPUT_GAMEPAD_RIGHT_THUMB,    XINPUT_GAMEPAD_RIGHT_THUMB,    "DEFAULT CAMERA" },
-        { XINPUT_GAMEPAD_BACK,           XINPUT_GAMEPAD_BACK,           "TAUNT" },
-		{ XINPUT_GAMEPAD_START,          XINPUT_GAMEPAD_START,          "START" }
-    },
-    // third player
-    {
-        { XINPUT_GAMEPAD_DPAD_UP,        XINPUT_GAMEPAD_DPAD_UP,        "ITEM SCREEN (UP)" },
-        { XINPUT_GAMEPAD_DPAD_DOWN,      XINPUT_GAMEPAD_DPAD_DOWN,      "EQUIP SCREEN (DOWN)" },
-        { XINPUT_GAMEPAD_DPAD_RIGHT,     XINPUT_GAMEPAD_DPAD_RIGHT,     "MAP SCREEN (RIGHT)" },
-        { XINPUT_GAMEPAD_DPAD_LEFT,      XINPUT_GAMEPAD_DPAD_LEFT,      "FILE SCREEN (LEFT)" },
-        { XINPUT_GAMEPAD_Y,              XINPUT_GAMEPAD_Y,              "MEELE ATTACK"},
-        { XINPUT_GAMEPAD_A,              XINPUT_GAMEPAD_A,              "JUMP" },
-        { XINPUT_GAMEPAD_B,              XINPUT_GAMEPAD_B,              "STYLE ACTION" },
-        { XINPUT_GAMEPAD_X,              XINPUT_GAMEPAD_X,              "SHOOT" },
-        { XINPUT_GAMEPAD_LEFT_SHOULDER,  XINPUT_GAMEPAD_LEFT_SHOULDER,  "DEVIL TRIGGER" },
-        { XINPUT_GAMEPAD_LEFT_THUMB,     XINPUT_GAMEPAD_LEFT_THUMB,     "CHANGE TARGET" },
-        { XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, "LOCK ON" },
-        { XINPUT_GAMEPAD_RIGHT_THUMB,    XINPUT_GAMEPAD_RIGHT_THUMB,    "DEFAULT CAMERA" },
-        { XINPUT_GAMEPAD_BACK,           XINPUT_GAMEPAD_BACK,           "TAUNT" },
-		{ XINPUT_GAMEPAD_START,          XINPUT_GAMEPAD_START,          "START" }
-    },
-    // fourth player
-    {
-        { XINPUT_GAMEPAD_DPAD_UP,        XINPUT_GAMEPAD_DPAD_UP,        "ITEM SCREEN (UP)" },
-        { XINPUT_GAMEPAD_DPAD_DOWN,      XINPUT_GAMEPAD_DPAD_DOWN,      "EQUIP SCREEN (DOWN)" },
-        { XINPUT_GAMEPAD_DPAD_RIGHT,     XINPUT_GAMEPAD_DPAD_RIGHT,     "MAP SCREEN (RIGHT)" },
-        { XINPUT_GAMEPAD_DPAD_LEFT,      XINPUT_GAMEPAD_DPAD_LEFT,      "FILE SCREEN (LEFT)" },
-        { XINPUT_GAMEPAD_Y,              XINPUT_GAMEPAD_Y,              "MEELE ATTACK"},
-        { XINPUT_GAMEPAD_A,              XINPUT_GAMEPAD_A,              "JUMP" },
-        { XINPUT_GAMEPAD_B,              XINPUT_GAMEPAD_B,              "STYLE ACTION" },
-        { XINPUT_GAMEPAD_X,              XINPUT_GAMEPAD_X,              "SHOOT" },
-        { XINPUT_GAMEPAD_LEFT_SHOULDER,  XINPUT_GAMEPAD_LEFT_SHOULDER,  "DEVIL TRIGGER" },
-        { XINPUT_GAMEPAD_LEFT_THUMB,     XINPUT_GAMEPAD_LEFT_THUMB,     "CHANGE TARGET" },
-        { XINPUT_GAMEPAD_RIGHT_SHOULDER, XINPUT_GAMEPAD_RIGHT_SHOULDER, "LOCK ON" },
-        { XINPUT_GAMEPAD_RIGHT_THUMB,    XINPUT_GAMEPAD_RIGHT_THUMB,    "DEFAULT CAMERA" },
-        { XINPUT_GAMEPAD_BACK,           XINPUT_GAMEPAD_BACK,           "TAUNT" },
-		{ XINPUT_GAMEPAD_START,          XINPUT_GAMEPAD_START,          "START" }
+    BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
+    memcpy(mainBinds, &s_CoopPlayerBinds[a1->newPlayerIndex], sizeof(BindTable));
+
+    s_ButtonToActionHook->GetTrampoline<decltype(&sub_1401EB170)>()(a1);
+}
+
+class CUIDControl
+{
+public:
+	char pad_0000[8]; //0x0000
+	uint32_t someFlag; //0x0008
+	uint32_t N000020E2; //0x000C
+	char pad_0010[8]; //0x0010
+	float N00000052; //0x0018
+	char pad_001C[11812]; //0x001C
+	uint8_t N0000062C; //0x2E40
+	uint8_t cursor; //0x2E41
+	uint8_t N000020DC; //0x2E42
+	uint8_t N000020DF; //0x2E43
+}; //Size: 0x2E44
+
+static CUIDControl* g_control_ui = nullptr;
+
+static CUIDControl* __fastcall CUIDControl__CUIDControl_sub_1402817C0(__int64 a1) {
+    auto result = s_CUIDControlConsHook->GetTrampoline<decltype(&CUIDControl__CUIDControl_sub_1402817C0)>()(a1);
+    g_control_ui = result;
+    return result;
+}
+
+static uintptr_t __fastcall CUIDControl_Destructor_sub_140281840(uintptr_t block, char a2) {
+    g_control_ui = nullptr;
+    return s_CUIDControlDestHook->GetTrampoline<decltype(&CUIDControl_Destructor_sub_140281840)>()(block, a2);
+}
+
+static void CUIDControl_Close() {
+    assert(g_control_ui && "CUIDControl instance is null!");
+    g_control_ui->cursor = 15; // CUID exit button index
+    g_control_ui->someFlag = 2; // idk some cWork thing?
+}
+
+void ShowCoopControllerRemapWindow() {
+    if (!g_control_ui) {
+        return;
     }
-}};
+    ToggleCursor();
+    constexpr BTImGuiCtx ctxControl{};
+    const auto nplayers = activeConfig.Actor.playerCount;
+    bool shouldClose = false;
+
+    ImGui::Begin("Coop binds", &shouldClose); {
+        if (ImGui::Button("close")) {
+             CUIDControl_Close();
+        }
+        ImGui::SetWindowFontScale(1.6f);
+        char buffer[33] = {};
+        ImGui::BeginTable(buffer, 4); {
+            ImGui::TableSetupColumn("PL1", ImGuiTableColumnFlags_WidthFixed, 440.0f);
+            ImGui::TableSetupColumn("PL2", ImGuiTableColumnFlags_WidthFixed, 440.0f);
+            ImGui::TableSetupColumn("PL3", ImGuiTableColumnFlags_WidthFixed, 440.0f);
+            ImGui::TableSetupColumn("PL4", ImGuiTableColumnFlags_WidthFixed, 440.0f);
+
+            ImGui::TableNextRow();
+            for (int i = 0; i < nplayers; i++) {
+
+                ImGui::TableSetColumnIndex(i);
+                sprintf(buffer, "BUTTON CONFIGURATION Player %d", i + 1);
+                ImGui::Text(buffer);
+                uint16_t* bind = &s_CoopPlayerBinds[i].up;
+                for (int j = 0; j < NUM_BINDS; j++) {
+                    ImGui::PushID(i + j + bind); // :rorb:
+                    uint16_t value = bind[j];
+                    if (ImGui::InputScalar(ctxControl.actions[j], ImGuiDataType_U16, &value, 0, 0, "%x")) {
+                        bind[j] = value;
+                    }
+                    ImGui::PopID();
+                }
+            }
+        }
+        ImGui::EndTable();
+    }
+    ImGui::End();
+    if (shouldClose) {
+        CUIDControl_Close();
+    }
+}
 
 void ToggleCursor() {
-    if (g_showMain || g_showShop) {
+    if (g_showMain || g_showShop || g_control_ui != nullptr) {
         Windows_ToggleCursor(true);
     } else {
         Windows_ToggleCursor(!activeConfig.hideMouseCursor);
     }
 }
 
-void InitBindings()
-{
+void InitBindings() {
+
+    if ((activeConfig.Actor.playerCount < 2) || !activeConfig.Actor.enable) { return; }
+
+    s_ButtonToActionHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x1EB170, &sub_1401EB170);
+    bool res = s_ButtonToActionHook->Toggle();
+    assert(res);
+
+    s_CUIDControlConsHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x2817C0, &CUIDControl__CUIDControl_sub_1402817C0);
+    res = s_CUIDControlConsHook->Toggle();
+    assert(res);
+
+    s_CUIDControlDestHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x281840, &CUIDControl_Destructor_sub_140281840);
+    res = s_CUIDControlDestHook->Toggle();
+    assert(res);
+
+
+#if 0
     BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
     if (activeConfig.Actor.playerCount > 1) {
         CopyMemory(mainBinds, &s_defaultBinds, sizeof(BindTable));
     }
+#endif
 }
 
 void SwapXInputButtonsCoop(uint8 plindex, XINPUT_STATE* state) {
-    if (activeConfig.Actor.playerCount > 1 || !activeConfig.Actor.enable) { return; }
-    std::vector<CrimsonXinputBinding>& playerBinds = s_bindsPlayer[plindex];
-    std::vector<uint16> buttons(playerBinds.size(), 0x0);
-    size_t btnIndex = 0;
-    uint16 xinput = state->Gamepad.wButtons;
-    for (CrimsonXinputBinding& bind : playerBinds) {
-        if (xinput & bind.source) {
-            buttons[btnIndex] = bind.target;
-        }
-        btnIndex += 1;
+    // TODO(): idk dualshock support?
+    if (g_control_ui) {
+        SetMemory(&state->Gamepad, 0, sizeof(XINPUT_GAMEPAD));
     }
-    uint16 result = 0;
-    for (uint16 button : buttons) {
-        result |= button;
-    }
-    state->Gamepad.wButtons = result;
+    return;
 }
 

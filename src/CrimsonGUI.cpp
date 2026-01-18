@@ -15005,6 +15005,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     Welcome();
     Main(pSwapChain);
     Shop::ShopWindow();
+	ShowCoopControllerRemapWindow();
 	RenderMainMenuInfo(pSwapChain);
 
 	ActorWindow();

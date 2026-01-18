@@ -104,3 +104,4 @@ inline uint8 GetRelativeTiltDirection(PlayerActorData& actorData) {
 
     return TILT_DIRECTION::NEUTRAL;
 }
+void ShowCoopControllerRemapWindow();
