@@ -9,6 +9,9 @@
 #include "Core/DataTypes.hpp"
 #include "Utility/Detour.hpp"
 #include "Xinput.h"
+#include "Core/GUI.hpp"
+#include "ImGuiExtra.hpp"
+#include "CrimsonGUI.hpp"
 
 #define MAX_PLAYERS 4
 #define NUM_BINDS 16
@@ -238,36 +241,50 @@ void ShowCoopControllerRemapWindow() {
         return;
     }
     ToggleCursor();
-    constexpr BTImGuiCtx ctxControl{};
+    BTImGuiCtx ctxControl{};
     const auto nplayers = activeConfig.Actor.playerCount;
     bool shouldClose = false;
 
-    ImGui::Begin("Coop binds", &shouldClose); {
+	float width = g_renderSize.x / 1.40;
+	float height = g_renderSize.y / 1.20;
+	const float columnWidth = 0.5f * queuedConfig.globalScale;
+	const float rowWidth = 40.0f * queuedConfig.globalScale;
+
+	ImGui::SetNextWindowSize(ImVec2(width, height));
+	// Center on screen
+	ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    ImGui::Begin("Button Configuration", &shouldClose); {
+        ImGui::SetWindowFontScale(CrimsonGUI::scaleFactorY);
+
         if (ImGui::Button("close")) {
              CUIDControl_Close();
         }
-        ImGui::SetWindowFontScale(1.6f);
+        
         char buffer[33] = {};
-        ImGui::BeginTable(buffer, 4); {
-            ImGui::TableSetupColumn("PL1", ImGuiTableColumnFlags_WidthFixed, 440.0f);
-            ImGui::TableSetupColumn("PL2", ImGuiTableColumnFlags_WidthFixed, 440.0f);
-            ImGui::TableSetupColumn("PL3", ImGuiTableColumnFlags_WidthFixed, 440.0f);
-            ImGui::TableSetupColumn("PL4", ImGuiTableColumnFlags_WidthFixed, 440.0f);
-
-            ImGui::TableNextRow();
+        ImGui::BeginTable(buffer, 2); {
+			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
+			ImGui::TableNextRow(0, rowWidth);
+			ImGui::TableNextColumn();
+			
+            
             for (int i = 0; i < nplayers; i++) {
 
-                ImGui::TableSetColumnIndex(i);
-                sprintf(buffer, "BUTTON CONFIGURATION Player %d", i + 1);
+                sprintf(buffer, "%dP", i + 1);
                 ImGui::Text(buffer);
                 uint16_t* bind = &s_CoopPlayerBinds[i].up;
                 for (int j = 0; j < NUM_BINDS; j++) {
-                    ImGui::PushID(i + j + bind); // :rorb:
-                    uint16_t value = bind[j];
-                    if (ImGui::InputScalar(ctxControl.actions[j], ImGuiDataType_U16, &value, 0, 0, "%x")) {
-                        bind[j] = value;
-                    }
+                    ImGui::PushID(i);
+                    ImGui::PushID(j);
+                    UI::ComboMapValue<uint16_t, NUM_BINDS>(ctxControl.actions[j], ctxControl.items, ctxControl.values, bind[j]);
+
                     ImGui::PopID();
+                    ImGui::PopID();
+                }
+
+                ImGui::TableNextColumn();
+                if (i == 1 || i == 2) {
+                    ImGui::Text("");
                 }
             }
         }
