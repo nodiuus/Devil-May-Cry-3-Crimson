@@ -2,10 +2,12 @@
 #include "DMC3Input.hpp"
 #include "Config.hpp"
 #include "Global.hpp"
+#include "Vars.hpp"
 
 #include <array>
 #include <vector>
 #include <memory>
+#include <cstring>
 #include "Core/DataTypes.hpp"
 #include "Utility/Detour.hpp"
 #include "Xinput.h"
@@ -13,7 +15,6 @@
 #include "ImGuiExtra.hpp"
 #include "CrimsonGUI.hpp"
 
-#define MAX_PLAYERS 4
 #define NUM_BINDS 16
 
 // NOTE(): writing bind table at that particular place seems to work fine for me... idk, needs testing?
@@ -22,7 +23,8 @@ static std::unique_ptr<Utility::Detour_t> s_ButtonToActionHook;
 static std::unique_ptr<Utility::Detour_t> s_CUIDControlConsHook; // Constructor
 static std::unique_ptr<Utility::Detour_t> s_CUIDControlDestHook; // Destructor
 
-static BindTable s_CoopPlayerBinds[MAX_PLAYERS] = {
+// Per-player defaults (historical behavior). These are copied into per-character slots at runtime.
+static BindTable s_PlayerDefaultBinds[PLAYER_COUNT] = {
     {
         .up = 0x1000,
         .down = 0x4000,
@@ -61,7 +63,7 @@ static BindTable s_CoopPlayerBinds[MAX_PLAYERS] = {
         .start = 0x800
     },
 #else
-        {
+    {
         .up = 0x1000,
         .down = 0x4000,
         .right = 0x2000,
@@ -117,6 +119,9 @@ static BindTable s_CoopPlayerBinds[MAX_PLAYERS] = {
         .start = 0x800
     },
 };
+
+// Actual runtime bind storage: per player, per character.
+static BindTable s_CoopPlayerBinds[PLAYER_COUNT][CHARACTER_COUNT] = {};
 
 struct BTImGuiCtx {
     const char* actions[NUM_BINDS] = {
@@ -194,10 +199,41 @@ static BindTable s_defaultBinds = {
     .start = 0x800
 };
 
+static uint8_t GetCharacterBindSlot(const PlayerActorData* actor) {
+    if (!actor) {
+        return 0;
+    }
+
+    const auto idx = static_cast<uint8_t>(actor->newCharacterIndex);
+
+    // Only Dante/Vergil are relevant for bind switching.
+    if (idx == static_cast<uint8_t>(CHARACTER::VERGIL)) {
+        return 1;
+    }
+    if (idx == static_cast<uint8_t>(CHARACTER::DANTE)) {
+        return 0;
+    }
+
+    // Fallback: if the game uses raw 0/1 slots, honor them.
+    if (idx == 1) {
+        return 1;
+    }
+
+    // If CHARACTER_COUNT is a constexpr/enum (not a macro), #if won't work. Use a runtime check.
+    if (CHARACTER_COUNT > 1 && idx < CHARACTER_COUNT) {
+        return idx;
+    }
+
+    return 0;
+}
+
 static void __fastcall sub_1401EB170(PlayerActorData* a1) {
 
     BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
-    memcpy(mainBinds, &s_CoopPlayerBinds[a1->newPlayerIndex], sizeof(BindTable));
+
+    const auto playerIndex = (static_cast<uint32_t>(a1->newPlayerIndex) < PLAYER_COUNT) ? a1->newPlayerIndex : 0;
+    const auto characterSlot = GetCharacterBindSlot(a1);
+    memcpy(mainBinds, &s_CoopPlayerBinds[playerIndex][characterSlot], sizeof(BindTable));
 
     s_ButtonToActionHook->GetTrampoline<decltype(&sub_1401EB170)>()(a1);
 }
@@ -245,8 +281,10 @@ void ShowCoopControllerRemapWindow() {
     const auto nplayers = activeConfig.Actor.playerCount;
     bool shouldClose = false;
 
+    static std::array<int, PLAYER_COUNT> s_selectedCharacterSlotByPlayer = {};
+
 	float width = g_renderSize.x / 1.40;
-	float height = g_renderSize.y / 1.20;
+	float height = g_renderSize.y / 1.10;
 	const float columnWidth = 0.5f * queuedConfig.globalScale;
 	const float rowWidth = 40.0f * queuedConfig.globalScale;
 
@@ -260,6 +298,7 @@ void ShowCoopControllerRemapWindow() {
         if (ImGui::Button("close")) {
              CUIDControl_Close();
         }
+
         
         char buffer[33] = {};
         ImGui::BeginTable(buffer, 2); {
@@ -268,11 +307,34 @@ void ShowCoopControllerRemapWindow() {
 			ImGui::TableNextColumn();
 			
             
-            for (int i = 0; i < nplayers; i++) {
+            for (int i = 0; i < nplayers && i < PLAYER_COUNT; i++) {
 
                 sprintf(buffer, "%dP", i + 1);
                 ImGui::Text(buffer);
-                uint16_t* bind = &s_CoopPlayerBinds[i].up;
+
+                int& selectedSlot = s_selectedCharacterSlotByPlayer[i];
+                if (selectedSlot < 0 || selectedSlot >= CHARACTER_COUNT) {
+                    selectedSlot = 0;
+                }
+
+                if (CHARACTER_COUNT > 1) {
+                    ImGui::PushID(i);
+                    if (ImGui::BeginTabBar("##CharacterTabs")) {
+                        if (ImGui::BeginTabItem("Dante")) {
+                            selectedSlot = 0;
+                            ImGui::EndTabItem();
+                        }
+                        if (ImGui::BeginTabItem("Vergil")) {
+                            selectedSlot = 1;
+                            ImGui::EndTabItem();
+                        }
+
+                        ImGui::EndTabBar();
+                    }
+                    ImGui::PopID();
+                }
+
+                uint16_t* bind = &s_CoopPlayerBinds[i][selectedSlot].up;
                 for (int j = 0; j < NUM_BINDS; j++) {
                     ImGui::PushID(i);
                     ImGui::PushID(j);
@@ -306,7 +368,7 @@ void ToggleCursor() {
 
 void InitBindings() {
 
-    if ((activeConfig.Actor.playerCount < 2) || !activeConfig.Actor.enable) { return; }
+    //if ((activeConfig.Actor.playerCount < 2) || !activeConfig.Actor.enable) { return; }
 
     s_ButtonToActionHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x1EB170, &sub_1401EB170);
     bool res = s_ButtonToActionHook->Toggle();
@@ -320,6 +382,18 @@ void InitBindings() {
     res = s_CUIDControlDestHook->Toggle();
     assert(res);
 
+    // Seed per-character bind tables from per-player defaults.
+    BindTable empty{};
+    for (uint32_t p = 0; p < PLAYER_COUNT; ++p) {
+        BindTable base = s_PlayerDefaultBinds[p];
+        if (memcmp(&base, &empty, sizeof(BindTable)) == 0) {
+            base = s_defaultBinds;
+        }
+        for (uint32_t c = 0; c < CHARACTER_COUNT; ++c) {
+            s_CoopPlayerBinds[p][c] = base;
+        }
+    }
+
 
 #if 0
     BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
@@ -331,9 +405,9 @@ void InitBindings() {
 
 void SwapXInputButtonsCoop(uint8 plindex, XINPUT_STATE* state) {
     // TODO(): idk dualshock support?
-    if (g_control_ui) {
-        SetMemory(&state->Gamepad, 0, sizeof(XINPUT_GAMEPAD));
-    }
+    
+    SetMemory(&state->Gamepad, 0, sizeof(XINPUT_GAMEPAD));
+    
     return;
 }
 
