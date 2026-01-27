@@ -12230,76 +12230,11 @@ void DrawKeybindEditor(const std::vector<std::pair<uint16_t, const char*>>& butt
     //ImGui::End();
 }
 
-void InputRemapOptions() {
-	auto& defaultFontSize = UI::g_UIContext.DefaultFontSize;
-	ImU32 checkmarkColorBg = UI::SwapColorEndianness(0xFFFFFFFF);
-
-	GUI_Title("INPUT REMAPS", false, false, true, "Remaps are global for all controllers, will only take into account Player 1's active Character for the switch.");
-
-	ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColorBg);
-
-	{
-		const float columnWidth = 0.5f * queuedConfig.globalScale;
-		const float rowHeight = 40.0f * queuedConfig.globalScale;
-
-		if (ImGui::BeginTable("InputRemapsTable", 3)) {
-			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableSetupColumn("b2", 0, columnWidth * 2.0f);
-			ImGui::TableSetupColumn("b3", 0, columnWidth * 2.0f);
-
-			// First row
-			ImGui::TableNextRow(0, rowHeight * 0.5f);
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Dante DT Button",
-				activeCrimsonConfig.System.Remaps.danteDTButton,
-				queuedCrimsonConfig.System.Remaps.danteDTButton);
-			ImGui::PopItemWidth();
-
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Dante Shoot Button",
-				activeCrimsonConfig.System.Remaps.danteShootButton,
-				queuedCrimsonConfig.System.Remaps.danteShootButton);
-			ImGui::PopItemWidth();
-
-			// Second row
-			ImGui::TableNextRow(0, rowHeight * 0.5f);
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Vergil DT Button",
-				activeCrimsonConfig.System.Remaps.vergilDTButton,
-				queuedCrimsonConfig.System.Remaps.vergilDTButton);
-			ImGui::PopItemWidth();
-
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Vergil Shoot Button",
-				activeCrimsonConfig.System.Remaps.vergilShootButton,
-				queuedCrimsonConfig.System.Remaps.vergilShootButton);
-			ImGui::PopItemWidth();
-
-			ImGui::EndTable();
-		}
-	}
-
-	/*DrawKeybindEditor(buttonPairs);*/
-	
-	ImGui::PopStyleColor();
-	ImGui::PopFont();
-}
-
 void GameplaySection() {
  	GeneralGameplayOptions();
 	DanteGameplayOptions();
 	VergilGameplayOptions();
 	ExtraDifficultyGameplayOptions();
-	InputRemapOptions();
 }
 
 #pragma endregion

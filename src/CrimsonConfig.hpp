@@ -11,6 +11,8 @@
 #pragma optimize("", off) // Disable all optimizations
 #pragma pack(push, 8)
 
+#define NUM_BINDS 16
+
 namespace HUDELEMENTSCALESTATE {
 enum {
 	SMALL,
@@ -61,6 +63,7 @@ struct CrimsonConfig {
 	struct MultiplayerBars2D {
 		bool show = true;
 		uint8 show1PAttributes = HUDELEMENTSHOWSTATE::ONLY_IN_MP;
+
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
@@ -411,28 +414,83 @@ struct CrimsonConfig {
 	} PlayerProperties;
 
 	struct System {
-		struct Remaps {
-			uint16_t danteDTButton = 0x0004;
-			uint16_t danteShootButton = 0x0080;
-			uint16_t vergilDTButton = 0x0080;
-			uint16_t vergilShootButton = 0x0004;
+		struct ButtonConfig {
+			uint16_t dante1P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil1P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t dante2P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil2P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t dante3P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil3P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t dante4P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil4P[NUM_BINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
-					std::make_pair("danteDTButton", &Remaps::danteDTButton),
-					std::make_pair("danteShootButton", &Remaps::danteShootButton),
-					std::make_pair("vergilDTButton", &Remaps::vergilDTButton),
-					std::make_pair("vergilShootButton", &Remaps::vergilShootButton)
+					std::make_pair("dante1P", &ButtonConfig::dante1P),
+					std::make_pair("vergil1P", &ButtonConfig::vergil1P),
+					std::make_pair("dante2P", &ButtonConfig::dante2P),
+					std::make_pair("vergil2P", &ButtonConfig::vergil2P),
+					std::make_pair("dante3P", &ButtonConfig::dante3P),
+					std::make_pair("vergil3P", &ButtonConfig::vergil3P),
+					std::make_pair("dante4P", &ButtonConfig::dante4P),
+					std::make_pair("vergil4P", &ButtonConfig::vergil4P)
 				);
 			}
-		} Remaps;
+		} ButtonConfig;
 		
 		bool flipModelPresentation = true;
 	
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("Remaps", &System::Remaps),
+				std::make_pair("ButtonConfig", &System::ButtonConfig),
 				std::make_pair("flipModelPresentation", &System::flipModelPresentation)
 			);
 		}

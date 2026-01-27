@@ -14,8 +14,7 @@
 #include "Core/GUI.hpp"
 #include "ImGuiExtra.hpp"
 #include "CrimsonGUI.hpp"
-
-#define NUM_BINDS 16
+#include "CrimsonConfig.hpp"
 
 // NOTE(): writing bind table at that particular place seems to work fine for me... idk, needs testing?
 static std::unique_ptr<Utility::Detour_t> s_ButtonToActionHook;
@@ -113,7 +112,7 @@ static BindTable s_PlayerDefaultBinds[PLAYER_COUNT] = {
         .change_gun = 0x1,
         .change_target = 0x200,
         .lock_on = 0x8,
-        .change_sword = 0x2,
+        .change_sword = 0x2, 
         .default_camera = 0x400,
         .taunt = 0x100,
         .start = 0x800
@@ -121,7 +120,29 @@ static BindTable s_PlayerDefaultBinds[PLAYER_COUNT] = {
 };
 
 // Actual runtime bind storage: per player, per character.
-static BindTable s_CoopPlayerBinds[PLAYER_COUNT][CHARACTER_COUNT] = {};
+static BindTable s_CoopPlayerBinds[PLAYER_COUNT][2] = {};
+
+uint16_t(*activeConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
+	{ &activeCrimsonConfig.System.ButtonConfig.dante1P,
+	  &activeCrimsonConfig.System.ButtonConfig.vergil1P },
+	{ &activeCrimsonConfig.System.ButtonConfig.dante2P,
+	  &activeCrimsonConfig.System.ButtonConfig.vergil2P },
+	{ &activeCrimsonConfig.System.ButtonConfig.dante3P,
+	  &activeCrimsonConfig.System.ButtonConfig.vergil3P },
+	{ &activeCrimsonConfig.System.ButtonConfig.dante4P,
+	  &activeCrimsonConfig.System.ButtonConfig.vergil4P }
+};
+
+uint16_t(*queuedConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
+	{ &queuedCrimsonConfig.System.ButtonConfig.dante1P,
+	  &queuedCrimsonConfig.System.ButtonConfig.vergil1P },
+	{ &queuedCrimsonConfig.System.ButtonConfig.dante2P,
+	  &queuedCrimsonConfig.System.ButtonConfig.vergil2P },
+	{ &queuedCrimsonConfig.System.ButtonConfig.dante3P,
+	  &queuedCrimsonConfig.System.ButtonConfig.vergil3P },
+	{ &queuedCrimsonConfig.System.ButtonConfig.dante4P,
+	  &queuedCrimsonConfig.System.ButtonConfig.vergil4P }
+};
 
 struct BTImGuiCtx {
     const char* actions[NUM_BINDS] = {
@@ -335,10 +356,11 @@ void ShowCoopControllerRemapWindow() {
                 }
 
                 uint16_t* bind = &s_CoopPlayerBinds[i][selectedSlot].up;
+				uint16_t* config = queuedConfigInputs[i][selectedSlot][0];
                 for (int j = 0; j < NUM_BINDS; j++) {
                     ImGui::PushID(i);
                     ImGui::PushID(j);
-                    UI::ComboMapValue<uint16_t, NUM_BINDS>(ctxControl.actions[j], ctxControl.items, ctxControl.values, bind[j]);
+                    UI::ComboMapValue2<uint16_t, NUM_BINDS>(ctxControl.actions[j], ctxControl.items, ctxControl.values, bind[j],config[j]);
 
                     ImGui::PopID();
                     ImGui::PopID();
@@ -385,11 +407,13 @@ void InitBindings() {
     // Seed per-character bind tables from per-player defaults.
     BindTable empty{};
     for (uint32_t p = 0; p < PLAYER_COUNT; ++p) {
-        BindTable base = s_PlayerDefaultBinds[p];
-        if (memcmp(&base, &empty, sizeof(BindTable)) == 0) {
-            base = s_defaultBinds;
-        }
-        for (uint32_t c = 0; c < CHARACTER_COUNT; ++c) {
+        for (uint32_t c = 0; c < 2; ++c) {
+			BindTable configConversion = {};
+			memcpy(&configConversion, *activeConfigInputs[p][c], sizeof(BindTable));
+			BindTable base = configConversion;
+			if (memcmp(&base, &empty, sizeof(BindTable)) == 0) {
+				base = s_defaultBinds;
+			}
             s_CoopPlayerBinds[p][c] = base;
         }
     }
@@ -405,8 +429,9 @@ void InitBindings() {
 
 void SwapXInputButtonsCoop(uint8 plindex, XINPUT_STATE* state) {
     // TODO(): idk dualshock support?
-    
-    SetMemory(&state->Gamepad, 0, sizeof(XINPUT_GAMEPAD));
+    if (g_control_ui) {
+        SetMemory(&state->Gamepad, 0, sizeof(XINPUT_GAMEPAD));
+    }
     
     return;
 }

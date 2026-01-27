@@ -39,7 +39,6 @@ void StyleMeterDoppelganger(byte8* actorBaseAddr);
 void InCombatDetection();
 void BackToForwardInputs(byte8* actorBaseAddr);
 void SprintAbility(byte8* actorBaseAddr);
-void GunDTCharacterRemaps();
 void DTInfusedRoyalguardController(byte8* actorBaseAddr);
 void CalculateRotationTowardsEnemy(byte8* actorBaseAddr);
 void GetLockedOnEnemyHitPoints(byte8* actorBaseAddr);
