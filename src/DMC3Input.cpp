@@ -301,6 +301,7 @@ public:
 }; //Size: 0x2E44
 
 static CUIDControl* g_control_ui = nullptr;
+bool g_showControllerRemap = false;
 
 static CUIDControl* __fastcall CUIDControl__CUIDControl_sub_1402817C0(__int64 a1) {
     auto result = s_CUIDControlConsHook->GetTrampoline<decltype(&CUIDControl__CUIDControl_sub_1402817C0)>()(a1);
@@ -320,7 +321,8 @@ static void CUIDControl_Close() {
 }
 
 void ShowCoopControllerRemapWindow() {
-    if (!g_control_ui) {
+    // Allow opening from either in-game menu or CrimsonGUI
+    if (!g_control_ui && !g_showControllerRemap) {
         return;
     }
     ToggleCursor();
@@ -351,7 +353,10 @@ void ShowCoopControllerRemapWindow() {
         ImGui::SetWindowFontScale(CrimsonGUI::scaleFactorY);
 
         if (GUI_CloseX()) {
-             CUIDControl_Close();
+            if (g_control_ui) {
+                CUIDControl_Close();
+            }
+            g_showControllerRemap = false;
         }
 
         ImGui::Text("");
@@ -416,12 +421,15 @@ void ShowCoopControllerRemapWindow() {
         }
         ImGui::EndTable();
     }
-    ImGui::End();
-    ImGui::PopStyleVar(4);
+	ImGui::End();
+	ImGui::PopStyleVar(4);
 	ImGui::PopStyleColor();
-    if (shouldClose) {
-        CUIDControl_Close();
-    }
+	if (shouldClose) {
+		if (g_control_ui) {
+			CUIDControl_Close();
+		}
+		g_showControllerRemap = false;
+	}
 }
 
 void ToggleCursor() {

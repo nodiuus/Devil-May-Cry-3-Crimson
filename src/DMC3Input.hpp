@@ -52,6 +52,8 @@ public:
 }; //Size: 0x0020
 void InitBindings();
 void SwapXInputButtonsCoop(uint8 index, XINPUT_STATE* gamepad);
+void ShowCoopControllerRemapWindow();
+extern bool g_showControllerRemap;
 
 #endif
 

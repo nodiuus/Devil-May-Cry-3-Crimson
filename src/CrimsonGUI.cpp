@@ -3314,37 +3314,67 @@ void CharacterSection(size_t defaultFontSize) {
 	GUI_PushDisable(actorCondition);
 
 	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColor);
-	
 
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
-	const char* SPMPText = (queuedConfig.Actor.playerCount == 1) ? SPMPText = "SINGLE PLAYER" : SPMPText = "MULTIPLAYER";
-	ImGui::Text(SPMPText);
-	ImGui::PopFont();
-	BackgroundSPMPText(SPMPText);
-	
+	{
+		const float columnWidth = 0.6f * queuedConfig.globalScale;
+		const float rowWidth = 40.0f * queuedConfig.globalScale;
 
-	ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
-	ImGui::PushItemWidth(itemWidth);
-	if (GUI_Slider<uint8>("Number of Players", queuedConfig.Actor.playerCount, 1, PLAYER_COUNT)) {
-		if (queuedConfig.Actor.playerCount > 1) {
-			activeCrimsonConfig.Camera.multiplayerCamera = true;
-			queuedCrimsonConfig.Camera.multiplayerCamera = true;
-			activeCrimsonConfig.Camera.thirdPersonCamera = true;
-			queuedCrimsonConfig.Camera.thirdPersonCamera = true;
-		} else {
-			activeConfig.enablePVPFixes = false;
-			queuedConfig.enablePVPFixes = false;
+		if (ImGui::BeginTable("ActorPlayersTable", 2)) {
+
+			ImGui::TableSetupColumn("c2", 0, columnWidth * 2.0f);
+			ImGui::TableNextRow(0, rowWidth);
+
+			ImGui::TableNextColumn();
+
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
+			const char* SPMPText = (queuedConfig.Actor.playerCount == 1) ? SPMPText = "SINGLE PLAYER" : SPMPText = "MULTIPLAYER";
+			ImGui::Text(SPMPText);
+			ImGui::PopFont();
+			BackgroundSPMPText(SPMPText);
+
+
+			ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
+			ImGui::PushItemWidth(itemWidth);
+			if (GUI_Slider<uint8>("Number of Players", queuedConfig.Actor.playerCount, 1, PLAYER_COUNT)) {
+				if (queuedConfig.Actor.playerCount > 1) {
+					activeCrimsonConfig.Camera.multiplayerCamera = true;
+					queuedCrimsonConfig.Camera.multiplayerCamera = true;
+					activeCrimsonConfig.Camera.thirdPersonCamera = true;
+					queuedCrimsonConfig.Camera.thirdPersonCamera = true;
+				} else {
+					activeConfig.enablePVPFixes = false;
+					queuedConfig.enablePVPFixes = false;
+				}
+			}
+
+			ImGui::TableNextColumn();
+
+			ImGui::Text("");
+
+			if (GUI_Button("Controller Configuration")) {
+				g_showControllerRemap = true;
+			}
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Open the controller button remapping window to customize button bindings for each player and character.");
+
+
+			ImGui::TableNextColumn();
+
+
+			ImGui::PushItemWidth(itemWidth);
+			UI::Combo2("DMC3 Costume Game Progression", costumeRespectsProgressionNames, activeConfig.costumeRespectsProgression,
+				queuedConfig.costumeRespectsProgression);
+			ImGui::PopItemWidth();
+
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Makes DMC3 Costume update as the game progresses, as in the Vanilla game.\n"
+				"\n"
+				"'Crimson' updates Vergil's Costume at Mission 1.");
+
+
+			ImGui::EndTable();
 		}
 	}
-	UI::Combo2("DMC3 Costume Game Progression", costumeRespectsProgressionNames, activeConfig.costumeRespectsProgression,
-		queuedConfig.costumeRespectsProgression);
-
-	ImGui::SameLine();
-	TooltipHelper("(?)", "Makes DMC3 Costume update as the game progresses, as in the Vanilla game.\n"
-		"\n"
-		"'Crimson' updates Vergil's Costume at Mission 1."
-
-	);
 
 	{
 		const float columnWidth = 0.6f * queuedConfig.globalScale;
@@ -9889,7 +9919,7 @@ void SystemSection(size_t defaultFontSize) {
 				ToggleSkipCutscenes(activeConfig.skipCutscenes);
 			}
 
-            // Enable File Mods will be a json file only option for now, don't see much need for it in the GUI. - Mia
+			// Enable File Mods will be a json file only option for now, don't see much need for it in the GUI. - Mia
 // 			ImGui::TableNextRow(0, rowWidth);
 // 			ImGui::TableNextColumn();
 // 
