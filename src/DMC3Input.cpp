@@ -16,6 +16,8 @@
 #include "CrimsonGUI.hpp"
 #include "CrimsonConfig.hpp"
 
+#define NUM_BINDS_WITHOUT_START 15
+
 // NOTE(): writing bind table at that particular place seems to work fine for me... idk, needs testing?
 static std::unique_ptr<Utility::Detour_t> s_ButtonToActionHook;
 // NOTE(): to show custom imgoo menu when opening settings, idk if there is a better way tbqh
@@ -119,9 +121,8 @@ static BindTable s_PlayerDefaultBinds[PLAYER_COUNT] = {
     },
 };
 
-// Actual runtime bind storage: per player, per character.
-static BindTable s_CoopPlayerBinds[PLAYER_COUNT][2] = {};
 
+// References to active/queued config inputs for each player and character.
 uint16_t(*activeConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
 	{ &activeCrimsonConfig.System.ButtonConfig.dante1P,
 	  &activeCrimsonConfig.System.ButtonConfig.vergil1P },
@@ -145,7 +146,7 @@ uint16_t(*queuedConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
 };
 
 struct BTImGuiCtx {
-    const char* actions[NUM_BINDS] = {
+    const char* actions[NUM_BINDS_WITHOUT_START] = {
         "UP",
         "DOWN",
         "RIGHT",
@@ -161,9 +162,8 @@ struct BTImGuiCtx {
         "CHANGE_SWORD",
         "DEFAULT_CAMERA",
         "TAUNT",
-        "START",
     };
-    const char* items[NUM_BINDS] = {
+    const char* items[NUM_BINDS_WITHOUT_START] = {
         "DPAD_UP",
         "DPAD_DOWN",
         "DPAD_RIGHT",
@@ -179,9 +179,8 @@ struct BTImGuiCtx {
         "RIGHT TRIGGER",
         "RIGHT_THUMB",
         "BACK",
-        "START"
     };
-    uint16_t values[NUM_BINDS] = {
+    uint16_t values[NUM_BINDS_WITHOUT_START] = {
         0x1000,
         0x4000,
         0x2000,
@@ -197,7 +196,6 @@ struct BTImGuiCtx {
         0x2,
         0x400,
         0x100,
-        0x800
     };
 };
 
@@ -227,7 +225,7 @@ static uint8_t GetCharacterBindSlot(const PlayerActorData* actor) {
 
     const auto idx = static_cast<uint8_t>(actor->newCharacterIndex);
 
-    // Only Dante/Vergil are relevant for bind switching.
+    // Only Dante/Vergil are relevant for activeButtonConfig switching.
     if (idx == static_cast<uint8_t>(CHARACTER::VERGIL)) {
         return 1;
     }
@@ -249,12 +247,40 @@ static uint8_t GetCharacterBindSlot(const PlayerActorData* actor) {
 }
 
 static void __fastcall sub_1401EB170(PlayerActorData* a1) {
+    if (!a1) {
+        s_ButtonToActionHook->GetTrampoline<decltype(&sub_1401EB170)>()(a1);
+        return;
+    }
 
     BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
 
     const auto playerIndex = (static_cast<uint32_t>(a1->newPlayerIndex) < PLAYER_COUNT) ? a1->newPlayerIndex : 0;
     const auto characterSlot = GetCharacterBindSlot(a1);
-    memcpy(mainBinds, &s_CoopPlayerBinds[playerIndex][characterSlot], sizeof(BindTable));
+
+    if (characterSlot >= 2) {
+        s_ButtonToActionHook->GetTrampoline<decltype(&sub_1401EB170)>()(a1);
+        return;
+    }
+
+    const uint16_t* configBinds = (*activeConfigInputs[playerIndex][characterSlot]);
+
+    mainBinds->up = configBinds[0];
+    mainBinds->down = configBinds[1];
+    mainBinds->right = configBinds[2];
+    mainBinds->left = configBinds[3];
+    mainBinds->melee_atk = configBinds[4];
+    mainBinds->jump = configBinds[5];
+    mainBinds->style = configBinds[6];
+    mainBinds->shoot = configBinds[7];
+    mainBinds->dt = configBinds[8];
+    mainBinds->change_gun = configBinds[9];
+    mainBinds->change_target = configBinds[10];
+    mainBinds->lock_on = configBinds[11];
+    mainBinds->change_sword = configBinds[12];
+    mainBinds->default_camera = configBinds[13];
+    mainBinds->taunt = configBinds[14];
+    //mainBinds->start = configBinds[15]; // Start is actually handled somewhere else, 
+    // otherwise we overwrite to D6CEA9 (turbo mode boolean) which isn't ideal.
 
     s_ButtonToActionHook->GetTrampoline<decltype(&sub_1401EB170)>()(a1);
 }
@@ -355,12 +381,13 @@ void ShowCoopControllerRemapWindow() {
                     ImGui::PopID();
                 }
 
-                uint16_t* bind = &s_CoopPlayerBinds[i][selectedSlot].up;
-				uint16_t* config = queuedConfigInputs[i][selectedSlot][0];
-                for (int j = 0; j < NUM_BINDS; j++) {
+                uint16_t* activeButtonConfig = activeConfigInputs[i][selectedSlot][0];
+				uint16_t* queuedButtonConfig = queuedConfigInputs[i][selectedSlot][0];
+                for (int j = 0; j < NUM_BINDS_WITHOUT_START; j++) {
                     ImGui::PushID(i);
                     ImGui::PushID(j);
-                    UI::ComboMapValue2<uint16_t, NUM_BINDS>(ctxControl.actions[j], ctxControl.items, ctxControl.values, bind[j],config[j]);
+                    UI::ComboMapValue2<uint16_t, NUM_BINDS_WITHOUT_START >(ctxControl.actions[j], ctxControl.items, 
+                        ctxControl.values, activeButtonConfig[j],queuedButtonConfig[j]);
 
                     ImGui::PopID();
                     ImGui::PopID();
@@ -390,8 +417,6 @@ void ToggleCursor() {
 
 void InitBindings() {
 
-    //if ((activeConfig.Actor.playerCount < 2) || !activeConfig.Actor.enable) { return; }
-
     s_ButtonToActionHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x1EB170, &sub_1401EB170);
     bool res = s_ButtonToActionHook->Toggle();
     assert(res);
@@ -403,21 +428,6 @@ void InitBindings() {
     s_CUIDControlDestHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x281840, &CUIDControl_Destructor_sub_140281840);
     res = s_CUIDControlDestHook->Toggle();
     assert(res);
-
-    // Seed per-character bind tables from per-player defaults.
-    BindTable empty{};
-    for (uint32_t p = 0; p < PLAYER_COUNT; ++p) {
-        for (uint32_t c = 0; c < 2; ++c) {
-			BindTable configConversion = {};
-			memcpy(&configConversion, *activeConfigInputs[p][c], sizeof(BindTable));
-			BindTable base = configConversion;
-			if (memcmp(&base, &empty, sizeof(BindTable)) == 0) {
-				base = s_defaultBinds;
-			}
-            s_CoopPlayerBinds[p][c] = base;
-        }
-    }
-
 
 #if 0
     BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
