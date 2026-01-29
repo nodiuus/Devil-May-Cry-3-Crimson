@@ -35,7 +35,7 @@ float saveTimeout = 1000; // in ms
 bool GUI_Button(const char* label, const ImVec2& size) {
     UI::PushID();
     auto defaultFontSize = UI::g_UIContext.DefaultFontSize;
-    ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+    ImGui::PushFont(UI::g_ImGuiFont_Benguiat[defaultFontSize * 1.1f]);
     auto update = ImGui::Button(label, size);
     ImGui::PopFont();
     UI::PopID();

@@ -3351,7 +3351,7 @@ void CharacterSection(size_t defaultFontSize) {
 
 			ImGui::Text("");
 
-			if (GUI_Button("Controller Configuration")) {
+			if (GUI_Button("CONTROLLER CONFIGURATION")) {
 				g_showControllerRemap = true;
 			}
 			ImGui::SameLine();
