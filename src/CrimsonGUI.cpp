@@ -85,6 +85,7 @@
 namespace CrimsonGUI {
 float scaleFactorX;
 float scaleFactorY;
+float scaleFactor;
 float scaledFontSize;
 float itemWidth;
 }
@@ -14953,6 +14954,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	
 	scaleFactorX = ImGui::GetIO().DisplaySize.x / 1920;
 	scaleFactorY = ImGui::GetIO().DisplaySize.y / 1080;
+	scaleFactor = (scaleFactorX + scaleFactorY) / 2.0f;
 	scaledFontSize = UI::g_UIContext.DefaultFontSize * scaleFactorY;
 	itemWidth = scaledFontSize * 8.0f;
 
@@ -15021,6 +15023,7 @@ void GUI_Init() {
     UpdateGlobalScale();
 
     UI::SetStyleCrimson();
+	UI::BuildFontsCrimson();
 
     Actor_UpdateIndices();
     Arcade_UpdateIndices();

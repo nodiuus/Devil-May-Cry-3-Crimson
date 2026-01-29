@@ -151,33 +151,33 @@ struct BTImGuiCtx {
         "DOWN",
         "RIGHT",
         "LEFT",
-        "MELEE_ATK",
+        "MELEE ATK",
         "JUMP",
         "STYLE",
         "SHOOT",
         "DT",
-        "CHANGE_GUN",
-        "CHANGE_TARGET",
-        "LOCK_ON",
-        "CHANGE_SWORD",
-        "DEFAULT_CAMERA",
+        "CHANGE GUN",
+        "CHANGE TARGET",
+        "LOCK ON",
+        "CHANGE SWORD",
+        "DEFAULT CAMERA",
         "TAUNT",
     };
     const char* items[NUM_BINDS_WITHOUT_START] = {
-        "DPAD_UP",
-        "DPAD_DOWN",
-        "DPAD_RIGHT",
-        "DPAD_LEFT",
+        "DPAD UP",
+        "DPAD DOWN",
+        "DPAD RIGHT",
+        "DPAD LEFT",
         "Y",
         "A",
         "B",
         "X",
-        "LEFT_SHOULDER",
+        "LEFT SHOULDER",
         "LEFT TRIGGER",
-        "LEFT_THUMB",
-        "RIGHT_SHOULDER",
+        "LEFT THUMB",
+        "RIGHT SHOULDER",
         "RIGHT TRIGGER",
-        "RIGHT_THUMB",
+        "RIGHT THUMB",
         "BACK",
     };
     uint16_t values[NUM_BINDS_WITHOUT_START] = {
@@ -329,24 +329,33 @@ void ShowCoopControllerRemapWindow() {
     bool shouldClose = false;
 
     static std::array<int, PLAYER_COUNT> s_selectedCharacterSlotByPlayer = {};
+    ImGuiStyle& style = ImGui::GetStyle();
 
 	float width = g_renderSize.x / 1.40;
 	float height = g_renderSize.y / 1.10;
 	const float columnWidth = 0.5f * queuedConfig.globalScale;
 	const float rowWidth = 40.0f * queuedConfig.globalScale;
 
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f * CrimsonGUI::scaleFactor, 20.0f * CrimsonGUI::scaleFactor));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * CrimsonGUI::scaleFactor);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
+
 	ImGui::SetNextWindowSize(ImVec2(width, height));
 	// Center on screen
 	ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 
-    ImGui::Begin("Button Configuration", &shouldClose); {
+    ImGui::Begin("Button Configuration", &shouldClose, ImGuiWindowFlags_NoTitleBar); {
         ImGui::SetWindowFontScale(CrimsonGUI::scaleFactorY);
 
-        if (ImGui::Button("close")) {
+        if (GUI_CloseX()) {
              CUIDControl_Close();
         }
 
-        
+        ImGui::Text("");
+
         char buffer[33] = {};
         ImGui::BeginTable(buffer, 2); {
 			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
@@ -383,6 +392,7 @@ void ShowCoopControllerRemapWindow() {
 
                 uint16_t* activeButtonConfig = activeConfigInputs[i][selectedSlot][0];
 				uint16_t* queuedButtonConfig = queuedConfigInputs[i][selectedSlot][0];
+				uint16_t* defaultButtonConfig = (&s_defaultBinds.up);
                 for (int j = 0; j < NUM_BINDS_WITHOUT_START; j++) {
                     ImGui::PushID(i);
                     ImGui::PushID(j);
@@ -393,6 +403,11 @@ void ShowCoopControllerRemapWindow() {
                     ImGui::PopID();
                 }
 
+				if (GUI_Button("Restore Defaults")) {
+					memcpy(queuedButtonConfig, defaultButtonConfig, sizeof(BindTable));
+                    memcpy(activeButtonConfig, defaultButtonConfig, sizeof(BindTable));
+				}
+
                 ImGui::TableNextColumn();
                 if (i == 1 || i == 2) {
                     ImGui::Text("");
@@ -402,6 +417,8 @@ void ShowCoopControllerRemapWindow() {
         ImGui::EndTable();
     }
     ImGui::End();
+    ImGui::PopStyleVar(4);
+	ImGui::PopStyleColor();
     if (shouldClose) {
         CUIDControl_Close();
     }
