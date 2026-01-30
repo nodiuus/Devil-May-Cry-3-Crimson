@@ -70,8 +70,16 @@ void WindowSize3() {
 void UpdateKeyboard() {
     keyboard.Update();
 
-    CoreImGui::DI8::UpdateKeyboard(&keyboard.state);
+    // Only update ImGui keyboard state from DirectInput if ImGui doesn't want keyboard capture
+    // When WantCaptureKeyboard is true, ImGui_ImplWin32_WndProcHandler handles input via Windows messages
+    if (!ImGui::GetIO().WantCaptureKeyboard) {
+        CoreImGui::DI8::UpdateKeyboard(&keyboard.state);
+    }
 
+    // Block game input when ImGui wants keyboard input
+    if (ImGui::GetIO().WantCaptureKeyboard) {
+        return;
+    }
 
     auto& state = keyboard.state;
 
@@ -416,8 +424,18 @@ void ToggleBorderlessFullscreen() {
     }
 }
 
+// Forward declaration for ImGui Win32 backend handler
+extern IMGUI_IMPL_API LRESULT ImGui_ImplWin32_WndProcHandler(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam);
+
 namespace Hook::Windows {
 LRESULT WindowProc(HWND windowHandle, UINT message, WPARAM wParameter, LPARAM lParameter) {
+    // Let ImGui's Win32 backend handle the message first - this is CRITICAL for proper text input
+    // This handles WM_CHAR, WM_KEYDOWN, WM_KEYUP, WM_MOUSEMOVE, etc. internally
+    if (ImGui_ImplWin32_WndProcHandler(windowHandle, message, wParameter, lParameter)) {
+        // ImGui handled the message and consumed it - don't pass it to the game
+        return true;
+    }
+
     // Only handle Alt+Enter if flip model presentation is enabled
     if (activeCrimsonConfig.System.flipModelPresentation) {
         // Handle Alt+Enter 
@@ -499,15 +517,6 @@ LRESULT WindowProc(HWND windowHandle, UINT message, WPARAM wParameter, LPARAM lP
     }
     case WM_SETCURSOR: {
         CoreImGui::UpdateMouseCursor(windowHandle);
-
-        break;
-    }
-    case WM_CHAR: {
-        auto character = static_cast<uint16>(wParameter);
-
-        auto& io = ImGui::GetIO();
-
-        io.AddInputCharacter(character);
 
         break;
     }
@@ -1063,9 +1072,9 @@ HRESULT GetDeviceStateA(IDirectInputDevice8A* pDevice, DWORD BufferSize, LPVOID 
             keys[DIK_RETURN] = 0;
         }
     }
-    
-    // Blocks DI8 Keyboard Input while GUI is Open
-    if (g_show || GetForegroundWindow() != appWindow) {
+
+    // Blocks DI8 Keyboard Input while GUI is Open or ImGui wants keyboard input
+    if (g_show || ImGui::GetIO().WantCaptureKeyboard || GetForegroundWindow() != appWindow) {
         SetMemory(Buffer, 0, BufferSize);
     }
 

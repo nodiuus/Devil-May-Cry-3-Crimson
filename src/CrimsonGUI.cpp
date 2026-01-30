@@ -3301,19 +3301,10 @@ void CharacterSection(size_t defaultFontSize) {
 		ImGui::PopFont();
 	}
 	UI::SeparatorEx(defaultFontSize * 23.35f);
-	
+
 	GUI_PushDisable(actorCondition);
 
 	ImGui::Text("");
-
-	SelectPlayerLoadoutsWeaponsTab();
-
-	GUI_PopDisable(actorCondition);
-
-	
-	GUI_PushDisable(actorCondition);
-
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColor);
 
 	{
 		const float columnWidth = 0.6f * queuedConfig.globalScale;
@@ -3380,37 +3371,47 @@ void CharacterSection(size_t defaultFontSize) {
 		const float columnWidth = 0.6f * queuedConfig.globalScale;
 		const float rowWidth = 40.0f * queuedConfig.globalScale;
 
-		if (ImGui::BeginTable("ActorSystemTable", 3)) {
+		if (ImGui::BeginTable("ActorSystemTable", 2)) {
 
 			ImGui::TableSetupColumn("c2", 0, columnWidth * 2.0f);
 			ImGui::TableNextRow(0, rowWidth);
 
 			ImGui::TableNextColumn();
 
-			ImGui::TableNextRow(0, rowWidth);
-			ImGui::TableNextColumn();
-
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("PLAYER NAMES / COLORS");
-			
-			for (int playerIndex = 0; playerIndex < PLAYER_COUNT; playerIndex++) {
+
+			// Static persistent buffers for player names - survive across frames for proper ImGui text editing
+			static char s_playerNameBuffers[PLAYER_COUNT][20] = {};
+			static bool s_buffersInitialized = false;
+
+			// Initialize buffers once from config
+			if (!s_buffersInitialized) {
+				for (int i = 0; i < PLAYER_COUNT; i++) {
+					const std::string& configName = queuedCrimsonConfig.PlayerProperties.playerName[i];
+					size_t copyLen = (configName.length() < 19) ? configName.length() : 19;
+					memcpy(s_playerNameBuffers[i], configName.c_str(), copyLen);
+					s_playerNameBuffers[i][copyLen] = '\0';
+				}
+				s_buffersInitialized = true;
+			}
+
+			for (int playerIndex = 0; playerIndex < queuedConfig.Actor.playerCount; playerIndex++) {
 
 				ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
-				std::string& playerNameActive = activeCrimsonConfig.PlayerProperties.playerName[playerIndex];
-				std::string& playerNameQueued = queuedCrimsonConfig.PlayerProperties.playerName[playerIndex];
-				char buffer[20] = { 0 }; 
-				strncpy(buffer, playerNameQueued.c_str(), sizeof(buffer) - 1);
-				buffer[20 - 1] = '\0';
 
 				std::string inputLabel = "##playerName" + std::to_string(playerIndex);
 				ImGui::PushItemWidth(itemWidth * 1.3f);
-				if (ImGui::InputText(inputLabel.c_str(), buffer, sizeof(buffer))) {
-					playerNameActive = std::string(buffer);
-					playerNameQueued = std::string(buffer);
+
+				// ImGui edits the persistent buffer directly
+				if (ImGui::InputText(inputLabel.c_str(), s_playerNameBuffers[playerIndex], 20)) {
+					activeCrimsonConfig.PlayerProperties.playerName[playerIndex] = s_playerNameBuffers[playerIndex];
+					queuedCrimsonConfig.PlayerProperties.playerName[playerIndex] = s_playerNameBuffers[playerIndex];
 					GUI::save = true;
 				}
-				ImGui::PopFont();
+
 				ImGui::PopItemWidth();
+				ImGui::PopFont();
 
 				ImGui::SameLine();
 				GUI_Color2("", activeCrimsonConfig.PlayerProperties.playerColor[playerIndex], queuedCrimsonConfig.PlayerProperties.playerColor[playerIndex]);
@@ -3425,24 +3426,21 @@ void CharacterSection(size_t defaultFontSize) {
 						sizeof(queuedCrimsonConfig.PlayerProperties.playerColor[playerIndex]));
 				}
 
-				if (playerIndex == 1) {
-					ImGui::TableNextRow(0, rowWidth);
-				}
-				
-				ImGui::TableNextColumn();
-				if (playerIndex == 0) {
-					ImGui::Text("");
-				}
-				
-				
+
 			}
 			ImGui::PopFont();
 			ImGui::TableNextColumn();
+
+			ImGui::Text("");
+			ImGui::Text("");
+			ImGui::Text("");
+			ImGui::Text("");
 
 			GUI_PushDisable(queuedConfig.Actor.playerCount <= 1);
 			GUI_Checkbox2("PVP Fixes", activeConfig.enablePVPFixes, queuedConfig.enablePVPFixes);
 			ImGui::SameLine();
 			TooltipHelper("(?) WARNING", "Allows you to set up PVP Multiplayer.\n"
+				"Lock On in PVP requires an enemy spawned in order to work properly.\n"
 				"WARNING: This option WILL break actual enemies (they will freeze). Use with caution.", 2048.0f, true);
 			GUI_PopDisable(queuedConfig.Actor.playerCount <= 1);
 
@@ -3450,30 +3448,16 @@ void CharacterSection(size_t defaultFontSize) {
 		}
 	}
 
-	// Deprecated DDMK Options
+	SelectPlayerLoadoutsWeaponsTab();
 
-// 	GUI_Checkbox2("Update Lock-Ons", activeConfig.updateLockOns, queuedConfig.updateLockOns);
-// 
-// 	GUI_Checkbox2("Force Sync Hit & Magic Points", activeConfig.forceSyncHitMagicPoints, queuedConfig.forceSyncHitMagicPoints);
-// 
-// 
-// 	GUI_Checkbox2("Reset Permissions", activeConfig.resetPermissions, queuedConfig.resetPermissions);
-// 	ImGui::SameLine();
-// 	TooltipHelper("(?)", "Press the taunt button to reset the actor's permissions.\n"
-// 		"Useful when getting stuck.");
+	GUI_PopDisable(actorCondition);
 
-	// 
-// 	GUI_Checkbox2("Unlock Everything (Absolute Unit)", activeConfig.absoluteUnit, queuedConfig.absoluteUnit);
-// 	ImGui::SameLine();
-// 	TooltipHelper("(?)",
-// 		"I mastered the art of jump-cancelling before I was born.\n"
-// 		"I beat the game 5000+ times.\n"
-// 		"Star-raving on 3x turbo amuses me.\n"
-// 		"Other \"players\" complaining about wrist pain makes me cringe.\n"
-// 		"I'm a GROWN, ASS, MAN.\n"
-// 		"I can absolutely, positively, under no circumstances be bothered with leveling up again.",
-// 		500);
 
+	GUI_PushDisable(actorCondition);
+
+	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColor);
+
+	
 
 	GUI_PopDisable(actorCondition);
 	ImGui::PopStyleColor();
