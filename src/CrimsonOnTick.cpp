@@ -108,6 +108,46 @@ void FrameResponsiveGameSpeed() {
 	}
 }
 
+void LevelFullyLoadedDelay() {
+	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_10298 || !pool_10298[8]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
+
+	auto name_10723 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_10723) {
+		return;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
+
+	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+	if (!pool_10222 || !pool_10222[3]) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
+
+	if (g_inGameCutscene || !activeCrimsonConfig.GUI.pauseWhenOpened) {
+		return;
+	}
+
+	static float levelFullyLoadedTimer = 0.5f;
+
+	// We add this timer so we can safely (aka no crash) say when we can pause the game by setting speed to 0.
+	if (g_scene != SCENE::GAME || eventData.event != EVENT::MAIN) {
+		levelFullyLoadedTimer = 0.5f;
+		g_levelFullyLoadedDelay = false;
+		g_inGameDelayed = false;
+	} else {
+		g_inGameDelayed = true;
+
+		if (levelFullyLoadedTimer > 0) {
+			levelFullyLoadedTimer -= ImGui::GetIO().DeltaTime;
+		}
+	}
+
+}
+
 void GameTrackDetection() {
 	g_gameTrackPlaying = (std::string)reinterpret_cast<char*>(appBaseAddr + 0xD23906);
 }
@@ -907,7 +947,7 @@ void MultiplayerCameraPositioningController() {
 
 			float distanceLerp = glm::distance(currentCameraPos, currentCustomCamPos);
 
-			if (!guiPause.canPause) {
+			if (!g_levelFullyLoadedDelay) {
 				currentCameraPos = currentCustomCamPos; // disable lerp when level isn't fully loaded
 			}
 

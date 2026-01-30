@@ -5056,6 +5056,8 @@ extern int g_bossQuantity;
 extern bool g_inGameDelayed;
 extern bool g_inGameCutscene;
 extern bool g_inMainMenu;
+extern bool g_inGUIPause;
+extern bool g_levelFullyLoadedDelay;
 extern bool g_allActorsSpawned;
 extern bool g_HudVisible;
 extern std::string g_gameTrackPlaying;
@@ -5431,14 +5433,6 @@ extern HeldStyleExpData heldStyleExpDataVergil;
 extern bool devilTriggerReadyPlayed;
 
 extern bool missionClearSongPlayed;
-
-struct GuiPause {
-    bool in       = false;
-    float timer   = 0.5f;
-    bool canPause = false;
-};
-
-extern GuiPause guiPause;
 
 extern float frameRateSpeedMultiplier;
 

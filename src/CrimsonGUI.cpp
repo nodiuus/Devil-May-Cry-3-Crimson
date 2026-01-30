@@ -1804,70 +1804,18 @@ static_assert(countof(trackFilenames) == countof(trackNames));
 #pragma endregion
 
 void PauseWhenGUIOpened() {
-	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10298 || !pool_10298[8]) {
-		return;
-	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
-
-	auto name_10723 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
-	if (!name_10723) {
-		return;
-	}
-	auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
-
-
-
-	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
-	if (!pool_10222 || !pool_10222[3]) {
-		return;
-	}
-	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
-
-	static uint32 storedFrameCount = 0;
-	if (g_inGameCutscene || !activeCrimsonConfig.GUI.pauseWhenOpened) {
-		return;
-	}
-
-	// We add this timer so we can safely (aka no crash) say when we can pause the game by setting speed to 0.
-	if (g_scene != SCENE::GAME || eventData.event != EVENT::MAIN) {
-		guiPause.timer = 0.5f;
-		guiPause.canPause = false;
-		g_inGameDelayed = false;
-	}
-	else {
-		g_inGameDelayed = true;
-
-		if (guiPause.timer > 0) {
-			guiPause.timer -= ImGui::GetIO().DeltaTime;
+	if (activeCrimsonConfig.GUI.pauseWhenOpened) {
+		if (g_show) {
+			CrimsonPatches::PauseGameTime(true);
+			g_inGUIPause = true;
+		} else {
+			CrimsonPatches::PauseGameTime(false);
+			g_inGUIPause = false;
 		}
+	} else {
+		CrimsonPatches::PauseGameTime(false);
+		g_inGUIPause = false;
 	}
-
-	if (guiPause.timer <= 0) {
-		guiPause.canPause = true;
-	}
-// 
-// 
-// 	if (!g_show || !guiPause.canPause) {
-// 		storedFrameCount = missionData.frameCount; // This stores the game's timer.
-// 		activeConfig.Speed.mainSpeed = queuedConfig.Speed.mainSpeed; // This resumes the game speed
-// 		activeConfig.Speed.turbo = queuedConfig.Speed.turbo;
-// 		Speed::Toggle(true); 
-// 		guiPause.in = false;
-// 
-// 	}
-// 	else if (g_show && !guiPause.in && guiPause.canPause) {
-// 		activeConfig.Speed.mainSpeed = 0;  // This pauses the game speed
-// 		activeConfig.Speed.turbo = 0;
-// 		Speed::Toggle(true); // Toggle Speed on and off to set the new speed
-// 		Speed::Toggle(false);
-// 		guiPause.in = true;
-// 	}
-// 
-// 
-// 	if (g_showMain) {
-// 		missionData.frameCount = storedFrameCount;  // This pauses the game's timer.
-// 	}
 }
 
 std::unique_ptr<WW::WeaponWheel> dummyWeaponWheel;
@@ -3204,6 +3152,9 @@ void SelectPlayerLoadoutsWeaponsTab() {
 
 	uint8 activePlayerIndex;
 
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[defaultFontSize * 1.0]);
+	ImGui::Text("PLAYER SETTINGS / LOADOUTS");
+	ImGui::PopFont();
 
 	if (ImGui::BeginTable("CharacterTable", 2)) {
 
@@ -14985,6 +14936,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     // outside of In Game.
     
   	CrimsonOnTick::FrameResponsiveGameSpeed();
+	CrimsonOnTick::LevelFullyLoadedDelay();
 
     // TIMERS
     CrimsonTimers::CallAllTimers();

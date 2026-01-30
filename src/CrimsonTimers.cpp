@@ -57,7 +57,7 @@ void MissionTimer() {
 	float gameSpeedMultiplier = (gameSpeedBase / g_FrameRateTimeMultiplier);
 
 	// Always update timer if frameCount > 0 and not in cutscene and not paused
-	if (missionData.frameCount > 0 && eventData.event == EVENT::MAIN && !g_inGameCutscene) {
+	if (missionData.frameCount > 0 && eventData.event == EVENT::MAIN && !g_inGameCutscene && !g_inGUIPause) {
         g_missionTimer += ImGui::GetIO().DeltaTime * gameSpeedMultiplier;
 	}
 }

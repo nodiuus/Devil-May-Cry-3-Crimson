@@ -22,6 +22,24 @@
 
 namespace CrimsonPatches {
 
+	void PauseGameTime(bool enable) {
+		static bool run = false;
+
+		if (run == enable) {
+			return;
+		}
+
+		//dmc3.exe + 23B437 - E8 F4 1D 00 00 - call dmc3.exe + 23D230{ PlayGameTick ? }
+		if (enable) {
+			_nop((char*)(appBaseAddr + 0x23B437), 5);
+		}
+		else {
+			_patch((char*)(appBaseAddr + 0x23B437), (char*)"\xE8\xF4\x1D\x00\x00", 5);
+		} 
+
+		run = enable;
+	}
+
 	void HoldToAutoFire(bool enable) {
 		static bool run = false;
 

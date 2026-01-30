@@ -2,6 +2,7 @@
 
 namespace CrimsonOnTick {
 	extern bool inputtingFPS;
+	void LevelFullyLoadedDelay();
 	void FrameResponsiveGameSpeed();
 	void GameTrackDetection();
 	void InCreditsDetection();

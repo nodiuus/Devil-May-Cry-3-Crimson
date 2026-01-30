@@ -6,6 +6,7 @@
 #pragma region GameplayImprovements
 
 namespace CrimsonPatches {
+void PauseGameTime(bool enable);
 void DisableHeightRestriction(bool enable);
 void HoldToAutoFire(bool enable);
 void EndBossFight(bool enable);
