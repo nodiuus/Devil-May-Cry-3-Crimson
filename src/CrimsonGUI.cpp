@@ -5571,7 +5571,7 @@ void CustomDamageSection() {
 			ImGui::TableSetupColumn("b1", 0, columnWidth);
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
-
+			GUI_Checkbox2("Disable Player Damage", activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable);
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("PLAYER RECEIVED DAMAGE MULT.");
 			ImGui::PopFont();
@@ -5595,6 +5595,7 @@ void CustomDamageSection() {
 			}
 			ImGui::TableNextColumn();
 
+			GUI_Checkbox2("Disable Enemy Damage", activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable);
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("ENEMY RECEIVED DAMAGE MULT.");
 			ImGui::PopFont();
@@ -13443,6 +13444,219 @@ void PreventEmptyCrimsonGUIHotkey() {
 		queuedConfig.keyData[0] = defaultConfig.keyData[0];
 	}
 }
+
+//void CloseTraining() {
+//	g_showTraining = false;
+//	if (g_scene == SCENE::GAME) {
+//		PlayTrack("");
+//	}
+//}
+
+void TrainingWindow() {
+	static bool run = false;
+	static std::chrono::steady_clock::time_point trainingOpenedTime;
+	static bool trainingCooldownActive = false;
+
+	if (!g_showTraining) {
+		run = false;
+		trainingCooldownActive = false;
+		return;
+	}
+	auto& io = ImGui::GetIO();
+
+	auto missionDataPtr = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!missionDataPtr) {
+		return;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(missionDataPtr);
+	auto& queuedMissionActorData = *reinterpret_cast<QueuedMissionActorData*>(missionDataPtr + 0xC0);
+	auto& activeMissionActorData = *reinterpret_cast<ActiveMissionActorData*>(missionDataPtr + 0x16C);
+
+	bool unlockDevilTrigger = (activeMissionActorData.maxMagicPoints >= 3000);
+
+	if (!run) {
+		// TODO: Play Divine Statue Track - Mia
+		//PlayTrack("afs/sound/Jikushinzou.ogg");
+		run = true;
+		trainingOpenedTime = std::chrono::steady_clock::now();
+		trainingCooldownActive = true;
+	}
+
+	// Check if cooldown has expired (0.2 seconds)
+	if (trainingCooldownActive) {
+		auto now = std::chrono::steady_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - trainingOpenedTime).count();
+		if (elapsed >= 200) {
+			trainingCooldownActive = false;
+		}
+	}
+
+	float width = 1000 * scaleFactorY;
+	float height = 900 * scaleFactorY;
+
+	ImGui::SetNextWindowSize(ImVec2(width, height));
+	ImGui::SetNextWindowPos(ImVec2(((g_renderSize.x - width) / 2), ((g_renderSize.y - height) / 2)));
+
+	if (io.NavInputs[ImGuiNavInput_Cancel] && (io.NavInputsDownDuration[ImGuiNavInput_Cancel] == 0.0f)) {
+		Log("controller back button");
+		if (!io.NavVisible && !trainingCooldownActive) {
+			//CloseShop();
+			run = false;
+			trainingCooldownActive = false;
+		}
+	}
+	//Replace this with a map option at some point. 
+	if (io.KeysDown[DI8::KEY::L] && (io.KeysDownDuration[DI8::KEY::L] == 0.0f)) {
+		Log("keyboard back button");
+		if (!trainingCooldownActive) {
+			//CloseShop();
+			run = false;
+			trainingCooldownActive = false;
+		}
+	}
+
+	if (ImGui::Begin("TrainingWindow", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+		ImGui::SetWindowFontScale(scaleFactorY);
+		if (GUI_Button("Close")) {
+			if (!trainingCooldownActive) {
+				//CloseShop();
+				run = false;s
+				trainingCooldownActive = false;
+			}
+		}
+
+		auto BACKGROUND_FADED_TEXT = u8"The Void";
+		ImFont* fadedFont = UI::g_ImGuiFont_RussoOne256;
+		float fadedFontSize = scaledFontSize * 4.8f;
+
+		ImVec2 bgFadedTextSize = ImGui::CalcTextSize((const char*)BACKGROUND_FADED_TEXT,
+			nullptr, false, fadedFontSize);
+
+		// Get window position and size
+		ImVec2 winPos = ImGui::GetWindowPos();
+		ImVec2 winSize = ImGui::GetWindowSize();
+
+		float rightMargin = 600.0f * scaleFactorY;
+
+		float x = winPos.x + winSize.x - bgFadedTextSize.x - rightMargin;
+		float y = winPos.y + 15.0f * scaleFactorY; // top margin
+
+		// Only show Divinity Statue text if not in mission start scene
+
+		ImGui::GetWindowDrawList()->AddText(
+			fadedFont, fadedFontSize,
+			ImVec2(x, y),
+			UI::SwapColorEndianness(0xFFFFFF10),
+			(const char*)BACKGROUND_FADED_TEXT
+		);
+		auto& defaultFontSize = UI::g_UIContext.DefaultFontSize;
+		const float columnWidth = 0.5f * queuedConfig.globalScale;
+		const float rowHeight = 40.0f * queuedConfig.globalScale;
+
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+
+		GUI_Title("TRAINING OPTIONS");
+
+		{
+			const float columnWidth = 0.5f * queuedConfig.globalScale;
+			const float rowWidth = 40.0f * queuedConfig.globalScale * 0.5f;
+
+			if (ImGui::BeginTable("TrainingCheatsOptionsTable", 3)) {
+
+				ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
+				ImGui::TableNextRow(0, rowWidth);
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Disable Player Damage", activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable);
+				ImGui::TableNextColumn();
+				GUI_Checkbox2("Disable Enemy Damage", activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable);
+
+				ImGui::TableNextColumn();
+				if (GUI_Checkbox2("Disable all damage", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
+					ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
+				}
+
+				ImGui::TableNextColumn();
+
+				if (GUI_Checkbox2("Infinite Devil Trigger", activeCrimsonGameplay.Cheats.Training.infiniteDT, queuedCrimsonGameplay.Cheats.Training.infiniteDT)) {
+					ToggleInfiniteMagicPoints(activeCrimsonGameplay.Cheats.Training.infiniteDT);
+				}
+
+				ImGui::TableNextColumn();
+
+				if (GUI_Checkbox2("Disable Regular Enemy Attacks", activeCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks, queuedCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks)) {
+					CrimsonPatches::DisableRegularEnemyAttacks(activeCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks);
+				}
+				ImGui::SameLine();
+				GUI_WIPButton();
+				ImGui::SameLine();
+				TooltipHelper("(?)", "Does not work for all regular enemies.");
+
+				ImGui::TableNextColumn();
+
+				if (GUI_Checkbox2("Disable Timer", activeCrimsonGameplay.Cheats.Training.disableTimers, queuedCrimsonGameplay.Cheats.Training.disableTimers)) {
+					ToggleDisableTimer(activeCrimsonGameplay.Cheats.Training.disableTimers);
+				}
+				ImGui::TableNextColumn();
+				//GUI_Checkbox("turn on void - debug, variable might be removed", CrimsonTrainingRoom::trainingRoomEnabled);
+				CrimsonTrainingRoom::DrawShopWidget();
+
+				if (activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters) {
+					ImGui::TableNextColumn();
+
+					GUI_PushDisable(!activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters);
+					if (GUI_Checkbox2("Infinite B. Lady Bullets", activeCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets,
+						queuedCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets)) {
+						ToggleInfiniteBullets(activeCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets);
+					}
+					ImGui::SameLine();
+					GUI_PopDisable(!activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters);
+					TooltipHelper("(?)", "For Boss Lady (Legacy DDMK Character).");
+				}
+
+
+				ImGui::EndTable();
+			}
+		}
+
+		ImGui::PopFont();
+
+		if (ImGui::BeginTable("TeleporterTable", 2)) {
+			ImGui::TableSetupColumn("c1", 0, columnWidth * 2.0f);
+			ImGui::TableSetupColumn("c2", 0, columnWidth * 2.0f);
+
+			ImGui::TableNextRow(0, rowHeight * 0.75f);
+			ImGui::TableNextColumn();
+
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+			ImGui::Text("Room Settings");
+			ImGui::PopFont();
+			CrimsonTrainingRoom::DrawRoomSelect();
+
+			ImGui::TableNextColumn();
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+			ImGui::Text("Enemy Settings");
+			ImGui::PopFont();
+			if (GUI_Button("Holy Water"))
+			{
+				UseHolyWater();
+			}
+			EnemySpawnerToolSection();
+			ImGui::EndTable();
+
+		}
+		// 		for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
+		// 			auto& gamepad = GetGamepad(playerIndex);
+		// 
+		// 			if ((gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))) {
+		// 				CloseShop();
+		// 			}
+		// 		}
+
+		ImGui::End();
+	}
+}
+
 
 #pragma endregion
 
