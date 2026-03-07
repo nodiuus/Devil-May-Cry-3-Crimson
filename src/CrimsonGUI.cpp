@@ -5683,9 +5683,10 @@ void ShopWindow() {
 			shopCooldownActive = false;
 		}
 	}
-	//Replace this with a map option at some point. 
-	if (io.KeysDown[DI8::KEY::L] && (io.KeysDownDuration[DI8::KEY::L] == 0.0f)) {
-		Log("keyboard back button");
+	
+	//Keyboard back key handling
+	int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11]; // L key is default, but can be rebound in the config. .
+	if (io.KeysDown[keyboardBackKey] && (io.KeysDownDuration[keyboardBackKey] == 0.0f)) {
 		if (!shopCooldownActive) {
 			CloseShop();
 			run = false;
