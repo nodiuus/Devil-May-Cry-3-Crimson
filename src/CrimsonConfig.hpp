@@ -11,7 +11,8 @@
 #pragma optimize("", off) // Disable all optimizations
 #pragma pack(push, 8)
 
-#define NUM_BINDS 16
+#define NUM_GAMEPADBINDS 16
+#define NUM_KEYBINDS 24
 
 namespace HUDELEMENTSCALESTATE {
 enum {
@@ -415,56 +416,56 @@ struct CrimsonConfig {
 
 	struct System {
 		struct ButtonConfig {
-			uint16_t dante1P[NUM_BINDS] = {
+			uint16_t dante1P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t vergil1P[NUM_BINDS] = {
+			uint16_t vergil1P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t dante2P[NUM_BINDS] = {
+			uint16_t dante2P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t vergil2P[NUM_BINDS] = {
+			uint16_t vergil2P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t dante3P[NUM_BINDS] = {
+			uint16_t dante3P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t vergil3P[NUM_BINDS] = {
+			uint16_t vergil3P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t dante4P[NUM_BINDS] = {
+			uint16_t dante4P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
 				0x2,    0x400,  0x100,  0x800
 			};
 
-			uint16_t vergil4P[NUM_BINDS] = {
+			uint16_t vergil4P[NUM_GAMEPADBINDS] = {
 				0x1000, 0x4000, 0x2000, 0x8000,
 				0x10,   0x40,   0x20,   0x80,
 				0x4,    0x1,    0x200,  0x8,
@@ -484,6 +485,42 @@ struct CrimsonConfig {
 				);
 			}
 		} ButtonConfig;
+
+		struct KeyboardConfig {
+			uint32 keybinds[NUM_KEYBINDS] = {
+				DI8::KEY::LEFT_SHIFT, // keyboard_0(HDCdefault: 54) - SELECT / TAUNT - dmc3.exe+5611A0
+				DI8::KEY::U, // keyboard_1(HDCdefault: 49) - LB / DEVIL TRIGGER - dmc3.exe+5611A4
+				DI8::KEY::C, // keyboard_2(HDCdefault: 46) - LS / CHANGE TARGET - dmc3.exe + 5611A8
+				DI8::KEY::ONE, // keyboard_3(HDCdefault: 2) - DPAD UP - dmc3.exe + 5611AC
+				DI8::KEY::TWO, // keyboard_4(HDCdefault: 3) - DPAD RIGHT - dmc3.exe + 5611B0
+				DI8::KEY::FOUR, // keyboard_5(HDCdefault: 5) - DPAD DOWN - dmc3.exe + 5611B4
+				DI8::KEY::THREE, // keyboard_6(HDCdefault: 4) - DPAD LEFT - dmc3.exe + 5611B8
+				DI8::KEY::M, // keyboard_7(HDCdefault: 50) - START - dmc3.exe + 5611BC
+				DI8::KEY::SPACE, // keyboard_8(HDCdefault: 57) - RB / LOCK ON - dmc3.exe + 5611C0
+				DI8::KEY::F, // keyboard_9(HDCdefault: 33) - RS / DEFAULT CAMERA - dmc3.exe + 5611C4
+				DI8::KEY::I, // keyboard_10(HDCdefault: 23) - Y / MELEE ATK - dmc3.exe + 5611C8
+				DI8::KEY::L, // keyboard_11(HDCdefault: 38) - B / STYLE - dmc3.exe + 5611CC
+				DI8::KEY::K, // keyboard_12(HDCdefault: 37) - A / JUMP - dmc3.exe + 5611D0
+				DI8::KEY::J, // keyboard_13(HDCdefault: 36) - X / SHOOT - dmc3.exe + 5611D4
+				DI8::KEY::W, // keyboard_14(HDCdefault: 17) - LEFT ANALOG UP - dmc3.exe + 5611D8
+				DI8::KEY::D, // keyboard_15(HDCdefault: 32) - LEFT ANALOG RIGHT - dmc3.exe + 5611DC
+				DI8::KEY::S, // keyboard_16(0HDCdefault: 31) - LEFT ANALOG DOWN - dmc3.exe + 5611E0
+				DI8::KEY::A, // keyboard_17(HDCdefault: 30) - LEFT ANALOG LEFT - dmc3.exe + 5611E4
+				DI8::KEY::UP, // keyboard_18(HDCdefault: 72) - RIGHT ANALOG UP - dmc3.exe+5611E8
+				DI8::KEY::RIGHT, // keyboard_19(HDCdefault: 77) - RIGHT ANALOG RIGHT - dmc3.exe+5611EC
+				DI8::KEY::DOWN, // keyboard_20(HDCdefault: 80) - RIGHT ANALOG DOWN - dmc3.exe+5611F0
+				DI8::KEY::LEFT, // keyboard_21(HDCdefault: 75) - RIGHT ANALOG LEFT - dmc3.exe+5611F4
+				DI8::KEY::Q, // keyboard_22(HDCdefault: 16) - LT / CHANGE GUN - dmc3.exe + 5611F8
+				DI8::KEY::E, // keyboard_23(HDCdefault: 18) - RT / CHANGE DEVIL ARM - dmc3.exe + 5611FC
+			};
+
+			static constexpr auto Metadata() {
+				return std::make_tuple(
+					std::make_pair("keybinds", &KeyboardConfig::keybinds)
+				);
+			}
+
+		} KeyboardConfig;
 		
 		bool flipModelPresentation = true;
 	
@@ -491,6 +528,7 @@ struct CrimsonConfig {
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("ButtonConfig", &System::ButtonConfig),
+				std::make_pair("KeyboardConfig", &System::KeyboardConfig),
 				std::make_pair("flipModelPresentation", &System::flipModelPresentation)
 			);
 		}

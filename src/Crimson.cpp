@@ -315,7 +315,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         CrimsonPatches::DisableBlendingEffects(activeConfig.disableBlendingEffects);
         CrimsonDetours::ToggleGreenOrbsMPRegen(true);
 
-        // Load Weapon WHeel's Sprites Up Front
+        // Load Weapon Wheel's Sprites Up Front
         WW::LoadSpriteDescs();
 
         // Remove FMODGetCodecDescription Label

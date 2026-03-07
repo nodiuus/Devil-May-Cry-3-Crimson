@@ -76,12 +76,14 @@ void UpdateKeyboard() {
         CoreImGui::DI8::UpdateKeyboard(&keyboard.state);
     }
 
+    auto& state = keyboard.state;
+
+    UpdateKeyboardConfigCapture(state.keys);
+
     // Block game input when ImGui wants keyboard input
     if (ImGui::GetIO().WantCaptureKeyboard) {
         return;
     }
-
-    auto& state = keyboard.state;
 
 
     for_all(index, keyBindings.size()) {

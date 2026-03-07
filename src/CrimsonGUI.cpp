@@ -3298,7 +3298,9 @@ void CharacterSection(size_t defaultFontSize) {
 			}
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Open the controller button remapping window to customize button bindings for each player and character.");
-
+			if (GUI_Button("KEYBOARD CONFIGURATION")) {
+				g_showKeyboardConfig = true;
+			}
 
 			ImGui::TableNextColumn();
 
@@ -3382,8 +3384,6 @@ void CharacterSection(size_t defaultFontSize) {
 			ImGui::PopFont();
 			ImGui::TableNextColumn();
 
-			ImGui::Text("");
-			ImGui::Text("");
 			ImGui::Text("");
 			ImGui::Text("");
 
@@ -14904,9 +14904,12 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     AdjustBackgroundColorAndTransparency();
 
     Welcome();
+	StoreHDCKeybinds();
+	OverrideHDCKeybinds();
     Main(pSwapChain);
     Shop::ShopWindow();
 	ShowCoopControllerRemapWindow();
+	ShowKeyboardConfigWindow();
 	RenderMainMenuInfo(pSwapChain);
 
 	ActorWindow();

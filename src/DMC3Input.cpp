@@ -123,7 +123,7 @@ static BindTable s_PlayerDefaultBinds[PLAYER_COUNT] = {
 
 
 // References to active/queued config inputs for each player and character.
-uint16_t(*activeConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
+uint16_t(*activeConfigInputs[PLAYER_COUNT][2])[NUM_GAMEPADBINDS] = {
 	{ &activeCrimsonConfig.System.ButtonConfig.dante1P,
 	  &activeCrimsonConfig.System.ButtonConfig.vergil1P },
 	{ &activeCrimsonConfig.System.ButtonConfig.dante2P,
@@ -134,7 +134,7 @@ uint16_t(*activeConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
 	  &activeCrimsonConfig.System.ButtonConfig.vergil4P }
 };
 
-uint16_t(*queuedConfigInputs[PLAYER_COUNT][2])[NUM_BINDS] = {
+uint16_t(*queuedConfigInputs[PLAYER_COUNT][2])[NUM_GAMEPADBINDS] = {
 	{ &queuedCrimsonConfig.System.ButtonConfig.dante1P,
 	  &queuedCrimsonConfig.System.ButtonConfig.vergil1P },
 	{ &queuedCrimsonConfig.System.ButtonConfig.dante2P,
@@ -302,6 +302,7 @@ public:
 
 static CUIDControl* g_control_ui = nullptr;
 bool g_showControllerRemap = false;
+uint32 g_hdcKeybinds[NUM_KEYBINDS];
 
 static CUIDControl* __fastcall CUIDControl__CUIDControl_sub_1402817C0(__int64 a1) {
     auto result = s_CUIDControlConsHook->GetTrampoline<decltype(&CUIDControl__CUIDControl_sub_1402817C0)>()(a1);
@@ -469,5 +470,288 @@ void SwapXInputButtonsCoop(uint8 plindex, XINPUT_STATE* state) {
     }
     
     return;
+}
+
+void StoreHDCKeybinds() {
+    static bool runOnce = false;
+    if (!runOnce) {
+        Log("=== Storing HDC Keybinds from dmc3.exe+5611A0 ===");
+
+        for (int i = 0; i < NUM_KEYBINDS; i++) {
+            byte8* currentAddr = appBaseAddr + 0x5611A0 + (i * 4);  // Recalculate each time
+            g_hdcKeybinds[i] = *(uint32_t*)currentAddr;             // Store uint32 content
+
+            Log("  keybind[%2d] = addr %p = 0x%08X (int: %d)",
+                i,
+                currentAddr,               // Address being read
+                g_hdcKeybinds[i],          // Full DWORD stored
+                g_hdcKeybinds[i]);  // Int
+        }
+    }
+	runOnce = true;
+}
+
+void OverrideHDCKeybinds() {
+	static bool runOnce = false;
+	if (!runOnce) {
+		Log("=== Overriding HDC Keybinds with CrimsonConfig values ===");
+
+		byte8* baseAddr = appBaseAddr + 0x5611A0;
+		protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4); 
+
+		for (int i = 0; i < NUM_KEYBINDS; i++) {
+			byte8* currentAddr = baseAddr + (i * 4);
+			*(uint32_t*)currentAddr = activeCrimsonConfig.System.KeyboardConfig.keybinds[i];
+			Log("  keybind[%2d] = 0x%08X = int: %d", i, *(uint32_t*)currentAddr,
+                *(uint32_t*)currentAddr);
+		}
+
+		protectionHelper.Pop();  
+	}
+    runOnce = true;
+}
+
+static const char* s_keybindActionNames[NUM_KEYBINDS] = {
+    "SELECT / TAUNT",
+    "LB / DEVIL TRIGGER",
+    "LS / CHANGE TARGET",
+    "DPAD UP / ITEM SCREEN",
+    "DPAD RIGHT / MAP SCREEN",
+    "DPAD DOWN / EQUIP SCREEN",
+    "DPAD LEFT / FILE SCREEN",
+    "START",
+    "RB / LOCK ON",
+    "RS / DEFAULT CAMERA",
+    "Y / MELEE ATK",
+    "B / STYLE",
+    "A / JUMP",
+    "X / SHOOT",
+    "LEFT ANALOG UP",
+    "LEFT ANALOG RIGHT",
+    "LEFT ANALOG DOWN",
+    "LEFT ANALOG LEFT",
+    "RIGHT ANALOG UP",
+    "RIGHT ANALOG RIGHT",
+    "RIGHT ANALOG DOWN",
+    "RIGHT ANALOG LEFT",
+    "LT / CHANGE GUN",
+    "RT / CHANGE DEVIL ARM",
+};
+
+struct KBCaptureState {
+    bool   open        = false;
+    int    index       = -1;
+    uint32 previewKey  = 0;
+    bool   executes[256] = {};
+};
+
+static KBCaptureState s_kbCapture;
+bool g_showKeyboardConfig = false;
+
+void UpdateKeyboardConfigCapture(byte8* state) {
+    if (!s_kbCapture.open || s_kbCapture.index < 0) {
+        return;
+    }
+
+    auto& exec    = s_kbCapture.executes;
+    auto& preview = s_kbCapture.previewKey;
+
+    // Escape = cancel
+    if (state[DI8::KEY::ESCAPE] & 0x80) {
+        if (exec[DI8::KEY::ESCAPE]) {
+            exec[DI8::KEY::ESCAPE] = false;
+            s_kbCapture.open  = false;
+            s_kbCapture.index = -1;
+        }
+    } else {
+        exec[DI8::KEY::ESCAPE] = true;
+    }
+
+    // Enter = confirm
+    if (state[DI8::KEY::ENTER] & 0x80) {
+        if (exec[DI8::KEY::ENTER] && preview != 0) {
+            exec[DI8::KEY::ENTER] = false;
+            activeCrimsonConfig.System.KeyboardConfig.keybinds[s_kbCapture.index] = preview;
+            queuedCrimsonConfig.System.KeyboardConfig.keybinds[s_kbCapture.index] = preview;
+
+            byte8* currentAddr = (appBaseAddr + 0x5611A0) + (s_kbCapture.index * 4);
+            protectionHelper.Push(currentAddr, 4);
+            *(uint32_t*)currentAddr = preview;
+            protectionHelper.Pop();
+
+            s_kbCapture.open  = false;
+            s_kbCapture.index = -1;
+            GUI::save = true;
+        }
+    } else {
+        exec[DI8::KEY::ENTER] = true;
+    }
+
+    // Any other key = preview
+    for (int i = 1; i < 256; i++) {
+        if (i == DI8::KEY::ESCAPE || i == DI8::KEY::ENTER) {
+            continue;
+        }
+        if (state[i] & 0x80) {
+            if (exec[i]) {
+                exec[i]  = false;
+                preview  = static_cast<uint32>(i);
+            }
+        } else {
+            exec[i] = true;
+        }
+    }
+}
+
+void ShowKeyboardConfigWindow() {
+    if (!g_showKeyboardConfig) {
+        return;
+    }
+    ToggleCursor();
+    bool shouldClose = false;
+
+    const float scaleY = CrimsonGUI::scaleFactorY;
+    const float scaleF = (CrimsonGUI::scaleFactorX + CrimsonGUI::scaleFactorY) * 0.5f;
+    float width  = g_renderSize.x / 1.60f;
+    float height = g_renderSize.y / 1.10f;
+
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,  ImVec2(20.0f * scaleF, 20.0f * scaleF));
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * scaleF);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
+
+    ImGui::SetNextWindowSize(ImVec2(width, height));
+    ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+
+    ImGui::Begin("Keyboard Configuration", &shouldClose, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar); {
+        ImGui::SetWindowFontScale(scaleY);
+
+        if (GUI_CloseX()) {
+            g_showKeyboardConfig = false;
+        }
+
+        ImGui::Text("");
+
+        auto defaultFontSize = UI::g_UIContext.DefaultFontSize;
+//         ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.2f]);
+//         CenterText("Keyboard Configuration");
+//         ImGui::PopFont();
+// 
+//         ImGui::Text("");
+
+        uint32* activeKeybinds  = activeCrimsonConfig.System.KeyboardConfig.keybinds;
+        uint32* queuedKeybinds  = queuedCrimsonConfig.System.KeyboardConfig.keybinds;
+        uint32* defaultKeybinds = defaultCrimsonConfig.System.KeyboardConfig.keybinds;
+
+        ImGui::BeginChild("##kb_scroll", ImVec2(0, height - 140.0f * scaleY), false); {
+            for (int i = 0; i < NUM_KEYBINDS; i++) {
+                ImGui::PushID(i);
+
+                ImGui::Text(s_keybindActionNames[i]);
+                ImGui::SameLine(260.0f * scaleY);
+
+                const char* keyName = (activeKeybinds[i] < 256) ? DI8::keyNames[activeKeybinds[i]] : "???";
+                if (GUI_Button(keyName, ImVec2(160.0f * scaleY, 0))) {
+                    s_kbCapture.open      = true;
+                    s_kbCapture.index     = i;
+                    s_kbCapture.previewKey = activeKeybinds[i];
+                    memset(s_kbCapture.executes, 0, sizeof(s_kbCapture.executes));
+                }
+
+                ImGui::PopID();
+            }
+        }
+        ImGui::EndChild();
+
+        ImGui::Separator();
+        ImGui::Text("");
+
+        if (GUI_Button("Reset All to Crimson Defaults")) {
+            memcpy(activeKeybinds,  defaultKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+            memcpy(queuedKeybinds, defaultKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+            byte8* baseAddr = appBaseAddr + 0x5611A0;
+            protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4);
+            for (int i = 0; i < NUM_KEYBINDS; i++) {
+                *(uint32_t*)(baseAddr + (i * 4)) = defaultKeybinds[i];
+            }
+            protectionHelper.Pop();
+            GUI::save = true;
+        }
+
+        ImGui::SameLine();
+
+        if (GUI_Button("Reset All to HDC Launcher Configs")) {
+            memcpy(activeKeybinds,  g_hdcKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+            memcpy(queuedKeybinds, g_hdcKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+            byte8* baseAddr = appBaseAddr + 0x5611A0;
+            protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4);
+            for (int i = 0; i < NUM_KEYBINDS; i++) {
+                *(uint32_t*)(baseAddr + (i * 4)) = g_hdcKeybinds[i];
+            }
+            protectionHelper.Pop();
+            GUI::save = true;
+        }
+    }
+    ImGui::End();
+    ImGui::PopStyleVar(4);
+    ImGui::PopStyleColor();
+
+    // Capture popup
+    if (s_kbCapture.open && s_kbCapture.index >= 0) {
+        const float popupScale = scaleF;
+        float popupWidth  = 500.0f * popupScale;
+        float popupHeight = 260.0f * popupScale;
+
+        ImGui::SetNextWindowSize(ImVec2(popupWidth, popupHeight));
+        ImGui::SetNextWindowPos(ImVec2((g_renderSize.x - popupWidth) * 0.5f, (g_renderSize.y - popupHeight) * 0.5f));
+
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,  ImVec2(20.0f * popupScale, 20.0f * popupScale));
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * popupScale);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.92f));
+
+        bool popupOpen = s_kbCapture.open;
+        if (ImGui::Begin("KBRebind", &popupOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+            ImGui::SetWindowFontScale(popupScale);
+
+            auto defaultFontSize = UI::g_UIContext.DefaultFontSize;
+
+            ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.2f]);
+            ImGui::Text("Rebinding: %s", s_keybindActionNames[s_kbCapture.index]);
+            ImGui::SameLine();
+            if (GUI_CloseX()) {
+                s_kbCapture.open  = false;
+                s_kbCapture.index = -1;
+            }
+            ImGui::PopFont();
+
+            ImGui::Text("");
+            ImGui::Text("");
+
+            const char* previewName = (s_kbCapture.previewKey < 256) ? DI8::keyNames[s_kbCapture.previewKey] : "---";
+            ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.3f]);
+            CenterText(previewName);
+            ImGui::PopFont();
+
+            ImGui::Text("");
+            ImGui::Text("");
+
+            CenterText("Press a key, then ENTER to confirm or ESCAPE to cancel.");
+        }
+        ImGui::End();
+        ImGui::PopStyleColor();
+        ImGui::PopStyleVar(4);
+
+        if (!popupOpen) {
+            s_kbCapture.open  = false;
+            s_kbCapture.index = -1;
+        }
+    }
+
+    if (shouldClose) {
+        g_showKeyboardConfig = false;
+    }
 }
 

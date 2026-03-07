@@ -3,6 +3,7 @@
 #include "Core/Core.hpp"
 #include "Vars.hpp"
 #include "Xinput.h"
+#include "CrimsonConfig.hpp"
 
 namespace TILT_DIRECTION {
 enum {
@@ -53,7 +54,13 @@ public:
 void InitBindings();
 void SwapXInputButtonsCoop(uint8 index, XINPUT_STATE* gamepad);
 void ShowCoopControllerRemapWindow();
+void ShowKeyboardConfigWindow();
+void UpdateKeyboardConfigCapture(byte8* state);
+void StoreHDCKeybinds();
+void OverrideHDCKeybinds();
 extern bool g_showControllerRemap;
+extern bool g_showKeyboardConfig;
+extern uint32 g_hdcKeybinds[NUM_KEYBINDS];
 
 #endif
 
@@ -107,3 +114,9 @@ inline uint8 GetRelativeTiltDirection(PlayerActorData& actorData) {
     return TILT_DIRECTION::NEUTRAL;
 }
 void ShowCoopControllerRemapWindow();
+
+void StoreHDCKeybinds();
+
+void OverrideHDCKeybinds();
+
+void ShowKeyboardConfigWindow();
