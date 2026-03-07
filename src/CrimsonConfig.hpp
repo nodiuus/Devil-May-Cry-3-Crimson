@@ -521,14 +521,17 @@ struct CrimsonConfig {
 			}
 
 		} KeyboardConfig;
-		
+
+		uint8 xinputSlots[PLAYER_COUNT] = { 0, 1, 2, 3 };
+
 		bool flipModelPresentation = true;
-	
+
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("ButtonConfig", &System::ButtonConfig),
 				std::make_pair("KeyboardConfig", &System::KeyboardConfig),
+				std::make_pair("xinputSlots", &System::xinputSlots),
 				std::make_pair("flipModelPresentation", &System::flipModelPresentation)
 			);
 		}

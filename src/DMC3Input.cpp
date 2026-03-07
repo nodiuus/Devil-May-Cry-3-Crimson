@@ -24,6 +24,9 @@ static std::unique_ptr<Utility::Detour_t> s_ButtonToActionHook;
 // NOTE(): to show custom imgoo menu when opening settings, idk if there is a better way tbqh
 static std::unique_ptr<Utility::Detour_t> s_CUIDControlConsHook; // Constructor
 static std::unique_ptr<Utility::Detour_t> s_CUIDControlDestHook; // Destructor
+// Function-level detour on the game's XInput wrapper, covering call sites not patched by Hooks.cpp
+static std::unique_ptr<Utility::Detour_t> s_XInputWrapperHook;
+static std::unique_ptr<Utility::Detour_t> s_XInputGetStateHook;
 
 // Per-player defaults (historical behavior). These are copied into per-character slots at runtime.
 static BindTable s_PlayerDefaultBinds[PLAYER_COUNT] = {
@@ -465,7 +468,23 @@ void ShowCoopControllerRemapWindow() {
                 sprintf(buffer, "%dP", i + 1);
                 ImGui::Text(buffer);
                 ImGui::SameLine();
-                ImGui::TextDisabled("[%s]", GetXInputControllerName((DWORD)i));
+                ImGui::TextDisabled("[%s]", GetXInputControllerName((DWORD)activeCrimsonConfig.System.xinputSlots[i]));
+
+                {
+                    char slotLabel[4][64];
+                    const char* slotPtrs[4];
+                    for (int s = 0; s < 4; s++) {
+                        snprintf(slotLabel[s], sizeof(slotLabel[s]), "Slot %d  [%s]", s, GetXInputControllerName((DWORD)s));
+                        slotPtrs[s] = slotLabel[s];
+                    }
+                    int currentSlot = activeCrimsonConfig.System.xinputSlots[i];
+                    sprintf(buffer, "##ctrl%d", i);
+                    if (ImGui::Combo(buffer, &currentSlot, slotPtrs, 4)) {
+                        activeCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
+                        queuedCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
+                        GUI::save = true;
+                    }
+                }
 
                 int& selectedSlot = s_selectedCharacterSlotByPlayer[i];
                 if (selectedSlot < 0 || selectedSlot >= CHARACTER_COUNT) {
@@ -534,6 +553,27 @@ void ToggleCursor() {
     }
 }
 
+// Remapping Xinput Slots is applied inside this hook at the XInputGetState level, so dmc3_XInputWrapper's
+// internal per-player state is populated with the correct physical controller data before
+// the game ever reads from it.
+static DWORD WINAPI Hooked_XInputGetState(DWORD dwUserIndex, XINPUT_STATE* pState) {
+	// Here we change the user index to the physical slot index according to xinputSlots mapping. 
+    const DWORD physSlot = (dwUserIndex < (DWORD)PLAYER_COUNT)
+        ? (DWORD)activeCrimsonConfig.System.xinputSlots[dwUserIndex]
+        : dwUserIndex;
+    return s_XInputGetStateHook->GetTrampoline<decltype(&XInputGetState)>()(physSlot, pState);
+}
+
+static DWORD __fastcall Hooked_dmc3_XInputWrapper(DWORD dwUserIndex, XINPUT_STATE* pState) {
+    if (g_control_ui) {
+        SetMemory(pState, 0, sizeof(XINPUT_STATE));
+        return ERROR_SUCCESS;
+    }
+    // No remapping needed here: XInputGetState is hooked and applies xinputSlots remapping
+    // before the game's internal per-player state is populated.
+    return s_XInputWrapperHook->GetTrampoline<decltype(&Hooked_dmc3_XInputWrapper)>()(dwUserIndex, pState);
+}
+
 void InitBindings() {
 
     s_ButtonToActionHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x1EB170, &sub_1401EB170);
@@ -548,6 +588,14 @@ void InitBindings() {
     res = s_CUIDControlDestHook->Toggle();
     assert(res);
 
+    s_XInputWrapperHook = std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x3453F6, &Hooked_dmc3_XInputWrapper);
+    res = s_XInputWrapperHook->Toggle();
+    assert(res);
+
+    s_XInputGetStateHook = std::make_unique<Utility::Detour_t>((uintptr_t)&XInputGetState, &Hooked_XInputGetState);
+    res = s_XInputGetStateHook->Toggle();
+    assert(res);
+
 #if 0
     BindTable* mainBinds = (BindTable*)(appBaseAddr + 0xD6CE80 + 0xA);
     if (activeConfig.Actor.playerCount > 1) {
@@ -557,12 +605,15 @@ void InitBindings() {
 }
 
 void SwapXInputButtonsCoop(uint8 plindex, XINPUT_STATE* state) {
-    // TODO(): idk dualshock support?
     if (g_control_ui) {
-        SetMemory(&state->Gamepad, 0, sizeof(XINPUT_GAMEPAD));
+        SetMemory(state, 0, sizeof(XINPUT_STATE));
+        return;
     }
-    
-    return;
+    // Pass the raw player index — the hooked XInputGetState applies xinputSlots remapping.
+    // Do NOT pre-remap here; doing so would double-remap through the hook.
+    if (XInputGetState(plindex, state) != ERROR_SUCCESS) {
+        SetMemory(state, 0, sizeof(XINPUT_STATE));
+    }
 }
 
 void StoreHDCKeybinds() {

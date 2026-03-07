@@ -1098,14 +1098,14 @@ namespace Base::XI {
 namespace Hook::XI {
 
 DWORD XInputGetState(DWORD dwUserIndex, XINPUT_STATE* pState) {
+	SwapXInputButtonsCoop(dwUserIndex, pState);
+
 	// Blocks XInput Gamepad Input while GUI is Open
-    if (g_show) {
-        SetMemory(pState, 0, sizeof(XINPUT_STATE));
-    }
+	if (g_show) {
+		SetMemory(pState, 0, sizeof(XINPUT_STATE));
+	}
 
-    SwapXInputButtonsCoop(dwUserIndex, pState);
-
-    return 0;
+	return 0;
 }
 
 }; // namespace Hook::XI
