@@ -8,6 +8,7 @@
 #include <vector>
 #include <memory>
 #include <cstring>
+#include <string>
 #include "Core/DataTypes.hpp"
 #include "Utility/Detour.hpp"
 #include "Xinput.h"
@@ -321,6 +322,96 @@ static void CUIDControl_Close() {
     g_control_ui->someFlag = 2; // idk some cWork thing?
 }
 
+static const char* GetXInputControllerName(DWORD userIndex) {
+    static std::string s_names[PLAYER_COUNT];
+    static DWORD       s_lastCheck[PLAYER_COUNT] = {};
+    static DWORD       s_tick = 0;
+    ++s_tick;
+
+    if (userIndex >= (DWORD)PLAYER_COUNT) return "Unknown";
+
+    // Refresh every ~300 calls (UI frames) to catch connect/disconnect
+    if ((s_tick - s_lastCheck[userIndex]) <= 300u) return s_names[userIndex].c_str();
+    s_lastCheck[userIndex] = s_tick;
+
+    XINPUT_CAPABILITIES caps = {};
+    if (XInputGetCapabilities(userIndex, XINPUT_FLAG_GAMEPAD, &caps) != ERROR_SUCCESS) {
+        s_names[userIndex] = "Disconnected";
+        return s_names[userIndex].c_str();
+    }
+
+    // Attempt to read the HID product string via Raw Input + dynamically loaded hid.dll
+    auto tryGetProductName = [&]() -> std::string {
+        UINT count = 0;
+        if (GetRawInputDeviceList(nullptr, &count, sizeof(RAWINPUTDEVICELIST)) != 0 || count == 0)
+            return {};
+
+        std::vector<RAWINPUTDEVICELIST> list(count);
+        if (GetRawInputDeviceList(list.data(), &count, sizeof(RAWINPUTDEVICELIST)) == (UINT)-1)
+            return {};
+
+        // Load hid.dll at runtime so hid.lib is not required
+        static HMODULE hHid = LoadLibraryA("hid.dll");
+        typedef BOOLEAN(WINAPI* PFN_HidD_GetProductString)(HANDLE, PVOID, ULONG);
+        static auto pfnGetProductString = hHid
+            ? (PFN_HidD_GetProductString)GetProcAddress(hHid, "HidD_GetProductString")
+            : nullptr;
+
+        // XInput HID devices contain "IG_" in their Raw Input path.
+        // Their enumeration order corresponds to XInput user indices.
+        DWORD xiSlot = 0;
+        for (const auto& dev : list) {
+            if (dev.dwType != RIM_TYPEHID) continue;
+
+            UINT len = 0;
+            GetRawInputDeviceInfoA(dev.hDevice, RIDI_DEVICENAME, nullptr, &len);
+            if (len == 0) continue;
+
+            std::string path(len, '\0');
+            GetRawInputDeviceInfoA(dev.hDevice, RIDI_DEVICENAME, path.data(), &len);
+
+            if (path.find("IG_") == std::string::npos) continue;
+            if (xiSlot++ != userIndex) continue;
+
+            if (pfnGetProductString) {
+                HANDLE hDev = CreateFileA(path.c_str(), 0,
+                    FILE_SHARE_READ | FILE_SHARE_WRITE, nullptr, OPEN_EXISTING, 0, nullptr);
+                if (hDev != INVALID_HANDLE_VALUE) {
+                    WCHAR ws[128] = {};
+                    if (pfnGetProductString(hDev, ws, sizeof(ws))) {
+                        char mb[128] = {};
+                        WideCharToMultiByte(CP_UTF8, 0, ws, -1, mb, sizeof(mb), nullptr, nullptr);
+                        CloseHandle(hDev);
+                        return std::string(mb);
+                    }
+                    CloseHandle(hDev);
+                }
+            }
+            break;
+        }
+        return {};
+    };
+
+    std::string name = tryGetProductName();
+    if (!name.empty()) {
+        s_names[userIndex] = name;
+        return s_names[userIndex].c_str();
+    }
+
+    // Fallback: use capability subtype when the product string is unavailable
+    switch (caps.SubType) {
+        case XINPUT_DEVSUBTYPE_GAMEPAD:      s_names[userIndex] = "Gamepad";      break;
+        case XINPUT_DEVSUBTYPE_WHEEL:        s_names[userIndex] = "Wheel";        break;
+        case XINPUT_DEVSUBTYPE_ARCADE_STICK: s_names[userIndex] = "Arcade Stick"; break;
+        case XINPUT_DEVSUBTYPE_FLIGHT_STICK: s_names[userIndex] = "Flight Stick"; break;
+        case XINPUT_DEVSUBTYPE_DANCE_PAD:    s_names[userIndex] = "Dance Pad";    break;
+        case XINPUT_DEVSUBTYPE_GUITAR:       s_names[userIndex] = "Guitar";       break;
+        case XINPUT_DEVSUBTYPE_DRUM_KIT:     s_names[userIndex] = "Drum Kit";     break;
+        default:                             s_names[userIndex] = "Controller";   break;
+    }
+    return s_names[userIndex].c_str();
+}
+
 void ShowCoopControllerRemapWindow() {
     // Allow opening from either in-game menu or CrimsonGUI
     if (!g_control_ui && !g_showControllerRemap) {
@@ -373,6 +464,8 @@ void ShowCoopControllerRemapWindow() {
 
                 sprintf(buffer, "%dP", i + 1);
                 ImGui::Text(buffer);
+                ImGui::SameLine();
+                ImGui::TextDisabled("[%s]", GetXInputControllerName((DWORD)i));
 
                 int& selectedSlot = s_selectedCharacterSlotByPlayer[i];
                 if (selectedSlot < 0 || selectedSlot >= CHARACTER_COUNT) {
