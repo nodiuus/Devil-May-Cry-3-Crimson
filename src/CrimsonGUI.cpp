@@ -5685,7 +5685,7 @@ void ShopWindow() {
 	}
 	
 	//Keyboard back key handling
-	int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11]; // L key is default, but can be rebound in the config. .
+	int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11]; // L key is default, but can be rebound in the config.
 	if (io.KeysDown[keyboardBackKey] && (io.KeysDownDuration[keyboardBackKey] == 0.0f)) {
 		if (!shopCooldownActive) {
 			CloseShop();

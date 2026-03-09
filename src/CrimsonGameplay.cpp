@@ -939,9 +939,9 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 
 	// Only allow transition once per action
 	if ((canTransition || canTransitionClose)) {
-//         if (!inRisingStar) {
-//             actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = newRisingStar_pl021_00_4;
-//         }
+        if (!inRisingStar) {
+            actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = newRisingStar_pl021_00_4;
+        }
         
 		actorData.action = BEOWULF_RISING_SUN;
         PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
@@ -956,7 +956,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
             actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
             actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP
         ) && inRisingStar) {
-        //actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = File_staticFiles[pl021_00_4];
+        actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = File_staticFiles[pl021_00_4];
 		inRisingStar = false;
 	}
 }
