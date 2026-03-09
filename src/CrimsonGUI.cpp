@@ -8487,7 +8487,8 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("Crazy announcer timer %g \ was hit %d", rankAnnouncer[1].timer, rankAnnouncer[1].wasHit);
 			ImGui::Text("actorData event %d", actorData.eventData[0].event);
 			ImGui::Text("actorData.state %d", actorData.state);
-			ImGui::Text("air Counts Rising Sun Launch %d", crimsonPlayer[0].airCounts.airRisingSunLaunch);
+			ImGui::Text("air Counts Rising Sun %d", actorData.newAirRisingSunCount);
+			ImGui::Text("inRisingStar %d", crimsonPlayer[0].inRisingStar);
 			ImGui::Text("lastActionTime %g", crimsonPlayer[0].lastActionTime);
 			ImGui::Text("actionTImerNotEventChange %g", crimsonPlayer[0].actionTimerNotEventChange);
 			ImGui::Text("closeToEnemy %u", crimsonPlayer[0].isCloseToEnemy);

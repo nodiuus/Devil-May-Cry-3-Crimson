@@ -940,7 +940,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	// Only allow transition once per action
 	if ((canTransition || canTransitionClose)) {
         if (!inRisingStar) {
-            actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = newRisingStar_pl021_00_4;
+            actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = newRisingStar_pl021_00_4; // Swap Rising Sun's animation to Rising Star,
         }
         
 		actorData.action = BEOWULF_RISING_SUN;
@@ -956,8 +956,12 @@ void VergilRisingStar(byte8* actorBaseAddr) {
             actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
             actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP
         ) && inRisingStar) {
-        actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = File_staticFiles[pl021_00_4];
+		actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = File_staticFiles[pl021_00_4]; // Revert to default pac motion archive after Rising Star finishes or is cancelled by a trick.
 		inRisingStar = false;
+	}
+
+	if (inRisingStar && actorData.newAirRisingSunCount > 0) {
+		actorData.newAirRisingSunCount = 0; // Prevents Rising Star from consuming Air Rising Sun's counts.
 	}
 }
 
@@ -1057,6 +1061,8 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 		crimsonPlayer[playerIndex].inAirTauntRisingSunClone;
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto& inRisingStar = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
+		crimsonPlayer[playerIndex].inRisingStarClone;
 
 
 	if (activeCrimsonGameplay.Gameplay.Vergil.airRisingSun && actionTimer > 0.05f && actionTimer < 0.2f && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
@@ -1067,6 +1073,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 			actorData.action = BEOWULF_RISING_SUN;
 			actorData.recoverState[0] = 0;
 			actorData.newAirRisingSunCount++;
+			
 		}
 	}
 }
