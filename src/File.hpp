@@ -25,6 +25,7 @@ extern FileManager File_dynamicFiles;
 extern byte8* demo_pl000_00_3;
 extern byte8* vergil_pl021_00_3;
 extern byte8* newRisingStar_pl021_00_4; 
+extern byte8* newYamatoHighTime_pl021_00_5;
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex);
 

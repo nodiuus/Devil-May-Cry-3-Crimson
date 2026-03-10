@@ -944,7 +944,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
         }
         
 		actorData.action = BEOWULF_RISING_SUN;
-        PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
+		PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
         
 		 inRisingStar = true;
@@ -987,10 +987,17 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 
 	if (actorData.action == YAMATO_UPPER_SLASH_PART_1
 		&& actionTimer > 0.36f && actionTimer < 0.5f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK))) {
-		actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
 
+		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = newYamatoHighTime_pl021_00_5; // Swap Force Edge High Time animation
+		actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
 		actorData.recoverState[0] = 1;
 	}
+
+	//Swapback to regular Force Edge High Time animation if action is different
+	if (actorData.action != YAMATO_FORCE_EDGE_HIGH_TIME && actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] == newYamatoHighTime_pl021_00_5) {
+		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = File_staticFiles[pl021_00_5];
+	}
+
 
 	if (actorData.action == YAMATO_UPPER_SLASH_PART_2
 		&& actionTimer > 0.03f && actionTimer < 0.5f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK))
