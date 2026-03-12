@@ -986,26 +986,23 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
 	if (actorData.action == YAMATO_UPPER_SLASH_PART_1
-		&& actionTimer > 0.36f && actionTimer < 0.5f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK))) {
+		&& actionTimer > 0.36f && actionTimer < 0.4f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK))) {
 
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = newYamatoHighTime_pl021_00_5; // Swap Force Edge High Time animation
 		actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
+		PlayAnimation_1EFB90(actorData, 5, 7, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
 	}
 
 	//Swapback to regular Force Edge High Time animation if action is different
-	if (actorData.action != YAMATO_FORCE_EDGE_HIGH_TIME && actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] == newYamatoHighTime_pl021_00_5) {
+	if (actorData.action != YAMATO_FORCE_EDGE_HIGH_TIME &&
+		actorData.action != YAMATO_UPPER_SLASH_PART_1 &&
+		actorData.action != YAMATO_UPPER_SLASH_PART_2
+		&& actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] == newYamatoHighTime_pl021_00_5) {
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = File_staticFiles[pl021_00_5];
 	}
-
-
-	if (actorData.action == YAMATO_UPPER_SLASH_PART_2
-		&& actionTimer > 0.03f && actionTimer < 0.5f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK))
-        && tiltDirection == TILT_DIRECTION::DOWN) {
-		actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
-
-		actorData.recoverState[0] = 0;
-	}
+	
+	// GROUMDED Yamato High Time OUTSOURCED to SetAction(); in Actor.cpp
 }
 
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
