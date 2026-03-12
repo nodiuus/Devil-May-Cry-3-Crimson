@@ -222,29 +222,29 @@ static BindTable s_defaultBinds = {
     .start = 0x800
 };
 
-static uint8_t GetCharacterBindSlot(const PlayerActorData* actor) {
-    if (!actor) {
+static uint8_t GetCharacterBindSlot(const PlayerActorData* actorData) {
+    if (!actorData) {
         return 0;
     }
 
-    const auto idx = static_cast<uint8_t>(actor->newCharacterIndex);
+    const auto characterIndex = static_cast<uint8_t>(actorData->character);
 
     // Only Dante/Vergil are relevant for activeButtonConfig switching.
-    if (idx == static_cast<uint8_t>(CHARACTER::VERGIL)) {
+    if (characterIndex == static_cast<uint8_t>(CHARACTER::VERGIL)) {
         return 1;
     }
-    if (idx == static_cast<uint8_t>(CHARACTER::DANTE)) {
+    if (characterIndex == static_cast<uint8_t>(CHARACTER::DANTE)) {
         return 0;
     }
 
     // Fallback: if the game uses raw 0/1 slots, honor them.
-    if (idx == 1) {
+    if (characterIndex == 1) {
         return 1;
     }
 
     // If CHARACTER_COUNT is a constexpr/enum (not a macro), #if won't work. Use a runtime check.
-    if (CHARACTER_COUNT > 1 && idx < CHARACTER_COUNT) {
-        return idx;
+    if (CHARACTER_COUNT > 1 && characterIndex < CHARACTER_COUNT) {
+        return characterIndex;
     }
 
     return 0;
