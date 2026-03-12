@@ -484,6 +484,22 @@ void ShowCoopControllerRemapWindow() {
                         queuedCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
                         GUI::save = true;
                     }
+					ImGui::SameLine();
+					sprintf(buffer, "<##prev%d", i);
+					if (ImGui::Button(buffer)) {
+						const uint8 next = (currentSlot == 0) ? 3 : (uint8)(currentSlot - 1);
+						activeCrimsonConfig.System.xinputSlots[i] = next;
+						queuedCrimsonConfig.System.xinputSlots[i] = next;
+						GUI::save = true;
+					}
+					ImGui::SameLine();
+					sprintf(buffer, ">##next%d", i);
+					if (ImGui::Button(buffer)) {
+						const uint8 next = (uint8)((currentSlot + 1) % 4);
+						activeCrimsonConfig.System.xinputSlots[i] = next;
+						queuedCrimsonConfig.System.xinputSlots[i] = next;
+						GUI::save = true;
+					}
                 }
 
                 int& selectedSlot = s_selectedCharacterSlotByPlayer[i];
