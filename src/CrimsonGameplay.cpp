@@ -2595,8 +2595,8 @@ void SprintAbility(byte8* actorBaseAddr) {
             if (!sprintData.SFXPlayed) {
                 CrimsonSDL::PlaySprint(playerIndex);
                 sprintData.SFXPlayed = true;
-				actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = newBaseDanteAnims_pl000_00_0;
-				PlayAnimation_1EFB90(actorData, 0, 20, 20.0f, 0, 0, -1);
+				actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = newBaseDanteAnims_pl000_00_0; // Change Sprint Animation
+				PlayAnimation_1EFB90(actorData, 0, 20, 20.0f, 0, 0, -1); // Play the anim
             }
 
 

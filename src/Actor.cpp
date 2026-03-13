@@ -3173,8 +3173,13 @@ void UpdateStyleSwitchAnimations() {
 
 		if (elapsed >= 30) { // 50 ms has passed
 			PlayAnimation_1EFB90(switchAnimState.actorData, switchAnimState.group, switchAnimState.index, -1.0f, -1, 2, 0);
-			switchAnimState.isPlaying = false; // Reset state
 		}
+
+        if (elapsed >= 40) {
+            auto& actorData = *reinterpret_cast<PlayerActorData*>(switchAnimState.actorData);
+            actorData.motionArchives[2] = File_staticFiles[pl000_00_2];
+            switchAnimState.isPlaying = false; // Reset state
+        }
 	}
 }
 
@@ -3214,13 +3219,13 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 		uint32 group = 2, index = 0;
         
 		switch (style) {
-		case STYLE::SWORDMASTER:   group = 2; index = 0; actorData.motionArchives[2] = File_staticFiles[pl000_00_2]; break;
-		case STYLE::GUNSLINGER:    group = 25; index = 0; actorData.motionArchives[2] = File_staticFiles[pl000_00_2]; break;
-		case STYLE::TRICKSTER:     group = 2; index = 1; actorData.motionArchives[2] = File_staticFiles[pl000_00_2]; break;
-		case STYLE::ROYALGUARD:    group = 2; index = 2; actorData.motionArchives[2] = File_staticFiles[pl000_00_2]; break;
-        case STYLE::QUICKSILVER:   group = 2; index = 1;  actorData.motionArchives[2] = File_staticFiles[pl001_00_2]; break;
+		case STYLE::SWORDMASTER:   group = 2; index = 1; actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newStyleSwitching01_pl000_00_4; break;
+		case STYLE::GUNSLINGER:    group = 2; index = 2; actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newStyleSwitching01_pl000_00_4; break;
+		case STYLE::TRICKSTER:     group = 2; index = 0; actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newStyleSwitching01_pl000_00_4; break;
+		case STYLE::ROYALGUARD:    group = 2; index = 0; actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newStyleSwitching02_pl000_00_4; break;
+        case STYLE::QUICKSILVER:   group = 2; index = 1;  actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newStyleSwitching02_pl000_00_4; break;
         //case STYLE::QUICKSILVER:   group = 3; index = 13;  actorData.motionArchives[3] = vergil_pl021_00_3; break;
-        case STYLE::DOPPELGANGER:  group = 2; index = 3; actorData.motionArchives[2] = File_staticFiles[pl000_00_2]; break;
+        case STYLE::DOPPELGANGER:  group = 2; index = 2; actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newStyleSwitching02_pl000_00_4; break;
 		}
 
 		PlaySwitchAnimation(actorBaseAddr, group, index);
@@ -4128,6 +4133,8 @@ bool IsBossLadyActive(EnemyActorDataLady& actorData) {
 
     return false;
 }
+
+
 
 template <typename T> bool CanQueueMeleeAttack(T& actorData) {
     using namespace NEXT_ACTION_REQUEST_POLICY;

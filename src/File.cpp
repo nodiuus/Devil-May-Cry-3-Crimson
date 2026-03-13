@@ -342,6 +342,8 @@ byte8* newRisingStar_pl021_00_4 = 0;
 byte8* newYamatoHighTime_pl021_00_5 = 0;
 byte8* newBaseDanteAnims_pl000_00_0 = 0;
 byte8* newBaseVergilAnims_pl021_00_0 = 0;
+byte8* newStyleSwitching01_pl000_00_4 = 0;
+byte8* newStyleSwitching02_pl000_00_4 = 0;
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex) {
     SetMemory(&fileData, 0, sizeof(fileData));
@@ -570,6 +572,8 @@ bool File_Init() {
 		const char* newYamatoHighTimeFilename = "newYamatoHighTime_pl021_00_5.pac";
 		const char* newBaseDanteAnimsFilename = "newBaseDanteAnims_pl000_00_0.pac";
 		const char* newBaseVergilAnimsFilename = "newBaseVergilAnims_pl021_00_0.pac";
+		const char* newStyleSwitching01Filename = "newStyleSwitching01_pl000_00_4.pac";
+		const char* newStyleSwitching02Filename = "newStyleSwitching02_pl000_00_4.pac";
 
         auto& file = demo_pl000_00_3 = File_staticFiles.Push(filename);
         auto& file2 = vergil_pl021_00_3 = File_staticFiles.Push(vergilYamatoFilename);
@@ -577,6 +581,8 @@ bool File_Init() {
 		auto& file4 = newYamatoHighTime_pl021_00_5 = File_staticFiles.Push(newYamatoHighTimeFilename);
 		auto& file5 = newBaseDanteAnims_pl000_00_0 = File_staticFiles.Push(newBaseDanteAnimsFilename);
 		auto& file6 = newBaseVergilAnims_pl021_00_0 = File_staticFiles.Push(newBaseVergilAnimsFilename);
+		auto& file7 = newStyleSwitching01_pl000_00_4 = File_staticFiles.Push(newStyleSwitching01Filename);
+		auto& file8 = newStyleSwitching02_pl000_00_4 = File_staticFiles.Push(newStyleSwitching02Filename);
         if (!file) {
             return;
         }
@@ -590,6 +596,8 @@ bool File_Init() {
         AdjustPointers(file4);
 		AdjustPointers(file5);
 		AdjustPointers(file6);
+		AdjustPointers(file7);
+		AdjustPointers(file8);
     }();
 
 
