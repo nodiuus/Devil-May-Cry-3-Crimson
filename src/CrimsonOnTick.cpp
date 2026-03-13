@@ -43,6 +43,8 @@ extern "C" {
 
 bool inputtingFPS = false;
 
+CameraData* GetSafeCameraData();
+
 void FrameResponsiveGameSpeed() {
 	// Calculate Delta Time Manually
 	static double lastTime = ImGui::GetTime();
@@ -627,7 +629,7 @@ void StyleMeterMultiplayer() {
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 
 		if (!newActorData.baseAddr) {
-			return;
+			continue;
 		}
 		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
@@ -705,7 +707,7 @@ void MultiplayerCameraPositioningController() {
 	g_customCameraPos[2] = 0.0f; // Z
 	g_customCameraPos[3] = 1.0f; // W
 
-	const float lerpFactorOutTransition = 0.2f;
+	const float lerpFactorOutTransition = 1.0f;
 	const float lerpFactorInTransition = 0.01f;
 	static float lerpFactor = lerpFactorOutTransition;
 	static std::chrono::time_point<std::chrono::steady_clock> transitionToMPStartTime;
@@ -714,7 +716,7 @@ void MultiplayerCameraPositioningController() {
 
 	int entityCount = 0; // Track valid entities for averaging
 	float playerWeight = 5.0f;  // Weight for playable characters
-	float enemyWeight = 5.0f;   // Weight for enemies
+	float enemyWeight = 3.5f;   // Lower weight for enemies to prevent heavy camera dragging
 	float totalWeight = 0.0f;
 	int alivePlayerCount = 0; // Track number of players still alive
 
@@ -747,10 +749,10 @@ void MultiplayerCameraPositioningController() {
 		inJitterState = false;
 	}
 
-	// If jitter state, increase smoothing (reduce lerp factor)
+	// If jitter state, snap the camera target instantly to avoid sticking it through walls (which is what usually causes the infinite zoom bug)
 	float jitterLerpFactor = lerpFactor;
 	if (inJitterState) {
-		jitterLerpFactor = 0.01f; // Very slow movement to smooth out jitter
+		jitterLerpFactor = 1.0f; // Snap to target to escape walls causing jitter
 		// Optionally, after a short time, exit jitter state to avoid getting stuck
 		auto now = std::chrono::steady_clock::now();
 		float jitterDuration = std::chrono::duration<float>(now - jitterStateStartTime).count();
@@ -767,25 +769,67 @@ void MultiplayerCameraPositioningController() {
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 
 		if (!newActorData.baseAddr) {
-			return;
+			continue;
 		}
 		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
 		if (!actorData.dead) {
 			alivePlayerCount++;
 		}
-		// Apply player weight to their position
-		g_customCameraPos[0] += actorData.position.x * playerWeight;
-		g_customCameraPos[1] += actorData.position.y * playerWeight;
-		g_customCameraPos[2] += actorData.position.z * playerWeight;
+		// === Velocity Offset Prediction for Player ===
+		glm::vec3 currentPos = glm::vec3(actorData.position.x, actorData.position.y, actorData.position.z);
+		static std::array<glm::vec3, 8> previousPlayerPositions = {};
+		static std::array<glm::vec3, 8> smoothedVelocities = {};
+
+		glm::vec3 velocity = currentPos - previousPlayerPositions[playerIndex];
+		previousPlayerPositions[playerIndex] = currentPos;
+
+		// Smooth out velocity changes to prevent camera micro-studdering
+		float deltaTime = ImGui::GetIO().DeltaTime;
+		float velSmoothing = 1.0f - std::exp(-15.0f * deltaTime);
+		if (velSmoothing > 1.0f) velSmoothing = 1.0f;
+
+		smoothedVelocities[playerIndex].x = CrimsonUtil::lerp(smoothedVelocities[playerIndex].x, velocity.x, velSmoothing);
+		smoothedVelocities[playerIndex].y = CrimsonUtil::lerp(smoothedVelocities[playerIndex].y, velocity.y, velSmoothing);
+		smoothedVelocities[playerIndex].z = CrimsonUtil::lerp(smoothedVelocities[playerIndex].z, velocity.z, velSmoothing);
+
+		float predictionFactor = 15.0f; // Velocity lookahead multiplier
+		glm::vec3 predictedPos = currentPos + (smoothedVelocities[playerIndex] * predictionFactor);
+
+		// Ignore huge jumps (like map teleports or respawns)
+		if (glm::length(velocity) > 200.0f) {
+			predictedPos = currentPos;
+			smoothedVelocities[playerIndex] = glm::vec3(0.0f);
+		}
+
+		// Apply player weight to their PROIECTED position
+		g_customCameraPos[0] += predictedPos.x * playerWeight;
+		g_customCameraPos[1] += predictedPos.y * playerWeight;
+		g_customCameraPos[2] += predictedPos.z * playerWeight;
 		totalWeight += playerWeight;
 		entityCount++;
 
 		// Include the clone if it exists
 		if (actorData.doppelganger == 1) {
-			g_customCameraPos[0] += cloneActorData.position.x * playerWeight;
-			g_customCameraPos[1] += cloneActorData.position.y * playerWeight;
-			g_customCameraPos[2] += cloneActorData.position.z * playerWeight;
+			int cloneIdx = 4 + playerIndex;
+			glm::vec3 currentClonePos = glm::vec3(cloneActorData.position.x, cloneActorData.position.y, cloneActorData.position.z);
+			glm::vec3 cloneVelocity = currentClonePos - previousPlayerPositions[cloneIdx];
+			previousPlayerPositions[cloneIdx] = currentClonePos;
+
+			smoothedVelocities[cloneIdx].x = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].x, cloneVelocity.x, velSmoothing);
+			smoothedVelocities[cloneIdx].y = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].y, cloneVelocity.y, velSmoothing);
+			smoothedVelocities[cloneIdx].z = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].z, cloneVelocity.z, velSmoothing);
+
+			glm::vec3 clonePredictedPos = currentClonePos + (smoothedVelocities[cloneIdx] * predictionFactor);
+
+			if (glm::length(cloneVelocity) > 200.0f) {
+				clonePredictedPos = currentClonePos;
+				smoothedVelocities[cloneIdx] = glm::vec3(0.0f);
+			}
+
+			g_customCameraPos[0] += clonePredictedPos.x * playerWeight;
+			g_customCameraPos[1] += clonePredictedPos.y * playerWeight;
+			g_customCameraPos[2] += clonePredictedPos.z * playerWeight;
 			totalWeight += playerWeight;
 			entityCount++;
 		}
@@ -823,7 +867,7 @@ void MultiplayerCameraPositioningController() {
 			}
 		}
 
-		// Only count enemy if it's within range of a player
+// 		// Only count enemy if it's within range of a player
 		if (isWithinRange) {
 			g_customCameraPos[0] += enemyData.position.x * enemyWeight;
 			g_customCameraPos[1] += enemyData.position.y * enemyWeight;
@@ -847,11 +891,13 @@ void MultiplayerCameraPositioningController() {
 	clonePos.z = cloneMainActorData.position.z;
 
 	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 1900.0f;
+	float cameraDistanceMPEnable = cameraDistanceMP * (2.0f / 3.0f);
+	float cameraDistanceThreshold = g_isMPCamActive ? cameraDistanceMP : cameraDistanceMPEnable;
 
 	for (int i = 0; i < activeConfig.Actor.playerCount * 2; i++) {
 		float distanceTo1P = g_plEntityTo1PDistances[i];
 
-		if (distanceTo1P >= cameraDistanceMP) {
+		if (distanceTo1P >= cameraDistanceThreshold) {
 			triggerMPCam = false;
 		}
 	}
@@ -884,33 +930,39 @@ void MultiplayerCameraPositioningController() {
 	// Only set triggerPanoramicCam to false if all enemies are far enough
 	triggerPanoramicCam = !allEnemiesFarAway && activeCrimsonConfig.Camera.panoramicCam;
 
+	static auto lastMPCamSwitchTime = std::chrono::steady_clock::now() - std::chrono::duration<float>(1.0f);
+	auto mpCamNow = std::chrono::steady_clock::now();
+	bool canSwitchMPCam = std::chrono::duration<float>(mpCamNow - lastMPCamSwitchTime).count() >= 1.0f;
+
 	// Camera behavior based on player count and trigger status
 	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1) {
 		// MULTIPLAYER
-
-		if (triggerMPCam) {
-			// MPCam mode: calculate average camera position
-			g_customCameraPos[0] /= totalWeight;
-			g_customCameraPos[1] /= totalWeight;
-			g_customCameraPos[2] /= totalWeight;
-
-			// If switching from normal cam to MPCam, initialize lerp transition
-			if (!g_isMPCamActive) {
-				g_isMPCamActive = true;
+		if (triggerMPCam != g_isMPCamActive && canSwitchMPCam) {
+			g_isMPCamActive = triggerMPCam;
+			lastMPCamSwitchTime = mpCamNow;
+			if (g_isMPCamActive) {
 				currentCameraPos = glm::vec3(mainActorData.position.x, mainActorData.position.y, mainActorData.position.z);
+			} else {
+				currentCameraPos = glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]);
 			}
+		}
 
+		if (g_isMPCamActive) {
+			// MPCam mode: calculate average camera position
+			if (totalWeight > 0.0f) {
+				g_customCameraPos[0] /= totalWeight;
+				g_customCameraPos[1] /= totalWeight;
+				g_customCameraPos[2] /= totalWeight;
+			} else {
+				g_customCameraPos[0] = mainActorData.position.x;
+				g_customCameraPos[1] = mainActorData.position.y;
+				g_customCameraPos[2] = mainActorData.position.z;
+			}
 		} else {
 			// Normal cam mode: focus on main actor position
 			g_customCameraPos[0] = mainActorData.position.x;
 			g_customCameraPos[1] = mainActorData.position.y;
 			g_customCameraPos[2] = mainActorData.position.z;
-
-			// If switching from MPCam to normal cam, initialize lerp transition
-			if (g_isMPCamActive) {
-				g_isMPCamActive = false;
-				currentCameraPos = glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]);
-			}
 		}
 
 		g_isParanoramicCamActive = false;
@@ -941,9 +993,21 @@ void MultiplayerCameraPositioningController() {
 			// Use jitterLerpFactor if in jitter state, otherwise normal lerpFactor
 			float usedLerp = inJitterState ? jitterLerpFactor : lerpFactor;
 
-			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], usedLerp);
-			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], usedLerp);
-			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], usedLerp);
+			// Calculate a frame-rate independent exponential smoothing factor.
+			// This makes camera tracking butter-smooth and velocity-responsive over time.
+			float deltaTime = ImGui::GetIO().DeltaTime;
+			float smoothLerpXZ = 1.0f - std::exp(-usedLerp * 10.0f * deltaTime);
+			float smoothLerpY = 1.0f - std::exp(-usedLerp * 3.0f * deltaTime); // Heavily dampen Y-axis to prevent jump shudder
+
+			// In jitter state or immediate tracking, snap instantly to avoid wall sticking
+			if (usedLerp >= 1.0f) {
+				smoothLerpXZ = 1.0f;
+				smoothLerpY = 1.0f;
+			}
+
+			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], smoothLerpXZ);
+			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], smoothLerpY);
+			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], smoothLerpXZ);
 
 			float distanceLerp = glm::distance(currentCameraPos, currentCustomCamPos);
 
@@ -999,10 +1063,15 @@ void MultiplayerCameraPositioningController() {
 
 		// Gradual transition between MPCam and normal cam (if a transition is occurring)
 		if (g_isParanoramicCamActive) {
-			float lerpFactorSP = inJitterState ? 0.01f : 0.05f;  // Use slow lerp if jittering
-			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], lerpFactorSP);
-			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], lerpFactorSP);
-			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], lerpFactorSP);
+			float deltaTime = ImGui::GetIO().DeltaTime;
+			float lerpFactorSP = inJitterState ? 1.0f : 0.05f;  // Snap to target if jittering to avoid wall sticking
+
+			float smoothLerpSP_XZ = (lerpFactorSP >= 1.0f) ? 1.0f : (1.0f - std::exp(-lerpFactorSP * 60.0f * deltaTime));
+			float smoothLerpSP_Y = (lerpFactorSP >= 1.0f) ? 1.0f : (1.0f - std::exp(-lerpFactorSP * 20.0f * deltaTime)); // Slower Y tracking
+
+			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], smoothLerpSP_XZ);
+			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], smoothLerpSP_Y);
+			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], smoothLerpSP_XZ);
 
 			g_customCameraPos[0] = currentCameraPos.x;
 			g_customCameraPos[1] = currentCameraPos.y;
@@ -1347,7 +1416,7 @@ void PauseSFXWhenPaused() {
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 
 		if (!newActorData.baseAddr) {
-			return;
+			continue;
 		}
 		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 
