@@ -5000,7 +5000,7 @@ void CameraSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 1.1f);
-			UI::Combo2("Follow-Up Speed", cameraFollowUpSpeedNames, activeCrimsonConfig.Camera.followUpSpeed, queuedCrimsonConfig.Camera.followUpSpeed);
+			UI::Combo2("Follow-Up Speed", cameraFollowUpSpeedNames, activeCrimsonConfig.Camera.followUpSpd, queuedCrimsonConfig.Camera.followUpSpd);
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextRow(0, rowWidth);
@@ -5132,8 +5132,8 @@ void CameraSection(size_t defaultFontSize) {
 			activeCrimsonConfig.Camera.rightStickCameraCentering = 2;
 			queuedCrimsonConfig.Camera.rightStickCameraCentering = 2;
 
-			activeCrimsonConfig.Camera.followUpSpeed = 0;
-			queuedCrimsonConfig.Camera.followUpSpeed = 0;
+			activeCrimsonConfig.Camera.followUpSpd = 0;
+			queuedCrimsonConfig.Camera.followUpSpd = 0;
 
 			activeCrimsonConfig.Camera.autoAdjust = 0;
 			queuedCrimsonConfig.Camera.autoAdjust = 0;
@@ -5180,8 +5180,8 @@ void CameraSection(size_t defaultFontSize) {
 			activeCrimsonConfig.Camera.rightStickCameraCentering = 1;
 			queuedCrimsonConfig.Camera.rightStickCameraCentering = 1;
 
-			activeCrimsonConfig.Camera.followUpSpeed = 0;
-			queuedCrimsonConfig.Camera.followUpSpeed = 0;
+			activeCrimsonConfig.Camera.followUpSpd = 0;
+			queuedCrimsonConfig.Camera.followUpSpd = 0;
 
 			activeCrimsonConfig.Camera.autoAdjust = 0;
 			queuedCrimsonConfig.Camera.autoAdjust = 0;
@@ -5228,8 +5228,8 @@ void CameraSection(size_t defaultFontSize) {
 			activeCrimsonConfig.Camera.rightStickCameraCentering = 1;
 			queuedCrimsonConfig.Camera.rightStickCameraCentering = 1;
 
-			activeCrimsonConfig.Camera.followUpSpeed = 2;
-			queuedCrimsonConfig.Camera.followUpSpeed = 2;
+			activeCrimsonConfig.Camera.followUpSpd = 2;
+			queuedCrimsonConfig.Camera.followUpSpd = 2;
 
 			activeCrimsonConfig.Camera.autoAdjust = 0;
 			queuedCrimsonConfig.Camera.autoAdjust = 0;

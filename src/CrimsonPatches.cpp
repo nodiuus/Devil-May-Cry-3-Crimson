@@ -429,7 +429,7 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 	}
 	else {
 		if (cameraMetadata.fixedCameraAddr == 0) {
-			switch (activeCrimsonConfig.Camera.followUpSpeed) {
+			switch (activeCrimsonConfig.Camera.followUpSpd) {
 			case 0: // Low (Vanilla Default)
 				return;
 				break;
