@@ -776,18 +776,60 @@ void MultiplayerCameraPositioningController() {
 		if (!actorData.dead) {
 			alivePlayerCount++;
 		}
-		// Apply player weight to their position
-		g_customCameraPos[0] += actorData.position.x * playerWeight;
-		g_customCameraPos[1] += actorData.position.y * playerWeight;
-		g_customCameraPos[2] += actorData.position.z * playerWeight;
+		// === Velocity Offset Prediction for Player ===
+		glm::vec3 currentPos = glm::vec3(actorData.position.x, actorData.position.y, actorData.position.z);
+		static std::array<glm::vec3, 8> previousPlayerPositions = {};
+		static std::array<glm::vec3, 8> smoothedVelocities = {};
+
+		glm::vec3 velocity = currentPos - previousPlayerPositions[playerIndex];
+		previousPlayerPositions[playerIndex] = currentPos;
+
+		// Smooth out velocity changes to prevent camera micro-studdering
+		float deltaTime = ImGui::GetIO().DeltaTime;
+		float velSmoothing = 1.0f - std::exp(-15.0f * deltaTime);
+		if (velSmoothing > 1.0f) velSmoothing = 1.0f;
+
+		smoothedVelocities[playerIndex].x = CrimsonUtil::lerp(smoothedVelocities[playerIndex].x, velocity.x, velSmoothing);
+		smoothedVelocities[playerIndex].y = CrimsonUtil::lerp(smoothedVelocities[playerIndex].y, velocity.y, velSmoothing);
+		smoothedVelocities[playerIndex].z = CrimsonUtil::lerp(smoothedVelocities[playerIndex].z, velocity.z, velSmoothing);
+
+		float predictionFactor = 15.0f; // Velocity lookahead multiplier
+		glm::vec3 predictedPos = currentPos + (smoothedVelocities[playerIndex] * predictionFactor);
+
+		// Ignore huge jumps (like map teleports or respawns)
+		if (glm::length(velocity) > 200.0f) {
+			predictedPos = currentPos;
+			smoothedVelocities[playerIndex] = glm::vec3(0.0f);
+		}
+
+		// Apply player weight to their PROIECTED position
+		g_customCameraPos[0] += predictedPos.x * playerWeight;
+		g_customCameraPos[1] += predictedPos.y * playerWeight;
+		g_customCameraPos[2] += predictedPos.z * playerWeight;
 		totalWeight += playerWeight;
 		entityCount++;
 
 		// Include the clone if it exists
 		if (actorData.doppelganger == 1) {
-			g_customCameraPos[0] += cloneActorData.position.x * playerWeight;
-			g_customCameraPos[1] += cloneActorData.position.y * playerWeight;
-			g_customCameraPos[2] += cloneActorData.position.z * playerWeight;
+			int cloneIdx = 4 + playerIndex;
+			glm::vec3 currentClonePos = glm::vec3(cloneActorData.position.x, cloneActorData.position.y, cloneActorData.position.z);
+			glm::vec3 cloneVelocity = currentClonePos - previousPlayerPositions[cloneIdx];
+			previousPlayerPositions[cloneIdx] = currentClonePos;
+
+			smoothedVelocities[cloneIdx].x = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].x, cloneVelocity.x, velSmoothing);
+			smoothedVelocities[cloneIdx].y = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].y, cloneVelocity.y, velSmoothing);
+			smoothedVelocities[cloneIdx].z = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].z, cloneVelocity.z, velSmoothing);
+
+			glm::vec3 clonePredictedPos = currentClonePos + (smoothedVelocities[cloneIdx] * predictionFactor);
+
+			if (glm::length(cloneVelocity) > 200.0f) {
+				clonePredictedPos = currentClonePos;
+				smoothedVelocities[cloneIdx] = glm::vec3(0.0f);
+			}
+
+			g_customCameraPos[0] += clonePredictedPos.x * playerWeight;
+			g_customCameraPos[1] += clonePredictedPos.y * playerWeight;
+			g_customCameraPos[2] += clonePredictedPos.z * playerWeight;
 			totalWeight += playerWeight;
 			entityCount++;
 		}
