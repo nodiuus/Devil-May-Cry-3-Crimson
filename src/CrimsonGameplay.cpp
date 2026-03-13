@@ -2595,7 +2595,10 @@ void SprintAbility(byte8* actorBaseAddr) {
             if (!sprintData.SFXPlayed) {
                 CrimsonSDL::PlaySprint(playerIndex);
                 sprintData.SFXPlayed = true;
+				actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = newBaseDanteAnims_pl000_00_0;
+				PlayAnimation_1EFB90(actorData, 0, 20, 20.0f, 0, 0, -1);
             }
+
 
             if (!sprintData.VFXPlayed) {
                 uint8 vfxColor[4] = { 35, 35, 35, 255 };
@@ -2609,10 +2612,13 @@ void SprintAbility(byte8* actorBaseAddr) {
             sprintData.runTimer    = false;
 
 
-        } else {
-            // Restore the original Actor's speed when you can't sprint (either in or out of it).
-            sprintData.isSprinting = false;
-        }
+		} else {
+			// Restore the original Actor's speed when you can't sprint (either in or out of it).
+			if (sprintData.isSprinting) {
+				actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = File_staticFiles[pl000_00_0]; // restore the anim when not sprinting
+			}
+			sprintData.isSprinting = false;
+		}
     }
 }
 
