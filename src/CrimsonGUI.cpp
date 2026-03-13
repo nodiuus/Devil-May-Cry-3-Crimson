@@ -3293,14 +3293,11 @@ void CharacterSection(size_t defaultFontSize) {
 
 			ImGui::Text("");
 
-			if (GUI_Button("CONTROLLER CONFIGURATION")) {
+			if (GUI_Button("BUTTON CONFIGURATION")) {
 				g_showControllerRemap = true;
 			}
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Open the controller button remapping window to customize button bindings for each player and character.");
-			if (GUI_Button("KEYBOARD CONFIGURATION")) {
-				g_showKeyboardConfig = true;
-			}
 
 			ImGui::TableNextColumn();
 
@@ -12818,6 +12815,14 @@ void Main(IDXGISwapChain* pSwapChain) {
     static bool doOnce = false;
 	static std::thread versionCheckerThread;
 
+	auto& io = ImGui::GetIO();
+	int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11];
+
+	// Allow keyboard exit
+	if ((io.KeysDown[DI8::KEY::ESCAPE] && (io.KeysDownDuration[DI8::KEY::ESCAPE] == 0.0f))) {
+		CloseMain();
+	}
+
     if (!doOnce) {
         doOnce = true;
 
@@ -14910,8 +14915,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	OverrideHDCKeybinds();
     Main(pSwapChain);
     Shop::ShopWindow();
-	ShowCoopControllerRemapWindow();
-	ShowKeyboardConfigWindow();
+	ShowButtonConfigWindow();
 	RenderMainMenuInfo(pSwapChain);
 
 	ActorWindow();

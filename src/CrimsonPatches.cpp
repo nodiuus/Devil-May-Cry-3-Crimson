@@ -813,53 +813,47 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	if (g_cameraHittingWall > 1) {
 		// Immediate approach when deeply colliding
 		cameraDistance -= 40.0f * g_frameRateMultiplier; // Approach faster if needed
-		//if (cameraDistance < groundDistanceSP) cameraDistance = groundDistanceSP;
+		if (cameraDistance < 100.0f) cameraDistance = 100.0f; // Prevent infinite negative zoom which pulls camera inside players
 		lastWallClearTime = std::chrono::steady_clock::now(); // Reset cooldown
 	} else if (g_cameraHittingWall == 1) {
 		// Only allow pull-back if cooldown has passed
 		auto now = std::chrono::steady_clock::now();
 		if (now - lastWallClearTime > wallCooldown) {
-			// Handle camera distance adjustment based on screen position
+			// Handle camera distance adjustment using frame-rate independent smooth damping
+			float deltaTime = ImGui::GetIO().DeltaTime;
 			if (needZoomOut) {
 				lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-				cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-				if (cameraDistance > maxDistance) {
-					cameraDistance = maxDistance; // Capping the distance
-				}
+				// Exponentially smooth towards max distance
+				cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-2.0f * deltaTime));
 			} else {
 				auto currentTime = std::chrono::steady_clock::now();
 				auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 				// Only adjust the camera if the cooldown time has passed and all entities are in the center
 				if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenterForFov) {
-					if (cameraDistance > groundDistanceSP) {
-						cameraDistance -= 10.0f * g_frameRateMultiplier;
-						if (cameraDistance < groundDistanceSP) {
-							cameraDistance = groundDistanceSP; // Prevent going below default distance
-						}
+					// Exponentially smooth towards default ground distance
+					cameraDistance -= (cameraDistance - groundDistanceSP) * (1.0f - std::exp(-1.5f * deltaTime));
+					if (cameraDistance < groundDistanceSP) {
+						cameraDistance = groundDistanceSP; // Prevent going below default distance
 					}
 				}
 			}
 		}
 	} else {
-		// Not colliding, normal logic
+		// Not colliding, normal logic (Using smooth damping)
+		float deltaTime = ImGui::GetIO().DeltaTime;
 		if (needZoomOut) {
 			lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-			cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-			if (cameraDistance > maxDistance) {
-				cameraDistance = maxDistance; // Capping the distance
-			}
+			cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-2.0f * deltaTime));
 		} else {
 			auto currentTime = std::chrono::steady_clock::now();
 			auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 			// Only adjust the camera if the cooldown time has passed and all entities are in the center
 			if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenterForFov) {
-				if (cameraDistance > groundDistanceSP) {
-					cameraDistance -= 10.0f * g_frameRateMultiplier;
-					if (cameraDistance < groundDistanceSP) {
-						cameraDistance = groundDistanceSP; // Prevent going below default distance
-					}
+				cameraDistance -= (cameraDistance - groundDistanceSP) * (1.0f - std::exp(-1.5f * deltaTime));
+				if (cameraDistance < groundDistanceSP) {
+					cameraDistance = groundDistanceSP; // Prevent going below default distance
 				}
 			}
 		}

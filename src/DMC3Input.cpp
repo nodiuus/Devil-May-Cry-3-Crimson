@@ -415,149 +415,314 @@ static const char* GetXInputControllerName(DWORD userIndex) {
     return s_names[userIndex].c_str();
 }
 
-void ShowCoopControllerRemapWindow() {
-    // Allow opening from either in-game menu or CrimsonGUI
-    if (!g_control_ui && !g_showControllerRemap) {
-        return;
-    }
-    ToggleCursor();
-    BTImGuiCtx ctxControl{};
-    const auto nplayers = activeConfig.Actor.playerCount;
-    bool shouldClose = false;
+static const char* s_keybindActionNames[NUM_KEYBINDS] = {
+    "SELECT / TAUNT",
+    "LB / DEVIL TRIGGER",
+    "LS / CHANGE TARGET",
+    "DPAD UP / ITEM SCREEN",
+    "DPAD RIGHT / MAP SCREEN",
+    "DPAD DOWN / EQUIP SCREEN",
+    "DPAD LEFT / FILE SCREEN",
+    "START",
+    "RB / LOCK ON",
+    "RS / DEFAULT CAMERA",
+    "Y / MELEE ATK",
+    "B / STYLE",
+    "A / JUMP",
+    "X / SHOOT",
+    "LEFT ANALOG UP",
+    "LEFT ANALOG RIGHT",
+    "LEFT ANALOG DOWN",
+    "LEFT ANALOG LEFT",
+    "RIGHT ANALOG UP",
+    "RIGHT ANALOG RIGHT",
+    "RIGHT ANALOG DOWN",
+    "RIGHT ANALOG LEFT",
+    "LT / CHANGE GUN",
+    "RT / CHANGE DEVIL ARM",
+};
 
-    static std::array<int, PLAYER_COUNT> s_selectedCharacterSlotByPlayer = {};
-    ImGuiStyle& style = ImGui::GetStyle();
+struct KBCaptureState {
+    bool   open        = false;
+    int    index       = -1;
+    uint32 previewKey  = 0;
+    bool   executes[256] = {};
+};
 
-	float width = g_renderSize.x / 1.40;
-	float height = g_renderSize.y / 1.10;
-	const float columnWidth = 0.5f * queuedConfig.globalScale;
-	const float rowWidth = 40.0f * queuedConfig.globalScale;
+static KBCaptureState s_kbCapture;
+bool g_showKeyboardConfig = false;
 
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f * CrimsonGUI::scaleFactor, 20.0f * CrimsonGUI::scaleFactor));
-	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * CrimsonGUI::scaleFactor);
+void ShowButtonConfigWindow() {
+	if (!g_control_ui && !g_showControllerRemap && !g_showKeyboardConfig) {
+		return;
+	}
+
+	// If opened specifically via g_showKeyboardConfig, start on the keyboard tab.
+	static int s_tab = 0; // 0 = Controller, 1 = Keyboard
+	if (g_showKeyboardConfig && !g_showControllerRemap && !g_control_ui) {
+		s_tab = 1;
+	}
+
+	ToggleCursor();
+	BTImGuiCtx ctxControl{};
+	const auto nplayers = activeConfig.Actor.playerCount;
+	bool shouldClose = false;
+
+	static std::array<int, PLAYER_COUNT> s_selectedCharacterSlotByPlayer = {};
+
+	const float scaleY      = CrimsonGUI::scaleFactorY;
+	const float scaleF      = (CrimsonGUI::scaleFactorX + CrimsonGUI::scaleFactorY) * 0.5f;
+	float width             = g_renderSize.x / 1.40f;
+	float height            = g_renderSize.y / 1.10f;
+	const float columnWidth = 0.5f  * queuedConfig.globalScale;
+	const float rowWidth    = 40.0f * queuedConfig.globalScale;
+
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,  ImVec2(20.0f * scaleF, 20.0f * scaleF));
+	ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * scaleF);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
 	ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
-
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
+	ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
 
 	ImGui::SetNextWindowSize(ImVec2(width, height));
-	// Center on screen
 	ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
 
-    ImGui::Begin("Button Configuration", &shouldClose, ImGuiWindowFlags_NoTitleBar); {
-        ImGui::SetWindowFontScale(CrimsonGUI::scaleFactorY);
+    auto& io = ImGui::GetIO();
+    int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11];
 
-        if (GUI_CloseX()) {
-            if (g_control_ui) {
-                CUIDControl_Close();
-            }
-            g_showControllerRemap = false;
-        }
+	ImGui::Begin("Button Configuration", &shouldClose, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar); {
+		ImGui::SetWindowFontScale(scaleY);
 
-        ImGui::Text("");
+		if (GUI_CloseX() || (io.KeysDown[keyboardBackKey] && (io.KeysDownDuration[keyboardBackKey] == 0.0f))
+            || (io.KeysDown[DI8::KEY::ESCAPE] && (io.KeysDownDuration[DI8::KEY::ESCAPE] == 0.0f))) {
+			if (g_control_ui) {
+				CUIDControl_Close();
+			}
+			g_showControllerRemap = false;
+			g_showKeyboardConfig  = false;
+		}
 
-        char buffer[33] = {};
-        ImGui::BeginTable(buffer, 2); {
-			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableNextRow(0, rowWidth);
-			ImGui::TableNextColumn();
-			
-            
-            for (int i = 0; i < nplayers && i < PLAYER_COUNT; i++) {
+		ImGui::Text("");
 
-                sprintf(buffer, "%dP", i + 1);
-                ImGui::Text(buffer);
-                ImGui::SameLine();
-                ImGui::TextDisabled("[%s]", GetXInputControllerName((DWORD)activeCrimsonConfig.System.xinputSlots[i]));
+		// Tab buttons
+		const auto defaultFontSize  = UI::g_UIContext.DefaultFontSize;
+		const ImVec4 tabActiveColor = ImVec4(0.79f, 0.06f, 0.21f, 1.0f);
+		ImGui::PushFont(UI::g_ImGuiFont_Benguiat[defaultFontSize * 1.1f]);
+		ImGui::PushStyleColor(ImGuiCol_Button, s_tab == 0 ? tabActiveColor : ImGui::GetStyle().Colors[ImGuiCol_Button]);
+		if (ImGui::Button("CONTROLLERS")) { s_tab = 0; }
+		ImGui::PopStyleColor();
+		ImGui::SameLine();
+		ImGui::PushStyleColor(ImGuiCol_Button, s_tab == 1 ? tabActiveColor : ImGui::GetStyle().Colors[ImGuiCol_Button]);
+		if (ImGui::Button("KEYBOARD - 1P")) { s_tab = 1; }
+		ImGui::PopStyleColor();
+		ImGui::PopFont();
 
-                {
-                    char slotLabel[4][64];
-                    const char* slotPtrs[4];
-                    for (int s = 0; s < 4; s++) {
-                        snprintf(slotLabel[s], sizeof(slotLabel[s]), "Slot %d  [%s]", s, GetXInputControllerName((DWORD)s));
-                        slotPtrs[s] = slotLabel[s];
-                    }
-                    int currentSlot = activeCrimsonConfig.System.xinputSlots[i];
-                    sprintf(buffer, "##ctrl%d", i);
-                    if (ImGui::Combo(buffer, &currentSlot, slotPtrs, 4)) {
-                        activeCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
-                        queuedCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
-                        GUI::save = true;
-                    }
+		ImGui::Separator();
+		ImGui::Text("");
+
+		if (s_tab == 0) {
+			// ======================== CONTROLLER TAB ========================
+			char buffer[33] = {};
+			ImGui::BeginTable(buffer, 2); {
+				ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
+				ImGui::TableNextRow(0, rowWidth);
+				ImGui::TableNextColumn();
+
+				for (int i = 0; i < nplayers && i < PLAYER_COUNT; i++) {
+					sprintf(buffer, "%dP", i + 1);
+					ImGui::Text(buffer);
 					ImGui::SameLine();
-					sprintf(buffer, "<##prev%d", i);
-					if (ImGui::Button(buffer)) {
-						const uint8 next = (currentSlot == 0) ? 3 : (uint8)(currentSlot - 1);
-						activeCrimsonConfig.System.xinputSlots[i] = next;
-						queuedCrimsonConfig.System.xinputSlots[i] = next;
-						GUI::save = true;
+					ImGui::TextDisabled("[%s]", GetXInputControllerName((DWORD)activeCrimsonConfig.System.xinputSlots[i]));
+
+					{
+						char slotLabel[4][64];
+						const char* slotPtrs[4];
+						for (int s = 0; s < 4; s++) {
+							snprintf(slotLabel[s], sizeof(slotLabel[s]), "Slot %d  [%s]", s, GetXInputControllerName((DWORD)s));
+							slotPtrs[s] = slotLabel[s];
+						}
+						int currentSlot = activeCrimsonConfig.System.xinputSlots[i];
+						sprintf(buffer, "##ctrl%d", i);
+						if (ImGui::Combo(buffer, &currentSlot, slotPtrs, 4)) {
+							activeCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
+							queuedCrimsonConfig.System.xinputSlots[i] = (uint8)currentSlot;
+							GUI::save = true;
+						}
+						ImGui::SameLine();
+						sprintf(buffer, "<##prev%d", i);
+						if (ImGui::Button(buffer)) {
+							const uint8 next = (currentSlot == 0) ? 3 : (uint8)(currentSlot - 1);
+							activeCrimsonConfig.System.xinputSlots[i] = next;
+							queuedCrimsonConfig.System.xinputSlots[i] = next;
+							GUI::save = true;
+						}
+						ImGui::SameLine();
+						sprintf(buffer, ">##next%d", i);
+						if (ImGui::Button(buffer)) {
+							const uint8 next = (uint8)((currentSlot + 1) % 4);
+							activeCrimsonConfig.System.xinputSlots[i] = next;
+							queuedCrimsonConfig.System.xinputSlots[i] = next;
+							GUI::save = true;
+						}
 					}
-					ImGui::SameLine();
-					sprintf(buffer, ">##next%d", i);
-					if (ImGui::Button(buffer)) {
-						const uint8 next = (uint8)((currentSlot + 1) % 4);
-						activeCrimsonConfig.System.xinputSlots[i] = next;
-						queuedCrimsonConfig.System.xinputSlots[i] = next;
-						GUI::save = true;
+
+					int& selectedSlot = s_selectedCharacterSlotByPlayer[i];
+					if (selectedSlot < 0 || selectedSlot >= CHARACTER_COUNT) {
+						selectedSlot = 0;
 					}
-                }
 
-                int& selectedSlot = s_selectedCharacterSlotByPlayer[i];
-                if (selectedSlot < 0 || selectedSlot >= CHARACTER_COUNT) {
-                    selectedSlot = 0;
-                }
+					if (CHARACTER_COUNT > 1) {
+						ImGui::PushID(i);
+						if (ImGui::BeginTabBar("##CharacterTabs")) {
+							if (ImGui::BeginTabItem("Dante")) {
+								selectedSlot = 0;
+								ImGui::EndTabItem();
+							}
+							if (ImGui::BeginTabItem("Vergil")) {
+								selectedSlot = 1;
+								ImGui::EndTabItem();
+							}
+							ImGui::EndTabBar();
+						}
+						ImGui::PopID();
+					}
 
-                if (CHARACTER_COUNT > 1) {
-                    ImGui::PushID(i);
-                    if (ImGui::BeginTabBar("##CharacterTabs")) {
-                        if (ImGui::BeginTabItem("Dante")) {
-                            selectedSlot = 0;
-                            ImGui::EndTabItem();
-                        }
-                        if (ImGui::BeginTabItem("Vergil")) {
-                            selectedSlot = 1;
-                            ImGui::EndTabItem();
-                        }
+					uint16_t* activeButtonConfig  = activeConfigInputs[i][selectedSlot][0];
+					uint16_t* queuedButtonConfig  = queuedConfigInputs[i][selectedSlot][0];
+					uint16_t* defaultButtonConfig = (&s_defaultBinds.up);
+					for (int j = 0; j < NUM_BINDS_WITHOUT_START; j++) {
+						ImGui::PushID(i);
+						ImGui::PushID(j);
+						UI::ComboMapValue2<uint16_t, NUM_BINDS_WITHOUT_START>(ctxControl.actions[j], ctxControl.items,
+							ctxControl.values, activeButtonConfig[j], queuedButtonConfig[j]);
+						ImGui::PopID();
+						ImGui::PopID();
+					}
 
-                        ImGui::EndTabBar();
-                    }
-                    ImGui::PopID();
-                }
+					if (GUI_Button("Restore Defaults")) {
+						memcpy(queuedButtonConfig,  defaultButtonConfig, sizeof(BindTable));
+						memcpy(activeButtonConfig,  defaultButtonConfig, sizeof(BindTable));
+					}
 
-                uint16_t* activeButtonConfig = activeConfigInputs[i][selectedSlot][0];
-				uint16_t* queuedButtonConfig = queuedConfigInputs[i][selectedSlot][0];
-				uint16_t* defaultButtonConfig = (&s_defaultBinds.up);
-                for (int j = 0; j < NUM_BINDS_WITHOUT_START; j++) {
-                    ImGui::PushID(i);
-                    ImGui::PushID(j);
-                    UI::ComboMapValue2<uint16_t, NUM_BINDS_WITHOUT_START >(ctxControl.actions[j], ctxControl.items, 
-                        ctxControl.values, activeButtonConfig[j],queuedButtonConfig[j]);
-
-                    ImGui::PopID();
-                    ImGui::PopID();
-                }
-
-				if (GUI_Button("Restore Defaults")) {
-					memcpy(queuedButtonConfig, defaultButtonConfig, sizeof(BindTable));
-                    memcpy(activeButtonConfig, defaultButtonConfig, sizeof(BindTable));
+					ImGui::TableNextColumn();
+					if (i == 1 || i == 2) {
+						ImGui::Text("");
+					}
 				}
+			}
+			ImGui::EndTable();
 
-                ImGui::TableNextColumn();
-                if (i == 1 || i == 2) {
-                    ImGui::Text("");
-                }
-            }
-        }
-        ImGui::EndTable();
-    }
+		} else {
+			// ======================== KEYBOARD TAB ========================
+			uint32* activeKeybinds  = activeCrimsonConfig.System.KeyboardConfig.keybinds;
+			uint32* queuedKeybinds  = queuedCrimsonConfig.System.KeyboardConfig.keybinds;
+			uint32* defaultKeybinds = defaultCrimsonConfig.System.KeyboardConfig.keybinds;
+
+			ImGui::BeginChild("##kb_scroll", ImVec2(0, height - 140.0f * scaleY), false); {
+				for (int i = 0; i < NUM_KEYBINDS; i++) {
+					ImGui::PushID(i);
+					ImGui::Text(s_keybindActionNames[i]);
+					ImGui::SameLine(260.0f * scaleY);
+					const char* keyName = (activeKeybinds[i] < 256) ? DI8::keyNames[activeKeybinds[i]] : "???";
+					if (GUI_Button(keyName, ImVec2(160.0f * scaleY, 0))) {
+						s_kbCapture.open       = true;
+						s_kbCapture.index      = i;
+						s_kbCapture.previewKey = activeKeybinds[i];
+						memset(s_kbCapture.executes, 0, sizeof(s_kbCapture.executes));
+					}
+					ImGui::PopID();
+				}
+			}
+			ImGui::EndChild();
+
+			ImGui::Separator();
+
+			if (GUI_Button("Reset All to Crimson Defaults")) {
+				memcpy(activeKeybinds,  defaultKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+				memcpy(queuedKeybinds, defaultKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+				byte8* baseAddr = appBaseAddr + 0x5611A0;
+				protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4);
+				for (int i = 0; i < NUM_KEYBINDS; i++) {
+					*(uint32_t*)(baseAddr + (i * 4)) = defaultKeybinds[i];
+				}
+				protectionHelper.Pop();
+				GUI::save = true;
+			}
+			ImGui::SameLine();
+			if (GUI_Button("Reset All to HDC Launcher Configs")) {
+				memcpy(activeKeybinds,  g_hdcKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+				memcpy(queuedKeybinds, g_hdcKeybinds, sizeof(uint32) * NUM_KEYBINDS);
+				byte8* baseAddr = appBaseAddr + 0x5611A0;
+				protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4);
+				for (int i = 0; i < NUM_KEYBINDS; i++) {
+					*(uint32_t*)(baseAddr + (i * 4)) = g_hdcKeybinds[i];
+				}
+				protectionHelper.Pop();
+				GUI::save = true;
+			}
+		}
+	}
 	ImGui::End();
 	ImGui::PopStyleVar(4);
 	ImGui::PopStyleColor();
+
+	// Keyboard capture popup (shown above the main window when capturing a key)
+	if (s_kbCapture.open && s_kbCapture.index >= 0) {
+		const float popupScale = scaleF;
+		float popupWidth  = 500.0f * popupScale;
+		float popupHeight = 260.0f * popupScale;
+
+		ImGui::SetNextWindowSize(ImVec2(popupWidth, popupHeight));
+		ImGui::SetNextWindowPos(ImVec2((g_renderSize.x - popupWidth) * 0.5f, (g_renderSize.y - popupHeight) * 0.5f));
+
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,  ImVec2(20.0f * popupScale, 20.0f * popupScale));
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * popupScale);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+		ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+		ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.92f));
+
+		bool popupOpen = s_kbCapture.open;
+		if (ImGui::Begin("KBRebind", &popupOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+			ImGui::SetWindowFontScale(popupScale);
+
+			auto kbFontSize = UI::g_UIContext.DefaultFontSize;
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[kbFontSize * 1.2f]);
+			ImGui::Text("Rebinding: %s", s_keybindActionNames[s_kbCapture.index]);
+			ImGui::SameLine();
+			if (GUI_CloseX()) {
+				s_kbCapture.open  = false;
+				s_kbCapture.index = -1;
+			}
+			ImGui::PopFont();
+
+			ImGui::Text("");
+			ImGui::Text("");
+
+			const char* previewName = (s_kbCapture.previewKey < 256) ? DI8::keyNames[s_kbCapture.previewKey] : "---";
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[kbFontSize * 1.3f]);
+			CenterText(previewName);
+			ImGui::PopFont();
+
+			ImGui::Text("");
+			ImGui::Text("");
+
+			CenterText("Press a key, then ENTER to confirm or ESCAPE to cancel.");
+		}
+		ImGui::End();
+		ImGui::PopStyleColor();
+		ImGui::PopStyleVar(4);
+
+		if (!popupOpen) {
+			s_kbCapture.open  = false;
+			s_kbCapture.index = -1;
+		}
+	}
+
 	if (shouldClose) {
 		if (g_control_ui) {
 			CUIDControl_Close();
 		}
 		g_showControllerRemap = false;
+		g_showKeyboardConfig  = false;
 	}
 }
 
@@ -671,43 +836,6 @@ void OverrideHDCKeybinds() {
     runOnce = true;
 }
 
-static const char* s_keybindActionNames[NUM_KEYBINDS] = {
-    "SELECT / TAUNT",
-    "LB / DEVIL TRIGGER",
-    "LS / CHANGE TARGET",
-    "DPAD UP / ITEM SCREEN",
-    "DPAD RIGHT / MAP SCREEN",
-    "DPAD DOWN / EQUIP SCREEN",
-    "DPAD LEFT / FILE SCREEN",
-    "START",
-    "RB / LOCK ON",
-    "RS / DEFAULT CAMERA",
-    "Y / MELEE ATK",
-    "B / STYLE",
-    "A / JUMP",
-    "X / SHOOT",
-    "LEFT ANALOG UP",
-    "LEFT ANALOG RIGHT",
-    "LEFT ANALOG DOWN",
-    "LEFT ANALOG LEFT",
-    "RIGHT ANALOG UP",
-    "RIGHT ANALOG RIGHT",
-    "RIGHT ANALOG DOWN",
-    "RIGHT ANALOG LEFT",
-    "LT / CHANGE GUN",
-    "RT / CHANGE DEVIL ARM",
-};
-
-struct KBCaptureState {
-    bool   open        = false;
-    int    index       = -1;
-    uint32 previewKey  = 0;
-    bool   executes[256] = {};
-};
-
-static KBCaptureState s_kbCapture;
-bool g_showKeyboardConfig = false;
-
 void UpdateKeyboardConfigCapture(byte8* state) {
     if (!s_kbCapture.open || s_kbCapture.index < 0) {
         return;
@@ -760,158 +888,6 @@ void UpdateKeyboardConfigCapture(byte8* state) {
         } else {
             exec[i] = true;
         }
-    }
-}
-
-void ShowKeyboardConfigWindow() {
-    if (!g_showKeyboardConfig) {
-        return;
-    }
-    ToggleCursor();
-    bool shouldClose = false;
-
-    const float scaleY = CrimsonGUI::scaleFactorY;
-    const float scaleF = (CrimsonGUI::scaleFactorX + CrimsonGUI::scaleFactorY) * 0.5f;
-    float width  = g_renderSize.x / 1.60f;
-    float height = g_renderSize.y / 1.10f;
-
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,  ImVec2(20.0f * scaleF, 20.0f * scaleF));
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * scaleF);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-    ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
-    ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
-
-    ImGui::SetNextWindowSize(ImVec2(width, height));
-    ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
-
-    ImGui::Begin("Keyboard Configuration", &shouldClose, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoScrollbar); {
-        ImGui::SetWindowFontScale(scaleY);
-
-        if (GUI_CloseX()) {
-            g_showKeyboardConfig = false;
-        }
-
-        ImGui::Text("");
-
-        auto defaultFontSize = UI::g_UIContext.DefaultFontSize;
-//         ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.2f]);
-//         CenterText("Keyboard Configuration");
-//         ImGui::PopFont();
-// 
-//         ImGui::Text("");
-
-        uint32* activeKeybinds  = activeCrimsonConfig.System.KeyboardConfig.keybinds;
-        uint32* queuedKeybinds  = queuedCrimsonConfig.System.KeyboardConfig.keybinds;
-        uint32* defaultKeybinds = defaultCrimsonConfig.System.KeyboardConfig.keybinds;
-
-        ImGui::BeginChild("##kb_scroll", ImVec2(0, height - 140.0f * scaleY), false); {
-            for (int i = 0; i < NUM_KEYBINDS; i++) {
-                ImGui::PushID(i);
-
-                ImGui::Text(s_keybindActionNames[i]);
-                ImGui::SameLine(260.0f * scaleY);
-
-                const char* keyName = (activeKeybinds[i] < 256) ? DI8::keyNames[activeKeybinds[i]] : "???";
-                if (GUI_Button(keyName, ImVec2(160.0f * scaleY, 0))) {
-                    s_kbCapture.open      = true;
-                    s_kbCapture.index     = i;
-                    s_kbCapture.previewKey = activeKeybinds[i];
-                    memset(s_kbCapture.executes, 0, sizeof(s_kbCapture.executes));
-                }
-
-                ImGui::PopID();
-            }
-        }
-        ImGui::EndChild();
-
-        ImGui::Separator();
-        ImGui::Text("");
-
-        if (GUI_Button("Reset All to Crimson Defaults")) {
-            memcpy(activeKeybinds,  defaultKeybinds, sizeof(uint32) * NUM_KEYBINDS);
-            memcpy(queuedKeybinds, defaultKeybinds, sizeof(uint32) * NUM_KEYBINDS);
-            byte8* baseAddr = appBaseAddr + 0x5611A0;
-            protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4);
-            for (int i = 0; i < NUM_KEYBINDS; i++) {
-                *(uint32_t*)(baseAddr + (i * 4)) = defaultKeybinds[i];
-            }
-            protectionHelper.Pop();
-            GUI::save = true;
-        }
-
-        ImGui::SameLine();
-
-        if (GUI_Button("Reset All to HDC Launcher Configs")) {
-            memcpy(activeKeybinds,  g_hdcKeybinds, sizeof(uint32) * NUM_KEYBINDS);
-            memcpy(queuedKeybinds, g_hdcKeybinds, sizeof(uint32) * NUM_KEYBINDS);
-            byte8* baseAddr = appBaseAddr + 0x5611A0;
-            protectionHelper.Push(baseAddr, NUM_KEYBINDS * 4);
-            for (int i = 0; i < NUM_KEYBINDS; i++) {
-                *(uint32_t*)(baseAddr + (i * 4)) = g_hdcKeybinds[i];
-            }
-            protectionHelper.Pop();
-            GUI::save = true;
-        }
-    }
-    ImGui::End();
-    ImGui::PopStyleVar(4);
-    ImGui::PopStyleColor();
-
-    // Capture popup
-    if (s_kbCapture.open && s_kbCapture.index >= 0) {
-        const float popupScale = scaleF;
-        float popupWidth  = 500.0f * popupScale;
-        float popupHeight = 260.0f * popupScale;
-
-        ImGui::SetNextWindowSize(ImVec2(popupWidth, popupHeight));
-        ImGui::SetNextWindowPos(ImVec2((g_renderSize.x - popupWidth) * 0.5f, (g_renderSize.y - popupHeight) * 0.5f));
-
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding,  ImVec2(20.0f * popupScale, 20.0f * popupScale));
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * popupScale);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
-        ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
-        ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.92f));
-
-        bool popupOpen = s_kbCapture.open;
-        if (ImGui::Begin("KBRebind", &popupOpen, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
-            ImGui::SetWindowFontScale(popupScale);
-
-            auto defaultFontSize = UI::g_UIContext.DefaultFontSize;
-
-            ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.2f]);
-            ImGui::Text("Rebinding: %s", s_keybindActionNames[s_kbCapture.index]);
-            ImGui::SameLine();
-            if (GUI_CloseX()) {
-                s_kbCapture.open  = false;
-                s_kbCapture.index = -1;
-            }
-            ImGui::PopFont();
-
-            ImGui::Text("");
-            ImGui::Text("");
-
-            const char* previewName = (s_kbCapture.previewKey < 256) ? DI8::keyNames[s_kbCapture.previewKey] : "---";
-            ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.3f]);
-            CenterText(previewName);
-            ImGui::PopFont();
-
-            ImGui::Text("");
-            ImGui::Text("");
-
-            CenterText("Press a key, then ENTER to confirm or ESCAPE to cancel.");
-        }
-        ImGui::End();
-        ImGui::PopStyleColor();
-        ImGui::PopStyleVar(4);
-
-        if (!popupOpen) {
-            s_kbCapture.open  = false;
-            s_kbCapture.index = -1;
-        }
-    }
-
-    if (shouldClose) {
-        g_showKeyboardConfig = false;
     }
 }
 

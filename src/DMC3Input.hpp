@@ -53,8 +53,7 @@ public:
 }; //Size: 0x0020
 void InitBindings();
 void SwapXInputButtonsCoop(uint8 index, XINPUT_STATE* gamepad);
-void ShowCoopControllerRemapWindow();
-void ShowKeyboardConfigWindow();
+void ShowButtonConfigWindow();
 void UpdateKeyboardConfigCapture(byte8* state);
 void StoreHDCKeybinds();
 void OverrideHDCKeybinds();
