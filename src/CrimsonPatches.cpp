@@ -680,9 +680,9 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	const auto wallCooldown = std::chrono::milliseconds(800); // Cooldown after wall collision
 
 	static bool fovWasIncreased = false;
-	const float maxFovMultiplier = 2.0f;
-	const float fovIncreaseSpeed = 0.02f; // Per frame, adjust as needed
-	const float fovDecreaseSpeed = 0.02f; // Per frame, adjust as needed
+	const float maxFovMultiplier = 1.6f;
+	const float fovIncreaseSpeed = 0.005f; // Slower, less dramatic transition
+	const float fovDecreaseSpeed = 0.08f; // Faster recovery to normal
 
 	static auto allInCenterStartTime = std::chrono::steady_clock::time_point{};
 	const auto allInCenterCooldown = std::chrono::milliseconds(400); // 400ms debounce
