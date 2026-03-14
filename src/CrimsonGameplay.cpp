@@ -906,36 +906,47 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	} else {
 		meleeButtonHold[playerIndex][entityIndex] = 0.0f;
 	}
+
+	static bool meleeReleasedDuringRapidSlash[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) {
+		if (!meleeDown && actionTimer > 0.15f) { // Short grace period
+			meleeReleasedDuringRapidSlash[playerIndex][entityIndex] = true;
+		}
+	} else {
+		meleeReleasedDuringRapidSlash[playerIndex][entityIndex] = false;
+	}
 	// ------------------------------
 
 	// Reset closeEnemy each frame
 	closeEnemy = false;
 
-    if (actorData.lockOnData.targetBaseAddr60 != nullptr) {
-        auto& enemyData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
+	if (actorData.lockOnData.targetBaseAddr60 != nullptr) {
+		auto& enemyData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
 
-        glm::vec3 playerPos(actorData.position.x, actorData.position.y, actorData.position.z);
-        glm::vec3 enemyPos(enemyData.position.x, enemyData.position.y, enemyData.position.z);
+		glm::vec3 playerPos(actorData.position.x, actorData.position.y, actorData.position.z);
+		glm::vec3 enemyPos(enemyData.position.x, enemyData.position.y, enemyData.position.z);
 
-        float distanceToPlayer = glm::distance(playerPos, enemyPos);
+		float distanceToPlayer = glm::distance(playerPos, enemyPos);
 
-        if (distanceToPlayer <= 100.0f) {
-            closeEnemy = true;
-        }
-    }
-	
+		if (distanceToPlayer <= 100.0f) {
+			closeEnemy = true;
+		}
+	}
+
 	// Improved transition logic:
 	// Only allow transition if action is YAMATO_RAPID_SLASH_LEVEL_2 and timer is in the correct window
 	// and either the button is held long enough OR player is close to an enemy and button is held long enough
 	bool canTransition =
 		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
 		actionTimer > 0.55f && actionTimer < 0.60f &&
-		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME && tiltDirection == TILT_DIRECTION::UP;
+		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME &&
+		!meleeReleasedDuringRapidSlash[playerIndex][entityIndex];
 
 	bool canTransitionClose =
-        (actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
+		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
 		closeEnemy &&
-		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME && tiltDirection == TILT_DIRECTION::UP;
+		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME &&
+		!meleeReleasedDuringRapidSlash[playerIndex][entityIndex];
 
 	// Only allow transition once per action
 	if ((canTransition || canTransitionClose)) {
