@@ -53,6 +53,14 @@ enum {
 };
 }
 
+namespace CAMERASHAKE {
+	enum {
+		OFF,
+		ONLY_IN_SINGLE_PLAYER_CAM,
+		ALWAYS_ON
+	};
+}
+
 namespace DELAYEDCOMBOSFX {
 enum {
 	TYPE_A,
@@ -194,7 +202,8 @@ struct CrimsonConfig {
 		bool lockedOff = true;
 		bool invertX = true;
 		uint8 autoAdjust = 0;
-		uint8 rightStickCameraCentering = RIGHTSTICKCENTERCAM::TO_NEAREST_SIDE;
+		uint8 rightStickCameraCentering = RIGHTSTICKCENTERCAM::ON;
+		uint8 cameraShake = CAMERASHAKE::ONLY_IN_SINGLE_PLAYER_CAM;
 		bool disableBossCamera = false;
 		bool multiplayerCamera = true;
 		bool panoramicCam = true;
@@ -212,6 +221,7 @@ struct CrimsonConfig {
                 std::make_pair("invertX", &Camera::invertX),
                 std::make_pair("autoAdjust", &Camera::autoAdjust),
                 std::make_pair("rightStickCameraCentering", &Camera::rightStickCameraCentering),
+				std::make_pair("cameraShake", &Camera::cameraShake),
                 std::make_pair("disableBossCamera", &Camera::disableBossCamera),
 				std::make_pair("multiplayerCamera", &Camera::multiplayerCamera),
 				std::make_pair("panoramicCam", &Camera::panoramicCam),

@@ -1257,6 +1257,18 @@ uint8 rightStickCenterCamMap[] = {
 	2,
 };
 
+const char* cameraShakeNames[] = {
+	"Off",
+	"Only in Single Player Cam",
+	"Always On",
+};
+
+uint8 cameraShakeMap[] = {
+	0,
+	1,
+	2,
+};
+
 const char* styleRankNames[] = {
 	"None",
 	"Dope",
@@ -5056,8 +5068,15 @@ void CameraSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.87f);
-			UI::ComboMapValue2("Right Stick Camera Centering", rightStickCenterCamNames, rightStickCenterCamMap,
+			UI::ComboMapValue2("Camera Centering", rightStickCenterCamNames, rightStickCenterCamMap,
 				activeCrimsonConfig.Camera.rightStickCameraCentering, queuedCrimsonConfig.Camera.rightStickCameraCentering);
+			ImGui::PopItemWidth();
+
+			ImGui::TableNextColumn();
+
+			ImGui::PushItemWidth(itemWidth * 1.27f);
+			UI::ComboMapValue2("Camera Shake", cameraShakeNames, cameraShakeMap,
+				activeCrimsonConfig.Camera.cameraShake, queuedCrimsonConfig.Camera.cameraShake);
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextColumn();

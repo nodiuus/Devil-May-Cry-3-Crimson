@@ -955,6 +955,25 @@ void CameraTiltController(CameraData* cameraData, CameraControlMetadata& cameraM
     }
 }
 
+void DisableCameraShake(bool enable) {
+	static bool run = false;
+
+	// If the function has already run in the current state, return early
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1F02E3 - 74 37                 - je dmc3.exe+1F031C
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x1F02E3), (char*)"\xEB\x37", 2); // jmp dmc3.exe+1F031C
+	} else {
+		_patch((char*)(appBaseAddr + 0x1F02E3), (char*)"\x74\x37", 2); // je dmc3.exe+1F031C
+	}
+
+	run = enable;
+}
+
 void ForceThirdPersonCamera(bool enable) {
 	static bool run = false;
 

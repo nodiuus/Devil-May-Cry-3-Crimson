@@ -1131,6 +1131,20 @@ CameraData* GetSafeCameraData() {
 //	return nextroom || currentroom;
 //}
 
+void CameraShakeController() {
+	if (activeCrimsonConfig.Camera.cameraShake == CAMERASHAKE::OFF) {
+		CrimsonPatches::DisableCameraShake(true);
+	} else if (activeCrimsonConfig.Camera.cameraShake == CAMERASHAKE::ALWAYS_ON) {
+		CrimsonPatches::DisableCameraShake(false);
+	} else if (activeCrimsonConfig.Camera.cameraShake == CAMERASHAKE::ONLY_IN_SINGLE_PLAYER_CAM) {
+		if (g_isMPCamActive) {
+			CrimsonPatches::DisableCameraShake(true);
+		} else {
+			CrimsonPatches::DisableCameraShake(false);
+		}
+	}
+}
+
 void ForceThirdPersonCameraController() {
 	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
 	if (!pool_10298 || !pool_10298[8]) {
@@ -1898,6 +1912,7 @@ void TriggerOnTickFuncs() {
 	CrimsonGameModes::TrackMissionResultGameMode();
     CrimsonOnTick::CrimsonMissionClearSong();
 	CrimsonOnTick::DivinityStatueSong();
+	CrimsonOnTick::CameraShakeController();
 	CrimsonSDL::CheckAndOpenControllers();
 	CrimsonSDL::UpdateJoysticks();
 	Sound::UpdateVolumeTransition();

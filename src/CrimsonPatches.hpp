@@ -28,6 +28,7 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 void CameraDistanceController(CameraControlMetadata& cameraMetadata);
 void CameraLockOnDistanceController();
 void CameraTiltController(CameraData* cameraData, CameraControlMetadata& cameraMetadata);
+void DisableCameraShake(bool enable);
 void ForceThirdPersonCamera(bool enable);
 void ToggleLockedOffCamera(bool enable);
 void DisableLockOnCamera(bool enable);
