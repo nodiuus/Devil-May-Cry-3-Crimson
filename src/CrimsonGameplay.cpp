@@ -944,7 +944,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
         }
         
 		actorData.action = BEOWULF_RISING_SUN;
-		PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
+		PlayAnimation_1EFB90(actorData, 4, 11, 17.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
         
 		 inRisingStar = true;

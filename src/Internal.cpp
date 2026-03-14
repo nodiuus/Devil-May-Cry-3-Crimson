@@ -74,7 +74,7 @@ func_594B0_t InitiateModelFunc_594B0   = 0; // (BodyPartData & bodyPartData, byt
                                // modelDataFunctions, PhysicsMetadata ** modelPhysicsMetadataPool, float32 * motionSpeed, void *)
 func_5A290_t func_5A290   = 0; // (byte8 * body, uint32 group, uint32 index, uint16, uint8, uint8)
 func_8AC80_t func_8AC80   = 0; // (ModelData & modelData, uint32 bodyPart, byte8 * motionFile, uint32, bool)
-func_1EFB90_t PlayAnimation_1EFB90 = 0; // (byte8 * actorData, uint32 group, uint32 index, float32, int8, uint8, uint8 nFrames)
+func_1EFB90_t PlayAnimation_1EFB90 = 0; // (byte8 * actorData, uint32 group, uint32 index, float32 initialFrame, int8, uint8, uint8 nFrames)
 func_1DFDA0_t func_1DFDA0 = 0; // (byte8 *, uint32, uint8, float32, float32, uint8)
 func_1FB300_t func_1FB300 = 0; // (byte8 * actorData, uint32 direction, float32 value)
 func_1E09D0_t func_1E09D0 = 0; // (byte8 * actorBaseAddr, uint32 event)
