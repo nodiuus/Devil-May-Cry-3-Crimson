@@ -2626,7 +2626,12 @@ void SprintAbility(byte8* actorBaseAddr) {
 		} else {
 			// Restore the original Actor's speed when you can't sprint (either in or out of it).
 			if (sprintData.isSprinting) {
-				actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = File_staticFiles[pl000_00_0]; // restore the anim when not sprinting
+				// restore the anim when not sprinting
+				if (actorData.character == CHARACTER::DANTE) {
+					actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = File_staticFiles[pl000_00_0]; 
+				} else if (actorData.character == CHARACTER::VERGIL) {
+					actorData.motionArchives[MOTION_GROUP_VERGIL::BASE] = File_staticFiles[pl021_00_0];
+				}
 			}
 			sprintData.isSprinting = false;
 		}
