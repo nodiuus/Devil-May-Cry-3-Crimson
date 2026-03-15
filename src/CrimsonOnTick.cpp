@@ -1015,10 +1015,14 @@ void MultiplayerCameraPositioningController() {
 				currentCameraPos = currentCustomCamPos; // disable lerp when level isn't fully loaded
 			}
 
-			// apply lerp
-			g_customCameraPos[0] = currentCameraPos.x;
-			g_customCameraPos[1] = currentCameraPos.y;
-			g_customCameraPos[2] = currentCameraPos.z;
+			// Add a deadzone (e.g. 5 units) so the camera doesn't micro-jitter when standing generally still.
+			if (distanceLerp > 5.0f || inJitterState) {
+				g_customCameraPos[0] = currentCameraPos.x;
+				g_customCameraPos[1] = currentCameraPos.y;
+				g_customCameraPos[2] = currentCameraPos.z;
+			} else {
+				currentCameraPos = currentCustomCamPos;
+			}
 
 		} else {
 			currentCameraPos = currentCustomCamPos;
@@ -1073,9 +1077,15 @@ void MultiplayerCameraPositioningController() {
 			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], smoothLerpSP_Y);
 			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], smoothLerpSP_XZ);
 
-			g_customCameraPos[0] = currentCameraPos.x;
-			g_customCameraPos[1] = currentCameraPos.y;
-			g_customCameraPos[2] = currentCameraPos.z;
+			float distanceLerpSP = glm::distance(currentCameraPos, glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]));
+
+			if (distanceLerpSP > 5.0f || inJitterState) {
+				g_customCameraPos[0] = currentCameraPos.x;
+				g_customCameraPos[1] = currentCameraPos.y;
+				g_customCameraPos[2] = currentCameraPos.z;
+			} else {
+				currentCameraPos = glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]);
+			}
 		} else {
 			g_customCameraPos[0] = mainActorData.position.x;
 			g_customCameraPos[1] = mainActorData.position.y;

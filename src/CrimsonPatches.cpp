@@ -453,7 +453,7 @@ void HandleDynamicSPCameraDistance(float& cameraDistance, float groundDistance, 
 	if (!pool_166 || !pool_166[3]) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
 
-	if (activeConfig.Actor.playerCount == 1 || !activeConfig.Actor.enable || mainActorData.mode >= ACTOR_MODE::MISSION_18) {
+	if (activeConfig.Actor.playerCount == 1 || !activeConfig.Actor.enable || mainActorData.mode >= ACTOR_MODE::MISSION_18 || !g_isMPCamActive) {
 		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
 	}
 
@@ -469,6 +469,10 @@ void HandleDynamicSPCameraDistance(float& cameraDistance, float groundDistance, 
 }
 
 void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance, float airDistance) {
+	if (!g_isMPCamActive) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+	}
+
 	static auto lastAdjustmentTime = std::chrono::steady_clock::now();
 	const auto timeThreshold = std::chrono::milliseconds(1000); // 1 second delay
 	static auto lastWallClearTime = std::chrono::steady_clock::now();
@@ -577,20 +581,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 		if (now - lastWallClearTime > wallCooldown) {
 			if (g_inCombat) {
 				// Handle camera distance adjustment based on screen position
+				float deltaTime = ImGui::GetIO().DeltaTime;
 				if (needZoomOut) {
 					lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-					cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-					if (cameraDistance > maxDistance) {
-						cameraDistance = maxDistance; // Cap the distance
-					}
+					cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-5.0f * deltaTime));
 				} else {
 					auto currentTime = std::chrono::steady_clock::now();
 					auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 					// Adjust the camera back if all entities are in the center and cooldown time has passed
 					if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenter) {
-						if (cameraDistance > groundDistance) {
-							cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reduce distance
+						if (cameraDistance > groundDistance + 5.0f) { // Added Deadzone tolerance
+							cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-1.5f * deltaTime));
 							if (cameraDistance < groundDistance) {
 								cameraDistance = groundDistance; // Prevent going below default distance
 							}
@@ -600,23 +602,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 
 				// Zoom in if closest enemy is far away
 				if (closestEnemyDistance > 800.0f) {
-					cameraDistance -= 15.0f * g_frameRateMultiplier; // Decrease camera distance to zoom in
+					cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-1.0f * deltaTime));
 					if (cameraDistance < groundDistance) {
 						cameraDistance = groundDistance; // Prevent going below default distance
 					}
 				}
 			} else {
+				float deltaTime = ImGui::GetIO().DeltaTime;
 				// Smoothly reset to ground distance when out of combat or returning to the ground
-				if (cameraDistance > groundDistance) {
-					cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reset to ground distance
-					if (cameraDistance < groundDistance) {
-						cameraDistance = groundDistance; // Clamp to ground distance
-					}
-				} else if (cameraDistance < groundDistance) {
-					cameraDistance += 10.0f * g_frameRateMultiplier; // Gradually increase to ground distance if too low
-					if (cameraDistance > groundDistance) {
-						cameraDistance = groundDistance; // Clamp to ground distance
-					}
+				if (std::abs(cameraDistance - groundDistance) > 5.0f) { // Deadzone
+					cameraDistance += (groundDistance - cameraDistance) * (1.0f - std::exp(-1.5f * deltaTime));
+				} else {
+					cameraDistance = groundDistance;
 				}
 			}
 		}
@@ -624,20 +621,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 		// Not colliding, normal logic
 		if (g_inCombat) {
 			// Handle camera distance adjustment based on screen position
+			float deltaTime = ImGui::GetIO().DeltaTime;
 			if (needZoomOut) {
 				lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-				cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-				if (cameraDistance > maxDistance) {
-					cameraDistance = maxDistance; // Cap the distance
-				}
+				cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-5.0f * deltaTime));
 			} else {
 				auto currentTime = std::chrono::steady_clock::now();
 				auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 				// Adjust the camera back if all entities are in the center and cooldown time has passed
 				if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenter) {
-					if (cameraDistance > groundDistance) {
-						cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reduce distance
+					if (cameraDistance > groundDistance + 5.0f) { // Added Deadzone tolerance
+						cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-1.5f * deltaTime));
 						if (cameraDistance < groundDistance) {
 							cameraDistance = groundDistance; // Prevent going below default distance
 						}
@@ -647,23 +642,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 
 			// Zoom in if closest enemy is far away
 			if (closestEnemyDistance > 800.0f) {
-				cameraDistance -= 15.0f * g_frameRateMultiplier; // Decrease camera distance to zoom in
+				cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-1.0f * deltaTime));
 				if (cameraDistance < groundDistance) {
 					cameraDistance = groundDistance; // Prevent going below default distance
 				}
 			}
 		} else {
+			float deltaTime = ImGui::GetIO().DeltaTime;
 			// Smoothly reset to ground distance when out of combat or returning to the ground
-			if (cameraDistance > groundDistance) {
-				cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reset to ground distance
-				if (cameraDistance < groundDistance) {
-					cameraDistance = groundDistance; // Clamp to ground distance
-				}
-			} else if (cameraDistance < groundDistance) {
-				cameraDistance += 10.0f * g_frameRateMultiplier; // Gradually increase to ground distance if too low
-				if (cameraDistance > groundDistance) {
-					cameraDistance = groundDistance; // Clamp to ground distance
-				}
+			if (std::abs(cameraDistance - groundDistance) > 5.0f) {
+				cameraDistance += (groundDistance - cameraDistance) * (1.0f - std::exp(-1.5f * deltaTime));
+			} else {
+				cameraDistance = groundDistance;
 			}
 		}
 	}
@@ -681,7 +671,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 
 	static bool fovWasIncreased = false;
 	const float maxFovMultiplier = 1.6f;
-	const float fovIncreaseSpeed = 0.005f; // Slower, less dramatic transition
+	const float fovIncreaseSpeed = 0.015f; // Faster transition when entity goes off-screen
 	const float fovDecreaseSpeed = 0.08f; // Faster recovery to normal
 
 	static auto allInCenterStartTime = std::chrono::steady_clock::time_point{};
@@ -746,6 +736,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	if (!allPlayersWithinMPCam) {
 		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
 		fovWasIncreased = false;
+		cameraDistance = groundDistanceSP; // Fallback snap to defaults
 		HandleDynamicSPCameraDistance(cameraDistance, groundDistanceSP, airDistanceSP);
 		return;
 	}
@@ -787,6 +778,18 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	// Gradual FOV adjustment logic
 	float& fovMultiplier = activeCrimsonConfig.Camera.fovMultiplier;
 	const float queuedFov = queuedCrimsonConfig.Camera.fovMultiplier;
+
+	// Dynamic minimum FOV floor that scales as the camera gets compressed into the wall
+	float dynamicMinFov = queuedFov;
+	if (cameraDistance < groundDistanceSP) {
+		float pushRatio = (groundDistanceSP - cameraDistance) / (groundDistanceSP - 100.0f); // 0.0 to 1.0
+		if (pushRatio > 1.0f) pushRatio = 1.0f;
+		if (pushRatio < 0.0f) pushRatio = 0.0f;
+
+		// If fully compressed against wall, retain a higher base FOV
+		dynamicMinFov = queuedFov + ((maxFovMultiplier - 0.2f) - queuedFov) * pushRatio; 
+	}
+
 	if ((g_cameraHittingWall > 0) && cameraDistance <= groundDistanceSP + 0.1f && anyPlayerNearEdge) {
 		// Save previous FOV only once when starting to increase
 		if (!fovWasIncreased) {
@@ -800,13 +803,22 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	} else {
 		// Only restore FOV if all players have been in the center for at least 400ms
 		if (fovWasIncreased && debounceActive && (now - allInCenterStartTime) > allInCenterCooldown) {
-			if (fovMultiplier > queuedFov) {
-				fovMultiplier -= fovDecreaseSpeed * g_frameRateMultiplier;
-				if (fovMultiplier < queuedFov) fovMultiplier = queuedFov;
+			if (fovMultiplier > dynamicMinFov) {
+				// Slower decrease to avoid jarring snap
+				fovMultiplier -= (fovDecreaseSpeed * 0.5f) * g_frameRateMultiplier; 
+				if (fovMultiplier < dynamicMinFov) fovMultiplier = dynamicMinFov;
+			} else if (fovMultiplier < dynamicMinFov) {
+				// Instantly catch up if pushed below the dynamic floor
+				fovMultiplier = dynamicMinFov;
 			} else {
-				fovMultiplier = queuedFov;
-				fovWasIncreased = false;
+				if (cameraDistance >= groundDistanceSP - 0.1f) {
+					fovMultiplier = queuedFov;
+					fovWasIncreased = false;
+				}
 			}
+		} else if (fovMultiplier < dynamicMinFov) {
+			// Ensure it always respects the floor even if not restoring
+			fovMultiplier = dynamicMinFov;
 		}
 	}
 	// Handle camera collision and distance adjustment
@@ -824,7 +836,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 			if (needZoomOut) {
 				lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
 				// Exponentially smooth towards max distance
-				cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-2.0f * deltaTime));
+				cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-5.0f * deltaTime));
 			} else {
 				auto currentTime = std::chrono::steady_clock::now();
 				auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
@@ -844,7 +856,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 		float deltaTime = ImGui::GetIO().DeltaTime;
 		if (needZoomOut) {
 			lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-			cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-2.0f * deltaTime));
+			cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-5.0f * deltaTime));
 		} else {
 			auto currentTime = std::chrono::steady_clock::now();
 			auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
@@ -866,10 +878,33 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 		return;
 	}
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
+
+	static bool wasMPCamActive = false;
+	bool isMPCamActiveNow = g_isMPCamActive && activeConfig.Actor.enable;
+
+	// Snap back instantly on transition to SP Cam
+	if (wasMPCamActive && !isMPCamActiveNow) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+
+		if (activeCrimsonConfig.Camera.distance == 0) { // Far
+			cameraData.distanceCam = 430.0f;
+		} else if (activeCrimsonConfig.Camera.distance == 1) { // Closer
+			cameraData.distanceCam = 350.0f;
+		} else { // Dynamic
+			// HandleDynamicSPCameraDistance will handle it, but we can set a safe fallback here too
+			cameraData.distanceCam = 430.0f;
+		}
+	}
+	wasMPCamActive = isMPCamActiveNow;
+
 	if (activeCrimsonConfig.Camera.distance == 0 || cameraMetadata.fixedCameraAddr != 0) { // Far (Vanilla Default) // check if the camera is in a fixed pos mode
 		if (g_isMPCamActive && activeConfig.Actor.enable) {
 			HandleMultiplayerCameraDistance(cameraData.distanceCam, 430, 580);
 		} else {
+			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+			if (cameraData.distanceCam > 800.0f) {
+				cameraData.distanceCam = 430.0f;
+			}
 			return;
 		}
 	}
@@ -877,14 +912,12 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 	if (activeCrimsonConfig.Camera.distance == 1) { // Closer
 		if (g_isMPCamActive && activeConfig.Actor.enable) {
 			HandleMultiplayerCameraDistance(cameraData.distanceCam, 430, 580);
-		} else if (cameraData.distanceCam > 350) {
-			cameraData.distanceCam = 350.0f;
 		} else {
-			return;
-		}
-		
-		if (activeCrimsonConfig.Camera.fovMultiplier != queuedCrimsonConfig.Camera.fovMultiplier) {
 			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+			if (cameraData.distanceCam > 350.0f) {
+				cameraData.distanceCam = 350.0f;
+			}
+			return;
 		}
 	}
 
@@ -904,32 +937,48 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 
 
 void CameraLockOnDistanceController() {
-    auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
-    if (!pool_4449 || !pool_4449[147]) {
-        return;
-    }
-    auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
+	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
+	if (!pool_4449 || !pool_4449[147]) {
+		return;
+	}
+	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
-    auto pool_166 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
-    if (!pool_166 || !pool_166[3]) {
-        return;
-    }
-    auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
+	auto pool_166 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+	if (!pool_166 || !pool_166[3]) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
 
+	static bool wasMPCamActiveLockOn = false;
+	bool isMPCamActiveNow = g_isMPCamActive && activeConfig.Actor.enable;
 
-    if (activeCrimsonConfig.Camera.lockOnDistance == 0) {
-		if (activeCrimsonConfig.Camera.fovMultiplier != queuedCrimsonConfig.Camera.fovMultiplier) {
-			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+	// Snap back instantly on transition to SP Cam
+	if (wasMPCamActiveLockOn && !isMPCamActiveNow) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+		if (activeCrimsonConfig.Camera.lockOnDistance == 0 || activeCrimsonConfig.Camera.lockOnDistance == 2) { 
+			cameraData.distanceLockOn = 430.0f;
+		} else if (activeCrimsonConfig.Camera.lockOnDistance == 1) { 
+			cameraData.distanceLockOn = 360.0f;
 		}
-        return;
-    }
+	}
+	wasMPCamActiveLockOn = isMPCamActiveNow;
 
-    if (activeCrimsonConfig.Camera.lockOnDistance == 1) {
-		if (activeCrimsonConfig.Camera.fovMultiplier != queuedCrimsonConfig.Camera.fovMultiplier) {
-			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+	if (activeCrimsonConfig.Camera.lockOnDistance == 0) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+		if (cameraData.distanceLockOn > 800.0f) {
+			cameraData.distanceLockOn = 430.0f;
 		}
-        cameraData.distanceLockOn = 360.0f;
-    }
+		return;
+	}
+
+	if (activeCrimsonConfig.Camera.lockOnDistance == 1) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+		if (cameraData.distanceLockOn > 360.0f) {
+			cameraData.distanceLockOn = 360.0f;
+		} else {
+			cameraData.distanceLockOn = 360.0f;
+		}
+	}
 
     if (activeCrimsonConfig.Camera.lockOnDistance == 2) {
 		if (g_isMPCamActive) {
