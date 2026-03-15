@@ -97,7 +97,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	vergil.airStinger = false;
 	vergil.airRisingSun = false;
 	vergil.airLunarPhase = false;
-	vergil.altJudgementCutInput = false;
+	vergil.judgementCutRework = false;
 	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
 	//vergil.adjustLunarPhasePos = "Off";
 
@@ -161,7 +161,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	vergil.airStinger = true;
 	vergil.airRisingSun = true;
 	vergil.airLunarPhase = true;
-	vergil.altJudgementCutInput = true;
+	vergil.judgementCutRework = false;
 	vergil.yamatoRisingStar = false;
 	vergil.yamatoHighTime = false;
 	vergil.airTauntRisingSun = false;
@@ -244,7 +244,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	vergil.airStinger = true;
 	vergil.airRisingSun = true;
 	vergil.airLunarPhase = true;
-	vergil.altJudgementCutInput = true;
+	vergil.judgementCutRework = true;
 	vergil.yamatoRisingStar = true;
 	vergil.yamatoHighTime = true;
 	vergil.airTauntRisingSun = true;

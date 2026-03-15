@@ -5257,6 +5257,11 @@ struct VergilDoppelganger {
     bool drainStart = false;
 };
 
+struct VergilJudgementCut {
+    bool isJustFrameCharged = false;
+    bool isAfterJustFrameCharged = false;
+};
+
 extern bool inRoyalBlock;
 extern bool inGuardfly;
 extern float rainstormPull;
@@ -5353,6 +5358,7 @@ struct CrimsonPlayerData {
     bool inRisingStar = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
+    VergilJudgementCut jCut;
 
     uintptr_t clonePtr;
     uint8 actionClone     = 0;
@@ -5414,6 +5420,7 @@ struct CrimsonPlayerData {
     bool inRisingStarClone = false;
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
+	VergilJudgementCut jCutClone;
 };
 
 extern CrimsonPlayerData crimsonPlayer[20];

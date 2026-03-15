@@ -15,6 +15,7 @@ void DarkslayerCancelsVergilController(byte8* actorBaseAddr);
 void AirStingerJumpCancel(byte8* actorBaseAddr);
 void VergilRisingStar(byte8* actorBaseAddr);
 void VergilYamatoHighTime(byte8* actorBaseAddr);
+void VergilJudgementCutRework(byte8* actorBaseAddr);
 void VergilAdjustAirMovesPos(byte8* actorBaseAddr);
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr);
 void VergilAirRisingSun(byte8* actorBaseAddr);

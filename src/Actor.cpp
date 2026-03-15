@@ -4025,6 +4025,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonGameplay::FixAirStingerCancelTime(actorBaseAddr);
     CrimsonGameplay::VergilRisingStar(actorBaseAddr);
     CrimsonGameplay::VergilYamatoHighTime(actorBaseAddr);
+	CrimsonGameplay::VergilJudgementCutRework(actorBaseAddr);
     CrimsonGameplay::VergilAirRisingSun(actorBaseAddr);
     CrimsonGameplay::VergilAirTauntRisingSunDetection(actorBaseAddr);
     CrimsonGameplay::VergilDownertia(actorBaseAddr);
@@ -9489,16 +9490,8 @@ void SetAction(byte8* actorBaseAddr) {
     case CHARACTER::VERGIL: {
         using namespace ACTION_VERGIL;
 
-        // BACK TO FORWARD JUDGEMENT CUT INPUT
-        if (activeCrimsonGameplay.Gameplay.Vergil.altJudgementCutInput &&
-            (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 ||
-                actorData.action == YAMATO_COMBO_PART_1 || actorData.action == YAMATO_COMBO_PART_2 || 
-                actorData.action == YAMATO_COMBO_PART_3) &&
-            crimsonPlayer[playerIndex].b2F.forwardCommand) {
-            actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
-        }
         // AIR LUNAR PHASE
-        else if (activeCrimsonGameplay.Gameplay.Vergil.airLunarPhase && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
+        if (activeCrimsonGameplay.Gameplay.Vergil.airLunarPhase && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
             actorData.action == BEOWULF_STARFALL_LEVEL_1) 
             && lockOn && (tiltDirection == TILT_DIRECTION::UP)) {
 
@@ -9546,6 +9539,8 @@ void SetAction(byte8* actorBaseAddr) {
 }
 
 bool AirActionCheck(PlayerActorData& actorData) {
+    auto& jCut = (actorData.newEntityIndex == 0) ? crimsonPlayer[actorData.newPlayerIndex].jCut :
+		crimsonPlayer[actorData.newPlayerIndex].jCutClone;
 
     switch (actorData.character) {
     case CHARACTER::DANTE: {
@@ -9580,11 +9575,11 @@ bool AirActionCheck(PlayerActorData& actorData) {
 			return true;
 		}
 
-        // Enable Air Judgement Cut on air test -- unfinished
-// 		if ((actorData.state & STATE::IN_AIR) && (actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
-// 			(actorData.motionData[1].group == MOTION_GROUP_VERGIL::YAMATO)) {
-// 			return true;
-// 		}
+
+		if ((actorData.state & STATE::IN_AIR) && (actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+            (actorData.motionData[1].group == MOTION_GROUP_VERGIL::YAMATO) && activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
+			return true;
+		}
 
         break;
     }

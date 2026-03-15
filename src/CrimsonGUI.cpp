@@ -8500,6 +8500,9 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 				return;
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
+
+			
+			ImGui::Text("characterData.weapon %d", characterData.meleeWeapons[characterData.meleeWeaponIndex]);
 			ImGui::Text("Crazy announcer timer %g \ was hit %d", rankAnnouncer[1].timer, rankAnnouncer[1].wasHit);
 			ImGui::Text("actorData event %d", actorData.eventData[0].event);
 			ImGui::Text("actorData.state %d", actorData.state);
@@ -11657,15 +11660,15 @@ void VergilGameplayOptions() {
 
 			ImGui::TableNextColumn();
 			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Alternate Judgement Cut Input",
-				activeCrimsonGameplay.Gameplay.Vergil.altJudgementCutInput,
-				queuedCrimsonGameplay.Gameplay.Vergil.altJudgementCutInput,
-				activeCrimsonGameplayMask.Gameplay.Vergil.altJudgementCutInput)) {
+			if (GUI_Checkbox2("Judgement Cut Rework",
+				activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
+				queuedCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
+				activeCrimsonGameplayMask.Gameplay.Vergil.judgementCutRework)) {
 			}
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "With Yamato: Lock On + Back to Forward + Melee.");
+			TooltipHelper("(?)", "Makes Judgement Cut behave like it does in 4SE/5 with Just Frame inputs.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();

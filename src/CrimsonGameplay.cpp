@@ -1016,6 +1016,109 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	// GROUMDED Yamato High Time OUTSOURCED to SetAction(); in Actor.cpp
 }
 
+void VergilJudgementCutRework(byte8* actorBaseAddr) {
+	using namespace ACTION_VERGIL;
+	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
+		return;
+	}
+	if (!activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (actorData.character != CHARACTER::VERGIL) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& gamepad = GetGamepad(playerIndex);
+	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
+	bool inAir = (actorData.state & STATE::IN_AIR);
+
+	// --- Melee button hold timer for charging Just Frame Judgement Cut ---
+	static float meleeButtonHold[PLAYER_COUNT][ENTITY_COUNT] = {};
+	constexpr float MELEE_HOLD_TIME_GROUNDED = 0.8f;
+	constexpr float MELEE_HOLD_TIME_AIR = 0.5f;
+
+	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	auto& jCut = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
+
+	bool inGroundedMoves = (actorData.action == YAMATO_COMBO_PART_1 || actorData.action == YAMATO_COMBO_PART_2 || actorData.action == YAMATO_COMBO_PART_3 ||
+		actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_UPPER_SLASH_PART_1 ||
+		actorData.action == YAMATO_UPPER_SLASH_PART_2 || actorData.action == BEOWULF_COMBO_PART_1 || actorData.action == BEOWULF_COMBO_PART_2 ||
+		actorData.action == BEOWULF_COMBO_PART_3 || actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1 || actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2 ||
+		actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3 || actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4 || actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME ||
+		actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 || actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2 || actorData.action == YAMATO_FORCE_EDGE_ROUND_TRIP ||
+		actorData.action == YAMATO_FORCE_EDGE_KICK || actorData.action == NERO_ANGELO_COMBO_1_PART_1 || actorData.action == NERO_ANGELO_COMBO_1_PART_2 ||
+		actorData.action == NERO_ANGELO_COMBO_1_PART_3 || actorData.action == NERO_ANGELO_HIGH_TIME || actorData.action == NERO_ANGELO_STINGER ||
+		actorData.action == NERO_ANGELO_FIREBALL_1 || actorData.action == NERO_ANGELO_COMBO_2_PART_1 || actorData.action == NERO_ANGELO_COMBO_2_PART_2 ||
+		actorData.action == NERO_ANGELO_COMBO_2_PART_3 || actorData.action == NERO_ANGELO_DIVEKICK || actorData.action == NERO_ANGELO_ROUNDHOUSE_KICK ||
+		actorData.action == NERO_ANGELO_UPPERCUT || actorData.action == NERO_ANGELO_FIREBALL_2);
+
+	bool inAerialMoves = (actorData.action == YAMATO_LEAP || actorData.action == YAMATO_AERIAL_RAVE_PART_1 || actorData.action == YAMATO_AERIAL_RAVE_PART_2 ||
+		actorData.action == BEOWULF_STARFALL_LEVEL_1 || actorData.action == BEOWULF_STARFALL_LEVEL_2 || actorData.action == BEOWULF_RISING_SUN ||
+		actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_1 || actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_2 || actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_1 ||
+		actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2 || actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME_LAUNCH || actorData.action == DARK_SLAYER_AIR_TRICK ||
+		actorData.action == DARK_SLAYER_TRICK_UP || actorData.action == DARK_SLAYER_TRICK_DOWN || actorData.action == NERO_ANGELO_HELM_BREAKER ||
+		actorData.action == NERO_ANGELO_HIGH_TIME_LAUNCH);
+
+	float MELEE_HOLD_TIME = inAerialMoves ? MELEE_HOLD_TIME_AIR : (inGroundedMoves ? MELEE_HOLD_TIME_GROUNDED : MELEE_HOLD_TIME_GROUNDED);
+	float MELEE_MAX_HOLD_TIME = MELEE_HOLD_TIME + 0.2f;
+
+	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	auto& characterData = GetCharacterData(actorData);
+	if (characterData.meleeWeapons[characterData.meleeWeaponIndex] != 11) {
+		return; // Ensure the character is currently using Yamato
+	}
+
+	if (meleeDown) {
+		meleeButtonHold[playerIndex][entityIndex] += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+
+		if (actionTimer >= MELEE_HOLD_TIME && meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME &&
+			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
+			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 && !jCut.isJustFrameCharged &&
+			!jCut.isAfterJustFrameCharged &&
+			meleeButtonHold[playerIndex][entityIndex] <= MELEE_MAX_HOLD_TIME) {
+
+			if (indicatorFired[playerIndex][entityIndex] == false) {
+				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f);
+				indicatorFired[playerIndex][entityIndex] = true;
+			}
+
+			jCut.isJustFrameCharged = true;
+		}
+
+		if (meleeButtonHold[playerIndex][entityIndex] > MELEE_MAX_HOLD_TIME) {
+			jCut.isJustFrameCharged = false; // Discard charge if held for too long
+			jCut.isAfterJustFrameCharged = true;
+		}
+	}
+	else {
+		if (jCut.isJustFrameCharged) {
+			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCut_pl021_00_3; // Swap to Just Frame Judgement Cut animation
+			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
+			actorData.recoverState[0] = 0;
+			//PlayAnimation_1EFB90(actorData, MOTION_GROUP_VERGIL::YAMATO, 12, 54.0f, 0, 0, -1);
+		}
+		else if (jCut.isAfterJustFrameCharged && !inAir && actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
+			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1) {
+			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
+			actorData.recoverState[0] = 0;
+			//PlayAnimation_1EFB90(actorData, MOTION_GROUP_VERGIL::YAMATO, 12, 54.0f, 0, 0, -1);
+		}
+
+		meleeButtonHold[playerIndex][entityIndex] = 0.0f;
+		indicatorFired[playerIndex][entityIndex] = false; // Reset indicator when button is released
+		jCut.isJustFrameCharged = false; // Reset charge when released
+		jCut.isAfterJustFrameCharged = false;
+	}
+
+	if (actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
+		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCut_pl021_00_3) {
+		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = File_staticFiles[pl021_00_3]; // Ensure we swap back to regular motion archive after the move is performed
+	}
+}
+
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
     using namespace ACTION_VERGIL;
 

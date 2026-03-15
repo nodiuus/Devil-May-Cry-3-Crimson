@@ -134,7 +134,7 @@ struct CrimsonConfigGameplay {
 			bool airStinger = true;
 			bool airRisingSun = true;
 			bool airLunarPhase = true;
-			bool altJudgementCutInput = false;
+			bool judgementCutRework = false;
 			bool yamatoRisingStar = true;
 			bool yamatoHighTime = true;
 			bool airTauntRisingSun = true;
@@ -151,7 +151,7 @@ struct CrimsonConfigGameplay {
 					std::make_pair("airStinger", &Vergil::airStinger),
 					std::make_pair("airRisingSun", &Vergil::airRisingSun),
 					std::make_pair("airLunarPhase", &Vergil::airLunarPhase),
-					std::make_pair("altJudgementCutInput", &Vergil::altJudgementCutInput),
+					std::make_pair("judgementCutRework", &Vergil::judgementCutRework),
 					std::make_pair("yamatoRisingStar", &Vergil::yamatoRisingStar),
 					std::make_pair("yamatoHighTime", &Vergil::yamatoHighTime),
 					std::make_pair("airTauntRisingSun", &Vergil::airTauntRisingSun),
