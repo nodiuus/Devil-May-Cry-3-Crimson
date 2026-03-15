@@ -1095,7 +1095,14 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	}
 	else {
 		if (jCut.isJustFrameCharged) {
-			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCut_pl021_00_3; // Swap to Just Frame Judgement Cut animation
+
+			if (!inAir) {
+				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCut_pl021_00_3; // Swap to Just Frame Judgement Cut animation
+			}
+			else {
+				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAir_pl021_00_3; // Swap to Air Just Frame Judgement Cut animation
+			}
+			
 			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 			actorData.recoverState[0] = 0;
 			//PlayAnimation_1EFB90(actorData, MOTION_GROUP_VERGIL::YAMATO, 12, 54.0f, 0, 0, -1);
