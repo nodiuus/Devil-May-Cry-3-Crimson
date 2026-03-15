@@ -4357,7 +4357,7 @@ void RenderMultiplayerBar(
 	}
 	const float alpha = ImLerp(0.27f, 1.0f, 1.0);
 	ImVec4 hitColor = CrimsonUtil::HexToImVec4(0x43fe65FF);
-	ImVec4 magicColor = CrimsonUtil::HexToImVec4(0xde1c4cFF);
+	ImVec4 magicColor[4] = CrimsonUtil::HexToImVec4(0xde1c4cFF);
 	float magicColorVergil[4] = { 0.06f, 0.74f, 0.81f, 1.0f };
 
 	const float baseSpacing = 0.37f;
