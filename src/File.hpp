@@ -32,6 +32,7 @@ extern byte8* newStyleSwitching01_pl000_00_4;
 extern byte8* newStyleSwitching02_pl000_00_4;
 extern byte8* newJudgementCut_pl021_00_3;
 extern byte8* newJudgementCutAir_pl021_00_3;
+extern byte8* newJudgementCutAirJF_pl021_00_3;
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex);
 

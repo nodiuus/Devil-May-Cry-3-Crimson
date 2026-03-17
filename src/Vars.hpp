@@ -5258,6 +5258,7 @@ struct VergilDoppelganger {
 };
 
 struct VergilJudgementCut {
+    float meleeButtonHold = 0.0f;
     bool isJustFrameCharged = false;
     bool isAfterJustFrameCharged = false;
 };
@@ -5297,6 +5298,7 @@ struct CrimsonPlayerData {
     int currentAnim   = 0;
     float actionTimer = 0;
     float actionTimerNotEventChange = 0;
+    float actionTimerNotTrickChange = 0;
     float lastActionTime = 0;
     float animTimer   = 0;
     float eventTimer = 0;
@@ -5373,6 +5375,7 @@ struct CrimsonPlayerData {
     int currentAnimClone   = 0;
     float actionTimerClone = 0;
 	float actionTimerNotEventChangeClone = 0;
+    float actionTimerNotTrickChangeClone = 0;
     float lastActionTimeClone = 0;
     float animTimerClone   = 0;
     float eventTimerClone = 0;

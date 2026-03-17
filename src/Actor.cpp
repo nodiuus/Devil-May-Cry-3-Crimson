@@ -9285,6 +9285,10 @@ float* GetYamatoForceEdgeStingerRange(PlayerActorData& actorData) {
 uint32 GetYamatoJudgementCutCount(PlayerActorData& actorData) {
     uint8 index = (actorData.devil) ? 1 : 0;
 
+    if (activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
+        return static_cast<uint32>(0);
+    }
+
     return static_cast<uint32>(activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[index]);
 }
 

@@ -85,6 +85,7 @@ void ActionTimers() {
 			auto& lastAction = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastAction : crimsonPlayer[playerIndex].lastActionClone;
 			auto& actionTimerNotEventChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotEventChange : crimsonPlayer[playerIndex].actionTimerNotEventChangeClone;
             auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
+			auto& actionTimerNotTrickChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotTrickChange : crimsonPlayer[playerIndex].actionTimerNotTrickChangeClone;
             auto& lastActionTime = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastActionTime : crimsonPlayer[playerIndex].lastActionTimeClone;
             auto& inAirRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun : crimsonPlayer[playerIndex].inAirTauntRisingSunClone;
             auto& lastInAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastInAirTauntRisingSun : crimsonPlayer[playerIndex].lastInAirTauntRisingSunClone;
@@ -99,11 +100,24 @@ void ActionTimers() {
                 actionTimer = 0;
             }
 
+			if (inAttack || actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
+				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
+				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || actorData.eventData[0].event == ACTOR_EVENT::AIR_TRICK_END) {
+				actionTimerNotTrickChange += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+            }
+            else {
+				actionTimerNotTrickChange = 0;
+            }
+
             // Reset Timer By Action
             if (actorData.action != currentAction) {
                 lastActionTime = actionTimerNotEventChange;
                 actionTimer = 0;
 				actionTimerNotEventChange = 0;
+				if (actorData.action != ACTION_VERGIL::DARK_SLAYER_AIR_TRICK && 
+                    actorData.action != ACTION_VERGIL::DARK_SLAYER_TRICK_DOWN &&
+					actorData.action != ACTION_VERGIL::DARK_SLAYER_TRICK_UP &&
+                    actorData.action != 0) actionTimerNotTrickChange = 0;
                 lastAction = currentAction;
                 lastInAirTauntRisingSun = inAirRisingSun;
                 currentAction = actorData.action;
