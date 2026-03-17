@@ -8308,17 +8308,17 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 // 				for (int i = 0; i < weaponProgression.rangedWeaponIds.size(); i++) {
 // 					ImGui::Text("RangedWeaponId[%u]: %u", i, weaponProgression.rangedWeaponIds[i]);
 // 				}
- 				for (int i = 0; i < weaponProgression.meleeWeaponIds.size(); i++) {
-					ImGui::Text("MeleeWeaponName[%u]: %s", i, weaponProgression.meleeWeaponNames[i]);
- 				}
+//  				for (int i = 0; i < weaponProgression.meleeWeaponIds.size(); i++) {
+// 					ImGui::Text("MeleeWeaponName[%u]: %s", i, weaponProgression.meleeWeaponNames[i]);
+//  				}
 // 				for (size_t i = 0; i < queuedConfig.Actor.playerData[0].characterData[0][0].rangedWeaponCount; i++) {
 // 					ImGui::Text("RangedWeaponQeued[%u]: %u", i, queuedConfig.Actor.playerData[0].characterData[0][0].rangedWeapons[i]);
 // 				} 
 				
                // ImGui::Text("Gamepad Style Button: %u", gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION));
-				ImGui::Text("activePreset: %u", activeCrimsonGameplay.GameMode.preset);
-				ImGui::Text("queuedPreset: %u", queuedCrimsonGameplay.GameMode.preset);
-                ImGui::Text("Quicksilver Level: %u", sessionData.styleLevels[4]);
+// 				ImGui::Text("activePreset: %u", activeCrimsonGameplay.GameMode.preset);
+// 				ImGui::Text("queuedPreset: %u", queuedCrimsonGameplay.GameMode.preset);
+//                 ImGui::Text("Quicksilver Level: %u", sessionData.styleLevels[4]);
 
 
                 /*ImGui::Text("Sky Launch:  %u", executingSkyLaunch);
@@ -8501,9 +8501,17 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("Jcut MeleeHoldTime:  %g", crimsonPlayer[0].jCut.meleeHoldTime);
 			ImGui::Text("meleeHold %g", crimsonPlayer[0].jCut.meleeButtonHold);
+			ImGui::Text("ACTION:  %u", actorData.action);
+			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
+			ImGui::Text("action Timer Trick not change:  %g", crimsonPlayer[0].actionTimerNotTrickChange);
+			ImGui::Text("Event Data %u", actorData.eventData[0].event);
+			ImGui::Text("Actor Data Permissions: %d", actorData.permissions);
 			ImGui::Text("isAJustFrameCharged %d", crimsonPlayer[0].jCut.isJustFrameCharged);
 			ImGui::Text("isAfterJustFrameCharged %d", crimsonPlayer[0].jCut.isAfterJustFrameCharged);
+			ImGui::Text("jCut performing %d", crimsonPlayer[0].jCut.performing);
+			ImGui::Text("Motion Data 1: %u", crimsonPlayer[0].motion);
 			ImGui::Text("characterData.weapon %d", characterData.meleeWeapons[characterData.meleeWeaponIndex]);
 			ImGui::Text("Crazy announcer timer %g \ was hit %d", rankAnnouncer[1].timer, rankAnnouncer[1].wasHit);
 			ImGui::Text("actorData event %d", actorData.eventData[0].event);
@@ -8529,8 +8537,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("styleExpPoints: %g", actorData.styleExpPoints);
 			ImGui::Text("Actor Base Addr: %x", actorData.baseAddr);
 			ImGui::Text("TrickDash Timer: %g", crimsonPlayer[0].trickDashTimer);
-			ImGui::Text("ACTION:  %u", actorData.action);
-			ImGui::Text("Event Data 1 %u", actorData.eventData[0]);
 			ImGui::Text("lockOnEnemyMinusStun: %g", crimsonPlayer[0].lockedOnEnemyMinusStun);
 			ImGui::Text("lockOnEnemyMinusDisplacement: %g", crimsonPlayer[0].lockedOnEnemyMinusDisplacement);
 			ImGui::Text("gameModeData.mustStyleMissionResult: %u", gameModeData.mustStyleMissionResult);
@@ -8570,10 +8576,8 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("Royal Block: %u", actorData.royalBlock);
 			ImGui::Text("Guard: %u", actorData.guard);
 			ImGui::Text("maxDT: %g", actorData.maxMagicPoints);
-			ImGui::Text("Motion Data 1: %u", crimsonPlayer[0].motion);
 			ImGui::Text("anim Timer Main Actor:  %g", crimsonPlayer[0].animTimer);
 			ImGui::Text("anim Timer Clone:  %g", crimsonPlayer[0].animTimerClone);
-			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
 			ImGui::Text("action Timer Clone:  %g", crimsonPlayer[0].actionTimerClone);
 			ImGui::Text("AIR GUARD: %u", actorData.airGuard);
 			ImGui::Text("GUARDFLY PULL: %g", crimsonPlayer[0].inertia.airGuard.cachedPull);

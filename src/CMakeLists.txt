@@ -5,6 +5,7 @@ set(MASM_SRC
     masm/AddToMirageGauge.asm
     masm/CameraHittingWall.asm
     masm/CameraSensitivity.asm
+    masm/ConfirmSetAction.asm
     masm/CreateEffect.asm
     masm/HoldToCrazyComboAsm.asm
     masm/DisableStaggerRoyalguard.asm

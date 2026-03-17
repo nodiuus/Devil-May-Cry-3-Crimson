@@ -962,10 +962,14 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	}
 
 	// Reset apply flag when action changes away from YAMATO_RAPID_SLASH_LEVEL_2
-	if ((actorData.action == BEOWULF_RISING_SUN && actionTimer > 0.8f) || 
+	if ((actorData.action == BEOWULF_RISING_SUN && actionTimer > 1.0f) || 
+		(actorData.action != BEOWULF_RISING_SUN && actorData.action != YAMATO_RAPID_SLASH_LEVEL_2 &&
+			actorData.action != YAMATO_RAPID_SLASH_LEVEL_1) ||
         (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
             actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
-            actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP
+            actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP ||
+			actorData.eventData[0].event == ACTOR_EVENT::JUMP ||
+			actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL
         ) || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
 		actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && inRisingStar) {
 		actorData.motionArchives[MOTION_GROUP_VERGIL::BEOWULF] = File_staticFiles[pl021_00_4]; // Revert to default pac motion archive after Rising Star finishes or is cancelled by a trick.
@@ -1065,28 +1069,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jCut.isAfterJustFrameCharged = false;
 		return;
 	}
-	static float MELEE_HOLD_TIME[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
-	static float MELEE_MAX_HOLD_TIME[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 
-	bool bucket1Moves = (actorData.action == YAMATO_COMBO_PART_1 || actorData.action == YAMATO_COMBO_PART_2 || actorData.action == YAMATO_COMBO_PART_3 ||
-		actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_UPPER_SLASH_PART_1 ||
-		actorData.action == YAMATO_UPPER_SLASH_PART_2 || actorData.action == BEOWULF_COMBO_PART_1 || actorData.action == BEOWULF_COMBO_PART_2 ||
-		actorData.action == BEOWULF_COMBO_PART_3 || actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_1 || actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_2 ||
-		actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_3 || actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4 || actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME ||
-		actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME_LAUNCH ||
-		actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 || actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2 || actorData.action == YAMATO_FORCE_EDGE_ROUND_TRIP ||
-		actorData.action == YAMATO_FORCE_EDGE_KICK || actorData.action == NERO_ANGELO_COMBO_1_PART_1 || actorData.action == NERO_ANGELO_COMBO_1_PART_2 ||
-		actorData.action == NERO_ANGELO_COMBO_1_PART_3 || actorData.action == NERO_ANGELO_HIGH_TIME || 
-		actorData.action == NERO_ANGELO_HIGH_TIME_LAUNCH ||actorData.action == NERO_ANGELO_STINGER ||
-		actorData.action == NERO_ANGELO_FIREBALL_1 || actorData.action == NERO_ANGELO_COMBO_2_PART_1 || actorData.action == NERO_ANGELO_COMBO_2_PART_2 ||
-		actorData.action == NERO_ANGELO_COMBO_2_PART_3 || actorData.action == NERO_ANGELO_DIVEKICK || actorData.action == NERO_ANGELO_ROUNDHOUSE_KICK ||
-		actorData.action == NERO_ANGELO_UPPERCUT || actorData.action == NERO_ANGELO_FIREBALL_2 );
-
-	bool bucket2Moves = (actorData.action == YAMATO_LEAP || actorData.action == YAMATO_AERIAL_RAVE_PART_1 || actorData.action == YAMATO_AERIAL_RAVE_PART_2 ||
-		actorData.action == BEOWULF_STARFALL_LEVEL_1 || actorData.action == BEOWULF_STARFALL_LEVEL_2 || actorData.action == BEOWULF_RISING_SUN ||
-		actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_1 || actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_2 || actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_1 ||
-		actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2 || actorData.action == DARK_SLAYER_AIR_TRICK ||
-		actorData.action == DARK_SLAYER_TRICK_UP || actorData.action == DARK_SLAYER_TRICK_DOWN || actorData.action == NERO_ANGELO_HELM_BREAKER );
+	auto& inRisingStar = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
+		crimsonPlayer[playerIndex].inRisingStarClone;
 
 	if (meleeDown) {
 		if (jCut.meleeButtonHold == 0.0f) {
@@ -1094,55 +1079,52 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			actionWhenChargeStarted[playerIndex][entityIndex] = actorData.action;
 		}
 
-// 		if (actionWhenChargeStarted[playerIndex][entityIndex] == bucket1Moves) {
-// 			MELEE_HOLD_TIME[playerIndex][entityIndex] = 0.8f;
-// 		} 
-// 		else if (actionWhenChargeStarted[playerIndex][entityIndex] == bucket2Moves) {
-// 			MELEE_HOLD_TIME[playerIndex][entityIndex] = 0.4f;
-// 		} 
-		if ((actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
-			actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+		if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
+			actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == File_staticFiles[pl021_00_3]) {
-			MELEE_HOLD_TIME[playerIndex][entityIndex] = 1.2f;
+			jCut.meleeHoldTime = 1.3f;
 		} 
-		else if ((actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
-			actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+		else if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
+			actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCut_pl021_00_3) {
-			MELEE_HOLD_TIME[playerIndex][entityIndex] = 0.5f;
+			jCut.meleeHoldTime = 0.5f;
 		}
-		else if ((actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
-			actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+		else if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
+			actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3) {
-			MELEE_HOLD_TIME[playerIndex][entityIndex] = 0.7f;
+			jCut.meleeHoldTime = 0.7f;
 		}
-		else if ((actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
-			actionWhenChargeStarted[playerIndex][entityIndex] == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+		else if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
+			actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAirJF_pl021_00_3) {
-			MELEE_HOLD_TIME[playerIndex][entityIndex] = 0.35f;
+			jCut.meleeHoldTime = 0.35f;
+		}
+		else if (inRisingStar) {
+			jCut.meleeHoldTime = 1.5f; // Rising Star has a unique hold time
 		}
 		else {
-			MELEE_HOLD_TIME[playerIndex][entityIndex] = startedInAir[playerIndex][entityIndex] ? MELEE_HOLD_TIME_AIR : MELEE_HOLD_TIME_GROUNDED;
+			jCut.meleeHoldTime = startedInAir[playerIndex][entityIndex] ? MELEE_HOLD_TIME_AIR : MELEE_HOLD_TIME_GROUNDED;
 		}
 
-		MELEE_MAX_HOLD_TIME[playerIndex][entityIndex] = MELEE_HOLD_TIME[playerIndex][entityIndex] + JUST_FRAME_WINDOW;
+		jCut.meleeMaxHoldTime = jCut.meleeHoldTime + JUST_FRAME_WINDOW;
 
 		jCut.meleeButtonHold += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
 
-		if (actionTimerNotTrickChange >= MELEE_HOLD_TIME[playerIndex][entityIndex] && 
-			jCut.meleeButtonHold >= MELEE_HOLD_TIME[playerIndex][entityIndex] && 
+		if (actionTimerNotTrickChange >= jCut.meleeHoldTime &&
+			jCut.meleeButtonHold >= jCut.meleeHoldTime &&
 			!jCut.isJustFrameCharged &&
 			!jCut.isAfterJustFrameCharged &&
-			jCut.meleeButtonHold <= MELEE_MAX_HOLD_TIME[playerIndex][entityIndex]) {
+			jCut.meleeButtonHold <= jCut.meleeMaxHoldTime) {
 
 			if (indicatorFired[playerIndex][entityIndex] == false) {
-				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f);
+				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
 				indicatorFired[playerIndex][entityIndex] = true;
 			}
 
 			jCut.isJustFrameCharged = true;
 		}
 
-		if (jCut.meleeButtonHold > MELEE_MAX_HOLD_TIME[playerIndex][entityIndex]) {
+		if (jCut.meleeButtonHold > jCut.meleeMaxHoldTime) {
 			jCut.isJustFrameCharged = false; // Discard charge if held for too long
 			jCut.isAfterJustFrameCharged = true;
 		}
@@ -1157,56 +1139,50 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAirJF_pl021_00_3; // Swap to JF Air Just Frame Judgement Cut animation
 			}
 
-			jCut.isJustFrameCharged = false;
-			jCut.isAfterJustFrameCharged = false;
 			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
-			//actorData.recoverState[0] = 0;
-			if (actionTimerNotEventChange >= MELEE_HOLD_TIME[playerIndex][entityIndex] ||
-				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
+			
+			if ((actorData.eventData[0].event == 3 || actorData.eventData[0].event == 6 || actorData.eventData[0].event == 2 
+				|| actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
 				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
-				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || actorData.eventData[0].event == ACTOR_EVENT::AIR_TRICK_END) {
-				func_1E0800_TriggerEvent(actorData, 17, 0, 0);
-				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xfc0366ff), 1.2f);
+				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP ||
+				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
+				
+				func_1E0800_TriggerEvent(actorData, 17, 0, -1);
+				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xfc0366ff), 1.2f); DEBUG COLOR JF
+			}
+			else {
+				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
+				actorData.recoverState[0] = 0;
 			}
 
-				
-
-// 			std::thread([](byte8* addr) {
-// 				std::this_thread::sleep_for(std::chrono::milliseconds(150));
-// 				if (!addr) return;
-// 				auto& aData = *reinterpret_cast<PlayerActorData*>(addr);
-// 				aData.action = ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2;
-// 				auto& actionTimerNotEventChange = (aData.newPlayerIndex == 0) ? crimsonPlayer[aData.newPlayerIndex].actionTimerNotEventChange :
-// 					crimsonPlayer[aData.newPlayerIndex].actionTimerNotEventChangeClone;
-// 				if (actionTimerNotEventChange >= MELEE_HOLD_TIME[aData.newPlayerIndex][aData.newEntityIndex] ||
-// 					aData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
-// 					aData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
-// 					aData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || aData.eventData[0].event == ACTOR_EVENT::AIR_TRICK_END) func_1E0800_TriggerEvent(aData, 17, 0, 0);
-// 				}, actorBaseAddr).detach();
+			jCut.isJustFrameCharged = false;
+			jCut.isAfterJustFrameCharged = false;
 			
 		}
 		else if (jCut.isAfterJustFrameCharged && actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
 			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3) {
 			
-
-			
 			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 			if ((actorData.eventData[0].event == 3 || actorData.eventData[0].event == 6 || actorData.eventData[0].event == 2
 				|| actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
 					actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
-				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || actorData.eventData[0].event == ACTOR_EVENT::AIR_TRICK_END) &&
-				actorData.lastAction != YAMATO_JUDGEMENT_CUT_LEVEL_2) {
+				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || 
+				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
 				if (inAir) {
 					actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAir_pl021_00_3; // Swap to Normal Air Just Frame Judgement Cut animation
 				}
-				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
-				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xf71a0a), 1.2f);
+
+				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, -1);
+
+				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xf71a0a), 1.2f); DEBUG COLOR NORMAL
 			}
 			else {
 				if (inAir) {
 					actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAir_pl021_00_3; // Swap to Normal Air Just Frame Judgement Cut animation
 				}
+				actorData.eventData[0].event = ACTOR_EVENT::ATTACK;
+				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 				actorData.recoverState[0] = 0;
 			}
 			

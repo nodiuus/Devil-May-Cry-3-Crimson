@@ -198,6 +198,12 @@ std::uint64_t g_CamHittingWall_ReturnAddr;
 void CamHittingWallDetour();
 bool* g_CamHittingWall_ConditionalAddr = nullptr;
 
+// ConfirmSetAction
+std::uint64_t g_ConfirmSetAction_ReturnAddr;
+std::uint64_t g_ConfirmSetAction_FuncCall;
+void ConfirmSetActionDetour();
+void* g_ConfirmSetActionCheckCall;
+
 // RerouteRedOrbsCounterAlpha
 std::uint64_t g_RerouteRedOrbsCounterAlpha_ReturnAddr1;
 std::uint64_t g_RerouteRedOrbsCounterAlpha_ReturnAddr2;
@@ -612,6 +618,23 @@ void SetAnnouncerWasHit() {
 	for (int rankId = 0; rankId < 7; rankId++) {
 		rankAnnouncer[rankId].wasHit = true;
 	}
+}
+
+bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	uint8 playerIndex = actorData.newPlayerIndex;
+	uint8 entityIndex = actorData.newEntityIndex;
+	auto& jCut = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
+
+// 	if (jCut.isJustFrameCharged || jCut.isAfterJustFrameCharged || actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.eventData[0].event == 33) {
+// 		return false;
+// 	}
+
+// 	if (jCut.performing) {
+// 		return false;
+// 	}
+
+	return true;
 }
 
 void InitDetours() {
@@ -1049,6 +1072,29 @@ void ToggleEnsureAirRisingDragonLaunch(bool enable) {
 	EnsureAirRisingDragonLaunchHook->Toggle(enable);
 
 	run = enable;
+}
+
+void ToggleConfirmSetAction(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1E6DAF - E8 4C9AFFFF           - call dmc3.exe+1E0800 -- TriggerEvent call
+	// RCX is playerPtr, RDX is event ID (0x11)
+
+	g_ConfirmSetAction_FuncCall = (uintptr_t)appBaseAddr + 0x1E0800;
+
+	static std::unique_ptr<Utility::Detour_t> ConfirmSetActionHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1E6DAF, &ConfirmSetActionDetour, 5);
+	g_ConfirmSetAction_ReturnAddr = ConfirmSetActionHook->GetReturnAddress();
+	ConfirmSetActionHook->Toggle(enable);
+	g_ConfirmSetActionCheckCall = &CheckIfCanExecuteAction;
+	
+	run = enable;
+
 }
 
 void ToggleGreenOrbsMPRegen(bool enable) {

@@ -5259,8 +5259,11 @@ struct VergilDoppelganger {
 
 struct VergilJudgementCut {
     float meleeButtonHold = 0.0f;
+    float meleeHoldTime = 0.0f;
+    float meleeMaxHoldTime = 0.0f;
     bool isJustFrameCharged = false;
     bool isAfterJustFrameCharged = false;
+    bool performing = false;
 };
 
 extern bool inRoyalBlock;
