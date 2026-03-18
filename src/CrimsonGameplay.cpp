@@ -1079,6 +1079,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			actionWhenChargeStarted[playerIndex][entityIndex] = actorData.action;
 		}
 
+		// DYNAMIC HOLD TIMES (Depending on movement and animation, the hold time required for Just Frame Judgement Cut changes)
 		if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
 			actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == File_staticFiles[pl021_00_3]) {
@@ -1118,9 +1119,10 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 			if (indicatorFired[playerIndex][entityIndex] == false) {
 				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
+				CrimsonSDL::PlayJDCCharge(playerIndex);
 				indicatorFired[playerIndex][entityIndex] = true;
 			}
-
+			
 			jCut.isJustFrameCharged = true;
 		}
 
@@ -1130,7 +1132,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		}
 	}
 	else {
-		if (jCut.isJustFrameCharged) {
+		if (jCut.isJustFrameCharged) { // JUST FRAME RELEASE LOGIC
 
 			if (!inAir) {
 				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCut_pl021_00_3; // Swap to Just Frame Judgement Cut animation
@@ -1145,7 +1147,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				|| actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
 				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
 				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP ||
-				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
+				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL ||
+				actorData.eventData[0].event == ACTOR_EVENT::LANDING)) {
 				
 				func_1E0800_TriggerEvent(actorData, 17, 0, -1);
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xfc0366ff), 1.2f); DEBUG COLOR JF
@@ -1161,14 +1164,15 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		}
 		else if (jCut.isAfterJustFrameCharged && actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
 			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
-			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3) {
+			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3) { // REGULAR JDCS RELEASE LOGIC
 			
 			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 			if ((actorData.eventData[0].event == 3 || actorData.eventData[0].event == 6 || actorData.eventData[0].event == 2
 				|| actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
 					actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
 				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || 
-				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
+				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL ||
+				actorData.eventData[0].event == ACTOR_EVENT::LANDING)) {
 				if (inAir) {
 					actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAir_pl021_00_3; // Swap to Normal Air Just Frame Judgement Cut animation
 				}
@@ -1202,6 +1206,33 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		 actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3 ||
 		 actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAirJF_pl021_00_3)) {
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = File_staticFiles[pl021_00_3]; // Ensure we swap back to regular motion archive after the move is performed
+	}
+
+	// JUDGEMENT CUT SFX
+	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 ||
+		actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1)) {
+
+		if (actorData.motionData[0].index == 14) {
+			if (actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAirJF_pl021_00_3 ||
+				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCut_pl021_00_3) {
+				if (jCut.fireSound) {
+					CrimsonSDL::PlayJDC(playerIndex, true, 0);
+					jCut.fireSound = false;
+				}
+
+			}
+			else if (actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3) {
+				if (jCut.fireSound) {
+					CrimsonSDL::PlayJDC(playerIndex, false, 0);
+					jCut.fireSound = false;
+				}
+			}
+		}
+		else {
+			jCut.fireSound = true; // Reset sound trigger for next hit in the move
+		}
+			
+		
 	}
 }
 

@@ -72,6 +72,9 @@ Mix_Chunk* delayedDrive;
 Mix_Chunk* guard;
 Mix_Chunk* royalBlock;
 Mix_Chunk* normalBlock;
+Mix_Chunk* jdc;
+Mix_Chunk* jdcJustFrame;
+Mix_Chunk* jdcCharge;
 Mix_Music* missionClearSong;
 Mix_Music* divinityStatueSong;
 
@@ -98,8 +101,10 @@ namespace CHANNEL {
     constexpr int initialDTEFinish = 381; // to 384, 1 channel per player
     constexpr int initialDTERelease = 385; // to 388, 1 channel per player
     constexpr int initialGuard = 389; // to 396, 2 channels per player
-    constexpr int initialRoyalBlock = 397; // to 421, 5 channels per player
+    constexpr int initialRoyalBlock = 397; // to 421, 5 channels per player 
     constexpr int initialBlock = 422; // to 441, 5 channels per player
+	constexpr int initialJDC = 442; // to 481, 10 channels per player
+    constexpr int initialJDCCharge = 482; // to 485, 1 channel per player
 }
 
 #define SDL_FUNCTION_DECLRATION(X) decltype(X)* fn_##X
@@ -189,6 +194,9 @@ void LoadAllSFX() {
         guard = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\guard.wav").c_str());
         royalBlock = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\blockroyal.wav").c_str());
         normalBlock = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\block.wav").c_str());
+		jdc = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc.wav").c_str());
+		jdcJustFrame = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc_justframe.wav").c_str());
+		jdcCharge = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc_charge.wav").c_str());
 
 
 
@@ -428,8 +436,6 @@ void PlayOnChannels(int initialChannel, int finalChannel, Mix_Chunk* sfx, int vo
             fn_Mix_Volume(i, volume);
             fn_Mix_PlayChannel(i, sfx, 0);
             break;
-        } else {
-            i++;
         }
     }
 }
@@ -443,8 +449,6 @@ void PlayOnChannelsFadeOut(int initialChannel, int finalChannel, Mix_Chunk* sfx,
             fn_Mix_PlayChannel(i, sfx, 0);
             channelBeingPlayed = i;
             break;
-        } else {
-            i++;
         }
     }
 
@@ -458,13 +462,10 @@ void PlayOnChannelsFadeOutPosition(int initialChannel, int finalChannel, Mix_Chu
 	for (int i = initialChannel; i <= finalChannel; i++) {
 		if (!fn_Mix_Playing(i)) {
 			fn_Mix_Volume(i, volume);
-            fn_Mix_SetPosition(i, angle, distance);
+			fn_Mix_SetPosition(i, angle, distance);
 			fn_Mix_PlayChannel(i, sfx, 0);
 			channelBeingPlayed = i;
 			break;
-		}
-		else {
-			i++;
 		}
 	}
 
@@ -580,6 +581,8 @@ void SetAllSFXDistance(int playerIndex, int angle, int distance) {
     SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialGuard, 2, angle, distance);
     SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialRoyalBlock, 5, angle, distance);
     SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialBlock, 5, angle, distance);
+    SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialJDC, 10, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialJDCCharge, 1, angle, distance);
 }
 
 void StyleRankCooldownTracker(int rank) {
@@ -728,6 +731,38 @@ void PlayQuicksilverOut() {
 
 	fn_Mix_Volume(CHANNEL::quickOut, volume);
 	fn_Mix_PlayChannel(CHANNEL::quickOut, quicksilverOut, 0);
+}
+
+void PlayJDC(int playerIndex, bool justFrame, float delay) {
+
+	auto initialChannel = CHANNEL::initialJDC + (10 * playerIndex);
+
+	auto playSound = [=]() {
+		float slider = 90 / 100.0f;
+		int volume = (int)(50.0f * slider);
+		if (justFrame) {
+			PlayOnChannels(initialChannel, initialChannel + 9, jdcJustFrame, volume);
+		} else {
+			PlayOnChannels(initialChannel, initialChannel + 9, jdc, volume);
+		}
+	};
+
+	if (delay > 0) {
+		std::thread([=]() {
+			std::this_thread::sleep_for(std::chrono::milliseconds((int)delay));
+			playSound();
+		}).detach();
+	} else {
+		playSound();
+	}
+}
+
+void PlayJDCCharge(int playerIndex) {
+    auto initialChannel = CHANNEL::initialJDCCharge + (playerIndex);
+    float slider = 50 / 100.0f;
+    int volume = (int)(50.0f * slider);
+    fn_Mix_Volume(CHANNEL::initialJDCCharge + playerIndex, volume);
+    fn_Mix_PlayChannel(CHANNEL::initialJDCCharge + playerIndex, jdcCharge, 0);
 }
 
 void PlayDevilTriggerReady(int playerIndex) {

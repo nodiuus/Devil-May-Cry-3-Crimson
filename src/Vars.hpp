@@ -5264,6 +5264,7 @@ struct VergilJudgementCut {
     bool isJustFrameCharged = false;
     bool isAfterJustFrameCharged = false;
     bool performing = false;
+    bool fireSound = true;
 };
 
 extern bool inRoyalBlock;

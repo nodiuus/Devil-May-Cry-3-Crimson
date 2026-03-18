@@ -35,6 +35,8 @@ void PlayDoppelgangerIn(int playerIndex);
 void PlayDoppelgangerOut(int playerIndex);
 void PlayQuicksilverIn();
 void PlayQuicksilverOut();
+void PlayJDC(int playerIndex, bool justFrame, float delay);
+void PlayJDCCharge(int playerIndex);
 void PlayDevilTriggerReady(int playerIndex);
 void PlayDelayedCombo1(int playerIndex);
 void PlayDelayedCombo2(int playerIndex);
