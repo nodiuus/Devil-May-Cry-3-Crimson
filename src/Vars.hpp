@@ -5257,7 +5257,18 @@ struct VergilDoppelganger {
     bool drainStart = false;
 };
 
+namespace JDC_STATE {
+    enum {
+        NORMAL_GROUNDED,
+        NORMAL_AIR,
+        JUST_FRAME_GROUNDED,
+        JUST_FRAME_AIR,
+    };
+};
+
 struct VergilJudgementCut {
+    uint8 state = JDC_STATE::NORMAL_GROUNDED;
+    uint32 actionWhenChargeStarted = 100;
     float meleeButtonHold = 0.0f;
     float meleeHoldTime = 0.0f;
     float meleeMaxHoldTime = 0.0f;

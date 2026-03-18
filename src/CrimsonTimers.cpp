@@ -102,7 +102,8 @@ void ActionTimers() {
 
 			if (inAttack || actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
 				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
-				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || actorData.eventData[0].event == ACTOR_EVENT::AIR_TRICK_END) {
+				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP ||
+                actorData.eventData[0].event == ACTOR_EVENT::LANDING || actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL) {
 				actionTimerNotTrickChange += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
             }
             else {
