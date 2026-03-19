@@ -1030,7 +1030,7 @@ float ComputeDynamicHoldTime(const PlayerActorData& actorData, bool inAir, bool 
 	if ((actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
 		actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 		jCut.state == JDC_STATE::NORMAL_GROUNDED) {
-		return 1.3f;
+		return 1.4f;
 	}
 	else if ((actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
 		actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
@@ -1089,13 +1089,13 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static float lockedHoldTime[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	static bool chargeInitialized[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool enteredJFWindow[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	static float prevActionTimer[PLAYER_COUNT][ENTITY_COUNT];
 
 	if (actorData.queuedMeleeWeaponIndex != 0) {
 		chargeInitialized[playerIndex][entityIndex] = false;
 		jCut.meleeButtonHold = 0.0f;
 		jCut.isJustFrameCharged = false;
 		jCut.isAfterJustFrameCharged = false;
-		enteredJFWindow[playerIndex][entityIndex] = false;
 		if (meleeDown) {
 			if (jCut.meleeButtonHold == 0.0f) {
 				startedInAir[playerIndex][entityIndex] = inAir;
@@ -1113,7 +1113,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jCut.meleeButtonHold = 0.0f;
 		jCut.isJustFrameCharged = false;
 		jCut.isAfterJustFrameCharged = false;
-		enteredJFWindow[playerIndex][entityIndex] = false;
 		return;
 	}
 
@@ -1143,6 +1142,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			//indicatorFired[playerIndex][entityIndex] = false;
 
 			// Optional (recommended): prevent stale JF state
+			//enteredJFWindow[playerIndex][entityIndex] = false;
 			jCut.isJustFrameCharged = false;
 			jCut.isAfterJustFrameCharged = false;
 		}
@@ -1161,9 +1161,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			jCut.isJustFrameCharged = true;
 
 			if (!enteredJFWindow[playerIndex][entityIndex]) {
-				enteredJFWindow[playerIndex][entityIndex] = true;
 				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
 				CrimsonSDL::PlayJDCCharge(playerIndex);
+				enteredJFWindow[playerIndex][entityIndex] = true;
 				indicatorFired[playerIndex][entityIndex] = true;
 			}
 		}
@@ -1196,11 +1196,27 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
 				
 				func_1E0800_TriggerEvent(actorData, 17, 0, -1);
+				enteredJFWindow[playerIndex][entityIndex] = false;
+				indicatorFired[playerIndex][entityIndex] = false;
+
+				chargeInitialized[playerIndex][entityIndex] = false;
+
+				jCut.meleeButtonHold = 0.0f;
+				jCut.isJustFrameCharged = false;
+				jCut.isAfterJustFrameCharged = false;
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xfc0366ff), 1.2f); DEBUG COLOR JF
 			}
 			else {
 				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 				actorData.recoverState[0] = 0;
+				enteredJFWindow[playerIndex][entityIndex] = false;
+				indicatorFired[playerIndex][entityIndex] = false;
+
+				chargeInitialized[playerIndex][entityIndex] = false;
+
+				jCut.meleeButtonHold = 0.0f;
+				jCut.isJustFrameCharged = false;
+				jCut.isAfterJustFrameCharged = false;
 			}
 
 			jCut.isJustFrameCharged = false;
@@ -1244,7 +1260,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jCut.meleeButtonHold = 0.0f;
 		jCut.isJustFrameCharged = false; // Reset charge when released
 		jCut.isAfterJustFrameCharged = false;
-		enteredJFWindow[playerIndex][entityIndex] = false;
 	}
 
 	if (actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
@@ -1279,6 +1294,20 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			jCut.fireSound = true; // Reset sound trigger for next hit in the move
 		}
 	}
+
+	if (actionTimerNotTrickChange < prevActionTimer[playerIndex][entityIndex]) {
+		enteredJFWindow[playerIndex][entityIndex] = false;
+		indicatorFired[playerIndex][entityIndex] = false;
+
+		chargeInitialized[playerIndex][entityIndex] = false;
+
+		jCut.meleeButtonHold = 0.0f;
+		jCut.isJustFrameCharged = false;
+		jCut.isAfterJustFrameCharged = false;
+	}
+
+
+	prevActionTimer[playerIndex][entityIndex] = actionTimerNotTrickChange;
 }
 
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {

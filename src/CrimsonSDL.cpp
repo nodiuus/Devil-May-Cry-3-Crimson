@@ -759,7 +759,7 @@ void PlayJDC(int playerIndex, bool justFrame, float delay) {
 
 void PlayJDCCharge(int playerIndex) {
     auto initialChannel = CHANNEL::initialJDCCharge + (playerIndex);
-    float slider = 50 / 100.0f;
+    float slider = 10 / 100.0f;
     int volume = (int)(50.0f * slider);
     fn_Mix_Volume(CHANNEL::initialJDCCharge + playerIndex, volume);
     fn_Mix_PlayChannel(CHANNEL::initialJDCCharge + playerIndex, jdcCharge, 0);
