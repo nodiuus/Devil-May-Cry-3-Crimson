@@ -1165,7 +1165,11 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			lockedHoldTime[playerIndex][entityIndex] = ComputeDynamicJDCHoldTime(
 				actorData, inAir, inRisingStar, startedInAir[playerIndex][entityIndex]);
 
-			jCut.meleeButtonHold = 0.0f; // Reset hold time when action changes to prevent buffering to interfere
+			if (actorData.action != DARK_SLAYER_AIR_TRICK && 
+				actorData.action != DARK_SLAYER_TRICK_DOWN && 
+				actorData.action != DARK_SLAYER_TRICK_UP) {
+				jCut.meleeButtonHold = 0.0f; // Reset hold time when action changes to prevent buffering to interfere with Just Frame timing
+			}
 		}
 		
 		// Use locked value instead of recalculating every frame
