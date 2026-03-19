@@ -11,6 +11,7 @@
 
 #include "../Core/DebugSwitch.hpp"
 #include "../StyleSwitchFX.hpp"
+#include "../CrimsonEfk.hpp"
 #include "../CrimsonHUD.hpp"
 #include <dxgi1_3.h>
 
@@ -944,6 +945,9 @@ HRESULT D3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Dr
     InitStyleSwitchFxTexture(::D3D11::device);
     debug_draw_init(
         (void*)::D3D11::device, (void*)::D3D11::deviceContext, pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height);
+
+    bool efk = EffekseerInit(::D3D11::device, ::D3D11::deviceContext, pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height);
+    assert(efk);
 
     [&]() {
         auto func = D3D11CreateDeviceAndSwapChain_func;

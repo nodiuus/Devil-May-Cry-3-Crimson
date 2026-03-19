@@ -20,6 +20,7 @@
 #include "../../ThirdParty/ImGui/Backend/imgui_impl_dx11.h"
 #include "../StyleSwitchFX.hpp"
 #include "../CrimsonSDL.hpp"
+#include "../CrimsonEfk.hpp"
 
 namespace API {
 enum {
@@ -268,6 +269,8 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
 
         ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
     } else if constexpr (api == API::D3D11) {
+        EffekseerIncFrames();
+
         ::D3D11::deviceContext->OMSetRenderTargets(1, &::D3D11::renderTargetView, 0);
 
         // Low-latency optimization: Prefetch render target for better cache performance

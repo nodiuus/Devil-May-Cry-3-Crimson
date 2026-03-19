@@ -1,6 +1,7 @@
 ﻿// UNSTUPIFY(Disclaimer: by 5%)... POOOF
 #include "UI\WeaponWheel.hpp"
 
+#include "CrimsonEfk.hpp"
 #include "../ThirdParty/SDL2/SDL_gamecontroller.h"
 #include "../ThirdParty/glm/glm.hpp"
 #include "CrimsonGUI.hpp"
@@ -14927,7 +14928,6 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 
 void GUI_Render(IDXGISwapChain* pSwapChain) {
-
     if (g_scene != SCENE::GAME) {
         devilTriggerReadyPlayed = !activeConfig.playDTReadySFXAtMissionStart;
     }

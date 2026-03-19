@@ -35,7 +35,7 @@
 #include "CrimsonSDL.hpp"
 #include "CrimsonPatches.hpp"
 #include "CrimsonDetours.hpp"
-
+#include "CrimsonEfk.hpp"
 // @Remove
 #define g_enableLockOnFixes true
 
@@ -4010,6 +4010,12 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     }
 
     // dd::sphere(dd_ctx(), actorWorldPos, dd::colors::Red, 15.0f);
+
+    // NOTE(): usage example idk where to stick this properly
+    //static EffekseerRefHandle particleHandle = EffekseerLoadEffect(L"Sample\\00_Version16\\Aura01.efkefc", 100.0f);
+    //if ((ImGui::GetFrameCount() % 220) == 0) {
+    //    EffekseerHandle particle = EffekseerPlayEffect(particleHandle, actorData.position, actorData);
+    //}
 	UpdateStyleSwitchAnimations();
 	StyleSwitchController(actorBaseAddr);
     CharacterSwitchController();

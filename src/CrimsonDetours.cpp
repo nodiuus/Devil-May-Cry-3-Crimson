@@ -18,7 +18,7 @@
 #include "CrimsonCameraController.hpp"
 #include "Actor.hpp"
 #include "CrimsonOnTick.hpp"
-
+#include "CrimsonEfk.hpp"
 
 namespace CrimsonDetours {
 
@@ -647,6 +647,7 @@ void InitDetours() {
 	CameraSwitchInitDetour();
 	CameraWallCheckDetour();
 	LdkInitDetour();
+	EffekseerInitRenderHook();
 	CrimsonOnTick::ToggleOnTickFuncs(true);
 
 	// AddToMirageGauge
