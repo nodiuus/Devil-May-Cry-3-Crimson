@@ -7,6 +7,7 @@
 #include "Core/Macros.h"
 #include "DebugDrawDX11.hpp"
 #include <string>
+#include "Effekseer.h"
 
 #pragma push_macro("VOID")
 #pragma push_macro("IGNORE")
@@ -2744,9 +2745,12 @@ struct ShadowData {
 static_assert(sizeof(ShadowData) == 0xC0);
 
 struct PhysicsData {
-    _(240);
+    _(0x30);
+    vec4 bonePosition; // 0x30
+    _(0xB0);
 };
 
+static_assert(offsetof(PhysicsData, bonePosition) == 0x30);
 static_assert(sizeof(PhysicsData) == 0xF0);
 
 struct PhysicsLinkData {
@@ -4010,6 +4014,47 @@ static_assert(offsetof(PlayerActorDataVergil, newAirRisingSunCount) == 0x1CAE4);
 static_assert(offsetof(PlayerActorDataVergil, newEffectIndices) == 0x1CAF0);
 static_assert(offsetof(PlayerActorDataVergil, newLastVar) == 0x1CB20);
 
+namespace CREATE_EFFECT_BONE_LOOKUP {
+constexpr uint32 BONES_PER_MODEL_VARIANT = 0x18;
+constexpr uint32 BASE_POOL_MODEL_VARIANTS = 4;
+constexpr uint32 NEW_POOL_MODEL_VARIANTS = 7;
+constexpr uint32 BASE_POOL_BONE_SLOTS = BASE_POOL_MODEL_VARIANTS * BONES_PER_MODEL_VARIANT;
+constexpr uint32 NEW_POOL_BONE_SLOTS = NEW_POOL_MODEL_VARIANTS * BONES_PER_MODEL_VARIANT;
+
+inline uint32 GetCreateEffectBoneSlot(const PlayerActorData& actorData, uint32 effectBoneIdx) {
+    // Mirrors CreateEffect.asm logic:
+    // if devil trigger model or clone model is in use, offset by 0x18 * activeModelIndexMirror.
+    if (actorData.devil || actorData.newEntityIndex != ENTITY::MAIN) {
+        return effectBoneIdx + (BONES_PER_MODEL_VARIANT * actorData.activeModelIndexMirror);
+    }
+
+    return effectBoneIdx;
+}
+
+inline PhysicsMetadata* GetBoneMetadataFromBasePool(PlayerActorDataBase& actorDataBase, uint32 boneSlot) {
+    if (boneSlot >= BASE_POOL_BONE_SLOTS) {
+        return nullptr;
+    }
+
+    auto* flatPool = &actorDataBase.modelPhysicsMetadataPool[0][0];
+    return flatPool[boneSlot];
+}
+
+inline PhysicsMetadata* GetBoneMetadataFromNewPool(PlayerActorData& actorData, uint32 boneSlot) {
+    if (boneSlot >= NEW_POOL_BONE_SLOTS) {
+        return nullptr;
+    }
+
+    auto* flatPool = &actorData.newModelPhysicsMetadataPool[0][0];
+    return flatPool[boneSlot];
+}
+
+inline PhysicsData* GetBonePhysicsData(PhysicsMetadata* boneMetadata) {
+    // CreateEffect uses [boneMetadata + 0x110], which maps to PhysicsMetadata::physicsData.
+    return boneMetadata ? boneMetadata->physicsData : nullptr;
+}
+}
+
 
 // float maxHitPointsDullahan; // 0x238
 // float hitPointsDullahan; // 0x2478
@@ -4452,6 +4497,25 @@ static_assert(offsetof(HUDData, topLeftAlphaTimer) == 0x6918);
 static_assert(offsetof(HUDData, topLeftAlpha) == 0x6920);
 static_assert(offsetof(HUDData, orbsCountAlphaTimer) == 0x6938);
 static_assert(offsetof(HUDData, orbsCountAlpha) == 0x693C);
+
+struct Matrix44 {
+    float matrix1[16]; //0x00
+};
+
+struct cDrawReverse {
+    _(520);
+    Matrix44* matrixes; // 0x208
+};
+
+static_assert(offsetof(cDrawReverse, matrixes) == 0x208);
+
+
+struct Sword {
+    _(304);
+    cDrawReverse* swordcDraw; // 0x130
+};
+
+static_assert(offsetof(Sword, swordcDraw) == 0x130);
 
 
 // $EnemyVectorDataEnd

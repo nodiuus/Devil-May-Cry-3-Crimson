@@ -5,7 +5,6 @@
 
 #include <cassert>
 
-#include "Effekseer.h"
 #include "EffekseerRendererDX11.h"
 #include <d3d11.h>
 #include <wrl/client.h>
@@ -32,7 +31,7 @@ static std::vector<Effekseer::EffectRef> g_effects;
 static std::unique_ptr<Utility::Detour_t> s_renderProcHook;
 static float g_windowDimensions[2];
 
-//static int g_rt_index;
+static int g_rt_index;
 
 // like 4th set of vector math types in the project yay
 static ::Effekseer::ManagerRef g_efkManager = nullptr;
@@ -251,7 +250,7 @@ EffekseerHandle EffekseerPlayEffect(EffekseerRefHandle hEffect, float x, float y
 
     static constexpr int fakeParticleBank   = 3;
     static constexpr int fakeParticleId     = 4;
-    static constexpr float fakeParticleTime = 0.0001f;
+    static constexpr float fakeParticleTime = 0.1f;
 
     assert(player);
 
@@ -262,6 +261,19 @@ EffekseerHandle EffekseerPlayEffect(EffekseerRefHandle hEffect, float x, float y
 
 EffekseerHandle EffekseerPlayEffect(EffekseerRefHandle hEffect, float* vec3, void* player) {
     return EffekseerPlayEffect(hEffect, vec3[0], vec3[1], vec3[2], player);
+}
+
+void EffeseekerSetDynamicPos(EffekseerHandle handle, float x, float y, float z) {
+    if (g_efkManager != nullptr && handle >= 0) {
+        g_efkManager->SetDynamicInput(handle, 0, x);
+        g_efkManager->SetDynamicInput(handle, 0, y);
+        g_efkManager->SetDynamicInput(handle, 0, z);
+        Effekseer::Matrix43 mat;
+    }
+}
+
+void EffeseekerSetDynamicPos(EffekseerHandle handle, float* vec3) {
+    EffeseekerSetDynamicPos(handle, vec3[0], vec3[1], vec3[2]);
 }
 
 void EffekseerStopEffect(EffekseerHandle handle) {
@@ -286,7 +298,31 @@ bool EffekseerIsPlaying(EffekseerHandle handle) {
 
 void EffekseerMoveEffect(EffekseerHandle handle, float x, float y, float z) {
     if (g_efkManager != nullptr && handle >= 0)
-        g_efkManager->AddLocation(handle, Effekseer::Vector3D(x, y, z));
+        g_efkManager->SetLocation(handle, Effekseer::Vector3D(x, y, z));
+}
+
+void EffeseekerMoveEffect(EffekseerHandle handle, float* vec3) {
+    EffekseerMoveEffect(handle, vec3[0], vec3[1], vec3[2]);
+}
+
+void EffeseekerSetMatrix(EffekseerHandle handle, Effekseer::Matrix43 mat43) {
+    if (g_efkManager != nullptr && handle >= 0) {
+        g_efkManager->SetMatrix(handle, mat43);
+    }
+}
+
+void EffeseekerSetMatrix(EffekseerHandle handle, float* mat44) {
+	if (g_efkManager != nullptr && handle >= 0) {
+		Effekseer::Matrix43 mat;
+
+		mat.Value[0][0] = mat44[0];  mat.Value[0][1] = mat44[1];  mat.Value[0][2] = mat44[2];
+		mat.Value[1][0] = mat44[4];  mat.Value[1][1] = mat44[5];  mat.Value[1][2] = mat44[6];
+		mat.Value[2][0] = mat44[8];  mat.Value[2][1] = mat44[9];  mat.Value[2][2] = mat44[10];
+
+		mat.Value[3][0] = mat44[12]; mat.Value[3][1] = mat44[13]; mat.Value[3][2] = mat44[14];
+
+		g_efkManager->SetMatrix(handle, mat);
+	}
 }
 
 // ============================================================================
@@ -384,7 +420,7 @@ void EffekseerTestSpawn(EffekseerRefHandle hEffect, float x, float y, float z) {
     Effekseer::Handle h = EffekseerPlayEffect(hEffect, x, y, z);
 }
 
-#if 0
+
 class cDraw
 {
 public:
@@ -405,14 +441,14 @@ void EffekseerDrawImGui()
 {
     static bool pressed = false;
     //static EffekseerEffect* ass = EffekseerLoadEffect(L"Sample\\01_Pierre01\\Lightning.efkefc", 6.0f);
-    static EffekseerEffect* ass = EffekseerLoadEffect(L"Sample\\00_Version16\\Aura01.efkefc", 100.0f);
+    static EffekseerRefHandle ass = EffekseerLoadEffect(L"Sample\\00_Version16\\Aura01.efkefc", 100.0f);
     //static EffekseerEffect* ass = EffekseerLoadEffect(L"Sample\\00_Basic\\Laser01.efkefc");
     if (ImGui::Button("Load test effect")) {
 
         pressed = true;
     }
     if (pressed && (g_frame_counter_current % 120 == 0)) {
-        Vector3 position{};
+        vec3 position{};
             auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
             if (!pool_10222 || !pool_10222[3]) {
                 position.x = 0.0f; position.y = 0.1f, position.z = 0.0f;
@@ -436,14 +472,14 @@ void EffekseerDrawImGui()
         Devil3::sRender* render = (Devil3::sRender*)0x140C0B410;
             ID3D11RenderTargetView* pRTV = nullptr;
     ID3D11DepthStencilView* pDSV = nullptr;
-    pDSV = render->renderTargets[g_rt_index].depthStencilView;
-    pRTV = render->renderTargets[g_rt_index].renderTargetView;
+     pDSV = render->renderTargets[g_rt_index].depthStencilView;
+     pRTV = render->renderTargets[g_rt_index].renderTargetView;
     ImGui::Text("pDSV: %p", pDSV);
     ImGui::Text("pRTV: %p", pRTV);
-    ImGui::SliderFloat("znear:", &EFK_Z_NEAR, -1000.0f, 1000.0f, "%.3f");
-    ImGui::SliderFloat("zfar:", &EFK_Z_FAR, -1000.0f, 1000.0f, "%.3f");
-    ImGui::SliderFloat("znear_render:", &EFK_Z_NEAR_RENDER, -1000.0f, 1000.0f, "%.3f");
-    ImGui::SliderFloat("zfar_render:", &EFK_Z_FAR_RENDER, -1000.0f, 1000.0f, "%.3f");
+//     ImGui::SliderFloat("znear:", &EFK_Z_NEAR, -1000.0f, 1000.0f, "%.3f");
+//     ImGui::SliderFloat("zfar:", &EFK_Z_FAR, -1000.0f, 1000.0f, "%.3f");
+//     ImGui::SliderFloat("znear_render:", &EFK_Z_NEAR_RENDER, -1000.0f, 1000.0f, "%.3f");
+//     ImGui::SliderFloat("zfar_render:", &EFK_Z_FAR_RENDER, -1000.0f, 1000.0f, "%.3f");
 
     ImGui::InputTextMultiline("ass", imgoo_buffer, sizeof(imgoo_buffer));
     if (ImGui::Button("parse rttit")) {
@@ -475,7 +511,7 @@ void EffekseerDrawImGui()
         ImGui::PopID();
     }
 }
-#endif
+
 
 void EffekseerIncFrames() {
     g_frame_counter_current += 1;

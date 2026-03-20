@@ -41,6 +41,7 @@
 #include "CrimsonPatches.hpp"
 #include "CrimsonTimers.hpp"
 #include "CrimsonUtil.hpp"
+#include "CrimsonEfk.hpp"
 
 namespace CrimsonGameplay {
 
@@ -897,7 +898,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 
 	// --- Melee button hold timer ---
 	static float meleeButtonHold[PLAYER_COUNT][ENTITY_COUNT] = {};
-	constexpr float MELEE_HOLD_TIME = 0.2f; // 200 ms
+	constexpr float MELEE_HOLD_TIME = 0.01f; // 50 ms
 
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
 
@@ -1022,12 +1023,19 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 }
 
 float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bool inRisingStar, bool startedInAir) {
+	using namespace ACTION_VERGIL;
 	constexpr float MELEE_HOLD_TIME_GROUNDED = 0.7f;
 	constexpr float MELEE_HOLD_TIME_AIR = 0.6f;
 	auto& jCut = (actorData.newEntityIndex == 0) ? crimsonPlayer[actorData.newPlayerIndex].jCut : 
 		crimsonPlayer[actorData.newPlayerIndex].jCutClone;
 
-	if ((actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
+	if (actorData.action == YAMATO_COMBO_PART_3) {
+		return 1.88f;
+	}
+	else if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) {
+		return 0.8f; // Rapid Slash has a unique hold time
+	}
+	else if ((actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
 		actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
 		jCut.state == JDC_STATE::NORMAL_GROUNDED) {
 		return 1.4f;
@@ -1079,8 +1087,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool startedInAir[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	constexpr float MELEE_HOLD_TIME_GROUNDED = 0.8f;
 	constexpr float MELEE_HOLD_TIME_AIR = 0.6f;
-	constexpr float JUST_FRAME_WINDOW_GROUND = 0.0833f; // ~3 frames at 60 FPS
-	constexpr float JUST_FRAME_WINDOW_AIR = 0.0667f; // ~4 frames at 60 FPS
+	constexpr float JUST_FRAME_WINDOW_GROUND = 0.09f; // ~3 frames at 60 FPS
+	constexpr float JUST_FRAME_WINDOW_AIR = 0.08f; // ~4 frames at 60 FPS
 
 	auto& jCut = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
 
@@ -1089,6 +1097,16 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static float lockedHoldTime[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	static bool chargeInitialized[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
+
+	static EffekseerRefHandle chargeParticleHandle = EffekseerLoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 100.0f);
+	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+
+	auto GetAutoRotation = [&]() -> uint16 {
+		return (actorData.newEntityIndex == 0)
+			? crimsonPlayer[playerIndex].rotationTowardsEnemy
+			: crimsonPlayer[playerIndex].rotationCloneTowardsEnemy;
+		};
 
 	// JUDGEMENT CUT SFX
 	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 ||
@@ -1183,16 +1201,30 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			jCut.meleeButtonHold <= jCut.meleeMaxHoldTime &&
 			actionTimerNotTrickChange >= jCut.meleeHoldTime);
 
-		// JUST FRAME WINDOW ENTER
-		if (inJFWindow) {
-			jCut.isJustFrameCharged = true;
+		bool justBeforeJFWindow = (jCut.meleeButtonHold >= jCut.meleeHoldTime - 0.01f &&  
+			actionTimerNotTrickChange >= jCut.meleeHoldTime - 0.03f &&
+			jCut.meleeButtonHold < jCut.meleeHoldTime);
 
+		if (justBeforeJFWindow) {
 			// INDICATOR
 			if (!indicatorFired[playerIndex][entityIndex]) {
 				indicatorFired[playerIndex][entityIndex] = true;
-				CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
-				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
+				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
+
+				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
+				auto& vergilSwordcDraw = *reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
+				auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
+				vec4 bonePosition = vec4(swordMatrix.matrix1[12], swordMatrix.matrix1[13], swordMatrix.matrix1[14]);
+				chargeParticle[playerIndex][entityIndex] = EffekseerPlayEffect(chargeParticleHandle, bonePosition, actorData);
+		
 			}
+		}
+
+		// JUST FRAME WINDOW ENTER
+		if (inJFWindow) {
+			jCut.isJustFrameCharged = true;
+			justBeforeJFWindow = false;
+			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 		}
 
 		if (jCut.meleeButtonHold > jCut.meleeMaxHoldTime) {
@@ -1230,6 +1262,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 				actorData.recoverState[0] = 0;
 			}
+			
+			actorData.rotation = GetAutoRotation(); // Snap to auto-rotation on JF release for better consistency in direction
 
 			jCut.isJustFrameCharged = false;
 			jCut.isAfterJustFrameCharged = false;
@@ -1261,6 +1295,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				}
 				actorData.recoverState[0] = 0;
 			}
+
+			actorData.rotation = GetAutoRotation(); // Snap to auto-rotation on J release for better consistency in direction
 		}
 
 		jCut.meleeButtonHold = 0.0f;
@@ -1270,13 +1306,38 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	}
 
 	if (actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
+		actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
 		(actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCut_pl021_00_3 ||
 		 actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3 ||
 		 actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAirJF_pl021_00_3)) {
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = File_staticFiles[pl021_00_3]; // Ensure we swap back to regular motion archive after the move is performed
 		jCut.state = JDC_STATE::NORMAL_GROUNDED;
+		rotatedWhileFiring[playerIndex][entityIndex] = false;
 	}
-}
+
+	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1) {
+		if (!rotatedWhileFiring[playerIndex][entityIndex] && actorData.motionData[0].index == 14) {
+			actorData.rotation = GetAutoRotation(); // Continuously snap to auto-rotation while performing Judgement Cut for better directional consistency
+			rotatedWhileFiring[playerIndex][entityIndex] = true;
+		}
+	}
+
+
+	// HAND BONE CHARGE PLACEMENT
+// 	using namespace CREATE_EFFECT_BONE_LOOKUP;
+// 	uint32 boneSlot = GetCreateEffectBoneSlot(actorData, 13);
+// 	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
+// 	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
+//	EffeseekerMoveEffect(chargeParticle[playerIndex][entityIndex], bonePhysicsData->bonePosition);
+
+	// SWORD BONE CHARGE PLACEMENT
+	if (!actorData.nextBaseAddr) return;
+	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
+	auto& vergilSwordcDraw = *reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
+	auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
+	EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix.matrix1);
+	
+ }
 
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
     using namespace ACTION_VERGIL;
