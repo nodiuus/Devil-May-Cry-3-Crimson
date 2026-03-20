@@ -898,7 +898,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 
 	// --- Melee button hold timer ---
 	static float meleeButtonHold[PLAYER_COUNT][ENTITY_COUNT] = {};
-	constexpr float MELEE_HOLD_TIME = 0.01f; // 50 ms
+	constexpr float MELEE_HOLD_TIME = 0.2f; // 200 ms
 
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
 
@@ -910,7 +910,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 
 	static bool meleeReleasedDuringRapidSlash[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) {
-		if (!meleeDown && actionTimer > 0.15f) { // Short grace period
+		if (!meleeDown && actionTimer > 0.05f) { // Short grace period
 			meleeReleasedDuringRapidSlash[playerIndex][entityIndex] = true;
 		}
 	} else {
@@ -1002,8 +1002,32 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 		crimsonPlayer[playerIndex].actionTimerClone;
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
+	// --- Melee button hold timer ---
+	static float meleeButtonHold[PLAYER_COUNT][ENTITY_COUNT] = {};
+	constexpr float MELEE_HOLD_TIME = 0.2f; // 200 ms
+
+	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	if (meleeDown) {
+		meleeButtonHold[playerIndex][entityIndex] += ImGui::GetIO().DeltaTime;
+	}
+	else {
+		meleeButtonHold[playerIndex][entityIndex] = 0.0f;
+	}
+
+	static bool meleeReleasedDuringUpperSlash[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	if (actorData.action == YAMATO_UPPER_SLASH_PART_1) {
+		if (!meleeDown && actionTimer > 0.05f) { // Short grace period
+			meleeReleasedDuringUpperSlash[playerIndex][entityIndex] = true;
+		}
+	}
+	else {
+		meleeReleasedDuringUpperSlash[playerIndex][entityIndex] = false;
+	}
+
 	if (actorData.action == YAMATO_UPPER_SLASH_PART_1
-		&& actionTimer > 0.36f && actionTimer < 0.4f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK))) {
+		&& actionTimer > 0.36f && actionTimer < 0.4f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK) &&
+			meleeButtonHold[playerIndex][entityIndex] >= 0.3f && !meleeReleasedDuringUpperSlash[playerIndex][entityIndex])) {
 
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = newYamatoHighTime_pl021_00_5; // Swap Force Edge High Time animation
 		actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
@@ -1033,7 +1057,14 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 		return 1.88f;
 	}
 	else if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) {
-		return 0.8f; // Rapid Slash has a unique hold time
+		return 1.2f; 
+	}
+	else if (actorData.action == YAMATO_UPPER_SLASH_PART_2) {
+		return 2.07f; 
+	}
+	else if (actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME &&
+		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] == newYamatoHighTime_pl021_00_5) {
+		return 1.53f;
 	}
 	else if ((actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
 		actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
@@ -1201,8 +1232,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			jCut.meleeButtonHold <= jCut.meleeMaxHoldTime &&
 			actionTimerNotTrickChange >= jCut.meleeHoldTime);
 
-		bool justBeforeJFWindow = (jCut.meleeButtonHold >= jCut.meleeHoldTime - 0.01f &&  
-			actionTimerNotTrickChange >= jCut.meleeHoldTime - 0.03f &&
+		bool justBeforeJFWindow = (jCut.meleeButtonHold >= jCut.meleeHoldTime - 0.19f &&  
+			actionTimerNotTrickChange >= jCut.meleeHoldTime - 0.19f &&
 			jCut.meleeButtonHold < jCut.meleeHoldTime);
 
 		if (justBeforeJFWindow) {
@@ -1216,7 +1247,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
 				vec4 bonePosition = vec4(swordMatrix.matrix1[12], swordMatrix.matrix1[13], swordMatrix.matrix1[14]);
 				chargeParticle[playerIndex][entityIndex] = EffekseerPlayEffect(chargeParticleHandle, bonePosition, actorData);
-		
+				EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix.matrix1);
+				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 			}
 		}
 
@@ -1224,7 +1256,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		if (inJFWindow) {
 			jCut.isJustFrameCharged = true;
 			justBeforeJFWindow = false;
-			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 		}
 
 		if (jCut.meleeButtonHold > jCut.meleeMaxHoldTime) {
