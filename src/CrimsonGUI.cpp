@@ -8507,6 +8507,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			auto& vergilSwordcDraw = *reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
 			auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
 
+			ImGui::Text("inertia Rotation : %g", actorData.inertiaRotation);
 			ImGui::Text("vergilSwordcDraw transform X: %g", swordMatrix.matrix1[12]);
 			ImGui::Text("Jcut MeleeHoldTime:  %g", crimsonPlayer[0].jCut.meleeHoldTime);
 			ImGui::Text("meleeHold %g", crimsonPlayer[0].jCut.meleeButtonHold);

@@ -1093,6 +1093,172 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 	return startedInAir ? MELEE_HOLD_TIME_AIR : MELEE_HOLD_TIME_GROUNDED;
 }
 
+void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
+	using namespace ACTION_VERGIL;
+	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
+
+	// FLYING ARC AIR JDC
+	static bool  airJdcArcActive[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	static uint8 airJdcArcLastMotion[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+	static float airJdcArcPhaseTimer[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };      // per-index timer (for bell/descent)
+	static float airJdcArcTotalRiseTimer[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };  // merged timer for 13 and 14
+	static float airJdcArcBaseY[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static float airJdcArcBaseX[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static float airJdcArcBaseZ[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static float airJdcArcDistance[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static uint16 airJdcArcRotation[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+	static float airJdcArcMotion15StartY[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static float airJdcArcTotalTimer[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static float airJdcArcLastPull[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
+	static int   airJdcConsecutiveCount[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+
+	bool inNormalAirJdc =
+		(actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+		(actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3);
+
+	bool inJFAirJdc =
+		(actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
+		(actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAirJF_pl021_00_3);
+
+	bool inAnyAirJdc = inNormalAirJdc || inJFAirJdc;
+
+	auto EaseInOut = [](float t) -> float {
+		t = glm::clamp(t, 0.0f, 1.0f);
+		return t * t * (3.0f - 2.0f * t); // smoothstep
+		};
+
+	float dtScaled = ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+
+	if (actorData.action == DARK_SLAYER_TRICK_DOWN) {
+		actorData.horizontalPull = -25.0f;
+	}
+
+	if (inAnyAirJdc) {
+		// Detect consecutive JDC by checking if we cycled back to motion 13
+		if (airJdcArcLastMotion[playerIndex][entityIndex] != actorData.motionData[0].index) {
+			if (actorData.motionData[0].index == 13 && airJdcArcLastMotion[playerIndex][entityIndex] != 0) {
+				airJdcArcActive[playerIndex][entityIndex] = false; // Reset to allow chain
+				if (inJFAirJdc) {
+					airJdcConsecutiveCount[playerIndex][entityIndex]++;
+				}
+			}
+
+			airJdcArcPhaseTimer[playerIndex][entityIndex] = 0.0f;
+			airJdcArcLastMotion[playerIndex][entityIndex] = static_cast<uint8>(actorData.motionData[0].index);
+
+			if (actorData.motionData[0].index == 15) {
+				airJdcArcMotion15StartY[playerIndex][entityIndex] = actorData.position.y;
+			}
+		}
+
+		if (!airJdcArcActive[playerIndex][entityIndex]) {
+			airJdcArcActive[playerIndex][entityIndex] = true;
+			airJdcArcTotalRiseTimer[playerIndex][entityIndex] = 0.0f;
+			airJdcArcTotalTimer[playerIndex][entityIndex] = 0.0f;
+			airJdcArcBaseY[playerIndex][entityIndex] = actorData.position.y;
+			airJdcArcBaseX[playerIndex][entityIndex] = actorData.position.x;
+			airJdcArcBaseZ[playerIndex][entityIndex] = actorData.position.z;
+
+			float currentPull = actorData.horizontalPull;
+			airJdcArcLastPull[playerIndex][entityIndex] = currentPull;
+// 			if (glm::abs(currentPull) > 0.1f) {
+// 				airJdcArcLastPull[playerIndex][entityIndex] = currentPull;
+// 			}
+// 			else if (inJFAirJdc && airJdcArcLastPull[playerIndex][entityIndex] != 0.0f) {
+// 				currentPull = airJdcArcLastPull[playerIndex][entityIndex];
+// 			}
+// 			else if (inJFAirJdc) {
+// 				currentPull = 5.0f; // Fallback if horizontalPull uninitialized on first frame
+// 			}
+// 			else {
+// 				currentPull = airJdcArcLastPull[playerIndex][entityIndex]; // Also fallback for normal if it 0'ed out
+// 			}
+
+			float distMult = 95.0f;
+			if (inJFAirJdc) {
+				distMult = 65.0f; // Constant high momentum extended across entire move
+			}
+
+			// DMC3 represents locked-on backwards tricking internally via a negative horizontal pull,
+			// rather than flipping inertiaRotation backwards. We MUST extract the sign to know if we are moving backwards, 
+			// even if currentPull's magnitude doesn't control the distance anymore.
+			float pullSign = (currentPull < 0.0f) ? -1.0f : ((currentPull > 0.0f) ? 1.0f : 0.0f);
+			airJdcArcDistance[playerIndex][entityIndex] = distMult * pullSign;
+
+			airJdcArcRotation[playerIndex][entityIndex] = actorData.inertiaRotation;
+			//actorData.horizontalPull = 0.0f; // Let script control velocity
+		}
+
+		airJdcArcPhaseTimer[playerIndex][entityIndex] += dtScaled;
+		airJdcArcTotalTimer[playerIndex][entityIndex] += dtScaled;
+		if (actorData.motionData[0].index == 13 || actorData.motionData[0].index == 14) {
+			airJdcArcTotalRiseTimer[playerIndex][entityIndex] += dtScaled;
+		}
+
+		float TOTAL_RISE_TIME = inJFAirJdc ? 0.15f : 0.56f;
+		float TOTAL_FORWARD_TIME = inJFAirJdc ? 0.80f : 1.2f;
+		float JUMP_APEX_HEIGHT = inJFAirJdc ? 20.0f : 40.0f;
+
+		auto EaseOut = [](float t) -> float {
+			t = glm::clamp(t, 0.0f, 1.0f);
+			return 1.0f - ((1.0f - t) * (1.0f - t));
+			};
+
+		auto EaseIn = [](float t) -> float {
+			t = glm::clamp(t, 0.0f, 1.0f);
+			return t * t;
+			};
+
+		// Consistent X and Z movement across all indexes
+		float angle = airJdcArcRotation[playerIndex][entityIndex] * (3.14159265f / 32768.0f);
+
+		float currentDist;
+		if (inJFAirJdc) {
+			// Constant velocity formula for Just Frame: extends movement consistently without clamping to time
+			currentDist = (airJdcArcDistance[playerIndex][entityIndex] / TOTAL_FORWARD_TIME) * airJdcArcTotalTimer[playerIndex][entityIndex];
+		} else {
+			float tForward = EaseOut(airJdcArcTotalTimer[playerIndex][entityIndex] / TOTAL_FORWARD_TIME);
+			currentDist = airJdcArcDistance[playerIndex][entityIndex] * tForward;
+		}
+
+		actorData.position.x = airJdcArcBaseX[playerIndex][entityIndex] + (std::sin(angle) * currentDist);
+		actorData.position.z = airJdcArcBaseZ[playerIndex][entityIndex] + (std::cos(angle) * currentDist);
+
+
+
+		if (actorData.motionData[0].index == 13 || actorData.motionData[0].index == 14) {
+			float tRise = EaseOut(airJdcArcTotalRiseTimer[playerIndex][entityIndex] / TOTAL_RISE_TIME);
+
+			float continuousRise = JUMP_APEX_HEIGHT * tRise;
+			actorData.position.y = airJdcArcBaseY[playerIndex][entityIndex] + continuousRise;
+
+			actorData.verticalPullMultiplier = 0.0f;
+		}
+		else if (actorData.motionData[0].index == 15) {
+			float fallTime = inJFAirJdc ? 0.15f : 0.22f;
+			float t = EaseIn(airJdcArcPhaseTimer[playerIndex][entityIndex] / fallTime);
+			float targetY = airJdcArcBaseY[playerIndex][entityIndex] - 22.0f;
+			actorData.position.y = glm::mix(airJdcArcMotion15StartY[playerIndex][entityIndex], targetY, t);
+			actorData.horizontalPull = airJdcArcDistance[playerIndex][entityIndex] >= 0 ? 5.0f : -5.0f; // Retain some horizontal momentum during descent for better control
+			actorData.verticalPullMultiplier = -0.7f;
+		}
+	}
+	else {
+		airJdcArcActive[playerIndex][entityIndex] = false;
+		airJdcArcLastMotion[playerIndex][entityIndex] = 0;
+		airJdcArcPhaseTimer[playerIndex][entityIndex] = 0.0f;
+		airJdcArcTotalRiseTimer[playerIndex][entityIndex] = 0.0f;
+		airJdcArcTotalTimer[playerIndex][entityIndex] = 0.0f;
+		airJdcArcLastPull[playerIndex][entityIndex] = 0.0f;
+		airJdcConsecutiveCount[playerIndex][entityIndex] = 0;
+	}
+}
+
 void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	using namespace ACTION_VERGIL;
 	using namespace NEXT_ACTION_REQUEST_POLICY;
@@ -1368,6 +1534,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
 	EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix.matrix1);
 	
+	ApplyJDCFlyingArc(actorData);
  }
 
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
