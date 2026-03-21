@@ -425,19 +425,19 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 		};
 
 	if (activeConfig.Actor.playerCount > 1) {
-		return; // Disable follow-up speed adjustment when multiplayer camera is active
+		cameraData.cameraLag = 1000.0f * (activeConfig.frameRate / 60);
 	}
 	else {
 		if (cameraMetadata.fixedCameraAddr == 0) {
 			switch (activeCrimsonConfig.Camera.followUpSpd) {
 			case 0: // Low (Vanilla Default)
-				return;
+				cameraData.cameraLag = 1000.0f * (activeConfig.frameRate / 60);
 				break;
 			case 1: // Medium
-				dynamicCameraLag(500.0f, 2000.0f, 0.5f); // Apply lockOn behavior for medium follow-up speed
+				dynamicCameraLag(500.0f * (activeConfig.frameRate / 60), 2000.0f * (activeConfig.frameRate / 60), 0.5f); // Apply lockOn behavior for medium follow-up speed
 				break;
 			case 2: // High
-				dynamicCameraLag(330.0f, 3000.0f, 0.5f); // Apply lockOn behavior for high follow-up speed
+				dynamicCameraLag(330.0f * (activeConfig.frameRate / 60), 3000.0f * (activeConfig.frameRate / 60), 0.5f); // Apply lockOn behavior for high follow-up speed
 				break;
 			default:
 				break;
