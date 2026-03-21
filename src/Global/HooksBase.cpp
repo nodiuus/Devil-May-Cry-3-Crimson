@@ -873,80 +873,135 @@ HRESULT D3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Dr
         FUNC_NAME, pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels, SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice,
         pFeatureLevel, ppImmediateContext);
 
-    // Create a modifiable copy of the swap chain description to enable flip model
-    DXGI_SWAP_CHAIN_DESC modifiedSwapChainDesc = *pSwapChainDesc;
-    bool flipModelEnabled = false;
-    
-    if (activeCrimsonConfig.System.flipModelPresentation && 
-        modifiedSwapChainDesc.SampleDesc.Count == 1 && modifiedSwapChainDesc.SampleDesc.Quality == 0) {
-        // Only enable flip model if no MSAA is being used
-        
-        // Use exactly 2 buffers for lowest latency (double buffering)
-        modifiedSwapChainDesc.BufferCount = 2; 
-        modifiedSwapChainDesc.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
-        
-        // Force borderless windowed mode for optimal flip model performance
-        modifiedSwapChainDesc.Windowed = TRUE;
-        
-        // Enable tearing for variable refresh rate and reduced latency
-        modifiedSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING;
-        
-        // Add frame latency waitable object flag for precise timing control
-        modifiedSwapChainDesc.Flags |= DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
-        
-        flipModelEnabled = true;
-        Log("Enabling flip model presentation - BufferCount: 2 (low latency), SwapEffect: FLIP_DISCARD, Windowed: TRUE, Flags: TEARING+WAITABLE"); 
-        
-        // Enable DPI awareness for consistent scaling regardless of Windows DPI settings
-        SetProcessDPIAware();
-        Log("SetProcessDPIAware() called for consistent DPI scaling");
-    } else if (!activeCrimsonConfig.System.flipModelPresentation) {
-        Log("Flip model presentation disabled by configuration - using original swap chain settings");
-    } else {
-        Log("Cannot enable flip model - MSAA detected (Count: %u, Quality: %u)", 
-            modifiedSwapChainDesc.SampleDesc.Count, modifiedSwapChainDesc.SampleDesc.Quality);
-    }
+	// Create a modifiable copy of the swap chain description
+	DXGI_SWAP_CHAIN_DESC modifiedSwapChainDesc = *pSwapChainDesc;
+	bool flipModelEnabled = false;
 
-    auto result = ::Base::D3D11::D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels,
-        SDKVersion, flipModelEnabled ? &modifiedSwapChainDesc : pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+	if (activeCrimsonConfig.System.flipModelPresentation && 
+		modifiedSwapChainDesc.SampleDesc.Count == 1 && modifiedSwapChainDesc.SampleDesc.Quality == 0) {
+		flipModelEnabled = true;
+		SetProcessDPIAware();
+		Log("SetProcessDPIAware() called for consistent DPI scaling");
+	} else if (!activeCrimsonConfig.System.flipModelPresentation) {
+		Log("Flip model presentation disabled by configuration - using original swap chain settings");
+	} else {
+		Log("Cannot enable flip model - MSAA detected (Count: %u, Quality: %u)", 
+			modifiedSwapChainDesc.SampleDesc.Count, modifiedSwapChainDesc.SampleDesc.Quality);
+	}
 
-    auto error = GetLastError();
+	HRESULT result = S_OK;
 
-    ::D3D11::device        = *ppDevice;
-    ::D3D11::deviceContext = *ppImmediateContext;
-    ::DXGI::swapChain      = *ppSwapChain;
+	// Use DXGI 1.2 SwapChain upgrade strictly for Flip Model scaling support.
+	if (flipModelEnabled && ppSwapChain) {
+		Log("Flip Model requested: Executing DXGI 1.2 CreateSwapChainForHwnd upgrade...");
 
-    appWindow = pSwapChainDesc->OutputWindow;
+		ID3D11Device* localDevice = nullptr;
+		ID3D11DeviceContext* localContext = nullptr;
 
-    UpdateGlobalWindowSize();
-    UpdateGlobalClientSize();
-    UpdateGlobalRenderSize(pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height);
+		// 1. Create Device ONLY (pass nullptr for SwapChain details)
+		result = ::Base::D3D11::D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels,
+			SDKVersion, nullptr, nullptr, &localDevice, pFeatureLevel, &localContext);
 
-    CoreImGui::UpdateDisplaySize(pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height);
+		if (SUCCEEDED(result)) {
+			// 2. Extract factories and build DXGI 1.2 chain
+			IDXGIDevice* dxgiDevice = nullptr;
+			localDevice->QueryInterface(__uuidof(IDXGIDevice), (void**)&dxgiDevice);
+			if (dxgiDevice) {
+				IDXGIAdapter* dxgiAdapter = nullptr;
+				dxgiDevice->GetAdapter(&dxgiAdapter);
+				if (dxgiAdapter) {
+					IDXGIFactory2* factory2 = nullptr;
+					dxgiAdapter->GetParent(__uuidof(IDXGIFactory2), (void**)&factory2);
+					if (factory2) {
+						DXGI_SWAP_CHAIN_DESC1 desc1 = {};
+						desc1.Width = modifiedSwapChainDesc.BufferDesc.Width;
+						desc1.Height = modifiedSwapChainDesc.BufferDesc.Height;
+						desc1.Format = modifiedSwapChainDesc.BufferDesc.Format;
+						desc1.SampleDesc = modifiedSwapChainDesc.SampleDesc;
+						desc1.BufferUsage = modifiedSwapChainDesc.BufferUsage;
+						desc1.BufferCount = 2; // Flip model needs 2+ buffers
+						desc1.Scaling = DXGI_SCALING_STRETCH; // Enables decoupled window/render resolution
+						desc1.SwapEffect = DXGI_SWAP_EFFECT_FLIP_DISCARD;
+						desc1.AlphaMode = DXGI_ALPHA_MODE_UNSPECIFIED; 
+						desc1.Flags = DXGI_SWAP_CHAIN_FLAG_ALLOW_TEARING | DXGI_SWAP_CHAIN_FLAG_FRAME_LATENCY_WAITABLE_OBJECT;
 
-    UpdateMousePositionMultiplier();
+						DXGI_SWAP_CHAIN_FULLSCREEN_DESC fsDesc = {};
+						fsDesc.Windowed = TRUE;
 
-    DXGI_SWAP_CHAIN_DESC swapDesc{};
-    ::DXGI::swapChain->GetDesc(&swapDesc);
+						IDXGISwapChain1* swapChain1 = nullptr;
+						HRESULT hr = factory2->CreateSwapChainForHwnd(
+							localDevice, pSwapChainDesc->OutputWindow, 
+							&desc1, &fsDesc, nullptr, &swapChain1);
 
-    if (!ImGui_ImplWin32_Init(swapDesc.OutputWindow)) {
-        Log("%s Failed to initialize ImGui on D3D11 -> ImGui_ImplWin32_Init.", FUNC_NAME);
-        return result;
-    }
+						if (SUCCEEDED(hr)) {
+							*ppSwapChain = swapChain1;
+							Log("Successfully created DXGI 1.2 SwapChain with STRETCH scaling.");
+						} else {
+							Log("Failed to create DXGI 1.2 SwapChain: %X", hr);
+						}
+						factory2->Release();
+					}
+					dxgiAdapter->Release();
+				}
+				dxgiDevice->Release();
+			}
+		}
 
-    if (!ImGui_ImplDX11_Init(::D3D11::device, ::D3D11::deviceContext)) {
-        Log("%s Failed to initialize ImGui on D3D11 -> ImGui_ImplDX11_Init.", FUNC_NAME);
-        return result;
-    }
+// 		IDXGIFactory* factory = nullptr;
+// 		if (SUCCEEDED(::DXGI::swapChain->GetParent(IID_PPV_ARGS(&factory)))) {
+// 			// Add DXGI_MWA_NO_WINDOW_CHANGES to prevent DXGI from messing with Alt-Tab focus
+// 			factory->MakeWindowAssociation(appWindow, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
+// 			factory->Release();
+// 			Log("Disabled DXGI Alt+Enter & Window Change handling - using custom borderless fullscreen");
+// 		}
 
-    CreateRenderTarget<API::D3D11>();
+		if (ppDevice) *ppDevice = localDevice;
+		if (ppImmediateContext) *ppImmediateContext = localContext;
 
-    CrimsonHUD::InitTextures(::D3D11::device);
-    InitStyleSwitchFxTexture(::D3D11::device);
-    debug_draw_init(
-        (void*)::D3D11::device, (void*)::D3D11::deviceContext, pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height);
+	} else {
+		Log("Enabling Standard D3D11 SwapChain presentation");
+		result = ::Base::D3D11::D3D11CreateDeviceAndSwapChain(pAdapter, DriverType, Software, Flags, pFeatureLevels, FeatureLevels,
+			SDKVersion, pSwapChainDesc, ppSwapChain, ppDevice, pFeatureLevel, ppImmediateContext);
+	}
 
-    bool efk = EffekseerInit(::D3D11::device, ::D3D11::deviceContext, pSwapChainDesc->BufferDesc.Width, pSwapChainDesc->BufferDesc.Height);
+	auto error = GetLastError();
+
+	::D3D11::device        = *ppDevice;
+	::D3D11::deviceContext = *ppImmediateContext;
+	::DXGI::swapChain      = *ppSwapChain;
+
+	appWindow = pSwapChainDesc->OutputWindow;
+
+	UpdateGlobalWindowSize();
+	UpdateGlobalClientSize();
+	// Make sure we inform rendering logic of our potentially higher/mutated resolution so drawing math adapts:
+	UpdateGlobalRenderSize(modifiedSwapChainDesc.BufferDesc.Width, modifiedSwapChainDesc.BufferDesc.Height);
+
+	CoreImGui::UpdateDisplaySize(modifiedSwapChainDesc.BufferDesc.Width, modifiedSwapChainDesc.BufferDesc.Height);
+
+	UpdateMousePositionMultiplier();
+
+	DXGI_SWAP_CHAIN_DESC swapDesc{};
+	::DXGI::swapChain->GetDesc(&swapDesc);
+
+	if (!ImGui_ImplWin32_Init(swapDesc.OutputWindow)) {
+		Log("%s Failed to initialize ImGui on D3D11 -> ImGui_ImplWin32_Init.", FUNC_NAME);
+		return result;
+	}
+
+	if (!ImGui_ImplDX11_Init(::D3D11::device, ::D3D11::deviceContext)) {
+		Log("%s Failed to initialize ImGui on D3D11 -> ImGui_ImplDX11_Init.", FUNC_NAME);
+		return result;
+	}
+
+	CreateRenderTarget<API::D3D11>();
+
+	CrimsonHUD::InitTextures(::D3D11::device);
+	InitStyleSwitchFxTexture(::D3D11::device);
+	debug_draw_init(
+		(void*)::D3D11::device, (void*)::D3D11::deviceContext, modifiedSwapChainDesc.BufferDesc.Width, modifiedSwapChainDesc.BufferDesc.Height);
+
+	bool efk = EffekseerInit(::D3D11::device, ::D3D11::deviceContext, modifiedSwapChainDesc.BufferDesc.Width, modifiedSwapChainDesc.BufferDesc.Height);
     assert(efk);
 
     [&]() {
