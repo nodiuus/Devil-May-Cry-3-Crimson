@@ -1296,7 +1296,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
-	static EffekseerRefHandle chargeParticleHandle = EffekseerLoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 100.0f);
+	static EffekseerRefHandle chargeParticleHandle = EffekseerLoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 1.0f);
 	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 
 	auto GetAutoRotation = [&]() -> uint16 {
@@ -1409,11 +1409,11 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
 
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
-				auto& vergilSwordcDraw = *reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
-				auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
-				vec4 bonePosition = vec4(swordMatrix.matrix1[12], swordMatrix.matrix1[13], swordMatrix.matrix1[14]);
+				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw); // first cDraw is the katana part
+				Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[1].bones); // second one is the hilt
+				vec4 bonePosition = vec4(swordMatrix[0].matrix1[12], swordMatrix[0].matrix1[13], swordMatrix[0].matrix1[14]);
 				chargeParticle[playerIndex][entityIndex] = EffekseerPlayEffect(chargeParticleHandle, bonePosition, actorData);
-				EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix.matrix1);
+				EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix[2].matrix1);
 				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 			}
 		}
@@ -1530,9 +1530,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	// SWORD BONE CHARGE PLACEMENT
 	if (!actorData.nextBaseAddr) return;
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
-	auto& vergilSwordcDraw = *reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
-	auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
-	EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix.matrix1);
+	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
+	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[1].bones);
+	EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix[2].matrix1);
 	
 	ApplyJDCFlyingArc(actorData);
  }

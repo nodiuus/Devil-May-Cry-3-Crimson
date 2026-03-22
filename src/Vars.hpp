@@ -4502,12 +4502,18 @@ struct Matrix44 {
     float matrix1[16]; //0x00
 };
 
-struct cDrawReverse {
-    _(520);
-    Matrix44* matrixes; // 0x208
-};
+class cDrawReverse
+{
+public:
+	char pad_0000[24]; //0x0000
+	uint8_t drawBool; //0x0018
+	char pad_0019[495]; //0x0019
+	Matrix44 *bones; //0x0208
+	char pad_0210[1384]; //0x0210
+	uint64_t end; //0x0778
+}; //Size: 0x0780
 
-static_assert(offsetof(cDrawReverse, matrixes) == 0x208);
+static_assert(offsetof(cDrawReverse, bones) == 0x208);
 
 
 struct Sword {
