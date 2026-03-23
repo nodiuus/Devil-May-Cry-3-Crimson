@@ -32,6 +32,7 @@
 #include <deque>
 #include "Training.hpp"
 #include "CrimsonUtil.hpp"
+#include "CrimsonEfk.hpp"
 
 namespace CrimsonFX {
 
@@ -522,6 +523,53 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 
 	}
    
+}
+
+void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, uint32_t color) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+
+	uint8 handleId = 0;
+
+	for (uint8 i = 0; i < 10; i++) {
+		if (CrimsonEfk::IsPlaying(styleSwitchHandles[i])) {
+			if (i == 9) {
+				handleId = 0;
+			}
+			else {
+				handleId++;
+			}
+		}
+	}
+
+	using namespace CREATE_EFFECT_BONE_LOOKUP;
+	uint32 boneSlot = GetCreateEffectBoneSlot(actorData, 3);
+	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
+	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
+
+	static EffekseerRefHandle styleSwitchRef = -1;
+	if (styleSwitchRef == -1) {
+		styleSwitchRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\style_switch.efkefc", 50.0f);
+	}
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffect(styleSwitchRef, bonePhysicsData->bonePosition, &actorData);
+	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
+}
+
+void MoveStyleSwitchFluxes(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	using namespace CREATE_EFFECT_BONE_LOOKUP;
+	uint32 boneSlot = GetCreateEffectBoneSlot(actorData, 3);
+	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
+	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
+
+	for (int i = 0; i < 10; i++) {
+		CrimsonEfk::MoveEffect(styleSwitchHandles[i], bonePhysicsData->bonePosition);
+	}
 }
 
 void StyleSwitchFlux(byte8* actorBaseAddr) {

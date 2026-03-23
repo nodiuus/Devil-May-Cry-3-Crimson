@@ -78,6 +78,7 @@
 
 #include "ImGui/imgui.h"
 #include "CrimsonHUD.hpp"
+#include "CrimsonFX.hpp"
 
 #define SDL_FUNCTION_DECLRATION(X) decltype(X)* fn_##X
 #define LOAD_SDL_FUNCTION(X) fn_##X = GetSDLFunction<decltype(X)*>(#X)
@@ -7290,7 +7291,7 @@ void DebugSection() {
 			CrimsonDetours::SampleModDetour1();
 		}
 
-		EffekseerDrawImGui();
+		CrimsonEfk::EffekDrawImgui();
 		// if (ImGui::Button("EnableCrazyComboHook")){
 		//	HoldToCrazyComboHook->Toggle(true);
 		// }

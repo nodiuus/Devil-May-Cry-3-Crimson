@@ -3199,6 +3199,8 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 		return;
 	}
 	auto& hudData = *reinterpret_cast<HUDData*>(name_80);
+	auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchHandles : 
+        crimsonPlayer[playerIndex].styleSwitchHandlesClone;
 
     // Very important for proper Style EXP to function
     // this is essentially changing which style is going to be accumulated
@@ -3253,8 +3255,9 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
     if (activeCrimsonConfig.StyleSwitchFX.Flux.enable) {
         uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[styleColorIndex]);
         uint32 vergilColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[6]);
-        CrimsonDetours::CreateEffectDetour(actorBaseAddr, 3, 144, 1, true, 
-            actorData.character == CHARACTER::DANTE ? actualColor : vergilColor, 0.73f);
+//         CrimsonDetours::CreateEffectDetour(actorBaseAddr, 3, 144, 1, true, 
+//             actorData.character == CHARACTER::DANTE ? actualColor : vergilColor, 0.73f);
+        CrimsonFX::NewStyleSwitchFlux(actorData, styleSwitchHandles, actorData.character == CHARACTER::DANTE ? actualColor : vergilColor);
     }
 
     if (!actorData.cloneActorBaseAddr) {
@@ -8209,6 +8212,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
 	CrimsonPatches::InertiaFixes();
     CrimsonDetours::ToggleGuardGravityAlteration(activeCrimsonGameplay.Gameplay.General.inertia);
+   
 
     // Sky Launch needs to be called from here for maximum on tick speed so that its position is properly
     // applied in real-time. - Mia
@@ -8319,11 +8323,14 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 auto* vergilMoves = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves :
                     &crimsonPlayer[playerIndex].vergilMovesClone;
 
+				auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchHandles :
+					crimsonPlayer[playerIndex].styleSwitchHandlesClone;
+				CrimsonFX::MoveStyleSwitchFluxes(actorBaseAddr, styleSwitchHandles);
+
 
                 if (activeCrimsonGameplay.Gameplay.General.sprint) {
                     CrimsonGameplay::SprintAbility(actorBaseAddr);
                 }
-
 
                 // InertiaController(actorData.cloneActorBaseAddr);
                 CrimsonGameplay::BackToForwardInputs(actorBaseAddr);

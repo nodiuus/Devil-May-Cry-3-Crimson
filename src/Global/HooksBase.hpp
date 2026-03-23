@@ -225,6 +225,7 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
         ImGui_ImplDX10_NewFrame();
         ImGui_ImplWin32_NewFrame();
     } else if constexpr (api == API::D3D11) {
+        CrimsonEfk::CaptureDepthStencilForPresent(::D3D11::deviceContext);
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
     }
@@ -269,7 +270,7 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
 
         ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
     } else if constexpr (api == API::D3D11) {
-        EffekseerIncFrames();
+        CrimsonEfk::EffekIncFrames();
 
         ::D3D11::deviceContext->OMSetRenderTargets(1, &::D3D11::renderTargetView, 0);
 
@@ -295,6 +296,10 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
 
         func();
     }();
+
+    if constexpr (api == API::D3D11) {
+        CrimsonEfk::EffekRenderOnPresent(::D3D11::deviceContext);
+    }
 
     // Use optimal present flags for flip model low latency
     UINT presentFlags = Flags;

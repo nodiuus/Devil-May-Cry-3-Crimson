@@ -16,6 +16,8 @@ void StyleRankHudFadeoutController();
 
 void RoyalBlockFX(byte8* actorBaseAddr);
 void DelayedComboFXController(byte8* actorBaseAddr);
+void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, uint32_t color);
+void MoveStyleSwitchFluxes(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles);
 void StyleSwitchFlux(byte8* actorBaseAddr);
 void StyleSwitchDrawText(byte8* actorBaseAddr);
 void SetStyleSwitchDrawTextTime(int style, byte8* actorBaseAddr);

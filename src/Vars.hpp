@@ -8,6 +8,7 @@
 #include "DebugDrawDX11.hpp"
 #include <string>
 #include "Effekseer.h"
+#include "CrimsonEfk.hpp"
 
 #pragma push_macro("VOID")
 #pragma push_macro("IGNORE")
@@ -5405,6 +5406,7 @@ struct CrimsonPlayerData {
     RoyalRelease royalRelease;
     ImprovedCancels cancels;
     BackToForward b2F;
+    EffekseerHandle styleSwitchHandles[10] = { 0 };
     StyleSwitchText styleSwitchText;
     DTESFX dTESFX;
     DTEVFX dTEVFX;
@@ -5473,6 +5475,7 @@ struct CrimsonPlayerData {
     float horizontalPullClone;
     RoyalRelease royalReleaseClone;
     SkyLaunch skyLaunchClone;
+    EffekseerHandle styleSwitchHandlesClone[10] = { 0 };
     VergilMoveAdjustments vergilMovesClone;
     ImprovedCancels cancelsClone;
     BackToForward b2FClone;

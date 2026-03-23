@@ -647,7 +647,7 @@ void InitDetours() {
 	CameraSwitchInitDetour();
 	CameraWallCheckDetour();
 	LdkInitDetour();
-	EffekseerInitRenderHook();
+	CrimsonEfk::EffekInitRenderHook();
 	CrimsonOnTick::ToggleOnTickFuncs(true);
 
 	// AddToMirageGauge
