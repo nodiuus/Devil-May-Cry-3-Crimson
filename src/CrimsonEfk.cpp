@@ -350,7 +350,7 @@ namespace CrimsonEfk {
 
         static constexpr int fakeParticleBank = 3;
         static constexpr int fakeParticleId = 4;
-        static constexpr float fakeParticleTime = 0.01f;
+        static constexpr float fakeParticleTime = 0.1f;
 
         assert(player);
 
