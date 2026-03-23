@@ -16,6 +16,8 @@ namespace CrimsonEfk {
 
 	EffekseerRefHandle LoadEffect(const wchar_t* path, float scale = 1.0f);
 	EffekseerRefHandle LoadEffectFromMemory(const void* data, int size, float scale = 1.0f);
+	EffekseerRefHandle ReloadEffect(EffekseerRefHandle hEffect, const wchar_t* path, float scale = 1.0f);
+	EffekseerRefHandle LoadEffectAutoReload(EffekseerRefHandle hEffect, const wchar_t* path, float scale = 1.0f, int checkIntervalMs = 500);
 
 	EffekseerHandle PlayEffect(EffekseerRefHandle pEffect, float* vec3, void* player = nullptr);
 	EffekseerHandle PlayEffect(EffekseerRefHandle pEffect, float x, float y, float z, void* player = nullptr);

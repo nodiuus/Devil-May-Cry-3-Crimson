@@ -549,27 +549,11 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
 	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
 
+    static constexpr const wchar_t* kStyleSwitchEffectPath = L"Crimson\\vfx\\style_switch.efkefc";
 	static EffekseerRefHandle styleSwitchRef = -1;
-	if (styleSwitchRef == -1) {
-		styleSwitchRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\style_switch.efkefc", 50.0f);
-	}
+	styleSwitchRef = CrimsonEfk::LoadEffectAutoReload(styleSwitchRef, kStyleSwitchEffectPath, 40.0f, 500);
 	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtPos(styleSwitchRef, bonePhysicsData->bonePosition, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
-}
-
-void MoveStyleSwitchFluxes(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles) {
-	if (!actorBaseAddr) {
-		return;
-	}
-	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-	using namespace CREATE_EFFECT_BONE_LOOKUP;
-	uint32 boneSlot = GetCreateEffectBoneSlot(actorData, 3);
-	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
-	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
-
-	for (int i = 0; i < 10; i++) {
-		CrimsonEfk::MoveEffect(styleSwitchHandles[i], bonePhysicsData->bonePosition);
-	}
 }
 
 void StyleSwitchFlux(byte8* actorBaseAddr) {

@@ -1,10 +1,13 @@
 #include "CrimsonEfk.hpp"
+#include <filesystem>
 #include "../Core/Core.hpp"
 #include "Global.hpp"
 #include "Utility/Detour.hpp"
 
 #include <cassert>
 #include <chrono>
+#include <string>
+#include <unordered_map>
 #include <unordered_set>
 
 #include "EffekseerRendererDX11.h"
@@ -48,6 +51,16 @@ static ::Effekseer::Matrix44 g_cameraMatrix;
 static float* g_followMatrixPtrs[EFK_INSTANCES_MAX] = {};
 static float* g_followPosPtrs[EFK_INSTANCES_MAX] = {};
 static std::unordered_set<EffekseerRefHandle> g_warmedEffects;
+
+struct EffekHotReloadState {
+    std::wstring path;
+    float scale = 1.0f;
+    std::filesystem::file_time_type lastWriteTime{};
+    bool hasLastWriteTime = false;
+    std::chrono::steady_clock::time_point nextCheckTime = (std::chrono::steady_clock::time_point::min)();
+};
+
+static std::unordered_map<EffekseerRefHandle, EffekHotReloadState> g_hotReloadStates;
 
 // ============================================================================
 // RECLASS
@@ -296,6 +309,7 @@ namespace CrimsonEfk {
         }
 
         g_warmedEffects.clear();
+        g_hotReloadStates.clear();
     }
 
     // ============================================================================
@@ -319,6 +333,91 @@ namespace CrimsonEfk {
 
         g_effects.emplace_back(Effekseer::Effect::Create(g_efkManager, data, size, scale));
         return g_effects.size() - 1;
+    }
+
+    EffekseerRefHandle ReloadEffect(EffekseerRefHandle hEffect, const wchar_t* path, float scale)
+    {
+        if (g_efkManager == nullptr || path == nullptr || hEffect < 0 || hEffect >= g_effects.size()) {
+            return -1;
+        }
+
+        auto reloaded = Effekseer::Effect::Create(g_efkManager, (const char16_t*)(path), scale);
+        if (reloaded == nullptr) {
+            return hEffect;
+        }
+
+        g_effects[hEffect] = reloaded;
+        g_warmedEffects.erase(hEffect);
+
+        return hEffect;
+    }
+
+    EffekseerRefHandle LoadEffectAutoReload(EffekseerRefHandle hEffect, const wchar_t* path, float scale, int checkIntervalMs)
+    {
+        if (g_efkManager == nullptr || path == nullptr) {
+            return -1;
+        }
+
+        const auto now = std::chrono::steady_clock::now();
+        const auto interval = std::chrono::milliseconds(checkIntervalMs < 0 ? 0 : checkIntervalMs);
+
+        if (hEffect < 0 || hEffect >= g_effects.size()) {
+            hEffect = LoadEffect(path, scale);
+            if (hEffect < 0) {
+                return -1;
+            }
+
+            EffekHotReloadState state{};
+            state.path = path;
+            state.scale = scale;
+            state.nextCheckTime = now;
+
+            std::error_code errorCode;
+            const auto currentWriteTime = std::filesystem::last_write_time(path, errorCode);
+            if (!errorCode) {
+                state.lastWriteTime = currentWriteTime;
+                state.hasLastWriteTime = true;
+            }
+
+            g_hotReloadStates[hEffect] = state;
+            return hEffect;
+        }
+
+        auto& state = g_hotReloadStates[hEffect];
+        if (state.path.empty() || state.path != path || state.scale != scale) {
+            state.path = path;
+            state.scale = scale;
+            state.hasLastWriteTime = false;
+            state.nextCheckTime = now;
+        }
+
+        if (now < state.nextCheckTime) {
+            return hEffect;
+        }
+
+        state.nextCheckTime = now + interval;
+
+        std::error_code errorCode;
+        const auto currentWriteTime = std::filesystem::last_write_time(path, errorCode);
+        if (errorCode) {
+            return hEffect;
+        }
+
+        if (!state.hasLastWriteTime) {
+            state.lastWriteTime = currentWriteTime;
+            state.hasLastWriteTime = true;
+            return hEffect;
+        }
+
+        if (currentWriteTime != state.lastWriteTime) {
+            const auto reloadedHandle = ReloadEffect(hEffect, path, scale);
+            if (reloadedHandle >= 0) {
+                hEffect = reloadedHandle;
+            }
+            state.lastWriteTime = currentWriteTime;
+        }
+
+        return hEffect;
     }
 
     // ============================================================================

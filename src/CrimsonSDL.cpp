@@ -75,6 +75,7 @@ Mix_Chunk* normalBlock;
 Mix_Chunk* jdc;
 Mix_Chunk* jdcJustFrame;
 Mix_Chunk* jdcCharge;
+Mix_Chunk* snap;
 Mix_Music* missionClearSong;
 Mix_Music* divinityStatueSong;
 
@@ -105,6 +106,7 @@ namespace CHANNEL {
     constexpr int initialBlock = 422; // to 441, 5 channels per player
 	constexpr int initialJDC = 442; // to 481, 10 channels per player
     constexpr int initialJDCCharge = 482; // to 485, 1 channel per player
+    constexpr int initialSnap = 486; // to 525, 10 channels per player
 }
 
 #define SDL_FUNCTION_DECLRATION(X) decltype(X)* fn_##X
@@ -197,7 +199,7 @@ void LoadAllSFX() {
 		jdc = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc.wav").c_str());
 		jdcJustFrame = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc_justframe.wav").c_str());
 		jdcCharge = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc_charge.wav").c_str());
-
+		snap = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\snap.wav").c_str());
 
 
 		missionClearSong = fn_Mix_LoadMUS(((std::string)Paths::sounds + "\\music\\missionclear.mp3").c_str());
@@ -377,7 +379,7 @@ void InitSDL() {
 
 
     // CHUNKS OF SOUND
-    fn_Mix_AllocateChannels(500);
+    fn_Mix_AllocateChannels(1000);
 
     // RESERVES SELECT EFFECT SOUND FOR CHANNELS 100 AND ABOVE
     fn_Mix_ReserveChannels(100);
@@ -513,7 +515,7 @@ void PlayStyleChange(int playerIndex) {
 
 void PlayStyleChangeVO(int playerIndex, int style, bool doppActive) {
 	float slider = activeCrimsonConfig.SFX.styleChangeVoiceOverVolume / 100.0f;
-	int volume = (int)(72.0f * slider);
+	int volume = (int)(46.08f * slider);
     auto initialChannel = CHANNEL::initialStyleChangeVO + (20 * playerIndex);
 
     if (style == 2) {
@@ -535,6 +537,13 @@ void PlayStyleChangeVO(int playerIndex, int style, bool doppActive) {
             PlayOnChannelsFadeOut(initialChannel, initialChannel + 19, doppelganger2VO, volume, 150);
         }
     }
+}
+
+void PlaySnap(int playerIndex, int style) {
+    float slider = 100.0f;
+    int volume = (int)(20.0f * slider);
+    auto initialChannel = CHANNEL::initialSnap + (10 * playerIndex);
+    PlayOnChannels(initialChannel, initialChannel + 9, snap, volume);
 }
 
 void SetSFXDistanceMultipleChannels(int playerIndex, int initialChannel, int numberChannelsPerPlayer, int angle, int distance) {
@@ -583,6 +592,7 @@ void SetAllSFXDistance(int playerIndex, int angle, int distance) {
     SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialBlock, 5, angle, distance);
     SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialJDC, 10, angle, distance);
 	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialJDCCharge, 1, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialSnap, 10, angle, distance);
 }
 
 void StyleRankCooldownTracker(int rank) {
