@@ -48,8 +48,8 @@ static ::EffekseerRendererDX11::RendererRef g_efkRenderer = nullptr;
 
 static ::Effekseer::Matrix44 g_projectionMatrix;
 static ::Effekseer::Matrix44 g_cameraMatrix;
-static float* g_followMatrixPtrs[EFK_INSTANCES_MAX] = {};
-static float* g_followPosPtrs[EFK_INSTANCES_MAX] = {};
+static std::unordered_map<EffekseerHandle, float*> g_followMatrixPtrs;
+static std::unordered_map<EffekseerHandle, float*> g_followPosPtrs;
 static std::unordered_set<EffekseerRefHandle> g_warmedEffects;
 
 struct EffekHotReloadState {
@@ -185,14 +185,14 @@ namespace CrimsonEfk {
     }
 
     static inline void ClearTrackedMatrixPtr(EffekseerHandle handle) {
-        if (handle >= 0 && handle < EFK_INSTANCES_MAX) {
-            g_followMatrixPtrs[handle] = nullptr;
+        if (handle >= 0) {
+            g_followMatrixPtrs.erase(handle);
         }
     }
 
     static inline void ClearTrackedPosPtr(EffekseerHandle handle) {
-        if (handle >= 0 && handle < EFK_INSTANCES_MAX) {
-            g_followPosPtrs[handle] = nullptr;
+        if (handle >= 0) {
+            g_followPosPtrs.erase(handle);
         }
     }
 
@@ -201,14 +201,16 @@ namespace CrimsonEfk {
             return;
         }
 
-        for (int handle = 0; handle < EFK_INSTANCES_MAX; ++handle) {
-            auto mat44 = g_followMatrixPtrs[handle];
+        for (auto it = g_followMatrixPtrs.begin(); it != g_followMatrixPtrs.end();) {
+            const auto handle = it->first;
+            auto mat44 = it->second;
             if (!mat44) {
+                it = g_followMatrixPtrs.erase(it);
                 continue;
             }
 
             if (!g_efkManager->Exists(handle)) {
-                g_followMatrixPtrs[handle] = nullptr;
+                it = g_followMatrixPtrs.erase(it);
                 continue;
             }
 
@@ -220,25 +222,30 @@ namespace CrimsonEfk {
 
             g_efkManager->SetMatrix(handle, mat);
             g_efkManager->UpdateHandle(handle, 0.0f);
+            ++it;
         }
 
-        for (int handle = 0; handle < EFK_INSTANCES_MAX; ++handle) {
-            if (g_followMatrixPtrs[handle]) {
+        for (auto it = g_followPosPtrs.begin(); it != g_followPosPtrs.end();) {
+            const auto handle = it->first;
+            if (g_followMatrixPtrs.find(handle) != g_followMatrixPtrs.end()) {
+                ++it;
                 continue;
             }
 
-            auto vec3 = g_followPosPtrs[handle];
+            auto vec3 = it->second;
             if (!vec3) {
+                it = g_followPosPtrs.erase(it);
                 continue;
             }
 
             if (!g_efkManager->Exists(handle)) {
-                g_followPosPtrs[handle] = nullptr;
+                it = g_followPosPtrs.erase(it);
                 continue;
             }
 
             g_efkManager->SetLocation(handle, Effekseer::Vector3D(vec3[0], vec3[1], vec3[2]));
             g_efkManager->UpdateHandle(handle, 0.0f);
+            ++it;
         }
     }
 
@@ -303,10 +310,8 @@ namespace CrimsonEfk {
 
         g_effects.clear();
 
-        for (int i = 0; i < EFK_INSTANCES_MAX; ++i) {
-            g_followMatrixPtrs[i] = nullptr;
-            g_followPosPtrs[i] = nullptr;
-        }
+        g_followMatrixPtrs.clear();
+        g_followPosPtrs.clear();
 
         g_warmedEffects.clear();
         g_hotReloadStates.clear();
@@ -455,7 +460,12 @@ namespace CrimsonEfk {
 
         CrimsonDetours::CreateEffectDetour(player, fakeParticleBank, fakeParticleId, 1, 1, 0, fakeParticleTime);
 
-        return g_efkManager->Play(g_effects[hEffect], x, y, z);
+        const auto handle = g_efkManager->Play(g_effects[hEffect], x, y, z);
+        if (handle >= 0) {
+            ClearTrackedMatrixPtr(handle);
+            ClearTrackedPosPtr(handle);
+        }
+        return handle;
     }
 
     EffekseerHandle PlayEffect(EffekseerRefHandle hEffect, float* vec3, void* player) {
@@ -487,10 +497,8 @@ namespace CrimsonEfk {
 
         g_efkManager->SetMatrix(handle, mat);
 
-        if (handle < EFK_INSTANCES_MAX) {
-            g_followMatrixPtrs[handle] = mat44;
-            g_followPosPtrs[handle] = nullptr;
-        }
+        g_followMatrixPtrs[handle] = mat44;
+        g_followPosPtrs.erase(handle);
 
         // Apply immediately so first visible frame has the intended transform.
         g_efkManager->UpdateHandle(handle, 0.0f);
@@ -510,10 +518,8 @@ namespace CrimsonEfk {
 
         g_efkManager->SetLocation(handle, Effekseer::Vector3D(vec3[0], vec3[1], vec3[2]));
 
-        if (handle < EFK_INSTANCES_MAX) {
-            g_followMatrixPtrs[handle] = nullptr;
-            g_followPosPtrs[handle] = vec3;
-        }
+        g_followMatrixPtrs.erase(handle);
+        g_followPosPtrs[handle] = vec3;
 
         g_efkManager->UpdateHandle(handle, 0.0f);
 
@@ -546,10 +552,8 @@ namespace CrimsonEfk {
             g_efkManager->StopAllEffects();
         }
 
-        for (int i = 0; i < EFK_INSTANCES_MAX; ++i) {
-            g_followMatrixPtrs[i] = nullptr;
-            g_followPosPtrs[i] = nullptr;
-        }
+        g_followMatrixPtrs.clear();
+        g_followPosPtrs.clear();
     }
 
     bool IsPlaying(EffekseerHandle handle) {
@@ -573,9 +577,7 @@ namespace CrimsonEfk {
         if (g_efkManager != nullptr && handle >= 0) {
             g_efkManager->SetLocation(handle, Effekseer::Vector3D(vec3[0], vec3[1], vec3[2]));
             ClearTrackedMatrixPtr(handle);
-            if (handle < EFK_INSTANCES_MAX) {
-                g_followPosPtrs[handle] = vec3;
-            }
+            g_followPosPtrs[handle] = vec3;
             TryImmediateHandleTransformUpdate(handle);
         }
     }
@@ -594,10 +596,8 @@ namespace CrimsonEfk {
             Effekseer::Matrix43 mat = Matrix43FromFloat44(mat44);
 
             g_efkManager->SetMatrix(handle, mat);
-            if (handle < EFK_INSTANCES_MAX) {
-                g_followMatrixPtrs[handle] = mat44;
-                g_followPosPtrs[handle] = nullptr;
-            }
+            g_followMatrixPtrs[handle] = mat44;
+            g_followPosPtrs.erase(handle);
             TryImmediateHandleTransformUpdate(handle);
         }
     }
