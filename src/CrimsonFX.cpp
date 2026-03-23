@@ -553,7 +553,7 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 	if (styleSwitchRef == -1) {
 		styleSwitchRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\style_switch.efkefc", 50.0f);
 	}
-	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffect(styleSwitchRef, bonePhysicsData->bonePosition, &actorData);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtPos(styleSwitchRef, bonePhysicsData->bonePosition, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }
 

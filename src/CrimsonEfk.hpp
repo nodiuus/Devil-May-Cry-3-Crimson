@@ -19,6 +19,8 @@ namespace CrimsonEfk {
 
 	EffekseerHandle PlayEffect(EffekseerRefHandle pEffect, float* vec3, void* player = nullptr);
 	EffekseerHandle PlayEffect(EffekseerRefHandle pEffect, float x, float y, float z, void* player = nullptr);
+	EffekseerHandle PlayEffectAtMatrix(EffekseerRefHandle pEffect, float* mat44, void* player = nullptr);
+	EffekseerHandle PlayEffectAtPos(EffekseerRefHandle pEffect, float* vec3, void* player = nullptr);
 
 	void SetDynamicPos(EffekseerHandle handle, float x, float y, float z);
 	void SetDynamicPos(EffekseerHandle handle, float* vec3);

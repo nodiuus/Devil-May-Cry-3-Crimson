@@ -5,6 +5,7 @@
 
 #include <cassert>
 #include <chrono>
+#include <unordered_set>
 
 #include "EffekseerRendererDX11.h"
 #include <d3d11.h>
@@ -46,6 +47,7 @@ static ::Effekseer::Matrix44 g_projectionMatrix;
 static ::Effekseer::Matrix44 g_cameraMatrix;
 static float* g_followMatrixPtrs[EFK_INSTANCES_MAX] = {};
 static float* g_followPosPtrs[EFK_INSTANCES_MAX] = {};
+static std::unordered_set<EffekseerRefHandle> g_warmedEffects;
 
 // ============================================================================
 // RECLASS
@@ -152,6 +154,18 @@ namespace Devil3 {
 // ============================================================================
 
 namespace CrimsonEfk {
+
+    static inline Effekseer::Matrix43 Matrix43FromFloat44(float* mat44) {
+        Effekseer::Matrix43 mat;
+
+        mat.Value[0][0] = mat44[0];  mat.Value[0][1] = mat44[1];  mat.Value[0][2] = mat44[2];
+        mat.Value[1][0] = mat44[4];  mat.Value[1][1] = mat44[5];  mat.Value[1][2] = mat44[6];
+        mat.Value[2][0] = mat44[8];  mat.Value[2][1] = mat44[9];  mat.Value[2][2] = mat44[10];
+
+        mat.Value[3][0] = mat44[12]; mat.Value[3][1] = mat44[13]; mat.Value[3][2] = mat44[14];
+
+        return mat;
+    }
 
     void CaptureDepthStencilForPresent(ID3D11DeviceContext* pContext) {
         (void)pContext;
@@ -280,6 +294,8 @@ namespace CrimsonEfk {
             g_followMatrixPtrs[i] = nullptr;
             g_followPosPtrs[i] = nullptr;
         }
+
+        g_warmedEffects.clear();
     }
 
     // ============================================================================
@@ -345,6 +361,64 @@ namespace CrimsonEfk {
 
     EffekseerHandle PlayEffect(EffekseerRefHandle hEffect, float* vec3, void* player) {
         return PlayEffect(hEffect, vec3[0], vec3[1], vec3[2], player);
+    }
+
+    EffekseerHandle PlayEffectAtMatrix(EffekseerRefHandle hEffect, float* mat44, void* player) {
+        if (g_efkManager == nullptr || hEffect < 0 || mat44 == nullptr) {
+            return -1;
+        }
+
+        auto mat = Matrix43FromFloat44(mat44);
+
+        // One-time warmup to avoid first-use transform oddities.
+        if (g_warmedEffects.find(hEffect) == g_warmedEffects.end()) {
+            auto warmHandle = PlayEffect(hEffect, mat44[12], mat44[13], mat44[14], player);
+            if (warmHandle >= 0) {
+                g_efkManager->SetMatrix(warmHandle, mat);
+                g_efkManager->UpdateHandle(warmHandle, 0.0f);
+                g_efkManager->StopEffect(warmHandle);
+            }
+            g_warmedEffects.insert(hEffect);
+        }
+
+        auto handle = PlayEffect(hEffect, mat44[12], mat44[13], mat44[14], player);
+        if (handle < 0) {
+            return handle;
+        }
+
+        g_efkManager->SetMatrix(handle, mat);
+
+        if (handle < EFK_INSTANCES_MAX) {
+            g_followMatrixPtrs[handle] = mat44;
+            g_followPosPtrs[handle] = nullptr;
+        }
+
+        // Apply immediately so first visible frame has the intended transform.
+        g_efkManager->UpdateHandle(handle, 0.0f);
+
+        return handle;
+    }
+
+    EffekseerHandle PlayEffectAtPos(EffekseerRefHandle hEffect, float* vec3, void* player) {
+        if (g_efkManager == nullptr || hEffect < 0 || vec3 == nullptr) {
+            return -1;
+        }
+
+        auto handle = PlayEffect(hEffect, vec3[0], vec3[1], vec3[2], player);
+        if (handle < 0) {
+            return handle;
+        }
+
+        g_efkManager->SetLocation(handle, Effekseer::Vector3D(vec3[0], vec3[1], vec3[2]));
+
+        if (handle < EFK_INSTANCES_MAX) {
+            g_followMatrixPtrs[handle] = nullptr;
+            g_followPosPtrs[handle] = vec3;
+        }
+
+        g_efkManager->UpdateHandle(handle, 0.0f);
+
+        return handle;
     }
 
     void SetDynamicPos(EffekseerHandle handle, float x, float y, float z) {
@@ -418,13 +492,7 @@ namespace CrimsonEfk {
 
     void SetMatrix(EffekseerHandle handle, float* mat44) {
         if (g_efkManager != nullptr && handle >= 0) {
-            Effekseer::Matrix43 mat;
-
-            mat.Value[0][0] = mat44[0];  mat.Value[0][1] = mat44[1];  mat.Value[0][2] = mat44[2];
-            mat.Value[1][0] = mat44[4];  mat.Value[1][1] = mat44[5];  mat.Value[1][2] = mat44[6];
-            mat.Value[2][0] = mat44[8];  mat.Value[2][1] = mat44[9];  mat.Value[2][2] = mat44[10];
-
-            mat.Value[3][0] = mat44[12]; mat.Value[3][1] = mat44[13]; mat.Value[3][2] = mat44[14];
+            Effekseer::Matrix43 mat = Matrix43FromFloat44(mat44);
 
             g_efkManager->SetMatrix(handle, mat);
             if (handle < EFK_INSTANCES_MAX) {

@@ -1398,18 +1398,10 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			jCut.meleeButtonHold <= jCut.meleeMaxHoldTime &&
 			actionTimerNotTrickChange >= jCut.meleeHoldTime);
 
-		bool justBeforeJFWindow = (jCut.meleeButtonHold >= jCut.meleeHoldTime - 0.19f &&  
-			actionTimerNotTrickChange >= jCut.meleeHoldTime - 0.19f &&
-			jCut.meleeButtonHold < jCut.meleeHoldTime);
-
-		if (justBeforeJFWindow) {
-			
-		}
-
 		// JUST FRAME WINDOW ENTER
 		if (inJFWindow) {
 			jCut.isJustFrameCharged = true;
-			justBeforeJFWindow = false;
+
 
 			// INDICATOR
 			if (!indicatorFired[playerIndex][entityIndex]) {
@@ -1419,9 +1411,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw); // first cDraw is the katana part
 				Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[1].bones); // second one is the hilt
-				vec4 bonePosition = vec4(swordMatrix[0].matrix1[12], swordMatrix[0].matrix1[13], swordMatrix[0].matrix1[14]);
-				chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffect(chargeParticleHandle, bonePosition, actorData);
-				CrimsonEfk::SetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix[1].matrix1);
+                chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleHandle, swordMatrix[1].matrix1, actorData);
 				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 			}
 		}
@@ -1534,7 +1524,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
 	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[1].bones);
-	CrimsonEfk::SetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix[1].matrix1);
+    auto& chargeHandle = chargeParticle[playerIndex][entityIndex];
 	
 	ApplyJDCFlyingArc(actorData);
  }

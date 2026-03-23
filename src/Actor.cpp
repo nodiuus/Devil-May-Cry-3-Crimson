@@ -8323,11 +8323,6 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 auto* vergilMoves = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves :
                     &crimsonPlayer[playerIndex].vergilMovesClone;
 
-				auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchHandles :
-					crimsonPlayer[playerIndex].styleSwitchHandlesClone;
-				CrimsonFX::MoveStyleSwitchFluxes(actorBaseAddr, styleSwitchHandles);
-
-
                 if (activeCrimsonGameplay.Gameplay.General.sprint) {
                     CrimsonGameplay::SprintAbility(actorBaseAddr);
                 }
