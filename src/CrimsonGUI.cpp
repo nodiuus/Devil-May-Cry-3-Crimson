@@ -8505,7 +8505,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			if (!actorData.nextBaseAddr) return;
 			auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 			auto& vergilSwordcDraw = *reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw);
-			auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.matrixes);
+			auto& swordMatrix = *reinterpret_cast<Matrix44*>(vergilSwordcDraw.bones);
 
 			ImGui::Text("inertia Rotation : %g", actorData.inertiaRotation);
 			ImGui::Text("vergilSwordcDraw transform X: %g", swordMatrix.matrix1[12]);

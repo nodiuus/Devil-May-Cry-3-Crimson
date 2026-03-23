@@ -1296,7 +1296,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
-	static EffekseerRefHandle chargeParticleHandle = EffekseerLoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 1.0f);
+	static EffekseerRefHandle chargeParticleHandle = EffekseerLoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 100.0f);
 	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 
 	auto GetAutoRotation = [&]() -> uint16 {
@@ -1413,7 +1413,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[1].bones); // second one is the hilt
 				vec4 bonePosition = vec4(swordMatrix[0].matrix1[12], swordMatrix[0].matrix1[13], swordMatrix[0].matrix1[14]);
 				chargeParticle[playerIndex][entityIndex] = EffekseerPlayEffect(chargeParticleHandle, bonePosition, actorData);
-				EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix[2].matrix1);
+				EffeseekerSetMatrix(chargeParticle[playerIndex][entityIndex], swordMatrix[0].matrix1);
 				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 			}
 		}
