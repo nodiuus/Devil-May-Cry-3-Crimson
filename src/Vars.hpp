@@ -3147,7 +3147,7 @@ static_assert(offsetof(ActorDataBase, rotation) == 0xC0);*/
 
 struct Sword {
 	_(304);
-	ModelData* swordcDraw; // 0x130
+    ModelData* swordcDraw; // 0x130
 };
 
 static_assert(offsetof(Sword, swordcDraw) == 0x130);

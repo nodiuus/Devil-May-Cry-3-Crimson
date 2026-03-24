@@ -549,13 +549,13 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
 	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
 
-	cDrawReverse* playerDantecDraw = reinterpret_cast<cDrawReverse*>(actorData.newModelData); // first cDraw is the katana part
-	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw->bones); // second one is the hilt
+	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones); 
 
-    static constexpr const wchar_t* kStyleSwitchEffectPath = L"Crimson\\vfx\\style_switch.efkefc";
+    static constexpr const wchar_t* kStyleSwitchEffectPath = L"Crimson\\vfx\\style_switch2.efkefc";
 	static EffekseerRefHandle styleSwitchRef = -1;
 	styleSwitchRef = CrimsonEfk::LoadEffectAutoReload(styleSwitchRef, kStyleSwitchEffectPath, 40.0f, 500);
-	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix4, &actorData);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }
 
