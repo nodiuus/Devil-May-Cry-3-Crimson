@@ -3300,12 +3300,26 @@ void StyleSwitchController(byte8* actorBaseAddr) {
 	auto& playerData = GetPlayerData(actorData);
 	auto& characterData = GetCharacterData(actorData);
 	auto playerIndex = actorData.newPlayerIndex;
+    auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN)
+        ? crimsonPlayer[playerIndex].styleSwitchHandles
+        : crimsonPlayer[playerIndex].styleSwitchHandlesClone;
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 	auto name_80 = *reinterpret_cast<byte8**>(appBaseAddr + 0xCF2680);
 	if (!name_80) {
 		return;
 	}
 	auto& hudData = *reinterpret_cast<HUDData*>(name_80);
+
+    // Hide Fluxes during Air Trick, restore visibility once condition ends
+    {
+        const bool hideFluxes = (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK);
+
+        for (uint8 i = 0; i < 10; i++) {
+            if (CrimsonEfk::IsPlaying(styleSwitchHandles[i])) {
+                CrimsonEfk::SetVisible(styleSwitchHandles[i], !hideFluxes);
+            }
+        }
+    }
 
 	// Accumulate EXP
 	HeldStyleExpData& heldStyleExpData = (actorData.character == CHARACTER::DANTE)

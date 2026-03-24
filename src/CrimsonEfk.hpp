@@ -34,6 +34,7 @@ namespace CrimsonEfk {
 	void SetMatrix(EffekseerHandle handle, Effekseer::Matrix43 mat43);
 	void SetMatrix(EffekseerHandle handle, float* mat43);
 	void SetAllColor(EffekseerHandle handle, uint32_t color);
+  void SetVisible(EffekseerHandle handle, bool visible);
 	void CaptureDepthStencilForPresent(ID3D11DeviceContext* pContext);
 
 	void EffekRender(ID3D11DeviceContext* pContext, float deltaTime = 1.0f / 60.0f);

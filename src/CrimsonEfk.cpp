@@ -257,6 +257,10 @@ namespace CrimsonEfk {
         g_efkManager->UpdateHandle(handle, 0.0f);
     }
 
+    static inline bool IsValidEffectHandle(EffekseerRefHandle hEffect) {
+        return hEffect < g_effects.size() && g_effects[hEffect] != nullptr;
+    }
+
     bool EffekInit(ID3D11Device* pDevice, ID3D11DeviceContext* pContext, int windowWidth, int windowHeight)
     {
         if (pDevice == nullptr || pContext == nullptr)
@@ -431,7 +435,7 @@ namespace CrimsonEfk {
 
     EffekseerHandle PlayEffect(EffekseerRefHandle hEffect, float x, float y, float z, void* player) {
 
-        if (g_efkManager == nullptr || hEffect < 0) {
+        if (g_efkManager == nullptr || !IsValidEffectHandle(hEffect)) {
             return -1;
         }
 
@@ -473,7 +477,7 @@ namespace CrimsonEfk {
     }
 
     EffekseerHandle PlayEffectAtMatrix(EffekseerRefHandle hEffect, float* mat44, void* player) {
-        if (g_efkManager == nullptr || hEffect < 0 || mat44 == nullptr) {
+        if (g_efkManager == nullptr || !IsValidEffectHandle(hEffect) || mat44 == nullptr) {
             return -1;
         }
 
@@ -507,7 +511,7 @@ namespace CrimsonEfk {
     }
 
     EffekseerHandle PlayEffectAtPos(EffekseerRefHandle hEffect, float* vec3, void* player) {
-        if (g_efkManager == nullptr || hEffect < 0 || vec3 == nullptr) {
+        if (g_efkManager == nullptr || !IsValidEffectHandle(hEffect) || vec3 == nullptr) {
             return -1;
         }
 
@@ -609,6 +613,12 @@ namespace CrimsonEfk {
             uint8_t b = (color >> 16) & 0xFF;
             uint8_t a = (color >> 24) & 0xFF;
             g_efkManager->SetAllColor(handle, Effekseer::Color(r, g, b, a));
+        }
+    }
+
+    void SetVisible(EffekseerHandle handle, bool visible) {
+        if (g_efkManager != nullptr && handle >= 0) {
+            g_efkManager->SetShown(handle, visible);
         }
     }
 

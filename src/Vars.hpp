@@ -1,6 +1,7 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 #include "Core/Core.hpp"
 #include "ImGuiExtra.hpp"
@@ -2788,6 +2789,28 @@ struct ModelPartitionData {
 
 static_assert(sizeof(ModelPartitionData) == 0x380);
 
+struct Matrix44 {
+	float matrix1[16]; //0x00
+    float matrix2[16];
+	float matrix3[16];
+	float matrix4[16]; 
+};
+
+//static_assert(sizeof(Matrix44) == 0x40);
+
+// class cDrawReverse
+// {
+// public:
+// 	_(24); //0x0000
+// 	uint8_t drawBool; //0x0018
+// 	_(495); //0x0019
+// 	Matrix44* bones; //0x0208
+// 	_(1384); //0x0210
+// 	uint64_t end; //0x0778
+// }; //Size: 0x0780
+// 
+// static_assert(offsetof(cDrawReverse, bones) == 0x208);
+
 struct ModelData {
     _(8);
     byte8** funcAddrs; // 8
@@ -2796,7 +2819,9 @@ struct ModelData {
     bool physics; // 0x19
     _(358);
     ModelPartitionData* modelPartitionData; // 0x180
-    _(888);
+    _(128);
+    Matrix44* bones; // 0x208
+    _(752);
     struct {
         _(84);
         float duration[2]; // 0x554
@@ -2810,11 +2835,13 @@ struct ModelData {
     _(196);
 };
 
+using cDrawReverse = ModelData;
+
 static_assert(offsetof(ModelData, funcAddrs) == 8);
 static_assert(offsetof(ModelData, visible) == 0x18);
 static_assert(offsetof(ModelData, physics) == 0x19);
 static_assert(offsetof(ModelData, modelPartitionData) == 0x180);
-
+static_assert(offsetof(ModelData, bones) == 0x208);
 static_assert(offsetof(ModelData, Motion.duration) == 0x554);
 static_assert(offsetof(ModelData, Motion.duration2) == 0x594);
 static_assert(offsetof(ModelData, Motion.init) == 0x690);
@@ -3116,6 +3143,14 @@ static_assert(offsetof(ActorDataBase, rotation) == 0xC0);*/
 
 
 // static_assert(sizeof(ActorDataBase) == 200);
+
+
+struct Sword {
+	_(304);
+	ModelData* swordcDraw; // 0x130
+};
+
+static_assert(offsetof(Sword, swordcDraw) == 0x130);
 
 struct PlayerActorDataBase : ActorDataBase {
     _(80);
@@ -4498,31 +4533,6 @@ static_assert(offsetof(HUDData, topLeftAlphaTimer) == 0x6918);
 static_assert(offsetof(HUDData, topLeftAlpha) == 0x6920);
 static_assert(offsetof(HUDData, orbsCountAlphaTimer) == 0x6938);
 static_assert(offsetof(HUDData, orbsCountAlpha) == 0x693C);
-
-struct Matrix44 {
-    float matrix1[16]; //0x00
-};
-
-class cDrawReverse
-{
-public:
-	char pad_0000[24]; //0x0000
-	uint8_t drawBool; //0x0018
-	char pad_0019[495]; //0x0019
-	Matrix44 *bones; //0x0208
-	char pad_0210[1384]; //0x0210
-	uint64_t end; //0x0778
-}; //Size: 0x0780
-
-static_assert(offsetof(cDrawReverse, bones) == 0x208);
-
-
-struct Sword {
-    _(304);
-    cDrawReverse* swordcDraw; // 0x130
-};
-
-static_assert(offsetof(Sword, swordcDraw) == 0x130);
 
 
 // $EnemyVectorDataEnd
