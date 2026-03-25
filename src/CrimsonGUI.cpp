@@ -8504,9 +8504,12 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("actor speed: %g", actorData.speed);
 			ImGui::Text("inertia Rotation : %g", actorData.inertiaRotation);
 			ImGui::Text("Jcut MeleeHoldTime:  %g", crimsonPlayer[0].jCut.meleeHoldTime);
-			ImGui::Text("meleeHold %g", crimsonPlayer[0].jCut.meleeButtonHold);
+			ImGui::Text("meleeHold jcut %g", crimsonPlayer[0].jCut.meleeButtonHold);
+			ImGui::Text("meleeHold stinger %g", crimsonPlayer[0].stingerInput.meleeButtonHold);
+			ImGui::Text("melee Released Stinger %u", crimsonPlayer[0].stingerInput.meleeReleasedStinger);
 			ImGui::Text("ACTION:  %u", actorData.action);
 			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
 			ImGui::Text("action Timer Trick not change:  %g", crimsonPlayer[0].actionTimerNotTrickChange);

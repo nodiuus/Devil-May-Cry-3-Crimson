@@ -24,6 +24,7 @@ void PlayChangeGunMP();
 void PlayChangeWeaponDMC3MP();
 void PlayStyleChange(int playerIndex);
 void PlayStyleChangeVO(int playerIndex, int style, bool doppActive);
+void PlaySnap(byte8* actorBaseAddr);
 void SetAllSFXDistance(int playerIndex, int angle, int distance);
 void StyleRankAnnouncerController(int rank);
 void PlaySprint(int playerIndex);

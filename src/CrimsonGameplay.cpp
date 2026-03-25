@@ -210,6 +210,46 @@ void FixAirStingerCancelTime(byte8* actorBaseAddr) {
     }
 }
 
+void DanteStingerInputCrazyCombo(byte8* actorBaseAddr) {
+	using namespace ACTION_DANTE;
+	if (!actorBaseAddr) return;
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+
+	auto playerIndex = actorData.newPlayerIndex; // simply using actorData.newPlayerIndex also works here.
+	auto entityIndex = actorData.newEntityIndex;
+
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+
+	auto& gamepad = GetGamepad(playerIndex);
+
+	// if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
+	auto actionTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
+	auto animTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto motionIndex = actorData.motionData[0].index;
+	// --- Melee button hold timer ---
+	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : crimsonPlayer[playerIndex].stingerInputClone;
+	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	if (meleeDown) {
+		stingerInput.meleeButtonHold += ImGui::GetIO().DeltaTime;
+	}
+	else {
+		stingerInput.meleeButtonHold = 0.0f;
+	}
+
+	if (actorData.action == REBELLION_STINGER_LEVEL_1 ||
+		actorData.action == REBELLION_STINGER_LEVEL_2) {
+		if (!meleeDown && actionTimer > 0.05f) { // Short grace period
+			stingerInput.meleeReleasedStinger = true;
+		}
+	}
+	else if (actionTimer <= 0.0f) {
+		stingerInput.meleeReleasedStinger = false;
+	}
+}
+
 void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     using namespace ACTION_DANTE;
     using namespace ACTION_VERGIL;

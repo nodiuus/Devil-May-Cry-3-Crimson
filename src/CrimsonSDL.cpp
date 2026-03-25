@@ -15,6 +15,7 @@
 #include "Sound.hpp"
 #include <iostream>
 #include <unordered_set>
+#include <deque>
 
 namespace CrimsonSDL {
 
@@ -387,6 +388,72 @@ void InitSDL() {
     LoadAllSFX();
 }
 
+void PlayOnChannels(int initialChannel, int finalChannel, Mix_Chunk* sfx, int volume) {
+
+	for (int i = initialChannel; i <= finalChannel; i++) {
+		if (!fn_Mix_Playing(i)) {
+			fn_Mix_Volume(i, volume);
+			fn_Mix_PlayChannel(i, sfx, 0);
+			break;
+		}
+	}
+}
+
+struct SnapEvent {
+	byte8* actorBaseAddr;
+	uint32       initialStyle;
+	int         playerIndex;
+	int         volume;
+	bool        playDouble;
+	bool        secondSnapPending;
+	std::chrono::steady_clock::time_point fireAt;
+};
+
+static std::deque<SnapEvent> snapQueue;
+
+void TickSnapQueue() {
+	const auto now = std::chrono::steady_clock::now();
+
+	for (auto it = snapQueue.begin(); it != snapQueue.end(); ) {
+		if (now < it->fireAt) {
+			++it;
+			continue;
+		}
+
+		auto& ev = *it;
+		auto& actorData = *reinterpret_cast<PlayerActorData*>(ev.actorBaseAddr);
+		const auto style = actorData.style;
+		const bool canPlaySnap = (actorData.eventData[0].event == 1 && actorData.character == CHARACTER::DANTE);
+		const auto initialChannel = CHANNEL::initialSnap + (10 * ev.playerIndex);
+
+		if (!ev.secondSnapPending) {
+			// First snap
+			if (canPlaySnap && ev.initialStyle == style)
+				PlayOnChannels(initialChannel, initialChannel + 9, snap, ev.volume);
+			else
+				ev.playDouble = false;
+
+			if (style != STYLE::GUNSLINGER && style != STYLE::ROYALGUARD)
+				ev.playDouble = false;
+
+			if (ev.playDouble) {
+				// Re-queue for the second snap
+				ev.secondSnapPending = true;
+				ev.fireAt = now + std::chrono::milliseconds(40);
+				++it;
+				continue;
+			}
+		}
+		else {
+			// Second snap
+			if (canPlaySnap && (style == STYLE::GUNSLINGER || style == STYLE::ROYALGUARD))
+				PlayOnChannels(initialChannel, initialChannel + 9, snap, ev.volume);
+		}
+
+		it = snapQueue.erase(it);
+	}
+}
+
 
 bool IsControllerButtonDown(int controllerIndex, int button) {
    return fn_SDL_GameControllerGetButton(controllers[controllerIndex], (SDL_GameControllerButton)button);
@@ -407,6 +474,7 @@ void CheckAndOpenControllers() {
 
 void UpdateJoysticks() {
     fn_SDL_JoystickUpdate();
+    TickSnapQueue();
 }
 
 void VibrateController(int controllerIndex, Uint16 rumbleStrengthLowFreq, Uint16 rumbleStrengthHighFreq, int rumbleDuration) {
@@ -427,17 +495,6 @@ void FadeOutChannels(int channelException, int initialChannel, int numChannels, 
         if (i != channelException) {
 
             fn_Mix_FadeOutChannel(i, fadeOutms);
-        }
-    }
-}
-
-void PlayOnChannels(int initialChannel, int finalChannel, Mix_Chunk* sfx, int volume) {
-
-    for (int i = initialChannel; i <= finalChannel; i++) {
-        if (!fn_Mix_Playing(i)) {
-            fn_Mix_Volume(i, volume);
-            fn_Mix_PlayChannel(i, sfx, 0);
-            break;
         }
     }
 }
@@ -539,11 +596,47 @@ void PlayStyleChangeVO(int playerIndex, int style, bool doppActive) {
     }
 }
 
-void PlaySnap(int playerIndex, int style) {
-    float slider = 100.0f;
-    int volume = (int)(20.0f * slider);
-    auto initialChannel = CHANNEL::initialSnap + (10 * playerIndex);
-    PlayOnChannels(initialChannel, initialChannel + 9, snap, volume);
+void PlaySnap(byte8* actorBaseAddr) {
+	if (!actorBaseAddr) return;
+
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	const auto initialStyle = actorData.style;
+	const auto playerIndex = actorData.newPlayerIndex;
+	const auto actorSpeed = actorData.speed;  // adjust field name as needed
+
+	if (actorData.eventData[0].event != 1 || actorData.character != CHARACTER::DANTE)
+		return;
+
+	float slider = 5.0f / 100.0f;
+	int   volume = (int)(255.0f * slider);
+
+	std::chrono::milliseconds delay{ 0 };
+	bool playDouble = false;
+
+	switch (initialStyle) {
+	case STYLE::SWORDMASTER:  delay = std::chrono::milliseconds(300); break;
+	case STYLE::GUNSLINGER:   delay = std::chrono::milliseconds(300); playDouble = true; break;
+	case STYLE::TRICKSTER:    delay = std::chrono::milliseconds(300); break;
+	case STYLE::ROYALGUARD:   delay = std::chrono::milliseconds(300); playDouble = true; break;
+	case STYLE::QUICKSILVER:  delay = std::chrono::milliseconds(300); break;
+	case STYLE::DOPPELGANGER: delay = std::chrono::milliseconds(300); break;
+	}
+
+	if (actorSpeed > 0.0f) {
+		delay = std::chrono::milliseconds(
+			static_cast<long long>(delay.count() / (actorData.speed / g_FrameRateTimeMultiplier))
+		);
+	}
+
+	snapQueue.push_back({
+		.actorBaseAddr = actorBaseAddr,
+		.initialStyle = initialStyle,
+		.playerIndex = playerIndex,
+		.volume = volume,
+		.playDouble = playDouble,
+		.secondSnapPending = false,
+		.fireAt = std::chrono::steady_clock::now() + delay,
+		});
 }
 
 void SetSFXDistanceMultipleChannels(int playerIndex, int initialChannel, int numberChannelsPerPlayer, int angle, int distance) {

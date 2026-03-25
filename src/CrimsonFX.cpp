@@ -530,6 +530,8 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	static constexpr const wchar_t* kStyleSwitchEffectPath = L"Crimson\\vfx\\style_switch2.efkefc";
+	static EffekseerRefHandle styleSwitchRef = CrimsonEfk::LoadEffect(kStyleSwitchEffectPath, 40.0f);
 
 	uint8 handleId = 0;
 
@@ -544,17 +546,11 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 		}
 	}
 
-	using namespace CREATE_EFFECT_BONE_LOOKUP;
-	uint32 boneSlot = GetCreateEffectBoneSlot(actorData, 3);
-	auto boneMetadata = GetBoneMetadataFromNewPool(actorData, boneSlot);
-	auto bonePhysicsData = GetBonePhysicsData(boneMetadata);
-
 	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
 	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones); 
 
-    static constexpr const wchar_t* kStyleSwitchEffectPath = L"Crimson\\vfx\\style_switch2.efkefc";
-	static EffekseerRefHandle styleSwitchRef = -1;
-	styleSwitchRef = CrimsonEfk::LoadEffectAutoReload(styleSwitchRef, kStyleSwitchEffectPath, 40.0f, 500);
+    
+	//styleSwitchRef = CrimsonEfk::LoadEffectAutoReload(styleSwitchRef, kStyleSwitchEffectPath, 40.0f, 500);
 	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }

@@ -3202,6 +3202,8 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 	auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchHandles : 
         crimsonPlayer[playerIndex].styleSwitchHandlesClone;
 
+    actorData.style = style; // Changes the style.
+
     // Very important for proper Style EXP to function
     // this is essentially changing which style is going to be accumulated
 	HeldStyleExpData& heldStyleExpData = (actorData.character == CHARACTER::DANTE)
@@ -3231,9 +3233,9 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 		}
 
 		PlaySwitchAnimation(actorBaseAddr, group, index);
+        CrimsonSDL::PlaySnap(actorBaseAddr);
     }
-    
-    actorData.style = style; // Changes the style.
+   
     UpdateStyle(actorData); // Updates Style EXP
 
     // Summons Style Switch VFX (leftover from DT In Effect).
@@ -4045,6 +4047,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonPatches::RainstormLift(activeCrimsonGameplay.Gameplay.Dante.rainstormLift);
     CrimsonPatches::ReduceAirTornadoDamage(activeCrimsonGameplay.Gameplay.Dante.airTornado);
     CrimsonGameplay::DanteDownertia(actorBaseAddr);
+    CrimsonGameplay::DanteStingerInputCrazyCombo(actorBaseAddr);
     CrimsonGameplay::FixAirStingerCancelTime(actorBaseAddr);
     CrimsonGameplay::VergilRisingStar(actorBaseAddr);
     CrimsonGameplay::VergilYamatoHighTime(actorBaseAddr);

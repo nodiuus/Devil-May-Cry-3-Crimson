@@ -299,36 +299,41 @@ bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
     using namespace ACTION_DANTE;
 
     auto playerIndex = CrimsonUtil::GetPlayerIndexFromAddr((uintptr_t)actorData.baseAddr); // simply using actorData.newPlayerIndex also works here.
+	auto entityIndex = actorData.newEntityIndex;
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
     auto inputException = !(actorData.lockOn && (tiltDirection == TILT_DIRECTION::UP || tiltDirection == TILT_DIRECTION::DOWN));
 
     auto inputExceptionNevanJamSession = !(tiltDirection == TILT_DIRECTION::LEFT);
+	auto& gamepad = GetGamepad(playerIndex);
 
     // if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
-    auto actionTimer =
-        (actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].actionTimerClone : crimsonPlayer[playerIndex].actionTimer;
-    auto animTimer = (actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].animTimerClone : crimsonPlayer[playerIndex].animTimer;
+	auto actionTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
+	auto animTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto motionIndex = actorData.motionData[0].index;
+	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : crimsonPlayer[playerIndex].stingerInputClone;
 
 
     switch (actorData.action) { // from vars, namespace ACTION_DANTE {
 
     case REBELLION_STINGER_LEVEL_1:
-        if (std::clamp<float>(actionTimer, 0.22f, 0.3f) == actionTimer && inputException) {
+        if (motionIndex == 16 && stingerInput.meleeButtonHold >= 0.1f && !stingerInput.meleeReleasedStinger && inputException) {
             return true;
         }
         break;
     case REBELLION_STINGER_LEVEL_2:
-        if (std::clamp<float>(actionTimer, 0.22f, 0.3f) == actionTimer && inputException) {
+        if (motionIndex == 42 && stingerInput.meleeButtonHold >= 0.2f && !stingerInput.meleeReleasedStinger && inputException) {
             return true;
         }
         break;
-    case REBELLION_MILLION_STAB:
-        if (std::clamp<float>(actionTimer, 0.22f, 10.0f) == actionTimer && inputException) {
-            return true;
-        }
-        break;
+	case REBELLION_MILLION_STAB:
+		if (std::clamp<float>(actionTimer, 0.22f, 10.0f) == actionTimer && inputException) {
+			return true;
+		}
+		break;
     case REBELLION_COMBO_2_PART_2:
         if (std::clamp<float>(actionTimer, 0.0f, 0.90f) == actionTimer && inputException) {
             return true;

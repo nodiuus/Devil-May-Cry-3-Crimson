@@ -5359,6 +5359,11 @@ struct VergilJudgementCut {
     bool fireSound = true;
 };
 
+struct DanteStingerInput {
+    float meleeButtonHold = 0.0f;
+    bool meleeReleasedStinger = false;
+};
+
 extern bool inRoyalBlock;
 extern bool inGuardfly;
 extern float rainstormPull;
@@ -5458,6 +5463,7 @@ struct CrimsonPlayerData {
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
     VergilJudgementCut jCut;
+    DanteStingerInput stingerInput;
 
     uintptr_t clonePtr;
     uint8 actionClone     = 0;
@@ -5522,6 +5528,7 @@ struct CrimsonPlayerData {
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
 	VergilJudgementCut jCutClone;
+    DanteStingerInput stingerInputClone;
 };
 
 extern CrimsonPlayerData crimsonPlayer[20];
