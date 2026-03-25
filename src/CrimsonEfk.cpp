@@ -15,6 +15,7 @@
 #include <wrl/client.h>
 
 #include "CrimsonDetours.hpp"
+#include "Config.hpp"
 
 // ============================================================================
 // GLOBALS
@@ -400,30 +401,25 @@ namespace CrimsonEfk {
             state.nextCheckTime = now;
         }
 
-        if (now < state.nextCheckTime) {
-            return hEffect;
-        }
+        // Only check for file changes if we're past the check interval
+        if (now >= state.nextCheckTime) {
+            state.nextCheckTime = now + interval;
 
-        state.nextCheckTime = now + interval;
-
-        std::error_code errorCode;
-        const auto currentWriteTime = std::filesystem::last_write_time(path, errorCode);
-        if (errorCode) {
-            return hEffect;
-        }
-
-        if (!state.hasLastWriteTime) {
-            state.lastWriteTime = currentWriteTime;
-            state.hasLastWriteTime = true;
-            return hEffect;
-        }
-
-        if (currentWriteTime != state.lastWriteTime) {
-            const auto reloadedHandle = ReloadEffect(hEffect, path, scale);
-            if (reloadedHandle >= 0) {
-                hEffect = reloadedHandle;
+            std::error_code errorCode;
+            const auto currentWriteTime = std::filesystem::last_write_time(path, errorCode);
+            if (!errorCode) {
+                if (!state.hasLastWriteTime) {
+                    state.lastWriteTime = currentWriteTime;
+                    state.hasLastWriteTime = true;
+                }
+                else if (currentWriteTime != state.lastWriteTime) {
+                    const auto reloadedHandle = ReloadEffect(hEffect, path, scale);
+                    if (reloadedHandle >= 0) {
+                        hEffect = reloadedHandle;
+                    }
+                    state.lastWriteTime = currentWriteTime;
+                }
             }
-            state.lastWriteTime = currentWriteTime;
         }
 
         return hEffect;
@@ -682,14 +678,17 @@ namespace CrimsonEfk {
         render->deviceContext->OMSetDepthStencilState(pDepthState, 0);
 #endif
 
-        Effekseer::Manager::UpdateParameter updateParam;
-        updateParam.DeltaFrame = deltaTime * 60.0f;
-        updateParam.SyncUpdate = true;
-        g_efkManager->Update(updateParam);
+		float gameSpeed = g_scene != SCENE::CUTSCENE ? IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed : activeConfig.Speed.mainSpeed;
+        float adjustedSpeed = gameSpeed * (g_FrameRate / 60.0f);
 
-        static float g_time = 0.0f;
-        g_time += deltaTime;
-        g_efkRenderer->SetTime(g_time);
+		Effekseer::Manager::UpdateParameter updateParam;
+		updateParam.DeltaFrame = (deltaTime * 60.0f) * adjustedSpeed;
+		updateParam.SyncUpdate = true;
+		g_efkManager->Update(updateParam);
+
+		static float g_time = 0.0f;
+		g_time += deltaTime * (adjustedSpeed);
+		g_efkRenderer->SetTime(g_time);
 
         g_efkRenderer->SetProjectionMatrix(g_projectionMatrix);
         g_efkRenderer->SetCameraMatrix(g_cameraMatrix);
