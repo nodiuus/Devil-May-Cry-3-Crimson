@@ -1415,7 +1415,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw); // first cDraw is the katana part
 				Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[0].bones); // index 1 is the hilt
-				if (actorData.activeModelIndex > 1) {
+				if (actorData.activeModelIndexMirror > 0) {
 					chargeDTParticleRef = CrimsonEfk::LoadEffectAutoReload(chargeDTParticleRef, jdcChargeDTParticlePath, 1.0f, 500);
 					chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeDTParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
 				}
