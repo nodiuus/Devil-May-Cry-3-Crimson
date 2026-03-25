@@ -23,8 +23,8 @@
 
 static constexpr auto EFK_INSTANCES_MAX = 1000;
 
-static const float EFK_Z_NEAR = 9000.0f;
-static const float EFK_Z_FAR  = 1.0f;
+static float EFK_Z_NEAR = 9000.0f;
+static float EFK_Z_FAR  = 1.0f;
 
 static const float EFK_Z_NEAR_RENDER = 1.0f;
 static const float EFK_Z_FAR_RENDER = 0.0f;
@@ -622,17 +622,28 @@ namespace CrimsonEfk {
     // CAMERA SETUP
     // ============================================================================
 
-    void EffekseerSetDevil3Camera(Devil3::cCameraControl* devil3cam) {
-        const float fovY = devil3cam->FOV;
+	void EffekseerSetDevil3Camera(Devil3::cCameraControl* devil3cam) {
+		const float fovY = devil3cam->FOV;
 
-        float aspectRatio = (float)g_windowDimensions[0] / (float)g_windowDimensions[1];
-        g_projectionMatrix.PerspectiveFovRH(fovY, aspectRatio, EFK_Z_NEAR, EFK_Z_FAR);
+		float aspectRatio = (float)g_windowDimensions[0] / (float)g_windowDimensions[1];
 
-        auto viewerPosition = ::Effekseer::Vector3D(devil3cam->eye.x, devil3cam->eye.y, devil3cam->eye.z);
-        auto targetPoisiont = ::Effekseer::Vector3D(devil3cam->lookat.x, devil3cam->lookat.y, devil3cam->lookat.z);
-        auto cameraUp = ::Effekseer::Vector3D(devil3cam->up.x, devil3cam->up.y, devil3cam->up.z);
-        g_cameraMatrix.LookAtRH(viewerPosition, targetPoisiont, cameraUp);
-    }
+		// Calculate camera distance from lookat point
+		float dx = devil3cam->eye.x - devil3cam->lookat.x;
+		float dy = devil3cam->eye.y - devil3cam->lookat.y;
+		float dz = devil3cam->eye.z - devil3cam->lookat.z;
+		float camDistance = sqrtf(dx * dx + dy * dy + dz * dz);
+
+		// Adjust near/far based on camera distance
+		float dynamicNear = camDistance * 17.0f;  // Estimated multiplier
+		float dynamicFar = 1.0f;
+
+		g_projectionMatrix.PerspectiveFovRH(fovY, aspectRatio, dynamicNear, dynamicFar);
+
+		auto viewerPosition = ::Effekseer::Vector3D(devil3cam->eye.x, devil3cam->eye.y, devil3cam->eye.z);
+		auto targetPosition = ::Effekseer::Vector3D(devil3cam->lookat.x, devil3cam->lookat.y, devil3cam->lookat.z);
+		auto cameraUp = ::Effekseer::Vector3D(devil3cam->up.x, devil3cam->up.y, devil3cam->up.z);
+		g_cameraMatrix.LookAtRH(viewerPosition, targetPosition, cameraUp);
+	}
 
     // ============================================================================
     // RENDERING
@@ -739,6 +750,26 @@ namespace CrimsonEfk {
         static bool pressed = false;
         //static EffekseerEffect* ass = EffekseerLoadEffect(L"Sample\\01_Pierre01\\Lightning.efkefc", 6.0f);
         static EffekseerRefHandle ass = LoadEffect(L"Sample\\00_Version16\\Aura01.efkefc", 100.0f);
+
+		if (ImGui::CollapsingHeader("Camera Debug")) {
+			static Devil3::sCameraCtrlPtr* staticCameraCtrlPtr = (Devil3::sCameraCtrlPtr*)(appBaseAddr + 0xC8FBD0);
+			if (staticCameraCtrlPtr->pCameraControl) {
+				auto cam = staticCameraCtrlPtr->pCameraControl;
+				ImGui::Text("Eye: %.2f, %.2f, %.2f", cam->eye.x, cam->eye.y, cam->eye.z);
+				ImGui::Text("LookAt: %.2f, %.2f, %.2f", cam->lookat.x, cam->lookat.y, cam->lookat.z);
+				ImGui::Text("Up: %.2f, %.2f, %.2f", cam->up.x, cam->up.y, cam->up.z);
+				ImGui::Text("FOV: %.2f, Roll: %.2f", cam->FOV, cam->roll);
+
+				if (ImGui::TreeNode("Transform Matrix")) {
+					auto& t = cam->transform;
+					ImGui::Text("%.2f %.2f %.2f %.2f", t.col0.x, t.col0.y, t.col0.z, t.col0.w);
+					ImGui::Text("%.2f %.2f %.2f %.2f", t.col1.x, t.col1.y, t.col1.z, t.col1.w);
+					ImGui::Text("%.2f %.2f %.2f %.2f", t.col2.x, t.col2.y, t.col2.z, t.col2.w);
+					ImGui::Text("%.2f %.2f %.2f %.2f", t.col3.x, t.col3.y, t.col3.z, t.col3.w);
+					ImGui::TreePop();
+				}
+			}
+		}
         //static EffekseerEffect* ass = EffekseerLoadEffect(L"Sample\\00_Basic\\Laser01.efkefc");
         if (ImGui::Button("Load test effect")) {
 
