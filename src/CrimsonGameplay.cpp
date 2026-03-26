@@ -3850,7 +3850,7 @@ void SkyLaunchAirTauntController(byte8* actorBaseAddr) {
 
 #pragma region DanteGameplay
 
-void DriveTweaks(byte8* actorBaseAddr) {
+void DanteDriveTweaks(byte8* actorBaseAddr) {
     // This function alters some of Drive, it alters its damage to accommodate new "Charge Levels", mimicing DMC4/5 Drive behaviour.
 
     using namespace ACTION_DANTE;
@@ -3869,11 +3869,18 @@ void DriveTweaks(byte8* actorBaseAddr) {
     // 	drive projectile damage dmc3.exe + 5CB1EC, 300.0f
     uintptr_t drivePhysicalDamageAddr   = (uintptr_t)appBaseAddr + 0x5C6D2C;
     uintptr_t driveProjectileDamageAddr = (uintptr_t)appBaseAddr + 0x5CB1EC;
+	auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].drive;
+
+	static constexpr const wchar_t* driveChargeParticlePath = L"Crimson\\vfx\\drive_charge.efkefc";
+	static EffekseerRefHandle driveChargeParticleRef = CrimsonEfk::LoadEffect(driveChargeParticlePath, 1.0f);
+	static constexpr const wchar_t* quickDriveChargeParticlePath = L"Crimson\\vfx\\quickdrive_charge.efkefc";
+	static EffekseerRefHandle quickDriveChargeParticleRef = CrimsonEfk::LoadEffect(quickDriveChargeParticlePath, 1.0f);
+
 
     // Triggering the Drive Timer
     if ((actorData.action == ACTION_DANTE::REBELLION_DRIVE_1) &&
         (actorData.motionData[0].index == 17 || actorData.motionData[0].index == 18)) {
-        crimsonPlayer[playerIndex].drive.runTimer = true;
+        drive.runTimer = true;
     }
 
     // Fuck this shit, resetting has proved to be waaay more difficult than it should, probably due to SetAction things
@@ -3882,22 +3889,61 @@ void DriveTweaks(byte8* actorBaseAddr) {
         actorData.motionData[0].index == 7 || actorData.motionData[0].index == 8 || actorData.motionData[0].index == 9 ||
         actorData.motionData[0].index == 10) {
 
-        crimsonPlayer[playerIndex].drive.runTimer = false;
+        drive.runTimer = false;
     }
 
     if (actorData.action == ACTION_DANTE::REBELLION_DRIVE_1 && actorData.eventData[0].event != 17) {
-        crimsonPlayer[playerIndex].drive.runTimer = false;
+        drive.runTimer = false;
     }
+
+	// Reset Charge flag. Because actorData.action is flickering on tick, we can't rely on it to reset flags.
+	if (actorData.motionData[0].index == 1 || actorData.motionData[0].index == 2 || actorData.motionData[0].index == 11 ||
+        actorData.motionData[0].index == 4 || actorData.motionData[0].index == 5 || actorData.motionData[0].index == 6 ||
+        actorData.motionData[0].index == 7 || actorData.motionData[0].index == 8 || actorData.motionData[0].index == 9 ||
+        actorData.motionData[0].index == 10) {
+		drive.chargeEffectPlayed = false;
+	}
+
+	if (actorData.action == 1) {
+		drive.quickDriveEffectPlayed = false;
+	}
 
     // Setting Quick Drive Damage
     if ((actorData.action == REBELLION_DRIVE_1) && crimsonPlayer[playerIndex].inQuickDrive && actorData.eventData[0].event == 17) {
 
         *(float*)(drivePhysicalDamageAddr)   = 60.0f;
         *(float*)(driveProjectileDamageAddr) = 200.0f;
+
+		drive.chargeEffectPlayed = false;
+
+		if (!drive.quickDriveEffectPlayed) {
+			auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
+			cDrawReverse* danteSwordcDraw = reinterpret_cast<cDrawReverse*>(danteSword.swordcDraw);
+			Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(danteSwordcDraw[0].bones); // index 1 is the hilt
+			quickDriveChargeParticleRef = CrimsonEfk::ReloadEffect(quickDriveChargeParticleRef, quickDriveChargeParticlePath, 1.0f);
+			drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(quickDriveChargeParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+
+			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
+
+			drive.quickDriveEffectPlayed = true;
+		}
     }
 
     // The actual Drive Tweaks
     if ((actorData.action == REBELLION_DRIVE_1) && !crimsonPlayer[playerIndex].inQuickDrive && actorData.eventData[0].event == 17) {
+
+		if (!drive.chargeEffectPlayed) {
+			auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
+			cDrawReverse* danteSwordcDraw = reinterpret_cast<cDrawReverse*>(danteSword.swordcDraw); 
+			Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(danteSwordcDraw[0].bones); // index 1 is the hilt
+			driveChargeParticleRef = CrimsonEfk::ReloadEffect(driveChargeParticleRef, driveChargeParticlePath, 1.0f);
+			drive.chargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveChargeParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+			
+			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
+
+			drive.chargeEffectPlayed = true;
+		}
+		
 
         uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[0]);
 
@@ -3907,40 +3953,40 @@ void DriveTweaks(byte8* actorBaseAddr) {
             crimsonPlayer[playerIndex].drive.level3EffectPlayed = false;
         }
 
-        if (crimsonPlayer[playerIndex].drive.timer >= 1.1f) {
-            if (!crimsonPlayer[playerIndex].drive.level1EffectPlayed) {
+        if (drive.timer >= 1.1f) {
+            if (!drive.level1EffectPlayed) {
 
-                CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1, true, vfxColor, 0.8f);
+                //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1, true, vfxColor, 0.8f);
 
-                crimsonPlayer[playerIndex].drive.level1EffectPlayed = true;
+                drive.level1EffectPlayed = true;
             }
         }
 
-        if (crimsonPlayer[playerIndex].drive.timer < 2.0) {
+        if (drive.timer < 2.0) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 200.0f;
         }
 
-        if (crimsonPlayer[playerIndex].drive.timer >= 2.0 && crimsonPlayer[playerIndex].drive.timer < 3.0) {
+        if (drive.timer >= 2.0 && drive.timer < 3.0) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 300.0f;
 
             if (!crimsonPlayer[playerIndex].drive.level2EffectPlayed) {
 
-                CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
-                crimsonPlayer[playerIndex].drive.level2EffectPlayed = true;
+                //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
+                drive.level2EffectPlayed = true;
             }
         }
 
-        if (crimsonPlayer[playerIndex].drive.timer >= 3.0) {
+        if (drive.timer >= 3.0) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 700.0f;
 
-            if (!crimsonPlayer[playerIndex].drive.level3EffectPlayed) {
+            if (!drive.level3EffectPlayed) {
 
-                CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
+                //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
 
-                crimsonPlayer[playerIndex].drive.level3EffectPlayed = true;
+                drive.level3EffectPlayed = true;
             }
         }
     }

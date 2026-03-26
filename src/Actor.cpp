@@ -8347,7 +8347,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 // InertiaController(actorData.cloneActorBaseAddr);
                 CrimsonGameplay::BackToForwardInputs(actorBaseAddr);
                 CrimsonGameplay::VergilAdjustAirMovesPos(actorBaseAddr);
-                CrimsonGameplay::DriveTweaks(actorBaseAddr);
+                CrimsonGameplay::DanteDriveTweaks(actorBaseAddr);
                 CrimsonGameplay::GravityCorrections(actorBaseAddr);
 
                 if (activeCrimsonGameplay.Gameplay.Dante.artemisRework) {
@@ -9377,6 +9377,11 @@ void SetAction(byte8* actorBaseAddr) {
                    (actorData.action == REBELLION_STINGER_LEVEL_2 || actorData.action == REBELLION_STINGER_LEVEL_1 || 
                        action == REBELLION_COMBO_1_PART_1) &&
                    b2F.forwardCommand) {
+
+            // Prevent consecutive Drives
+            if (actorData.lastAction == REBELLION_DRIVE_1) {
+                return;
+            }
 
             ToggleRebellionHoldDrive(true);
             actorData.action = REBELLION_DRIVE_1;

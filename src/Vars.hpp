@@ -658,6 +658,7 @@ enum {
     POLE_PLAY,
     ROYAL_BLOCK,
     ROYAL_AIR_BLOCK,
+    REBELLION_QUICK_DRIVE,
 };
 };
 
@@ -5186,7 +5187,11 @@ extern SprintVFX sprintVFX;
 
 extern int notHoldingMelee;
 
-struct Drive {
+struct DanteDriveTweaks {
+	EffekseerHandle chargeEffectHandle;
+    EffekseerHandle quickDriveChargeEffectHandle;
+    bool quickDriveEffectPlayed = false;
+    bool chargeEffectPlayed = false;
     bool level1EffectPlayed = false;
     bool level2EffectPlayed = false;
     bool level3EffectPlayed = false;
@@ -5409,7 +5414,7 @@ struct CrimsonPlayerData {
     bool inNewDrive   = false;
     bool inQuickDrive = false;
     Sprint sprint;
-    Drive drive;
+    DanteDriveTweaks drive;
     std::vector<uint32> lastEvents{0};
     int lastLastEvent = 0;
     std::vector<byte32> lastStates{0};
@@ -5489,6 +5494,7 @@ struct CrimsonPlayerData {
     std::vector<byte32> lastStatesClone{0};
     byte32 lastLastStateClone = 0;
     float horizontalPullClone;
+    DanteDriveTweaks driveClone;
     RoyalRelease royalReleaseClone;
     SkyLaunch skyLaunchClone;
     EffekseerHandle styleSwitchHandlesClone[10] = { 0 };
