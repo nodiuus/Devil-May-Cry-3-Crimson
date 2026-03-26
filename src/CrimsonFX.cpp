@@ -550,7 +550,7 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones); 
 
     
-	styleSwitchRef = CrimsonEfk::LoadEffectAutoReload(styleSwitchRef, kStyleSwitchEffectPath, 40.0f, 500);
+	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, kStyleSwitchEffectPath, 40.0f);
 	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }
