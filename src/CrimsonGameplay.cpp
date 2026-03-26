@@ -1313,6 +1313,11 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
+	auto& characterData = playerData.characterData[playerData.activeCharacterIndex];
+
+	if (characterData[ENTITY::MAIN].character != CHARACTER::VERGIL) {
+		return; // Ensure the character is currently using Vergil
+	}
 	auto& gamepad = GetGamepad(playerIndex);
 	auto& actionTimerNotTrickChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotTrickChange :
 		crimsonPlayer[playerIndex].actionTimerNotTrickChangeClone;
@@ -1460,7 +1465,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 					chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeDTParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
 				}
 				else {
-					chargeParticleRef = CrimsonEfk::LoadEffectAutoReload(chargeParticleRef, jdcChargeParticlePath, 1.0f, 500);
+					chargeParticleRef = CrimsonEfk::ReloadEffect(chargeParticleRef, jdcChargeParticlePath, 1.0f);
 					chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
 				}
 				
