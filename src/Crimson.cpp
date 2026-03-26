@@ -268,9 +268,6 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         ToggleRebellionInfiniteShredder(false);
         ToggleRebellionInfiniteShredder(activeCrimsonGameplay.Cheats.Dante.infiniteShredder);
 
-        ToggleRebellionHoldDrive(false);
-        ToggleRebellionHoldDrive(activeConfig.rebellionHoldDrive);
-
         XI::new_Init("xinput9_1_0.dll");
 
         Hooks::Init();

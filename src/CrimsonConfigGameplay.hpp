@@ -78,7 +78,7 @@ struct CrimsonConfigGameplay {
 			bool aerialMovesTweaks = true;
 			bool downertiaD = false;
 			bool shotgunAirShotTweaks = true;
-			bool driveTweaks = true;
+			bool driveRework = true;
 			bool disableAirSlashKnockback = true;
 			bool airStinger = true;
 			bool airRevolver = true;
@@ -106,7 +106,7 @@ struct CrimsonConfigGameplay {
 					std::make_pair("aerialMovesTweaks", &Dante::aerialMovesTweaks),
 					std::make_pair("downertiaD", &Dante::downertiaD),
 					std::make_pair("shotgunAirShotTweaks", &Dante::shotgunAirShotTweaks),
-					std::make_pair("driveTweaks", &Dante::driveTweaks),
+					std::make_pair("driveRework", &Dante::driveRework),
 					std::make_pair("disableAirSlashKnockback", &Dante::disableAirSlashKnockback),
 					std::make_pair("airStinger", &Dante::airStinger),
 					std::make_pair("airRevolver", &Dante::airRevolver),

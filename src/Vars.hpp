@@ -5187,7 +5187,7 @@ extern SprintVFX sprintVFX;
 
 extern int notHoldingMelee;
 
-struct DanteDriveTweaks {
+struct DanteDriveRework {
 	EffekseerHandle chargeEffectHandle;
     EffekseerHandle quickDriveChargeEffectHandle;
     bool quickDriveEffectPlayed = false;
@@ -5197,6 +5197,9 @@ struct DanteDriveTweaks {
     bool level3EffectPlayed = false;
     float timer             = 0;
     bool runTimer           = false;
+    bool inQuickDrive = false;
+    bool part2Played = false;
+    bool part3Played = false;
 };
 ;
 
@@ -5412,9 +5415,8 @@ struct CrimsonPlayerData {
     uint32 currentEvent = 0;
     bool active;
     bool inNewDrive   = false;
-    bool inQuickDrive = false;
     Sprint sprint;
-    DanteDriveTweaks drive;
+    DanteDriveRework drive;
     std::vector<uint32> lastEvents{0};
     int lastLastEvent = 0;
     std::vector<byte32> lastStates{0};
@@ -5494,7 +5496,7 @@ struct CrimsonPlayerData {
     std::vector<byte32> lastStatesClone{0};
     byte32 lastLastStateClone = 0;
     float horizontalPullClone;
-    DanteDriveTweaks driveClone;
+    DanteDriveRework driveClone;
     RoyalRelease royalReleaseClone;
     SkyLaunch skyLaunchClone;
     EffekseerHandle styleSwitchHandlesClone[10] = { 0 };

@@ -73,7 +73,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	dante.aerialMovesTweaks = false;
 	dante.downertiaD = false;
 	dante.shotgunAirShotTweaks = false;
-	dante.driveTweaks = false;
+	dante.driveRework = false;
 	dante.disableAirSlashKnockback = false;
 	dante.airStinger = false;
 	dante.airRevolver = false;
@@ -137,7 +137,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	dante.aerialMovesTweaks = false;
 	dante.downertiaD = false;
 	dante.shotgunAirShotTweaks = false;
-	dante.driveTweaks = false;
+	dante.driveRework = false;
 	dante.disableAirSlashKnockback = false;
 	dante.airStinger = false;
 	dante.airRevolver = true;
@@ -220,7 +220,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	dante.aerialMovesTweaks = true;
 	dante.downertiaD = true;
 	dante.shotgunAirShotTweaks = true;
-	dante.driveTweaks = true;
+	dante.driveRework = true;
 	dante.disableAirSlashKnockback = true;
 	dante.airStinger = true;
 	dante.airRevolver = true;

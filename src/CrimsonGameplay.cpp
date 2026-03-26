@@ -904,7 +904,18 @@ void AirStingerJumpCancel(byte8* actorBaseAddr) {
     }
 }
 
+uint16 GetRotationTowardsEnemy(byte8* actorBaseAddr) {
+	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
+		return 0;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	auto playerIndex = actorData.newPlayerIndex;
 
+	if (actorData.newEntityIndex == ENTITY::CLONE) {
+		return crimsonPlayer[playerIndex].rotationCloneTowardsEnemy;
+	}
+	return crimsonPlayer[playerIndex].rotationTowardsEnemy;
+}
 
 #pragma endregion
 
@@ -1348,12 +1359,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 
-	auto GetAutoRotation = [&]() -> uint16 {
-		return (actorData.newEntityIndex == 0)
-			? crimsonPlayer[playerIndex].rotationTowardsEnemy
-			: crimsonPlayer[playerIndex].rotationCloneTowardsEnemy;
-		};
-
 	// JUDGEMENT CUT SFX
 	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 ||
 		actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1)) {
@@ -1511,7 +1516,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.recoverState[0] = 0;
 			}
 			
-			actorData.rotation = GetAutoRotation(); // Snap to auto-rotation on JF release for better consistency in direction
+			actorData.rotation = GetRotationTowardsEnemy(actorData); // Snap to auto-rotation on JF release for better consistency in direction
 
 			jCut.isJustFrameCharged = false;
 			jCut.isAfterJustFrameCharged = false;
@@ -1544,7 +1549,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.recoverState[0] = 0;
 			}
 
-			actorData.rotation = GetAutoRotation(); // Snap to auto-rotation on J release for better consistency in direction
+			actorData.rotation = GetRotationTowardsEnemy(actorData); // Snap to auto-rotation on J release for better consistency in direction
 		}
 
 		jCut.meleeButtonHold = 0.0f;
@@ -1565,7 +1570,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1) {
 		if (!rotatedWhileFiring[playerIndex][entityIndex] && actorData.motionData[0].index == 14) {
-			actorData.rotation = GetAutoRotation(); // Continuously snap to auto-rotation while performing Judgement Cut for better directional consistency
+			actorData.rotation = GetRotationTowardsEnemy(actorData); // Continuously snap to auto-rotation while performing Judgement Cut for better directional consistency
 			rotatedWhileFiring[playerIndex][entityIndex] = true;
 		}
 	}
@@ -3850,7 +3855,36 @@ void SkyLaunchAirTauntController(byte8* actorBaseAddr) {
 
 #pragma region DanteGameplay
 
-void DanteDriveTweaks(byte8* actorBaseAddr) {
+void ToggleRebellionHoldDrive(bool enable) {
+	LogFunction(enable);
+
+	static bool run = false;
+
+	{
+		auto addr = (appBaseAddr + 0x211581);
+		auto dest = (appBaseAddr + 0x211583);
+		constexpr new_size_t size = 2;
+		/*
+		dmc3.exe+211581 - 74 15             - je dmc3.exe+211598
+		dmc3.exe+211583 - 80 BE 133E0000 00 - cmp byte ptr [rsi+00003E13],00
+		*/
+
+		if (!run) {
+			backupHelper.Save(addr, size);
+		}
+
+		if (enable) {
+			WriteAddress(addr, dest, size);
+		}
+		else {
+			backupHelper.Restore(addr);
+		}
+	}
+
+	run = true;
+}
+
+void DanteDriveRework(byte8* actorBaseAddr) {
     // This function alters some of Drive, it alters its damage to accommodate new "Charge Levels", mimicing DMC4/5 Drive behaviour.
 
     using namespace ACTION_DANTE;
@@ -3859,9 +3893,10 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-    CrimsonDetours::ToggleDisableDriveHold(activeCrimsonGameplay.Gameplay.Dante.driveTweaks);
-    if (!activeCrimsonGameplay.Gameplay.Dante.driveTweaks || actorData.character != CHARACTER::DANTE) return;
+    CrimsonDetours::ToggleDisableDriveHold(activeCrimsonGameplay.Gameplay.Dante.driveRework);
+    if (!activeCrimsonGameplay.Gameplay.Dante.driveRework || actorData.character != CHARACTER::DANTE) return;
     auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
     int vfxBank = 3;
     int vfxId = 144;
 
@@ -3869,12 +3904,19 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
     // 	drive projectile damage dmc3.exe + 5CB1EC, 300.0f
     uintptr_t drivePhysicalDamageAddr   = (uintptr_t)appBaseAddr + 0x5C6D2C;
     uintptr_t driveProjectileDamageAddr = (uintptr_t)appBaseAddr + 0x5CB1EC;
-	auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].drive;
+	auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].driveClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto gamepad = GetGamepad(playerIndex);
 
 	static constexpr const wchar_t* driveChargeParticlePath = L"Crimson\\vfx\\drive_charge.efkefc";
 	static EffekseerRefHandle driveChargeParticleRef = CrimsonEfk::LoadEffect(driveChargeParticlePath, 1.0f);
 	static constexpr const wchar_t* quickDriveChargeParticlePath = L"Crimson\\vfx\\quickdrive_charge.efkefc";
 	static EffekseerRefHandle quickDriveChargeParticleRef = CrimsonEfk::LoadEffect(quickDriveChargeParticlePath, 1.0f);
+	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	static bool prevMeleeButton[PLAYER_COUNT][ENTITY_COUNT] = {};
+	bool meleePressed = meleeDown && !prevMeleeButton[playerIndex][entityIndex];
+	prevMeleeButton[playerIndex][entityIndex] = meleeDown;
 
 
     // Triggering the Drive Timer
@@ -3896,12 +3938,49 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
         drive.runTimer = false;
     }
 
-	// Reset Charge flag. Because actorData.action is flickering on tick, we can't rely on it to reset flags.
+	// Reset ChargeEffect flag. Because actorData.action is flickering on tick, we can't rely on it to reset flags.
 	if (actorData.motionData[0].index == 1 || actorData.motionData[0].index == 2 || actorData.motionData[0].index == 11 ||
         actorData.motionData[0].index == 4 || actorData.motionData[0].index == 5 || actorData.motionData[0].index == 6 ||
         actorData.motionData[0].index == 7 || actorData.motionData[0].index == 8 || actorData.motionData[0].index == 9 ||
         actorData.motionData[0].index == 10) {
-		drive.chargeEffectPlayed = false;
+		drive.chargeEffectPlayed = false;	
+	}
+
+	// Interrupting Charge Effect
+	if ((actorData.action == REBELLION_DRIVE_1 &&
+		actorData.motionData[0].index == 19 && motionTimer >= 0.6f &&
+		!drive.inQuickDrive) || actorData.action != REBELLION_DRIVE_1 || 
+		actorData.eventData[0].event != ACTOR_EVENT::ATTACK) {
+
+		CrimsonEfk::StopEffect(drive.chargeEffectHandle);
+	}
+
+	// Triggering Drive Part 2 & Part 3
+	if (actorData.action == REBELLION_DRIVE_1 && motionTimer >= 0.4f &&
+		actorData.motionData[0].index == 19 && 
+		motionTimer <= 0.59f &&
+		!drive.inQuickDrive) {
+	
+
+		if (meleePressed && !drive.part2Played) {
+			CrimsonGameplay::ToggleRebellionHoldDrive(false);
+			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = demo_pl000_00_3;
+			actorData.newQuickDrive = true;
+			actorData.action = REBELLION_DRIVE_1;
+			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+			actorData.rotation = GetRotationTowardsEnemy(actorData);
+			drive.part2Played = true;
+			
+		}
+		else if (meleePressed && drive.part2Played && !drive.part3Played) {
+			CrimsonGameplay::ToggleRebellionHoldDrive(false);
+			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = demo_pl000_00_3;
+			actorData.newQuickDrive = true;
+			actorData.action = REBELLION_DRIVE_1;
+			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+			actorData.rotation = GetRotationTowardsEnemy(actorData);
+			drive.part3Played = true;
+		}
 	}
 
 	if (actorData.action == 1) {
@@ -3909,7 +3988,7 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
 	}
 
     // Setting Quick Drive Damage
-    if ((actorData.action == REBELLION_DRIVE_1) && crimsonPlayer[playerIndex].inQuickDrive && actorData.eventData[0].event == 17) {
+    if ((actorData.action == REBELLION_DRIVE_1) && drive.inQuickDrive && actorData.eventData[0].event == 17) {
 
         *(float*)(drivePhysicalDamageAddr)   = 60.0f;
         *(float*)(driveProjectileDamageAddr) = 200.0f;
@@ -3930,9 +4009,12 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
     }
 
     // The actual Drive Tweaks
-    if ((actorData.action == REBELLION_DRIVE_1) && !crimsonPlayer[playerIndex].inQuickDrive && actorData.eventData[0].event == 17) {
+    if ((actorData.action == REBELLION_DRIVE_1) && !drive.inQuickDrive && actorData.eventData[0].event == 17) {
 
 		if (!drive.chargeEffectPlayed) {
+			drive.part2Played = false;
+			drive.part3Played = false;
+
 			auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 			cDrawReverse* danteSwordcDraw = reinterpret_cast<cDrawReverse*>(danteSword.swordcDraw); 
 			Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(danteSwordcDraw[0].bones); // index 1 is the hilt
@@ -3947,10 +4029,10 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
 
         uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[0]);
 
-        if (crimsonPlayer[playerIndex].drive.timer < 1.0f) {
-            crimsonPlayer[playerIndex].drive.level1EffectPlayed = false;
-            crimsonPlayer[playerIndex].drive.level2EffectPlayed = false;
-            crimsonPlayer[playerIndex].drive.level3EffectPlayed = false;
+        if (drive.timer < 1.0f) {
+            drive.level1EffectPlayed = false;
+            drive.level2EffectPlayed = false;
+            drive.level3EffectPlayed = false;
         }
 
         if (drive.timer >= 1.1f) {
@@ -3971,7 +4053,7 @@ void DanteDriveTweaks(byte8* actorBaseAddr) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 300.0f;
 
-            if (!crimsonPlayer[playerIndex].drive.level2EffectPlayed) {
+            if (!drive.level2EffectPlayed) {
 
                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
                 drive.level2EffectPlayed = true;

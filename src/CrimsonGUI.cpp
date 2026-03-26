@@ -11199,15 +11199,16 @@ void DanteGameplayOptions() {
 			ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Drive Tweaks",
-				activeCrimsonGameplay.Gameplay.Dante.driveTweaks,
-				queuedCrimsonGameplay.Gameplay.Dante.driveTweaks,
-				activeCrimsonGameplayMask.Gameplay.Dante.driveTweaks)) {
+			if (GUI_Checkbox2("Drive Rework",
+				activeCrimsonGameplay.Gameplay.Dante.driveRework,
+				queuedCrimsonGameplay.Gameplay.Dante.driveRework,
+				activeCrimsonGameplayMask.Gameplay.Dante.driveRework)) {
 			}
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "Drive is now inputted by Lock On + Back to Forward + Melee and can be held for more damage. Do Quick Drive by performing Drive after a Rebellion attack.");
+			TooltipHelper("(?)", "Drive is now inputted by Lock On + Back to Forward + Melee, can be held for more damage and is now a three part attack like DMC4/5.\n"
+				"Do Quick Drive by performing Drive after a Rebellion attack.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			// Third row

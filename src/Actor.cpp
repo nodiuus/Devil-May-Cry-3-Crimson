@@ -8166,35 +8166,6 @@ void ToggleCerberusDamage(bool enable) {
     run = true;
 }
 
-
-void ToggleRebellionHoldDrive(bool enable) {
-    LogFunction(enable);
-
-    static bool run = false;
-
-    {
-        auto addr                 = (appBaseAddr + 0x211581);
-        auto dest                 = (appBaseAddr + 0x211583);
-        constexpr new_size_t size = 2;
-        /*
-        dmc3.exe+211581 - 74 15             - je dmc3.exe+211598
-        dmc3.exe+211583 - 80 BE 133E0000 00 - cmp byte ptr [rsi+00003E13],00
-        */
-
-        if (!run) {
-            backupHelper.Save(addr, size);
-        }
-
-        if (enable) {
-            WriteAddress(addr, dest, size);
-        } else {
-            backupHelper.Restore(addr);
-        }
-    }
-
-    run = true;
-}
-
 void UpdateActorSpeed(byte8* baseAddr) {
 
     if (!baseAddr) {
@@ -8347,7 +8318,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 // InertiaController(actorData.cloneActorBaseAddr);
                 CrimsonGameplay::BackToForwardInputs(actorBaseAddr);
                 CrimsonGameplay::VergilAdjustAirMovesPos(actorBaseAddr);
-                CrimsonGameplay::DanteDriveTweaks(actorBaseAddr);
+                CrimsonGameplay::DanteDriveRework(actorBaseAddr);
                 CrimsonGameplay::GravityCorrections(actorBaseAddr);
 
                 if (activeCrimsonGameplay.Gameplay.Dante.artemisRework) {
@@ -9348,6 +9319,7 @@ void SetAction(byte8* actorBaseAddr) {
 
     bool wasRebellionAttack = (lastAction == REBELLION_COMBO_1_PART_1 || lastAction == REBELLION_COMBO_1_PART_2 ||
         lastAction == REBELLION_COMBO_1_PART_3 || lastAction == REBELLION_COMBO_2_PART_2 || lastAction == REBELLION_COMBO_2_PART_3);
+	auto& drive = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].driveClone;
 
 
 
@@ -9356,9 +9328,11 @@ void SetAction(byte8* actorBaseAddr) {
 
     switch (actorData.character) {
     case CHARACTER::DANTE: {
-      
-
-        actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = File_staticFiles[pl000_00_3];
+        
+        // Resetting Drive anim
+        if (!drive.inQuickDrive) {
+            //actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = File_staticFiles[pl000_00_3];
+        }
 
         // AIR STINGER
         if (activeCrimsonGameplay.Gameplay.Dante.airStinger &&
@@ -9371,7 +9345,7 @@ void SetAction(byte8* actorBaseAddr) {
             actorData.newAirStingerCount++;
 
         // DRIVE
-        } else if (activeCrimsonGameplay.Gameplay.Dante.driveTweaks &&
+        } else if (activeCrimsonGameplay.Gameplay.Dante.driveRework &&
             ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_DRIVE]
             && !wasRebellionAttack &&
                    (actorData.action == REBELLION_STINGER_LEVEL_2 || actorData.action == REBELLION_STINGER_LEVEL_1 || 
@@ -9383,7 +9357,7 @@ void SetAction(byte8* actorBaseAddr) {
                 return;
             }
 
-            ToggleRebellionHoldDrive(true);
+            CrimsonGameplay::ToggleRebellionHoldDrive(true);
             actorData.action = REBELLION_DRIVE_1;
 
         // AIR REVOLVER
@@ -9399,22 +9373,22 @@ void SetAction(byte8* actorBaseAddr) {
         }
 
         // QUICK DRIVE
-        if (activeCrimsonGameplay.Gameplay.Dante.driveTweaks &&
+        if (activeCrimsonGameplay.Gameplay.Dante.driveRework &&
             ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_DRIVE] &&
             (wasRebellionAttack) && (demo_pl000_00_3 != 0) &&
             (actorData.action == REBELLION_STINGER_LEVEL_2 || actorData.action == REBELLION_STINGER_LEVEL_1) &&
             b2F.forwardCommand) {
             actorData.action = REBELLION_DRIVE_1;
 
-            crimsonPlayer[playerIndex].inQuickDrive = true;
+            drive.inQuickDrive = true;
 
-            ToggleRebellionHoldDrive(false);
+            CrimsonGameplay::ToggleRebellionHoldDrive(false);
             actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = demo_pl000_00_3;
 
             actorData.newQuickDrive = true;
 
         } else {
-            crimsonPlayer[playerIndex].inQuickDrive = false;
+            drive.inQuickDrive = false;
         }
 
         // Swap Sword Pierce and Dance Macabre
