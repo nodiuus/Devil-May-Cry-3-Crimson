@@ -9331,7 +9331,7 @@ void SetAction(byte8* actorBaseAddr) {
         
         // Resetting Drive anim
         if (!drive.inQuickDrive) {
-            //actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = File_staticFiles[pl000_00_3];
+            actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = File_staticFiles[pl000_00_3];
         }
 
         // AIR STINGER
@@ -9359,6 +9359,7 @@ void SetAction(byte8* actorBaseAddr) {
 
             CrimsonGameplay::ToggleRebellionHoldDrive(true);
             actorData.action = REBELLION_DRIVE_1;
+            actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = newDrivePart1_pl000_00_3;
 
         // AIR REVOLVER
         } else if (activeCrimsonGameplay.Gameplay.Dante.airRevolver &&

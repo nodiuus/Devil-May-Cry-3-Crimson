@@ -3919,13 +3919,26 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 	prevMeleeButton[playerIndex][entityIndex] = meleeDown;
 
 
+	// Reset motion19Timer when entering motion 19
+	if (actorData.motionData[0].index == 19 && !drive.resetMotion19Timer) {
+		drive.motion19Timer = 0.0f;
+		drive.resetMotion19Timer = true;
+	}
+
+	// Increment timer while in motion 19
+	if (actorData.motionData[0].index == 19 && actorData.action == REBELLION_DRIVE_1) {
+		drive.motion19Timer += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+	}
+
+
     // Triggering the Drive Timer
-    if ((actorData.action == ACTION_DANTE::REBELLION_DRIVE_1) &&
+    if ((actorData.action == REBELLION_DRIVE_1) &&
         (actorData.motionData[0].index == 17 || actorData.motionData[0].index == 18)) {
         drive.runTimer = true;
     }
 
     // Fuck this shit, resetting has proved to be waaay more difficult than it should, probably due to SetAction things
+	// This will reset the level charge timer.
     if (actorData.motionData[0].index == 19 || actorData.motionData[0].index == 1 || actorData.motionData[0].index == 2 ||
         actorData.motionData[0].index == 4 || actorData.motionData[0].index == 5 || actorData.motionData[0].index == 6 ||
         actorData.motionData[0].index == 7 || actorData.motionData[0].index == 8 || actorData.motionData[0].index == 9 ||
@@ -3948,34 +3961,46 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
 	// Interrupting Charge Effect
 	if ((actorData.action == REBELLION_DRIVE_1 &&
-		actorData.motionData[0].index == 19 && motionTimer >= 0.6f &&
+		actorData.motionData[0].index == 19 && drive.motion19Timer >= drive.effectInterruptTime &&
 		!drive.inQuickDrive) || actorData.action != REBELLION_DRIVE_1 || 
 		actorData.eventData[0].event != ACTOR_EVENT::ATTACK) {
 
 		CrimsonEfk::StopEffect(drive.chargeEffectHandle);
 	}
 
-	// Triggering Drive Part 2 & Part 3
-	if (actorData.action == REBELLION_DRIVE_1 && motionTimer >= 0.4f &&
+	// Buffering input for Overdrive
+	if (actorData.action == REBELLION_DRIVE_1 &&
+		actorData.motionData[0].index == 19 &&
+		!drive.inQuickDrive && 
+		motionTimer >= 0.25f &&
+		motionTimer <= 0.59f) {
+
+		if (meleePressed) {
+			drive.meleePressedForOverdrive = true;
+		}
+	}
+
+	// Triggering Overdrive (Drive Part 2 & Part 3)
+	if (actorData.action == REBELLION_DRIVE_1 &&
 		actorData.motionData[0].index == 19 && 
-		motionTimer <= 0.59f &&
 		!drive.inQuickDrive) {
 	
 
-		if (meleePressed && !drive.part2Played) {
+		if (drive.meleePressedForOverdrive && !drive.part2Played && motionTimer >= 0.55f && motionTimer <= 0.79f) {
 			CrimsonGameplay::ToggleRebellionHoldDrive(false);
-			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = demo_pl000_00_3;
-			actorData.newQuickDrive = true;
+			drive.resetMotion19Timer = false;
+			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = newDrivePart2_pl000_00_3;
 			actorData.action = REBELLION_DRIVE_1;
 			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
 			actorData.rotation = GetRotationTowardsEnemy(actorData);
 			drive.part2Played = true;
 			
 		}
-		else if (meleePressed && drive.part2Played && !drive.part3Played) {
+		else if (drive.part2Played && !drive.part3Played && motionTimer >= 0.4f) {
+			drive.effectInterruptTime = 14.0f;
 			CrimsonGameplay::ToggleRebellionHoldDrive(false);
-			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = demo_pl000_00_3;
-			actorData.newQuickDrive = true;
+			drive.resetMotion19Timer = false;
+			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = newDrivePart3_pl000_00_3;
 			actorData.action = REBELLION_DRIVE_1;
 			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
 			actorData.rotation = GetRotationTowardsEnemy(actorData);
@@ -4012,8 +4037,11 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     if ((actorData.action == REBELLION_DRIVE_1) && !drive.inQuickDrive && actorData.eventData[0].event == 17) {
 
 		if (!drive.chargeEffectPlayed) {
+			drive.resetMotion19Timer = false;
+			drive.meleePressedForOverdrive = false;
 			drive.part2Played = false;
 			drive.part3Played = false;
+			drive.effectInterruptTime = 11.0f;
 
 			auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 			cDrawReverse* danteSwordcDraw = reinterpret_cast<cDrawReverse*>(danteSword.swordcDraw); 

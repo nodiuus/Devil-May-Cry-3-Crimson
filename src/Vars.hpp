@@ -5200,6 +5200,10 @@ struct DanteDriveRework {
     bool inQuickDrive = false;
     bool part2Played = false;
     bool part3Played = false;
+    bool meleePressedForOverdrive = false;
+    float motion19Timer = 0.0f;
+    bool resetMotion19Timer = false;
+    float effectInterruptTime = 8.0f;
 };
 ;
 
