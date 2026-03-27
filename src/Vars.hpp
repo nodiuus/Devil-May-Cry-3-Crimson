@@ -5190,13 +5190,16 @@ extern int notHoldingMelee;
 struct DanteDriveRework {
 	EffekseerHandle chargeEffectHandle;
     EffekseerHandle quickDriveChargeEffectHandle;
+	EffekseerHandle level1EffectHandle;
+	EffekseerHandle level2EffectHandle;
+    EffekseerHandle level3EffectHandle;
     bool quickDriveEffectPlayed = false;
     bool chargeEffectPlayed = false;
     bool level1EffectPlayed = false;
     bool level2EffectPlayed = false;
     bool level3EffectPlayed = false;
-    float timer             = 0;
-    bool runTimer           = false;
+    float levelTimer             = 0;
+    bool runLevelTimer           = false;
     bool inQuickDrive = false;
     bool part2Played = false;
     bool part3Played = false;
@@ -5204,6 +5207,7 @@ struct DanteDriveRework {
     float motion19Timer = 0.0f;
     bool resetMotion19Timer = false;
     float effectInterruptTime = 8.0f;
+    bool sfxLooped = false;
 };
 ;
 

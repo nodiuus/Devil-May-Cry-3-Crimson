@@ -315,20 +315,6 @@ void SprintTimer() {
     }
 }
 
-void DriveTimer() {
-
-    old_for_all(uint8, playerIndex, PLAYER_COUNT) {
-
-
-        if (crimsonPlayer[playerIndex].drive.runTimer) {
-
-            crimsonPlayer[playerIndex].drive.timer += (ImGui::GetIO().DeltaTime * crimsonPlayer[playerIndex].speed) / g_FrameRateTimeMultiplier;
-        } else {
-            crimsonPlayer[playerIndex].drive.timer = 0;
-        }
-    }
-}
-
 void ImprovedCancelsTimers() {
 
     old_for_all(uint8, playerIndex, PLAYER_COUNT) {
@@ -568,7 +554,6 @@ void CallAllTimers() {
     GuardflyTimers();
 	SiyTimerFunc();
 	SprintTimer();
-	DriveTimer();
 	ImprovedCancelsTimers();
 	StyleSwitchTextTimers();
 	StyleSwitchFluxTimers();

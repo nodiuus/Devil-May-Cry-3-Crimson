@@ -8504,7 +8504,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
-			ImGui::Text("drive motion 19 timer: %g", crimsonPlayer[0].drive.motion19Timer);
+			ImGui::Text("drive levelTimer: %g", crimsonPlayer[0].drive.levelTimer);
 			ImGui::Text("actor speed: %g", actorData.speed);
 			ImGui::Text("inertia Rotation : %g", actorData.inertiaRotation);
 			ImGui::Text("Jcut MeleeHoldTime:  %g", crimsonPlayer[0].jCut.meleeHoldTime);

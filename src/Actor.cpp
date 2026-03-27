@@ -4061,6 +4061,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonGameplay::GroundTrickFlagSet(actorBaseAddr);
     CrimsonFX::StyleRankHudFadeoutController();
     CrimsonFX::DelayedComboFXController(actorBaseAddr);
+    CrimsonGameplay::DanteDriveRework(actorBaseAddr);
     
     if (sessionData.unlockDevilTrigger) {
         CrimsonFX::DTExplosionFXController(actorBaseAddr);
@@ -8318,7 +8319,6 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 // InertiaController(actorData.cloneActorBaseAddr);
                 CrimsonGameplay::BackToForwardInputs(actorBaseAddr);
                 CrimsonGameplay::VergilAdjustAirMovesPos(actorBaseAddr);
-                CrimsonGameplay::DanteDriveRework(actorBaseAddr);
                 CrimsonGameplay::GravityCorrections(actorBaseAddr);
 
                 if (activeCrimsonGameplay.Gameplay.Dante.artemisRework) {

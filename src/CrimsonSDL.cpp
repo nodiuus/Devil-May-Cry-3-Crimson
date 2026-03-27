@@ -76,6 +76,9 @@ Mix_Chunk* normalBlock;
 Mix_Chunk* jdc;
 Mix_Chunk* jdcJustFrame;
 Mix_Chunk* jdcCharge;
+Mix_Chunk* driveStart;
+Mix_Chunk* driveLoop;
+Mix_Chunk* driveLevelUp;
 Mix_Chunk* snap;
 Mix_Music* missionClearSong;
 Mix_Music* divinityStatueSong;
@@ -108,6 +111,12 @@ namespace CHANNEL {
 	constexpr int initialJDC = 442; // to 481, 10 channels per player
     constexpr int initialJDCCharge = 482; // to 485, 1 channel per player
     constexpr int initialSnap = 486; // to 525, 10 channels per player
+	constexpr int initialDrive = 526; // to 529, 1 channels per player
+	constexpr int initialDriveLevelUp = 530; // to 537, 2 channels per player
+	constexpr int initialDriveLoop = 538; // to 541, 1 channel per player
+	constexpr int initialDriveClone = 542; // to 545, 1 channel per player
+	constexpr int initialDriveLevelUpClone = 546; // to 553, 2 channels per player
+	constexpr int initialDriveLoopClone = 554; // to 557, 1 channel per player
 }
 
 #define SDL_FUNCTION_DECLRATION(X) decltype(X)* fn_##X
@@ -128,7 +137,6 @@ SDL_FUNCTION_DECLRATION(Mix_AllocateChannels)             = NULL;
 SDL_FUNCTION_DECLRATION(Mix_ReserveChannels)              = NULL;
 SDL_FUNCTION_DECLRATION(Mix_LoadWAV)                      = NULL;
 SDL_FUNCTION_DECLRATION(Mix_LoadMUS)                      = NULL;
-SDL_FUNCTION_DECLRATION(Mix_FadeOutChannel)               = NULL;
 SDL_FUNCTION_DECLRATION(Mix_Playing)                      = NULL;
 SDL_FUNCTION_DECLRATION(Mix_Pause)                        = NULL;
 SDL_FUNCTION_DECLRATION(Mix_Resume)                       = NULL;
@@ -136,6 +144,7 @@ SDL_FUNCTION_DECLRATION(Mix_Volume)                       = NULL;
 SDL_FUNCTION_DECLRATION(Mix_SetPosition)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_PlayChannel)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_HaltChannel)                  = NULL;
+SDL_FUNCTION_DECLRATION(Mix_FadeOutChannel)				  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_VolumeMusic)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeInMusic)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeOutMusic)                 = NULL;
@@ -200,6 +209,9 @@ void LoadAllSFX() {
 		jdc = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc.wav").c_str());
 		jdcJustFrame = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc_justframe.wav").c_str());
 		jdcCharge = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\jdc_charge.wav").c_str());
+		driveStart = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\drive_start.wav").c_str());
+		driveLoop = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\drive_loop.wav").c_str());
+		driveLevelUp = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\drive_levelup.wav").c_str());
 		snap = fn_Mix_LoadWAV(((std::string)Paths::sounds + "\\snap.wav").c_str());
 
 
@@ -287,6 +299,7 @@ void InitSDL() {
         LOAD_MIXER_FUNCTION(Mix_PlayChannel);
         LOAD_MIXER_FUNCTION(Mix_SetPosition);
         LOAD_MIXER_FUNCTION(Mix_HaltChannel);
+		LOAD_MIXER_FUNCTION(Mix_FadeOutChannel);
         LOAD_MIXER_FUNCTION(Mix_VolumeMusic);
         LOAD_MIXER_FUNCTION(Mix_FadeInMusic);
         LOAD_MIXER_FUNCTION(Mix_FadeOutMusic);
@@ -394,6 +407,16 @@ void PlayOnChannels(int initialChannel, int finalChannel, Mix_Chunk* sfx, int vo
 		if (!fn_Mix_Playing(i)) {
 			fn_Mix_Volume(i, volume);
 			fn_Mix_PlayChannel(i, sfx, 0);
+			break;
+		}
+	}
+}
+
+void InterruptChannels(int initialChannel, int finalChannel) {
+
+	for (int i = initialChannel; i <= finalChannel; i++) {
+		if (fn_Mix_Playing(i)) {
+			fn_Mix_HaltChannel(i);
 			break;
 		}
 	}
@@ -686,6 +709,12 @@ void SetAllSFXDistance(int playerIndex, int angle, int distance) {
     SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialJDC, 10, angle, distance);
 	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialJDCCharge, 1, angle, distance);
 	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialSnap, 10, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialDrive, 1, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialDriveLoop, 1, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialDriveLevelUp, 2, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialDriveClone, 1, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialDriveLoopClone, 1, angle, distance);
+	SetSFXDistanceMultipleChannels(playerIndex, CHANNEL::initialDriveLevelUpClone, 2, angle, distance);
 }
 
 void StyleRankCooldownTracker(int rank) {
@@ -968,6 +997,42 @@ void PlayNormalBlock(int playerIndex) {
 	int volume = (int)(20.0f * slider);
 
 	PlayOnChannels(initialChannel, initialChannel + 4, normalBlock, volume);
+}
+
+void PlayDriveStart(int playerIndex, int entityIndex) {
+	auto initialChannel = (entityIndex == 0) ? CHANNEL::initialDrive + playerIndex : CHANNEL::initialDriveClone + playerIndex;
+	float slider = 7.0f / 100.0f;
+	int   volume = (int)(255.0f * slider);
+	fn_Mix_Volume(initialChannel, volume);
+	fn_Mix_PlayChannel(initialChannel, driveStart, 0);
+}
+
+void PlayDriveLoop(int playerIndex, int entityIndex) {
+	auto initialChannel = (entityIndex == 0) ? CHANNEL::initialDriveLoop + playerIndex : CHANNEL::initialDriveLoopClone + playerIndex;
+	float slider = 7.0f / 100.0f;
+	int   volume = (int)(255.0f * slider);
+	fn_Mix_Volume(initialChannel, volume);
+	fn_Mix_PlayChannel(initialChannel, driveLoop, -1);
+}
+
+void PlayDriveLevelUp(int playerIndex, int entityIndex) {
+	auto initialChannel = (entityIndex == 0) ? CHANNEL::initialDriveLevelUp + (2 * playerIndex) : 
+		CHANNEL::initialDriveLevelUpClone + (2 * playerIndex);
+	float slider = 10.0f / 100.0f;
+	int   volume = (int)(255.0f * slider);
+	PlayOnChannels(initialChannel, initialChannel + 1, driveLevelUp, volume);
+}
+
+void InterruptDriveSFX(int playerIndex, int entityIndex) {
+	auto initialChannelStart = (entityIndex == 0) ? CHANNEL::initialDrive + playerIndex : CHANNEL::initialDriveClone + playerIndex;
+	auto initialChannelLoop = (entityIndex == 0) ? CHANNEL::initialDriveLoop + playerIndex : CHANNEL::initialDriveLoopClone + playerIndex;
+	fn_Mix_FadeOutChannel(initialChannelStart, 100);
+	fn_Mix_FadeOutChannel(initialChannelLoop, 100);
+}
+
+bool DriveStartIsPlaying(int playerIndex, int entityIndex) {
+	auto initialChannel = (entityIndex == 0) ? CHANNEL::initialDrive + playerIndex : CHANNEL::initialDriveClone + playerIndex;
+	return ChannelIsPlaying(initialChannel);
 }
 
 void PlayNewMissionClearSong() {
