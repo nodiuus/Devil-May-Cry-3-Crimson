@@ -4359,7 +4359,7 @@ void RenderMultiplayerBar(
 	}
 	const float alpha = ImLerp(0.27f, 1.0f, 1.0);
 	ImVec4 hitColor = CrimsonUtil::HexToImVec4(0x43fe65FF);
-	ImVec4 magicColor[4] = CrimsonUtil::HexToImVec4(0xde1c4cFF);
+	ImVec4 magicColor[4] = { CrimsonUtil::HexToImVec4(0xde1c4cFF),CrimsonUtil::HexToImVec4(0xde1c4cFF),CrimsonUtil::HexToImVec4(0xde1c4cFF),CrimsonUtil::HexToImVec4(0xde1c4cFF) };
 	float magicColorVergil[4] = { 0.06f, 0.74f, 0.81f, 1.0f };
 
 	const float baseSpacing = 0.37f;
@@ -5650,7 +5650,7 @@ enum {
 };
 
 // Function Declarations
-void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData);
+void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData,uint64 baseMoveCount);
 void ShowExperienceStyleTab(ExpConfig::ExpData& expData,ShopExperienceStyleHelper* styleHelpers, new_size_t styleHelperCount, MissionData& missionData, uint8 character);
 
 void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMissionActorData, ActiveMissionActorData& activeMissionActorData, bool unlockDevilTrigger);
@@ -5784,19 +5784,19 @@ void ShopWindow() {
 
 					switch (tabIndex) {
 					case TAB::DANTE_DEVILARM:
-						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDante, sizeof(shopHelpersDante) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDante, sizeof(shopHelpersDante) / sizeof(ShopExperienceHelper), missionData,UNLOCK_DANTE::COUNT);
 						break;
 					case TAB::DANTE_GUN:
-						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDanteGuns, sizeof(shopHelpersDanteGuns) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDanteGuns, sizeof(shopHelpersDanteGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_DANTE::COUNT);
 						break;
 					case TAB::DANTE_STYLE:
 						ShowExperienceStyleTab(ExpConfig::missionExpDataDante, shopHelpersDanteStyle, sizeof(shopHelpersDanteStyle) / sizeof(ShopExperienceStyleHelper), missionData, CHARACTER::DANTE);
 						break;
 					case TAB::VERGIL_DEVILARM:
-						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergil, sizeof(shopHelpersVergil) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergil, sizeof(shopHelpersVergil) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
 						break;
 					case TAB::VERGIL_GUN:
-						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergilGuns, sizeof(shopHelpersVergilGuns) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergilGuns, sizeof(shopHelpersVergilGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
 						break;
 					case TAB::VERGIL_STYLE:
 						ShowExperienceStyleTab(ExpConfig::missionExpDataVergil, shopHelpersVergilStyle, sizeof(shopHelpersVergilStyle) / sizeof(ShopExperienceStyleHelper), missionData, CHARACTER::VERGIL);
@@ -5854,7 +5854,7 @@ void ShowStyleLevelsTab(ExpConfig::ExpData& expData, MissionData& missionData) {
 }
 
 
-void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData) {
+void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData, uint64 baseMoveCount) {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
 	const float columnWidth = 0.48f * queuedConfig.globalScale;
@@ -5884,6 +5884,13 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 					continue;
 			}
 
+			//Don't show modded moves if the modded moves aren't turned on
+			if (helper.id > baseMoveCount && !activeCrimsonGameplay.Gameplay.General.extramoves)
+			{
+				if (expData.unlocks[helper.id] == false)
+					continue;
+			}
+				//
 			columnTracker++;
 			ImGui::TableNextColumn();
 			auto Buy = [&]() {
@@ -5902,6 +5909,14 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 				missionData.redOrbs += helper.price;
 				FMOD_PlaySound(0, 18);
 				expData.unlocks[helper.id] = false;
+				//Make sure everything relying on this move is properly disabled
+				if (helper.next > -1)
+					expData.unlocks[helper.next] = false;
+				for (int64 childIndex = 0; childIndex < 5; ++childIndex) {
+					if(helper.child[childIndex] > -1)
+						expData.unlocks[helper.child[childIndex]] = false;
+				}
+
 
 				// Sets the flag off on sessionData expertise to also update non Actor System
 	// 			const auto& expertiseHelper =
@@ -5945,13 +5960,20 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 			ImGui::EndGroup(); // End the group for the current row
 			ImGui::TableNextColumn();
 			if (expData.unlocks[helper.id]) {
+				//check if there's a "next move" and if it's unlocked. That means we shouldn't be able to refund. 
 				condition = ((helper.next > -1) && expData.unlocks[helper.next]);
-
-
+				//if next is a modded move and extra moves is off, ignore that requirement 
+				//if ((helper.next > baseMoveCount) && !activeCrimsonGameplay.Gameplay.General.extramoves)
+					//condition = false;
 				//check for extra children 
 				if (!condition) {
 					//hardcoded to 5 because I was being lazy, updated to base off array size when convenient
 					for (int64 childIndex = 0; childIndex < 5; ++childIndex) {
+
+						//should stop these pre-requisites from being valid if they're modded and we're disabled. 
+						//if (helper.child[childIndex] > baseMoveCount && !activeCrimsonGameplay.Gameplay.General.extramoves)
+							//continue;
+
 						condition = ((helper.child[childIndex] > -1) && expData.unlocks[helper.child[childIndex]]);
 						if (condition)
 							break;
@@ -10918,6 +10940,22 @@ void GeneralGameplayOptions() {
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
+
+			GUI_PushDisable(!activeConfig.Actor.enable);
+			if (GUI_Checkbox2("Expanded Movelist",
+				activeCrimsonGameplay.Gameplay.General.extramoves,
+				queuedCrimsonGameplay.Gameplay.General.extramoves,
+				activeCrimsonGameplayMask.Gameplay.General.extramoves)) {
+			}
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Enables new moves for dante & vergil that can be purchased from the shop.");
+			GUI_PopDisable(!activeConfig.Actor.enable);
+
+			ImGui::TableNextColumn();
+
 
 			if (GUI_Checkbox2("Hold To Shoot Gun",
 				activeCrimsonGameplay.Gameplay.General.holdToShoot,

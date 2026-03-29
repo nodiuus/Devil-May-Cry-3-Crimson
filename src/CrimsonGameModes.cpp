@@ -51,6 +51,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = false;
 	general.sprint = false;
+	general.extramoves = false;
 	general.freeformSoftLock = false;
 	general.bufferlessReversals = false;
 	general.dmc4LockOnDirection = false;
@@ -116,6 +117,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = false;
 	general.sprint = true;
+	general.extramoves = false;
 	general.freeformSoftLock = true;
 	general.holdToCrazyCombo = true;
 	general.dmc4LockOnDirection = true;
@@ -197,6 +199,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = true;
 	general.sprint = true;
+	general.extramoves = true;
 	general.freeformSoftLock = true;
 	//general.bufferlessReversals = false;
 	general.dmc4LockOnDirection = true;

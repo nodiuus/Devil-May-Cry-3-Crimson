@@ -26,6 +26,7 @@ struct CrimsonConfigGameplay {
 
         struct General {
 			bool inertia = true;
+			bool extramoves = true;
 			bool sprint = true;
 			bool charHotswap = false;
 			bool freeformSoftLock = true;

@@ -1912,7 +1912,7 @@ void TriggerOnTickFuncs() {
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();
 	CrimsonOnTick::FixM7DevilTriggerUnlocking();
 	CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
-	CrimsonDetours::ToggleEnsureAirRisingDragonLaunch(activeConfig.Actor.enable && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR]);
+	CrimsonDetours::ToggleEnsureAirRisingDragonLaunch(activeConfig.Actor.enable && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR] && activeCrimsonGameplay.Gameplay.General.extramoves);
 	CrimsonOnTick::UpdateMainPlayerMotionArchives();
  	CrimsonOnTick::TrackMissionStyleLevels();
  	CrimsonOnTick::StyleMeterMultiplayer();

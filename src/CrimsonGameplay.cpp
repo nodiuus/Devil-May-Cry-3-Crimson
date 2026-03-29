@@ -928,7 +928,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		return;
 	}
 
-	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_RISING_STAR]) {
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_RISING_STAR] || !activeCrimsonGameplay.Gameplay.General.extramoves) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
@@ -1085,7 +1085,7 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 		return;
 	}
 
-	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_HIGH_TIME]) {
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_HIGH_TIME] || !activeCrimsonGameplay.Gameplay.General.extramoves) {
 		return;
 	}
 
@@ -1738,7 +1738,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 		return;
 	}
 
-	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR]) {
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR] || !activeCrimsonGameplay.Gameplay.General.extramoves) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
