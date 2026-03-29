@@ -1568,6 +1568,10 @@ template <typename T> void UpdateCostumeFileData(T& actorData) {
             swordFileId = plwp_sword3;
         }
 
+        if (actorData.action == ACTION_DANTE::REBELLION_COMBO_1_PART_1) {
+            swordFileId = plwp_sword3;
+		}
+
         File_UpdateFileData(140, swordFileId);
     }
 }
@@ -4027,6 +4031,9 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     } else if (actorData.var_3F19) {
         return false;
     }
+
+    UpdateCostumeFileData(actorData);
+    UpdateModel(actorData);
 
     // dd::sphere(dd_ctx(), actorWorldPos, dd::colors::Red, 15.0f);
 
@@ -9305,6 +9312,7 @@ void SetAction(byte8* actorBaseAddr) {
     
 
     auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
     auto& actionTimer =
         (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
     auto& b2F = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].b2F : crimsonPlayer[playerIndex].b2FClone;
@@ -9320,6 +9328,14 @@ void SetAction(byte8* actorBaseAddr) {
     bool wasRebellionAttack = (lastAction == REBELLION_COMBO_1_PART_1 || lastAction == REBELLION_COMBO_1_PART_2 ||
         lastAction == REBELLION_COMBO_1_PART_3 || lastAction == REBELLION_COMBO_2_PART_2 || lastAction == REBELLION_COMBO_2_PART_3);
 	auto& drive = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].driveClone;
+	auto& inYamatoHighTime = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime : 
+        crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	static constexpr const wchar_t* weaponParticlePath = L"Crimson\\vfx\\yamato_sword.efkefc";
+	static EffekseerRefHandle weaponParticleRef = CrimsonEfk::LoadEffect(weaponParticlePath, 1.0f);
+	auto& yamatoGroundedHighTimeHandle = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandle :
+		crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandleClone;
+	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerVergilcDraw.bones);
 
 
 
@@ -9539,6 +9555,8 @@ void SetAction(byte8* actorBaseAddr) {
 
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = newYamatoHighTime_pl021_00_5; // Swap Force Edge High Time animation
 			actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
+
+            inYamatoHighTime = true;
 		}
 
         break;

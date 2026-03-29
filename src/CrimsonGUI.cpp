@@ -8540,6 +8540,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("inYamatoHighTime : %d", crimsonPlayer[0].inYamatoHighTime);
 			ImGui::Text("drive levelTimer: %g", crimsonPlayer[0].drive.levelTimer);
 			ImGui::Text("actor speed: %g", actorData.speed);
 			ImGui::Text("inertia Rotation : %g", actorData.inertiaRotation);
