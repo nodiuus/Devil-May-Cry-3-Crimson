@@ -128,8 +128,8 @@ namespace Devil3 {
         char pad_0000[16]; //0x0000
         void* notSure1; //0x0010
         char pad_0018[16]; //0x0018
-        void* unkD3DSomething; //0x0028
-        void* unkD3DSomething0; //0x0030
+        ID3D11Texture2D* texture; //0x0028
+        ID3D11ShaderResourceView* srv; //0x0030
         char pad_0038[56]; //0x0038
         class gfxTexture* gfxTexturePtr; //0x0070
         ID3D11RenderTargetView* renderTargetView; //0x0078
@@ -168,6 +168,77 @@ namespace Devil3 {
 // ============================================================================
 
 namespace CrimsonEfk {
+    // NOTE(deep): not sure why we need to inherit from DistortingCallback cause
+    // setting it in g_efkRenderer breaks rendering of distortion effects :shrug:
+    static class Devil3DistortingCallback* g_d3DistortingCallback = nullptr;
+
+    class Devil3DistortingCallback : public EffekseerRenderer::DistortingCallback
+{
+        ID3D11Device* d3dDevice {};
+        ID3D11DeviceContext* d3dContext {};
+        Devil3::sRender* d3Render {};
+
+	template <typename T>
+	using ComPtr = Microsoft::WRL::ComPtr<T>;
+	ComPtr<ID3D11Texture2D> backgroundTexture;
+	ComPtr<ID3D11ShaderResourceView> backgroundTextureView;
+
+public:
+	Devil3DistortingCallback(ID3D11Device* device, ID3D11DeviceContext* ctx)
+		: d3dDevice(device), d3dContext(ctx)
+	{
+        assert(device);
+        assert(ctx);
+        d3Render = (Devil3::sRender*)(appBaseAddr + 0xC0B410);
+
+		HRESULT hr = S_OK;
+
+		D3D11_TEXTURE2D_DESC texture2dDesc{};
+		texture2dDesc.Width  = (UINT)g_windowDimensions[0];
+		texture2dDesc.Height = (UINT)g_windowDimensions[1];
+		texture2dDesc.MipLevels = 1;
+		texture2dDesc.ArraySize = 1;
+		texture2dDesc.Format = DXGI_FORMAT_R8G8B8A8_UNORM;
+		texture2dDesc.Usage = D3D11_USAGE_DEFAULT;
+		texture2dDesc.BindFlags = D3D11_BIND_RENDER_TARGET | D3D11_BIND_SHADER_RESOURCE;
+		texture2dDesc.SampleDesc.Count = 1;
+		texture2dDesc.SampleDesc.Quality = 0;
+		hr = d3dDevice->CreateTexture2D(&texture2dDesc, nullptr, backgroundTexture.GetAddressOf());
+		assert(hr == S_OK);
+
+		D3D11_SHADER_RESOURCE_VIEW_DESC texviewDesc{};
+		texviewDesc.Format = texture2dDesc.Format;
+		texviewDesc.ViewDimension = D3D11_SRV_DIMENSION_TEXTURE2D;
+		texviewDesc.Texture2D.MostDetailedMip = 0;
+		texviewDesc.Texture2D.MipLevels = 1;
+		hr = d3dDevice->CreateShaderResourceView(backgroundTexture.Get(), &texviewDesc, backgroundTextureView.GetAddressOf());
+		assert(hr == S_OK);
+	}
+
+	virtual ~Devil3DistortingCallback()
+	{
+	}
+
+	bool OnDistorting()
+	{
+        if(CopyRenderTargetToBackground(d3Render->renderTargets[0].texture)) {
+			g_efkRenderer->SetBackground(backgroundTextureView.Get());
+			return true;
+        }
+        return false;
+	}
+
+public:
+	bool CopyRenderTargetToBackground(ID3D11Resource* src)
+	{
+        assert(d3dContext);
+        assert(src);
+
+		d3dContext->CopyResource(backgroundTexture.Get(), src);
+
+		return true;
+	}
+};
 
     static inline Effekseer::Matrix43 Matrix43FromFloat44(float* mat44) {
         Effekseer::Matrix43 mat;
@@ -299,7 +370,10 @@ namespace CrimsonEfk {
         g_projectionMatrix.PerspectiveFovRH(90.0f / 180.0f * 3.14159f, aspectRatio, 1.0f, 1000.0f);
 
         g_cameraMatrix.LookAtRH(viewerPosition, ::Effekseer::Vector3D(0.0f, 0.0f, 0.0f), ::Effekseer::Vector3D(0.0f, 1.0f, 0.0f));
-
+        // for distortion
+        g_d3DistortingCallback = new Devil3DistortingCallback(pDevice, pContext);
+        // NOTE(deep): example has this commented out i cannot decipher what it doest
+        //g_efkRenderer->SetDistortingCallback(g_d3DistortingCallback);
         return true;
     }
 
@@ -320,6 +394,8 @@ namespace CrimsonEfk {
 
         g_warmedEffects.clear();
         g_hotReloadStates.clear();
+
+        delete g_d3DistortingCallback;
     }
 
     // ============================================================================
@@ -688,6 +764,12 @@ namespace CrimsonEfk {
         render->device->CreateDepthStencilState(&dsDesc, &pDepthState);
         render->deviceContext->OMSetDepthStencilState(pDepthState, 0);
 #endif
+        // NOTE(deep): copypasted from Efk Distortion example - not sure if this is required
+        Effekseer::Manager::LayerParameter layerParameter;
+        layerParameter.ViewerPosition.X = staticCameraCtrlPtr->pCameraControl->eye.x;
+        layerParameter.ViewerPosition.Y = staticCameraCtrlPtr->pCameraControl->eye.y;
+        layerParameter.ViewerPosition.Z = staticCameraCtrlPtr->pCameraControl->eye.z;
+        g_efkManager->SetLayerParameter(0, layerParameter);
 
 		float gameSpeed = g_scene != SCENE::CUTSCENE ? IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed : activeConfig.Speed.mainSpeed;
         float adjustedSpeed = gameSpeed * (g_FrameRate / 60.0f);
@@ -703,17 +785,37 @@ namespace CrimsonEfk {
 
         g_efkRenderer->SetProjectionMatrix(g_projectionMatrix);
         g_efkRenderer->SetCameraMatrix(g_cameraMatrix);
+        // NOTE(deep): rendering with distortion needs to split rendering in two steps
+        // render back
+        {
+            g_efkRenderer->BeginRendering();
 
-        g_efkRenderer->BeginRendering();
+            Effekseer::Manager::DrawParameter drawParam;
+            drawParam.ZNear = EFK_Z_NEAR_RENDER;
+            drawParam.ZFar = EFK_Z_FAR_RENDER;
+            drawParam.ViewProjectionMatrix = g_efkRenderer->GetCameraProjectionMatrix();
 
-        Effekseer::Manager::DrawParameter drawParam;
-        drawParam.ZNear = EFK_Z_NEAR_RENDER;
-        drawParam.ZFar = EFK_Z_FAR_RENDER;
-        drawParam.ViewProjectionMatrix = g_efkRenderer->GetCameraProjectionMatrix();
+            g_efkManager->DrawBack(drawParam);
 
-        g_efkManager->Draw(drawParam);
+            g_efkRenderer->EndRendering();
+        }
+        // distort
+        {
+            g_d3DistortingCallback->OnDistorting();
+        }
+        // draw front
+        {
+            g_efkRenderer->BeginRendering();
 
-        g_efkRenderer->EndRendering();
+            Effekseer::Manager::DrawParameter drawParam;
+            drawParam.ZNear = EFK_Z_NEAR_RENDER;
+            drawParam.ZFar = EFK_Z_FAR_RENDER;
+            drawParam.ViewProjectionMatrix = g_efkRenderer->GetCameraProjectionMatrix();
+
+            g_efkManager->DrawFront(drawParam);
+
+            g_efkRenderer->EndRendering();
+        }
 
 #if 0
         pContext->OMSetRenderTargets(1, &pRTV, pGameDSV);
@@ -749,7 +851,7 @@ namespace CrimsonEfk {
     {
         static bool pressed = false;
         //static EffekseerEffect* ass = EffekseerLoadEffect(L"Sample\\01_Pierre01\\Lightning.efkefc", 6.0f);
-        static EffekseerRefHandle ass = LoadEffect(L"Sample\\00_Version16\\Aura01.efkefc", 100.0f);
+        static EffekseerRefHandle ass = LoadEffect(L"Sample\\00_Basic\\Simple_Distortion.efkefc", 40.0f);
 
 		if (ImGui::CollapsingHeader("Camera Debug")) {
 			static Devil3::sCameraCtrlPtr* staticCameraCtrlPtr = (Devil3::sCameraCtrlPtr*)(appBaseAddr + 0xC8FBD0);
@@ -791,7 +893,7 @@ namespace CrimsonEfk {
                 }
             }
 
-            EffekseerTestSpawn(ass, position.x, position.y, position.z);
+            EffekseerTestSpawn(ass, position.x, position.y, position.z - 80.0f);
 
         }
         ImGui::SliderInt("RtIndex:", &g_rt_index, 0, 28);
@@ -863,7 +965,6 @@ namespace CrimsonEfk {
             std::chrono::duration<float> elapsed = currentTime - g_lastFrameTime;
             g_deltaTime = elapsed.count();
             g_lastFrameTime = currentTime;
-
             CrimsonEfk::EffekRender(render->deviceContext, g_deltaTime);
             g_frame_counter_last = g_frame_counter_current;
         }
@@ -948,3 +1049,4 @@ namespace CrimsonEfk {
 #endif
     }
 }
+
