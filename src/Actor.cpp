@@ -9335,7 +9335,7 @@ void SetAction(byte8* actorBaseAddr) {
         }
 
         // AIR STINGER
-        if (activeCrimsonGameplay.Gameplay.Dante.airStinger &&
+        if (ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_STINGER_AIR] &&
             ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1] &&
             (actorData.action == REBELLION_HELM_BREAKER) &&
             (actorData.newAirStingerCount < activeConfig.Rebellion.airStingerCount[index]) && lockOn &&
@@ -9362,7 +9362,7 @@ void SetAction(byte8* actorBaseAddr) {
             actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = newDrivePart1_pl000_00_3;
 
         // AIR REVOLVER
-        } else if (activeCrimsonGameplay.Gameplay.Dante.airRevolver &&
+        } else if (ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::CERBERUS_REVOLVER_AIR] &&
             (actorData.action == CERBERUS_SWING) && lockOn &&
                    (tiltDirection == TILT_DIRECTION::UP)) {
             actorData.action = CERBERUS_REVOLVER_LEVEL_2;
@@ -9450,8 +9450,8 @@ void SetAction(byte8* actorBaseAddr) {
 		// Air Rising Dragon Launch
 		if ((actorData.action == BEOWULF_KILLER_BEE) && actorData.state & STATE::IN_AIR &&
 			actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK) &&
-			(airCounts.airRisingSunLaunch < 1) && activeCrimsonGameplay.Gameplay.Dante.airRisingDragonLaunch &&
-			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_RISING_DRAGON]) {
+			(airCounts.airRisingSunLaunch < 1) &&
+			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR]) {
 
             // Prevent two consecutive Launches in quick succession executing from near the ground
             if (actorData.lastAction == BEOWULF_RISING_DRAGON_LAUNCH && actorData.state & STATE::IN_AIR) {
@@ -9467,9 +9467,8 @@ void SetAction(byte8* actorBaseAddr) {
         // Air Agni & Rudra Whirlwind
 		if ((actorData.action == AGNI_RUDRA_AERIAL_CROSS) &&
 			actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK) &&
-			(airCounts.airAgniRudraWhirlwind < 1) && activeCrimsonGameplay.Gameplay.Dante.airAgniRudraWhirlwind &&
-			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND]) {
-
+			(airCounts.airAgniRudraWhirlwind < 1) &&
+			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR]) {
 			if ((lockOn && tiltDirection == TILT_DIRECTION::DOWN)) {
 				actorData.action = AGNI_RUDRA_WHIRLWIND_LAUNCH;
 				airCounts.airAgniRudraWhirlwind++;
@@ -9500,7 +9499,7 @@ void SetAction(byte8* actorBaseAddr) {
         using namespace ACTION_VERGIL;
 
         // AIR LUNAR PHASE
-        if (activeCrimsonGameplay.Gameplay.Vergil.airLunarPhase && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
+        if (ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_AIR] && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
             actorData.action == BEOWULF_STARFALL_LEVEL_1) 
             && lockOn && (tiltDirection == TILT_DIRECTION::UP)) {
 
@@ -9513,7 +9512,7 @@ void SetAction(byte8* actorBaseAddr) {
         } 
 		
         // FORCE EDGE AIR STINGER
-		else if (activeCrimsonGameplay.Gameplay.Vergil.airStinger && ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1] &&
+		else if (ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR] &&
                    (actorData.newAirStingerCount < activeConfig.YamatoForceEdge.airStingerCount[index]) && lockOn &&
                    (tiltDirection == TILT_DIRECTION::UP) &&
 			       (actorData.action == YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_1 ||

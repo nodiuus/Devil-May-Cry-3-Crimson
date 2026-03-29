@@ -9,7 +9,6 @@ struct ExpData {
     uint32 styleLevels[STYLE::MAX];
     float styleExpPoints[STYLE::MAX];
     bool unlocks[64];
-    bool modUnlocks[64];
     bool hasPairedWithActorSystem;
 
     ExpData& operator=(ExpData& expData) {

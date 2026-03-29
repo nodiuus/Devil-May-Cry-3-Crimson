@@ -735,6 +735,10 @@ public:
         if (staticCameraCtrlPtr->pCameraControl) {
             EffekseerSetDevil3Camera(staticCameraCtrlPtr->pCameraControl);
         }
+        //THIS WAS THE CODE ADDED BY HITCH TO STOP A CRASH REMOVE IT IF YOU WANT TO FIX THIS SHIT PROPERLY OR WHATEVER
+        if (staticCameraCtrlPtr->pCameraControl == nullptr)
+            return;
+        //I LITERALLY JUST ADDED A NULLPTR CHECK THAT WAS IT NORMAL CODE RESUMES
 
 #if 0
         Devil3::sRender* render = (Devil3::sRender*)0x140C0B410;

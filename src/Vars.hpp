@@ -58,6 +58,21 @@ enum {
     KALINA_ANN_LEVEL_3,
 
     COUNT,
+    //Modded moves start
+    REBELLION_STINGER_AIR,
+
+    CERBERUS_REVOLVER_AIR,
+
+    AGNI_RUDRA_WHIRLWIND_AIR,
+
+    BEOWULF_RISING_DRAGON_AIR,
+    BEOWULF_TORNADO_AIR,
+
+    GROUND_TRICK,
+
+    DT_ROYAL_GUARD,
+
+    MOD_COUNT,
 };
 };
 
@@ -82,6 +97,20 @@ enum {
     SPIRAL_SWORDS,
 
     COUNT,
+    //Modded moves start
+    BEOWULF_RISING_SUN_AIR,
+    BEOWULF_LUNAR_PHASE_AIR,
+
+    YAMATO_HIGH_TIME,
+    YAMATO_RISING_STAR,
+
+    YAMATO_FORCE_EDGE_STINGER_AIR,
+
+    TRICK_UP,
+
+    MIRAGE_TRIGGER,
+
+    MOD_COUNT,
 };
 };
 

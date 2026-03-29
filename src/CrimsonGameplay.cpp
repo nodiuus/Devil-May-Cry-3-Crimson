@@ -928,7 +928,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		return;
 	}
 
-	if (!activeCrimsonGameplay.Gameplay.Vergil.yamatoRisingStar) {
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_RISING_STAR]) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
@@ -1040,7 +1040,7 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 		return;
 	}
 
-	if (!activeCrimsonGameplay.Gameplay.Vergil.yamatoHighTime) {
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_HIGH_TIME]) {
 		return;
 	}
 
@@ -1643,7 +1643,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 		return;
 	}
 
-	if (!activeCrimsonGameplay.Gameplay.Vergil.airRisingSun) {
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR]) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
@@ -1662,7 +1662,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 		crimsonPlayer[playerIndex].inRisingStarClone;
 
 
-	if (activeCrimsonGameplay.Gameplay.Vergil.airRisingSun && actionTimer > 0.05f && actionTimer < 0.2f && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
+	if (ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR] && actionTimer > 0.05f && actionTimer < 0.2f && (actorData.action == BEOWULF_STARFALL_LEVEL_2 ||
 		actorData.action == BEOWULF_STARFALL_LEVEL_1)
 		&& lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.newAirRisingSunCount < 1) {
 
