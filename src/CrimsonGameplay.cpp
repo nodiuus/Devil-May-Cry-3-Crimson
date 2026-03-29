@@ -423,11 +423,13 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 
     // This is another method for Royal Cancels that involves setting the Actor's Action to a newly created Air Block one (only sets for a
     // split second). It's more reliable for cancelling certain moves (especially air ones). - Mia
-
-    if (actorData.style == STYLE::ROYALGUARD && (actorData.eventData[0].event == 23 || inCancellableMovesActionMethod)) {
+	// This enables ROYAL MAGNETISM.
+    if (actorData.style == STYLE::ROYALGUARD && (actorData.eventData[0].event == 23 || inCancellableMovesActionMethod)
+		&& actionTimer >= 0.2f) {
         if (inAir) {
 
-            if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) {
+            if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
+				actorData.styleLevel >= 1) {
 
 				storedAirCounts.trickUp = actorData.newTrickUpCount;
 				storedAirCounts.skyStar = actorData.newSkyStarCount;
