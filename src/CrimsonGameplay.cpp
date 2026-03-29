@@ -1043,6 +1043,11 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	if (!activeCrimsonGameplay.Gameplay.Vergil.yamatoHighTime) {
 		return;
 	}
+
+	//if (!ExpConfig::missionExpDataVergil.funnymodunlock[HIGH_TIME_ENUM_VALUE]) {
+	//	return
+	//}
+
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;

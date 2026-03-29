@@ -1384,6 +1384,7 @@ void CreateMembers_ExpData(rapidjson::Value& member, ExpData (&expData)[SAVE_COU
         CreateArray<uint32, STYLE::MAX>(member2, "styleLevels", expData2.styleLevels);
         CreateArray<float, STYLE::MAX>(member2, "styleExpPoints", expData2.styleExpPoints);
         CreateArray<bool, 64>(member2, "unlocks", expData2.unlocks);
+        CreateArray<bool, 64>(member2, "modUnlocks", expData2.modUnlocks);
         Create<bool>(member2, "hasPairedWithActorSystem", expData2.hasPairedWithActorSystem);
     }
 }
@@ -1411,6 +1412,7 @@ void ToJSON_ExpData(rapidjson::Value& member, ExpData (&expData)[SAVE_COUNT]) {
         SetArray<uint32, STYLE::MAX>(member2["styleLevels"], expData2.styleLevels);
         SetArray<float, STYLE::MAX>(member2["styleExpPoints"], expData2.styleExpPoints);
         SetArray<bool, 64>(member2["unlocks"], expData2.unlocks);
+        SetArray<bool, 64>(member2["modUnlocks"], expData2.modUnlocks);
         Set<bool>(member2["hasPairedWithActorSystem"], expData2.hasPairedWithActorSystem);
     }
 }
@@ -1435,6 +1437,7 @@ void ToExp_ExpData(ExpData (&expData)[SAVE_COUNT], rapidjson::Value& member) {
         GetArray<uint32, STYLE::MAX>(expData2.styleLevels, member2["styleLevels"]);
         GetArray<float, STYLE::MAX>(expData2.styleExpPoints, member2["styleExpPoints"]);
         GetArray<bool, 64>(expData2.unlocks, member2["unlocks"]);
+        GetArray<bool, 64>(expData2.modUnlocks, member2["modUnlocks"]);
         expData2.hasPairedWithActorSystem = Get<bool>(member2["hasPairedWithActorSystem"]);
     }
 }
