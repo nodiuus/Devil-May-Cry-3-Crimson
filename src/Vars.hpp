@@ -2795,6 +2795,18 @@ struct Matrix44 {
     float matrix2[16];
 	float matrix3[16];
 	float matrix4[16]; 
+	float matrix5[16];
+	float matrix6[16];
+	float matrix7[16];
+	float matrix8[16];
+	float matrix9[16];
+	float matrix10[16];
+	float matrix11[16];
+	float matrix12[16];
+	float matrix13[16];
+	float matrix14[16];
+	float matrix15[16];
+	float matrix16[16]; 
 };
 
 //static_assert(sizeof(Matrix44) == 0x40);
@@ -5475,8 +5487,10 @@ struct CrimsonPlayerData {
     MoveGravityTweak lunarPhaseTweak;
     MoveGravityTweak airTauntRisingSunTweak;
     bool inRisingStar = false;
+    bool inYamatoHighTime = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
+    EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
     DanteStingerInput stingerInput;
 
@@ -5541,8 +5555,10 @@ struct CrimsonPlayerData {
     MoveGravityTweak lunarPhaseTweakClone;
     MoveGravityTweak airTauntRisingSunTweakClone;
     bool inRisingStarClone = false;
+	bool inYamatoHighTimeClone = false;
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
+    EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
     DanteStingerInput stingerInputClone;
 };

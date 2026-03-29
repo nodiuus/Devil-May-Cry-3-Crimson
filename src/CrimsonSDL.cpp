@@ -145,6 +145,7 @@ SDL_FUNCTION_DECLRATION(Mix_SetPosition)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_PlayChannel)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_HaltChannel)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeOutChannel)				  = NULL;
+SDL_FUNCTION_DECLRATION(Mix_FadeInChannel)                = NULL;
 SDL_FUNCTION_DECLRATION(Mix_VolumeMusic)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeInMusic)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeOutMusic)                 = NULL;
@@ -292,6 +293,7 @@ void InitSDL() {
         LOAD_MIXER_FUNCTION(Mix_LoadWAV);
         LOAD_MIXER_FUNCTION(Mix_LoadMUS);
         LOAD_MIXER_FUNCTION(Mix_FadeOutChannel);
+		LOAD_MIXER_FUNCTION(Mix_FadeInChannel);
         LOAD_MIXER_FUNCTION(Mix_Playing);
         LOAD_MIXER_FUNCTION(Mix_Pause);
         LOAD_MIXER_FUNCTION(Mix_Resume);
@@ -1004,7 +1006,7 @@ void PlayDriveStart(int playerIndex, int entityIndex) {
 	float slider = 7.0f / 100.0f;
 	int   volume = (int)(255.0f * slider);
 	fn_Mix_Volume(initialChannel, volume);
-	fn_Mix_PlayChannel(initialChannel, driveStart, 0);
+	fn_Mix_FadeInChannel(initialChannel, driveStart, 0, 400);
 }
 
 void PlayDriveLoop(int playerIndex, int entityIndex) {
