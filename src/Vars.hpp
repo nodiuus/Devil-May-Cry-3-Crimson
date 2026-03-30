@@ -5470,6 +5470,7 @@ struct CrimsonPlayerData {
     int lastLastEvent = 0;
     std::vector<byte32> lastStates{0};
     byte32 lastLastState = 0;
+    bool canRoyalMagnetism = true;
     float horizontalPull;
     VergilMoveAdjustments vergilMoves;
     Inertia inertia;
@@ -5546,6 +5547,7 @@ struct CrimsonPlayerData {
     int lastLastEventClone = 0;
     std::vector<byte32> lastStatesClone{0};
     byte32 lastLastStateClone = 0;
+	bool canRoyalMagnetismClone = true;
     float horizontalPullClone;
     DanteDriveRework driveClone;
     RoyalRelease royalReleaseClone;

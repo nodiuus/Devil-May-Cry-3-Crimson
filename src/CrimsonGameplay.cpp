@@ -362,6 +362,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 
     auto& policy = actorData.nextActionRequestPolicy[MELEE_ATTACK];
     auto& trickDashTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].trickDashTimer : crimsonPlayer[playerIndex].trickDashTimerClone;
+	auto& canRoyalMagnetism = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].canRoyalMagnetism : crimsonPlayer[playerIndex].canRoyalMagnetismClone;
 
 	
 
@@ -425,7 +426,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     // split second). It's more reliable for cancelling certain moves (especially air ones). - Mia
 	// This enables ROYAL MAGNETISM.
     if (actorData.style == STYLE::ROYALGUARD && (actorData.eventData[0].event == 23 || inCancellableMovesActionMethod)
-		&& actionTimer >= 0.2f) {
+		&& actionTimer >= 0.2f && canRoyalMagnetism) {
         if (inAir) {
 
             if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
@@ -438,20 +439,21 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
                 storedAirCounts.airTornado = airCounts.airTornado;
 
                 actorData.action = ROYAL_AIR_BLOCK;
+				actorData.state = 65538;
+
+				canRoyalMagnetism = false; // This prevents the player from doing ROYAL MAGNETISM multiple times in a row without touching the ground or JCing.
 
 				std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
 				royalcountstracker.detach();
             }
         }
-        /*else {
-                if((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && (!(lockOn && tiltDirection == TILT_DIRECTION::DOWN) &&
-        gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)))
-                {
-                        actorData.action = ROYAL_BLOCK;
-                }
-
-        }*/
     }
+
+	// Reset ROYAL MAGNETISM availability when touching the ground or JCing.
+	if (actorData.state == 65537 || actorData.eventData[0].event == ACTOR_EVENT::LANDING || 
+		actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL) {
+		canRoyalMagnetism = true; 
+	}
 
     /*if (actorData.buttons[2] & GetBinding(BINDING::TAUNT))  // old ddmk Reset Permissions -- Deprecated.
     {
