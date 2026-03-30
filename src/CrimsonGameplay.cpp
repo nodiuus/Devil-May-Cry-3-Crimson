@@ -4118,7 +4118,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 			drive.part2Played = true;
 			
 		}
-		else if (drive.part2Played && !drive.part3Played && motionTimer >= 0.4f) {
+		else if (drive.part2Played && !drive.part3Played && motionTimer >= 0.41f) {
 			drive.effectInterruptTime = 1.4f;
 			CrimsonGameplay::ToggleRebellionHoldDrive(false);
 			drive.resetMotion19Timer = false;
