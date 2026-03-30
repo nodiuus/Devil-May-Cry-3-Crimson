@@ -451,7 +451,8 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 
 	// Reset ROYAL MAGNETISM availability when touching the ground or JCing.
 	if (actorData.state == 65537 || actorData.eventData[0].event == ACTOR_EVENT::LANDING || 
-		actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL) {
+		actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL || actorData.eventData[0].event == ACTOR_EVENT::JUMP ||
+		actorData.eventData[0].event == 3 || actorData.eventData[0].event == ACTOR_EVENT::ROYALGUARD_BLOCK) {
 		canRoyalMagnetism = true; 
 	}
 
