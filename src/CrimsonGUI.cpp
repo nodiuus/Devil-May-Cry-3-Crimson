@@ -5509,6 +5509,7 @@ const char* tabNames[] = {
 
 struct ShopExperienceHelper {
 	const char* name;
+	const char* description;
 	int64 id;
 	uint32 price;
 	int64 last;
@@ -5528,42 +5529,42 @@ struct ShopExperienceStyleHelper {
 
 
 ShopExperienceHelper shopHelpersDante[] = {
-	{"Rebellion Stinger Level 1",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, 2500, -1, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2,-1,-1, {UNLOCK_DANTE::REBELLION_STINGER_AIR,-1,-1,-1,-1}},
-	{"Rebellion Stinger Level 2",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2, 10000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Rebellion Air Stinger",UNLOCK_DANTE::REBELLION_STINGER_AIR, 5000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Rebellion Drive",UNLOCK_DANTE::REBELLION_DRIVE, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Air Hike",UNLOCK_DANTE::REBELLION_AIR_HIKE, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Cerberus Revolver Level 2",UNLOCK_DANTE::CERBERUS_REVOLVER_LEVEL_2, 15000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
-	{"Cerberus Air Revolver",UNLOCK_DANTE::CERBERUS_REVOLVER_AIR, 5000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
-	{"Cerberus Windmill",UNLOCK_DANTE::CERBERUS_WINDMILL, 7500, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
-	{"Agni & Rudra Jet-Stream Level 2",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, 10000, -1, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
-	{"Agni & Rudra Jet-Stream Level 3",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3, 15000, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
-	{"Agni & Rudra Whirlwind",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, 7500, -1, UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
-	{"Agni & Rudra Air Whirlwind",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR, 10000, UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Stinger Level 1","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, 2500, -1, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2,-1,-1, {UNLOCK_DANTE::REBELLION_STINGER_AIR,-1,-1,-1,-1}},
+	{"Rebellion Stinger Level 2","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2, 10000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Air Stinger","Lock On + Forward + Melee while in air.",UNLOCK_DANTE::REBELLION_STINGER_AIR, 5000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Drive","",UNLOCK_DANTE::REBELLION_DRIVE, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Air Hike","",UNLOCK_DANTE::REBELLION_AIR_HIKE, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Cerberus Revolver Level 2","",UNLOCK_DANTE::CERBERUS_REVOLVER_LEVEL_2, 15000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
+	{"Cerberus Air Revolver","Lock On + Forward + Melee while in air.",UNLOCK_DANTE::CERBERUS_REVOLVER_AIR, 5000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
+	{"Cerberus Windmill","",UNLOCK_DANTE::CERBERUS_WINDMILL, 7500, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Jet-Stream Level 2","",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, 10000, -1, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Jet-Stream Level 3","",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3, 15000, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Whirlwind","",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, 7500, -1, UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Air Whirlwind","LockOn + Back + Melee while in air",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR, 10000, UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
 	//{"Agni & Rudra Air Hike",UNLOCK_DANTE::AGNI_RUDRA_AIR_HIKE, 20000, -1, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1},
-	{"Nevan Reverb Shock Level 1",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, 7500, -1, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
-	{"Nevan Reverb Shock Level 2",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2, 15000, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
-	{"Nevan Bat Rift Level 2",UNLOCK_DANTE::NEVAN_BAT_RIFT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
-	{"Nevan Air Raid",UNLOCK_DANTE::NEVAN_AIR_RAID, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
-	{"Nevan Volume Up",UNLOCK_DANTE::NEVAN_VOLUME_UP, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Straight Level 2",UNLOCK_DANTE::BEOWULF_STRAIGHT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Beast Uppercut",UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, 7500, -1, UNLOCK_DANTE::BEOWULF_RISING_DRAGON,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Rising Dragon",UNLOCK_DANTE::BEOWULF_RISING_DRAGON, 15000, UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR, DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Air Dragon",UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR, 20000, UNLOCK_DANTE::BEOWULF_RISING_DRAGON, -1,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Reverb Shock Level 1","",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, 7500, -1, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Reverb Shock Level 2","",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2, 15000, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Bat Rift Level 2","",UNLOCK_DANTE::NEVAN_BAT_RIFT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Air Raid","",UNLOCK_DANTE::NEVAN_AIR_RAID, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Volume Up","",UNLOCK_DANTE::NEVAN_VOLUME_UP, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Straight Level 2","",UNLOCK_DANTE::BEOWULF_STRAIGHT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Beast Uppercut","",UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, 7500, -1, UNLOCK_DANTE::BEOWULF_RISING_DRAGON,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Rising Dragon","",UNLOCK_DANTE::BEOWULF_RISING_DRAGON, 15000, UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR, DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Air Dragon","LockOn + Back + Melee while in air",UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR, 20000, UNLOCK_DANTE::BEOWULF_RISING_DRAGON, -1,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
 	//{"Beowulf Air Hike",UNLOCK_DANTE::BEOWULF_AIR_HIKE, 20000, -1, -1,DEVILARMUNLOCKS::BEOWULF,-1},
 };
 
 ShopExperienceHelper shopHelpersDanteGuns[] = {
-	{"Ebony & Ivory Level 2",UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, 5000, -1, UNLOCK_DANTE::EBONY_IVORY_LEVEL_3,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Ebony & Ivory Level 3",UNLOCK_DANTE::EBONY_IVORY_LEVEL_3, 10000, UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Shotgun Level 2",UNLOCK_DANTE::SHOTGUN_LEVEL_2, 10000, -1, UNLOCK_DANTE::SHOTGUN_LEVEL_3,-1,GUNUNLOCKS::SHOTGUN, {-1,-1,-1,-1,-1}},
-	{"Shotgun Level 3",UNLOCK_DANTE::SHOTGUN_LEVEL_3, 20000, UNLOCK_DANTE::SHOTGUN_LEVEL_2, -1,-1,GUNUNLOCKS::SHOTGUN, {-1,-1,-1,-1,-1}},
-	{"Artemis Level 2",UNLOCK_DANTE::ARTEMIS_LEVEL_2, 10000, -1, UNLOCK_DANTE::ARTEMIS_LEVEL_3,-1,GUNUNLOCKS::ARTEMIS, {-1,-1,-1,-1,-1}},
-	{"Artemis Level 3",UNLOCK_DANTE::ARTEMIS_LEVEL_3, 20000, UNLOCK_DANTE::ARTEMIS_LEVEL_2, -1,-1,GUNUNLOCKS::ARTEMIS, {-1,-1,-1,-1,-1}},
-	{"Spiral Level 2",UNLOCK_DANTE::SPIRAL_LEVEL_2, 7500, -1, UNLOCK_DANTE::SPIRAL_LEVEL_3,-1,GUNUNLOCKS::SPIRAL, {-1,-1,-1,-1,-1}},
-	{"Spiral Level 3",UNLOCK_DANTE::SPIRAL_LEVEL_3, 15000, UNLOCK_DANTE::SPIRAL_LEVEL_2, -1,-1,GUNUNLOCKS::SPIRAL, {-1,-1,-1,-1,-1}},
-	{"Kalina Ann Level 2",UNLOCK_DANTE::KALINA_ANN_LEVEL_2, 5000, -1, UNLOCK_DANTE::KALINA_ANN_LEVEL_3,-1,GUNUNLOCKS::KALINA_ANN, {-1,-1,-1,-1,-1}},
-	{"Kalina Ann Level 3",UNLOCK_DANTE::KALINA_ANN_LEVEL_3, 10000, UNLOCK_DANTE::KALINA_ANN_LEVEL_2, -1,-1,GUNUNLOCKS::KALINA_ANN, {-1,-1,-1,-1,-1}},
+	{"Ebony & Ivory Level 2","",UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, 5000, -1, UNLOCK_DANTE::EBONY_IVORY_LEVEL_3,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Ebony & Ivory Level 3","",UNLOCK_DANTE::EBONY_IVORY_LEVEL_3, 10000, UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Shotgun Level 2","",UNLOCK_DANTE::SHOTGUN_LEVEL_2, 10000, -1, UNLOCK_DANTE::SHOTGUN_LEVEL_3,-1,GUNUNLOCKS::SHOTGUN, {-1,-1,-1,-1,-1}},
+	{"Shotgun Level 3","",UNLOCK_DANTE::SHOTGUN_LEVEL_3, 20000, UNLOCK_DANTE::SHOTGUN_LEVEL_2, -1,-1,GUNUNLOCKS::SHOTGUN, {-1,-1,-1,-1,-1}},
+	{"Artemis Level 2","",UNLOCK_DANTE::ARTEMIS_LEVEL_2, 10000, -1, UNLOCK_DANTE::ARTEMIS_LEVEL_3,-1,GUNUNLOCKS::ARTEMIS, {-1,-1,-1,-1,-1}},
+	{"Artemis Level 3","",UNLOCK_DANTE::ARTEMIS_LEVEL_3, 20000, UNLOCK_DANTE::ARTEMIS_LEVEL_2, -1,-1,GUNUNLOCKS::ARTEMIS, {-1,-1,-1,-1,-1}},
+	{"Spiral Level 2","",UNLOCK_DANTE::SPIRAL_LEVEL_2, 7500, -1, UNLOCK_DANTE::SPIRAL_LEVEL_3,-1,GUNUNLOCKS::SPIRAL, {-1,-1,-1,-1,-1}},
+	{"Spiral Level 3","",UNLOCK_DANTE::SPIRAL_LEVEL_3, 15000, UNLOCK_DANTE::SPIRAL_LEVEL_2, -1,-1,GUNUNLOCKS::SPIRAL, {-1,-1,-1,-1,-1}},
+	{"Kalina Ann Level 2","",UNLOCK_DANTE::KALINA_ANN_LEVEL_2, 5000, -1, UNLOCK_DANTE::KALINA_ANN_LEVEL_3,-1,GUNUNLOCKS::KALINA_ANN, {-1,-1,-1,-1,-1}},
+	{"Kalina Ann Level 3","",UNLOCK_DANTE::KALINA_ANN_LEVEL_3, 10000, UNLOCK_DANTE::KALINA_ANN_LEVEL_2, -1,-1,GUNUNLOCKS::KALINA_ANN, {-1,-1,-1,-1,-1}},
 };
 
 ShopExperienceStyleHelper shopHelpersDanteStyle[] = {
@@ -5595,29 +5596,29 @@ ShopExperienceStyleHelper shopHelpersVergilStyle[] = {
 
 
 ShopExperienceHelper shopHelpersVergil[] = {
-	{"Yamato Rapid Slash Level 1",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_RISING_STAR,-1,-1,-1,-1}},
-	{"Yamato Rapid Slash Level 2",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2, 15000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato Rising Star",UNLOCK_VERGIL::YAMATO_RISING_STAR, 10000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato High Time",UNLOCK_VERGIL::YAMATO_HIGH_TIME, 7500, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato Judgement Cut Level 1",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, 10000, -1, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato Judgement Cut Level 2",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2, 20000, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Starfall Level 2",UNLOCK_VERGIL::BEOWULF_STARFALL_LEVEL_2, 7500, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Rising Sun",UNLOCK_VERGIL::BEOWULF_RISING_SUN, 5000, -1, UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Air Rising Sun",UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR, 10000, UNLOCK_VERGIL::BEOWULF_RISING_SUN, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Lunar Phase Level 2",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2, 15000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Beowulf Air Lunar Phase",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_AIR, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato & Force Edge Helm Breaker Level 2",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2, 13000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato & Force Edge Stinger Level 1",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR,-1,-1,-1,-1}},
-	{"Yamato & Force Edge Stinger Level 2",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2, 10000, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato & Force Edge Air Stinger",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR, 7500, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Yamato & Force Edge Round Trip",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_ROUND_TRIP, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Rapid Slash Level 1","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_RISING_STAR,-1,-1,-1,-1}},
+	{"Yamato Rapid Slash Level 2","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2, 15000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Rising Star","During Rapid Slash HOLD Melee.",UNLOCK_VERGIL::YAMATO_RISING_STAR, 10000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato High Time","Lock On + Back + HOLD Melee",UNLOCK_VERGIL::YAMATO_HIGH_TIME, 7500, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Judgement Cut Level 1","",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, 10000, -1, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Judgement Cut Level 2","",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2, 20000, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Starfall Level 2","",UNLOCK_VERGIL::BEOWULF_STARFALL_LEVEL_2, 7500, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Rising Sun","",UNLOCK_VERGIL::BEOWULF_RISING_SUN, 5000, -1, UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Air Rising Sun","Lock On + Back + Melee while in air",UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR, 10000, UNLOCK_VERGIL::BEOWULF_RISING_SUN, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Lunar Phase Level 2","",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2, 15000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Air Lunar Phase","Lock On + Forward + Melee while in air.",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_AIR, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Helm Breaker Level 2","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2, 13000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Stinger Level 1","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Stinger Level 2","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2, 10000, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Air Stinger","Lock On + Forward + Melee while in air.",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR, 7500, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Round Trip","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_ROUND_TRIP, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 
 };
 
 ShopExperienceHelper shopHelpersVergilGuns[] = {
-	{"Summoned Swords Level 2", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, 7500, -1, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Summoned Swords Level 3", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3, 15000, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Spiral Swords",UNLOCK_VERGIL::SPIRAL_SWORDS, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Summoned Swords Level 2","", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, 7500, -1, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Summoned Swords Level 3","", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3, 15000, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Spiral Swords","",UNLOCK_VERGIL::SPIRAL_SWORDS, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 };
 
 
@@ -5933,8 +5934,21 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 
 			// Begin a new row
 			ImGui::BeginGroup();
-
-			if (GUI_Button(helper.name, ImVec2(400.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+			bool result = GUI_Button(helper.name, ImVec2(400.0f * scaleFactorY, 80.0f * scaleFactorY));
+			if (helper.description != "")
+			{
+				if (ImGui::IsItemHovered()) {
+					ImGui::BeginTooltip();
+					ImGui::SetWindowFontScale(scaleFactorY);
+					ImGui::PushTextWrapPos(400.0f * scaleFactorY);
+					ImGui::Text(helper.description);
+					ImGui::PopTextWrapPos();
+					ImGui::EndTooltip();
+				}
+				//TooltipHelper("(?)", helper.description);
+			}
+			if (result) {
+				
 				Buy();
 			}
 
@@ -5955,6 +5969,9 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 			ImGui::SameLine();
 			ImGui::Text("%u", helper.price);
 			GUI_PopDisable(priceCondition);
+
+			
+			
 
 			// Display the sell button in a new column
 			ImGui::EndGroup(); // End the group for the current row
@@ -11341,7 +11358,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Stinger",
 				activeCrimsonGameplay.Gameplay.Dante.airStinger,
 				queuedCrimsonGameplay.Gameplay.Dante.airStinger,
@@ -11353,24 +11370,24 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "With Rebellion: Lock On + Forward + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Air Revolver",
-				activeCrimsonGameplay.Gameplay.Dante.airRevolver,
-				queuedCrimsonGameplay.Gameplay.Dante.airRevolver,
-				activeCrimsonGameplayMask.Gameplay.Dante.airRevolver)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "With Cerberus: Lock On + Forward + Melee while in air.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Air Revolver",
+			//	activeCrimsonGameplay.Gameplay.Dante.airRevolver,
+			//	queuedCrimsonGameplay.Gameplay.Dante.airRevolver,
+			//	activeCrimsonGameplayMask.Gameplay.Dante.airRevolver)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "With Cerberus: Lock On + Forward + Melee while in air.");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
-			// Fifth row
-			ImGui::TableNextColumn();
+			//// Fifth row
+			//ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Agni & Rudra Whirlwind",
 				activeCrimsonGameplay.Gameplay.Dante.airAgniRudraWhirlwind,
 				queuedCrimsonGameplay.Gameplay.Dante.airAgniRudraWhirlwind,
@@ -11382,7 +11399,7 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "With Agni & Rudra: LockOn + Back + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Sky Launch Air Taunt",
@@ -11427,7 +11444,7 @@ void DanteGameplayOptions() {
 				"This will swap the order in which you unlock both moves.");
 			GUI_PopDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.Dante.airTornado);
 
-			ImGui::TableNextColumn();
+			/*ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Rising Dragon Launch",
@@ -11439,7 +11456,7 @@ void DanteGameplayOptions() {
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
 			TooltipHelper("(?)", "With Beowulf: LockOn + Back + Melee while in air.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			GUI_PopDisable(!activeConfig.Actor.enable);*/
 
 			// Sixth row
 			ImGui::TableNextColumn();
@@ -11710,7 +11727,7 @@ void VergilGameplayOptions() {
 			// Second row
 			ImGui::TableNextRow(0, rowHeight * 0.5f);
 			ImGui::TableNextColumn();
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Stinger",
 				activeCrimsonGameplay.Gameplay.Vergil.airStinger,
 				queuedCrimsonGameplay.Gameplay.Vergil.airStinger,
@@ -11722,8 +11739,8 @@ void VergilGameplayOptions() {
 			TooltipHelper("(?)", "With Force Edge : Lock On + Forward + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			ImGui::TableNextColumn();*/
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Rising Sun",
 				activeCrimsonGameplay.Gameplay.Vergil.airRisingSun,
 				queuedCrimsonGameplay.Gameplay.Vergil.airRisingSun,
@@ -11748,7 +11765,7 @@ void VergilGameplayOptions() {
 			TooltipHelper("(?)", "With Beowulf: Lock On + Forward + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Judgement Cut Rework",
 				activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
@@ -11762,7 +11779,7 @@ void VergilGameplayOptions() {
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Yamato Rising Star",
 				activeCrimsonGameplay.Gameplay.Vergil.yamatoRisingStar,
 				queuedCrimsonGameplay.Gameplay.Vergil.yamatoRisingStar,
@@ -11787,7 +11804,7 @@ void VergilGameplayOptions() {
 			TooltipHelper("(?)", "With Yamato: Lock On + Back + HOLD Melee");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Taunt Rising Sun",
