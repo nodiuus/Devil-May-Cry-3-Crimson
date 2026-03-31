@@ -137,6 +137,24 @@ void UpdateCrimsonPlayerData() {
 
 #pragma region Cancels
 
+void StoreAirCounts(byte8* actorBaseAddr) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& storedAirCounts = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].storedAirCounts : crimsonPlayer[playerIndex].storedAirCountsClone;
+	auto& airCounts = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].airCounts : crimsonPlayer[playerIndex].airCountsClone;
+
+	storedAirCounts.trickUp = actorData.newTrickUpCount;
+	storedAirCounts.skyStar = actorData.newSkyStarCount;
+	storedAirCounts.airHike = actorData.newAirHikeCount;
+	storedAirCounts.airStinger = actorData.newAirStingerCount;
+	storedAirCounts.airTornado = airCounts.airTornado;
+	storedAirCounts.airSwordAttack = actorData.airSwordAttackCount;
+	storedAirCounts.airGunAttack = actorData.airGunAttackCount;
+}
+
 void AirCancelCountsTracker(byte8* actorBaseAddr) {
     if (!actorBaseAddr) {
         return;
@@ -155,6 +173,8 @@ void AirCancelCountsTracker(byte8* actorBaseAddr) {
     actorData.newAirHikeCount = storedAirCounts.airHike;
     actorData.newAirStingerCount = storedAirCounts.airStinger;
 	airCounts.airTornado = storedAirCounts.airTornado;
+	actorData.airSwordAttackCount = storedAirCounts.airSwordAttack;
+	actorData.airGunAttackCount = storedAirCounts.airGunAttack;
 
     storedAirCounts.cancelTrackerRunning = false;
 }
@@ -432,19 +452,17 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
             if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
 				actorData.styleLevel >= 1) {
 
-				storedAirCounts.trickUp = actorData.newTrickUpCount;
-				storedAirCounts.skyStar = actorData.newSkyStarCount;
-				storedAirCounts.airHike = actorData.newAirHikeCount;
-				storedAirCounts.airStinger = actorData.newAirStingerCount;
-                storedAirCounts.airTornado = airCounts.airTornado;
+				StoreAirCounts(actorData);
 
                 actorData.action = ROYAL_AIR_BLOCK;
 				actorData.state = 65538;
 
-				canRoyalMagnetism = false; // This prevents the player from doing ROYAL MAGNETISM multiple times in a row without touching the ground or JCing.
+				//canRoyalMagnetism = false; // This prevents the player from doing ROYAL MAGNETISM multiple times in a row without touching the ground or JCing.
 
 				std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
 				royalcountstracker.detach();
+
+				
             }
         }
     }
@@ -944,6 +962,8 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto& gamepad = GetGamepad(playerIndex);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer :
+		crimsonPlayer[playerIndex].animTimerClone;
     auto& inRisingStar = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
         crimsonPlayer[playerIndex].inRisingStarClone;
 	auto& inYamatoHighTime = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
@@ -1028,11 +1048,6 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		actorData.action = BEOWULF_RISING_SUN;
 		PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
-		
-		// Play Guetto Efk Yamato because of the lack of bone parenting
-		weaponParticleRef = CrimsonEfk::ReloadEffect(weaponParticleRef, weaponParticlePath, 1.0f);
-		weaponParticleHandle[playerIndex][entityIndex] = 
-			CrimsonEfk::PlayEffectAtMatrix(weaponParticleRef, boneMatrix->matrix10, actorData); // using player bone 10 (right hand)
 
 		risingStarParticleRef = CrimsonEfk::ReloadEffect(risingStarParticleRef, risingStarParticlePath, 40.0f);
 		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(risingStarParticleRef, boneMatrix->matrix3, &actorData);
@@ -1057,30 +1072,28 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		inRisingStar = false;
 	}
 
-	if ((actorData.action == BEOWULF_RISING_SUN && actionTimer > 1.2f) ||
-		(actorData.action != BEOWULF_RISING_SUN && actorData.action != YAMATO_RAPID_SLASH_LEVEL_2 &&
-			actorData.action != YAMATO_RAPID_SLASH_LEVEL_1) ||
-		(actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
-			actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
-			actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP ||
-			actorData.eventData[0].event == ACTOR_EVENT::JUMP ||
-			actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL
-			) || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 ||
-		actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && inRisingStar) {
-
-		CrimsonEfk::StopEffect(weaponParticleHandle[playerIndex][entityIndex]); // bye bye guetto
-	
-	}
-
 	if (inRisingStar && actorData.newAirRisingSunCount > 0) {
 		actorData.newAirRisingSunCount = 0; // Prevents Rising Star from consuming Air Rising Sun's counts.
 	}
 
+
+	// Controlling Yamato's visibility and parenting during Rising Star.
+	if (inRisingStar) {
+		if (motionTimer >= 0.09f && motionTimer < 0.95f) {
+			actorData.weaponMotionState[7] = 11;
+			vergilSword.hideYamatoTip = false;
+		}
+		else {
+			actorData.weaponMotionState[7] = 1;
+			vergilSword.hideYamatoTip = true;
+		}
+	}
+
 	// Complementing Guetto Yamato vfx by hiding the sword during Rising Star and Yamato High Time since the 
 	// sword isn't parented to the hand's bone properly (and needs animation).
-	static bool shouldHide[PLAYER_COUNT][ENTITY_COUNT];
-	shouldHide[playerIndex][entityIndex] = inRisingStar || inYamatoHighTime;
-	vergilSwordcDraw[0].visible = !shouldHide[playerIndex][entityIndex];
+// 	static bool shouldHide[PLAYER_COUNT][ENTITY_COUNT];
+// 	shouldHide[playerIndex][entityIndex] = inRisingStar || inYamatoHighTime;
+// 	vergilSwordcDraw[0].visible = !shouldHide[playerIndex][entityIndex];
 }
 
 void VergilYamatoHighTime(byte8* actorBaseAddr) {
@@ -1106,15 +1119,14 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	auto& gamepad = GetGamepad(playerIndex);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer :
+		crimsonPlayer[playerIndex].animTimerClone;
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw); // first cDraw is the katana part
 	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[0].bones); // index 1 is the hilt
 	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
 	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerVergilcDraw.bones);
-	static constexpr const wchar_t* weaponParticlePath = L"Crimson\\vfx\\yamato_sword.efkefc";
-	static EffekseerRefHandle weaponParticleRef = CrimsonEfk::LoadEffect(weaponParticlePath, 1.0f);
-	static EffekseerRefHandle groundedYamatoHighTimeParticleRef = CrimsonEfk::LoadEffect(weaponParticlePath, 1.0f);
 	static EffekseerHandle weaponParticleHandle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	auto& yamatoGroundedHighTimeHandle = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandle :
 		crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandleClone;
@@ -1156,20 +1168,6 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 		PlayAnimation_1EFB90(actorData, 5, 7, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
 		inYamatoHighTime = true;
-
-		// Play Guetto Efk Yamato because of the lack of bone parenting
-		weaponParticleRef = CrimsonEfk::ReloadEffect(weaponParticleRef, weaponParticlePath, 1.0f);
-		weaponParticleHandle[playerIndex][entityIndex] =
-			CrimsonEfk::PlayEffectAtMatrix(weaponParticleRef, playerBoneMatrix->matrix10, actorData); // using player bone 10 (right hand)
-	}
-
-	// GROUNDED Yamato High Time Guetto (only plays if you transitioned from Upper Slash Part 1)
-	if (actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME && actorData.lastAction == YAMATO_UPPER_SLASH_PART_1 &&
-		actorData.activeMeleeWeaponIndex == 0 && !playedGroundedHighTimeGuetto[playerIndex][entityIndex]) {
-		CrimsonEfk::StopEffect(yamatoGroundedHighTimeHandle);
-		yamatoGroundedHighTimeHandle =
-			CrimsonEfk::PlayEffectAtMatrix(groundedYamatoHighTimeParticleRef, playerBoneMatrix->matrix10, actorData); // using player bone 10 (right hand)
-		playedGroundedHighTimeGuetto[playerIndex][entityIndex] = true;
 	}
 
 	//Swapback to regular Force Edge High Time animation if action is different
@@ -1186,18 +1184,48 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 		|| actorData.eventData[0].event != ACTOR_EVENT::ATTACK) {
 		
 		inYamatoHighTime = false;
-		CrimsonEfk::StopEffect(weaponParticleHandle[playerIndex][entityIndex]); // stop guetto
-		
 	}
 
-	if (!inYamatoHighTime) {
-		CrimsonEfk::StopEffect(yamatoGroundedHighTimeHandle);
-		playedGroundedHighTimeGuetto[playerIndex][entityIndex] = false;
+
+	// Controlling Yamato's visibility and parenting during High Time.
+	if (inYamatoHighTime) {
+		if (actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME) {
+			if (motionTimer >= 0.25f && motionTimer < 0.45f) {
+				actorData.weaponMotionState[7] = 5;
+				vergilSword.hideYamatoTip = false;
+			}
+			else if (motionTimer >= 0.45f && motionTimer < 0.95f) {
+				actorData.weaponMotionState[7] = 5;
+				vergilSword.hideYamatoTip = false;
+			}
+			else if (motionTimer >= 0.95f && motionTimer < 1.3f) {
+				actorData.weaponMotionState[7] = 5;
+// 				vergilSwordcDraw[0].modelPartitionData[1].value = 2;
+ 				
+			}
+			else if (motionTimer >= 1.3f) {
+				if (motionTimer >= 1.7f) {
+					vergilSword.hideYamatoTip = true;
+					actorData.weaponMotionState[7] = 1;
+				}
+				
+			}
+		}
+		else if (actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME_LAUNCH) {
+			if (motionTimer < 0.4f) {
+				actorData.weaponMotionState[7] = 5;
+				vergilSword.hideYamatoTip = false;
+			}
+			else {
+				actorData.weaponMotionState[7] = 1;
+				vergilSword.hideYamatoTip = false;
+			}
+		}
 	}
 	
-	static bool shouldHide[PLAYER_COUNT][ENTITY_COUNT];
-	shouldHide[playerIndex][entityIndex] = inRisingStar || inYamatoHighTime;
-	vergilSwordcDraw[0].visible = !shouldHide[playerIndex][entityIndex];
+// 	static bool shouldHide[PLAYER_COUNT][ENTITY_COUNT];
+// 	shouldHide[playerIndex][entityIndex] = inRisingStar || inYamatoHighTime;
+// 	vergilSwordcDraw[0].visible = !shouldHide[playerIndex][entityIndex];
 
 	// GROUMDED Yamato High Time OUTSOURCED to SetAction(); in Actor.cpp
 }
@@ -1290,7 +1318,8 @@ void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 
 	float dtScaled = ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
 
-	if (actorData.action == DARK_SLAYER_TRICK_DOWN) {
+	if (actorData.action == DARK_SLAYER_TRICK_DOWN && 
+		actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN) {
 		actorData.horizontalPull = -25.0f;
 	}
 
@@ -4186,24 +4215,24 @@ void DanteDriveRework(byte8* actorBaseAddr) {
             drive.level3EffectPlayed = false;
         }
 
-        if (drive.levelTimer >= 1.1f) {
-            if (!drive.level1EffectPlayed) {
-
-                //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1, true, vfxColor, 0.8f);
-				driveLevel1ParticleRef = CrimsonEfk::ReloadEffect(driveLevel1ParticleRef, driveLevel1ParticlePath, 1.0f);
-				drive.level1EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel1ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
-				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex); // Level up sound
-
-                drive.level1EffectPlayed = true;
-            }
-        }
+//         if (drive.levelTimer >= 1.1f) {
+//             if (!drive.level1EffectPlayed) {
+// 
+//                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1, true, vfxColor, 0.8f);
+// 				driveLevel1ParticleRef = CrimsonEfk::ReloadEffect(driveLevel1ParticleRef, driveLevel1ParticlePath, 1.0f);
+// 				drive.level1EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel1ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+// 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex); // Level up sound
+// 
+//                 drive.level1EffectPlayed = true;
+//             }
+//         }
 
         if (drive.levelTimer < 2.0) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 200.0f;
         }
 
-        if (drive.levelTimer >= 2.0 && drive.levelTimer < 3.0) {
+        if (drive.levelTimer >= 2.0 && drive.levelTimer < 5.0) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 300.0f;
 
@@ -4217,7 +4246,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
             }
         }
 
-        if (drive.levelTimer >= 3.0) {
+        if (drive.levelTimer >= 5.0) {
             *(float*)(drivePhysicalDamageAddr)   = 70.0f;
             *(float*)(driveProjectileDamageAddr) = 700.0f;
 

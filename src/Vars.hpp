@@ -3188,11 +3188,22 @@ static_assert(offsetof(ActorDataBase, rotation) == 0xC0);*/
 
 
 struct Sword {
-	_(304);
+	_(276);
+	uint8 playerBoneAttachment; // 0x114
+	uint8 sheathPlayerBoneAttachment; // 0x115
+    _(10);
+	byte8* actorBaseAddr; // 0x120
+    _(8);
     ModelData* swordcDraw; // 0x130
+    _(3384);
+    bool hideYamatoTip; // 0xE70
 };
 
+static_assert(offsetof(Sword, playerBoneAttachment) == 0x114);
+static_assert(offsetof(Sword, sheathPlayerBoneAttachment) == 0x115);
+static_assert(offsetof(Sword, actorBaseAddr) == 0x120);
 static_assert(offsetof(Sword, swordcDraw) == 0x130);
+static_assert(offsetof(Sword, hideYamatoTip) == 0xE70);
 
 struct PlayerActorDataBase : ActorDataBase {
     _(80);
@@ -3218,7 +3229,7 @@ struct PlayerActorDataBase : ActorDataBase {
     MotionData motionDataMirror[3]; // 0x39B4
     _(2);
     uint32 var_39BC;                    // 0x39BC
-    uint8 var_39C0[16];                 // 0x39C0
+    uint8 weaponMotionState[16];        // 0x39C0
     uint32 nextActionRequestPolicy[16]; // 0x39D0
     uint8 var_3A10[8];                  // 0x3A10
     uint32 shadow;                      // 0x3A18
@@ -3399,7 +3410,7 @@ static_assert(offsetof(PlayerActorDataBase, motionArchives) == 0x38A0);
 static_assert(offsetof(PlayerActorDataBase, motionData) == 0x39B0);
 static_assert(offsetof(PlayerActorDataBase, motionDataMirror) == 0x39B4);
 static_assert(offsetof(PlayerActorDataBase, var_39BC) == 0x39BC);
-static_assert(offsetof(PlayerActorDataBase, var_39C0) == 0x39C0);
+static_assert(offsetof(PlayerActorDataBase, weaponMotionState) == 0x39C0);
 static_assert(offsetof(PlayerActorDataBase, nextActionRequestPolicy) == 0x39D0);
 static_assert(offsetof(PlayerActorDataBase, var_3A10) == 0x3A10);
 static_assert(offsetof(PlayerActorDataBase, shadow) == 0x3A18);
@@ -5135,6 +5146,8 @@ struct StoredAirCounts {
     uint8 airHike = 0;
     uint8 airStinger = 0;
     uint8 airTornado = 0;
+    uint8 airSwordAttack = 0;
+    uint8 airGunAttack = 0;
     bool cancelTrackerRunning = false;
 };
 
