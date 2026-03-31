@@ -1029,7 +1029,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	// and either the button is held long enough OR player is close to an enemy and button is held long enough
 	bool canTransition =
 		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
-		actionTimer > 0.55f && actionTimer < 0.60f &&
+		actionTimer > 0.52f && actionTimer < 0.60f &&
 		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME &&
 		!meleeReleasedDuringRapidSlash[playerIndex][entityIndex];
 
@@ -1241,7 +1241,7 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 		return 1.88f;
 	}
 	else if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) {
-		return 1.2f; 
+		return 1.0f; 
 	}
 	else if (actorData.action == YAMATO_UPPER_SLASH_PART_2) {
 		return 2.07f; 
