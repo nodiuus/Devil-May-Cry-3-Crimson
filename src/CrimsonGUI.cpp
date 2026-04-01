@@ -8581,6 +8581,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("yamatoHighTimeClone : %d", crimsonPlayer[0].inYamatoHighTimeClone);
 			ImGui::Text("yamatoMotionState : %d", actorData.weaponMotionState[7]);
 			ImGui::Text("airSwordAttackCount : %d", actorData.airSwordAttackCount);
 			ImGui::Text("airGunAttackCount: %d", actorData.airGunAttackCount);

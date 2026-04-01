@@ -2498,7 +2498,7 @@ struct CollisionDataMetadata {
     _(24);
     float radius; // 0x18
     _(4);
-    Matrix44* unreliableMatrixes; // 0x20
+    byte8* moveOffsetAddr; // 0x20
     _(8);
     float matrix1[16]; // 0x30
     float matrix2[16];
@@ -2514,7 +2514,7 @@ struct CollisionDataMetadata {
 };
 
 static_assert(offsetof(CollisionDataMetadata, radius) == 0x18);
-static_assert(offsetof(CollisionDataMetadata, unreliableMatrixes) == 0x20);
+static_assert(offsetof(CollisionDataMetadata, moveOffsetAddr) == 0x20);
 static_assert(offsetof(CollisionDataMetadata, matrix1) == 0x30);
 static_assert(offsetof(CollisionDataMetadata, collisionDataAddr) == 0xD0);
 static_assert(offsetof(CollisionDataMetadata, pos2) == 0xE0);

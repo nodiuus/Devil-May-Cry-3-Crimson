@@ -4114,28 +4114,6 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
 
 	auto& collisionMeta = *reinterpret_cast<CollisionDataMetadata*>(actorData.collisionData.metadataAddr);
 
-// 	vec3 right = { collisionMeta.matrix1[0], collisionMeta.matrix1[1], collisionMeta.matrix1[2] };
-// 	vec3 up = { collisionMeta.matrix1[4], collisionMeta.matrix1[5], collisionMeta.matrix1[6] };
-// 	vec3 forward = { collisionMeta.matrix1[8], collisionMeta.matrix1[9], collisionMeta.matrix1[10] };
-// 
-//     vec4 position = { collisionMeta.matrix1[12], collisionMeta.matrix1[13], collisionMeta.matrix1[14],  collisionMeta.matrix1[15] };
-// 
-// 
-// 	dd::circle(dd_ctx(), *(ddVec3*)&position, *(ddVec3*)&up, dd::colors::Coral, collisionMeta.radius, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&position, *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.radius, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&position, *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.radius, 8, 32);
-
-// 	vec3 right2 = { collisionMeta.matrix2[0], collisionMeta.matrix2[1], collisionMeta.matrix2[2] };
-// 	vec3 up2 = { collisionMeta.matrix2[4], collisionMeta.matrix2[5], collisionMeta.matrix2[6] };
-// 	vec3 forward2 = { collisionMeta.matrix2[8], collisionMeta.matrix2[9], collisionMeta.matrix2[10] };
-// 
-// 	vec4 position2 = { collisionMeta.matrix2[12], collisionMeta.matrix2[13], collisionMeta.matrix2[14],  collisionMeta.matrix2[15] };
-// 
-// 
-// 	dd::circle(dd_ctx(), *(ddVec3*)&position2, *(ddVec3*)&up2, dd::colors::Coral, collisionMeta.radius, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&position2, *(ddVec3*)&right2, dd::colors::Chartreuse, collisionMeta.radius, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&position2, *(ddVec3*)&forward2, dd::colors::Crimson, collisionMeta.radius, 8, 32);
-
 // 	if (actorData.action == ACTION_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2 && crimsonPlayer[playerIndex].actionTimer > 0.7f && actorData.buttons[1] & GetBinding(BINDING::MELEE_ATTACK)) {
 // 		actorData.action = ACTION_VERGIL::BEOWULF_RISING_SUN;
 // 	}

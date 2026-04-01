@@ -224,10 +224,11 @@ std::uint64_t g_DMC4LockOnDirection_ReturnAddr;
 void DMC4LockOnDirectionDetour();
 void* g_DMC4LockOnDirectionCall;
 
-// DrawCollisions
-std::uint64_t g_DrawCollisions_ReturnAddr;
-void DrawCollisionsDetour();
+// InterceptCollisions
+std::uint64_t g_InterceptCollisions_ReturnAddr;
+void InterceptCollisionsDetour();
 void* g_DrawCollisionsCall;
+void* g_InterceptCollisionsCall;
 
 // FasterTurnRate
 std::uint64_t g_FasterTurnRate_ReturnAddr;
@@ -630,13 +631,55 @@ void SetAnnouncerWasHit() {
 	}
 }
 
+float InterceptingCollisions(byte8* metadataAddr, float radius) {
+	auto collisionMeta = reinterpret_cast<CollisionDataMetadata*>(metadataAddr);
+
+	if (!collisionMeta) {
+		return radius;
+	}
+
+	// Context: Every move seems to have a specific offset from PlayerAddr for its collision data.
+	// We can use this to both id which move the collision pertains to and which player it belongs to / spawned it.
+	// This detour call is placed right before the game writes the radius value for the hitbox, 
+	// so we can check for specific moves and modify their hitbox size if we want to. - Mia
+
+	// Yamato High Time hitbox increase
+	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x66640;
+	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->moveOffsetAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
+	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
+
+	// Checking for all Players and Clones
+	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {
+		for (uint8 entityIndex = 0; entityIndex < 2; entityIndex++) {
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& characterData = GetCharacterData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+
+			if (!newActorData.baseAddr) {
+				continue;
+			}
+			auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+			auto& inYamatoHighTime = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime : 
+				crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+
+			if ((((yamatoHighTimeOffset == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTime) ||
+				(yamatoHighTimeOffsetClone == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTimeClone) ||
+				(yamatoHighTimeOffsetDT == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTime) {
+
+				return radius * 3.5f;
+			}
+		
+		}
+	}
+	return radius;
+}
+
 void DebugDrawCollisions(byte8* metadataAddr) {
 	if (!activeCrimsonGameplay.Debug.showHitboxes || !activeCrimsonGameplay.Debug.debugTools) {
 		return;
 	}
 
-	// There are so many position variables and matrixes that I don't know the right combination. Maybe something for deep to help? - Mia
-	auto& collisionMeta = *reinterpret_cast<CollisionDataMetadata*>(metadataAddr - 0xE0);
+	auto& collisionMeta = *reinterpret_cast<CollisionDataMetadata*>(metadataAddr);
 
 	vec3 right = { collisionMeta.matrix1[0], collisionMeta.matrix1[1], collisionMeta.matrix1[2] };
 	vec3 up = { collisionMeta.matrix1[4], collisionMeta.matrix1[5], collisionMeta.matrix1[6] };
@@ -648,24 +691,23 @@ void DebugDrawCollisions(byte8* metadataAddr) {
 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
 
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
-
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
-
-	vec3 right2 = { collisionMeta.matrix2[0], collisionMeta.matrix2[1], collisionMeta.matrix2[2] };
-	vec3 up2 = { collisionMeta.matrix2[4], collisionMeta.matrix2[5], collisionMeta.matrix2[6] };
-	vec3 forward2 = { collisionMeta.matrix2[8], collisionMeta.matrix2[9], collisionMeta.matrix2[10] };
-
-	vec4 position2 = { collisionMeta.matrix2[12], collisionMeta.matrix2[13], collisionMeta.matrix2[14],  collisionMeta.matrix2[15] };
-
-
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&up2, dd::colors::Coral, collisionMeta.radius, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right2, dd::colors::Chartreuse, collisionMeta.radius, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward2, dd::colors::Crimson, collisionMeta.radius, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
+// 
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
+// 
+// 	vec3 right2 = { collisionMeta.matrix2[0], collisionMeta.matrix2[1], collisionMeta.matrix2[2] };
+// 	vec3 up2 = { collisionMeta.matrix2[4], collisionMeta.matrix2[5], collisionMeta.matrix2[6] };
+// 	vec3 forward2 = { collisionMeta.matrix2[8], collisionMeta.matrix2[9], collisionMeta.matrix2[10] };
+// 
+// 	vec4 position2 = { collisionMeta.matrix2[12], collisionMeta.matrix2[13], collisionMeta.matrix2[14],  collisionMeta.matrix2[15] };
+// 
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&up2, dd::colors::Coral, collisionMeta.radius, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right2, dd::colors::Chartreuse, collisionMeta.radius, 8, 32);
+// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward2, dd::colors::Crimson, collisionMeta.radius, 8, 32);
 }
 
 bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
@@ -722,13 +764,14 @@ void InitDetours() {
     createEffectCallB  = (uintptr_t)appBaseAddr + 0x1FAA50;
     createEffectRBXMov = (uintptr_t)appBaseAddr + 0xC18AF8;
 
-	// DrawCollisions
+	// InterceptCollisions
 	// dmc3.exe + 2CCC98 - F3 0F 11 8B 40 01 00 00 - movss[rbx + 00000140], xmm1 { Assigning Hitbox Radius }
-	static std::unique_ptr<Utility::Detour_t> DrawCollisionsHook =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2CCC98, &DrawCollisionsDetour, 8);
-	g_DrawCollisions_ReturnAddr = DrawCollisionsHook->GetReturnAddress();
+	static std::unique_ptr<Utility::Detour_t> InterceptCollisionsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2CCC98, &InterceptCollisionsDetour, 8);
+	g_InterceptCollisions_ReturnAddr = InterceptCollisionsHook->GetReturnAddress();
 	g_DrawCollisionsCall = &DebugDrawCollisions;
-	DrawCollisionsHook->Toggle(true);
+	g_InterceptCollisionsCall = &InterceptingCollisions;
+	InterceptCollisionsHook->Toggle(true);
 
     // VergilNeutralTrick // func is already detoured, Crimson.MobilityFunction<27>+B1
     // static std::unique_ptr<Utility::Detour_t> VergilNeutralTrickHook = std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x0,
