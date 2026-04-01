@@ -53,6 +53,7 @@ static ::Effekseer::Matrix44 g_cameraMatrix;
 static std::unordered_map<EffekseerHandle, float*> g_followMatrixPtrs;
 static std::unordered_map<EffekseerHandle, float*> g_followPosPtrs;
 static std::unordered_set<EffekseerRefHandle> g_warmedEffects;
+static std::unordered_set<EffekseerHandle> g_activeEffectHandles;
 
 struct EffekHotReloadState {
     std::wstring path;
@@ -541,6 +542,7 @@ public:
         if (handle >= 0) {
             ClearTrackedMatrixPtr(handle);
             ClearTrackedPosPtr(handle);
+            g_activeEffectHandles.insert(handle);
         }
         return handle;
     }
@@ -621,6 +623,7 @@ public:
             g_efkManager->StopEffect(handle);
             ClearTrackedMatrixPtr(handle);
             ClearTrackedPosPtr(handle);
+            g_activeEffectHandles.erase(handle);
         }
     }
 
@@ -631,6 +634,7 @@ public:
 
         g_followMatrixPtrs.clear();
         g_followPosPtrs.clear();
+        g_activeEffectHandles.clear();
     }
 
     bool IsPlaying(EffekseerHandle handle) {
@@ -796,9 +800,18 @@ public:
 		updateParam.SyncUpdate = true;
 		g_efkManager->Update(updateParam);
 
-        // Fake Particle will keep spawning every 500 ms or so, needs testing on slower machines.
+        for (auto it = g_activeEffectHandles.begin(); it != g_activeEffectHandles.end();) {
+            if (!g_efkManager->Exists(*it)) {
+                it = g_activeEffectHandles.erase(it);
+            }
+            else {
+                ++it;
+            }
+        }
+
+        // Fake Particle will keep spawning every 500 ms or so, but only when active Handles exist. Needs testing on slower machines.
         const auto now = std::chrono::steady_clock::now();
-       if (g_nextFakeParticlePulse.time_since_epoch().count() == 0 || now >= g_nextFakeParticlePulse) {
+       if (!g_activeEffectHandles.empty() && (g_nextFakeParticlePulse.time_since_epoch().count() == 0 || now >= g_nextFakeParticlePulse)) {
             auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
             if (pool_10222 && pool_10222[3]) {
                 auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
