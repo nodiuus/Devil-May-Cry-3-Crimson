@@ -42,6 +42,7 @@ static int g_rt_index;
 // Frame timing for consistent playback speed
 static auto g_lastFrameTime = std::chrono::high_resolution_clock::now();
 static float g_deltaTime = 0.0f;
+static auto g_nextFakeParticlePulse = std::chrono::steady_clock::time_point{};
 
 // like 4th set of vector math types in the project yay
 static ::Effekseer::ManagerRef g_efkManager = nullptr;
@@ -667,16 +668,27 @@ public:
         }
     }
 
-    void SetMatrix(EffekseerHandle handle, float* mat44) {
-        if (g_efkManager != nullptr && handle >= 0) {
-            Effekseer::Matrix43 mat = Matrix43FromFloat44(mat44);
+	void SetMatrix(EffekseerHandle handle, float* mat44) {
+		if (g_efkManager == nullptr || handle < 0 || mat44 == nullptr) {
+			return;
+		}
 
-            g_efkManager->SetMatrix(handle, mat);
-            g_followMatrixPtrs[handle] = mat44;
-            g_followPosPtrs.erase(handle);
-            TryImmediateHandleTransformUpdate(handle);
-        }
-    }
+		if (!g_efkManager->Exists(handle)) {
+			ClearTrackedMatrixPtr(handle);
+			ClearTrackedPosPtr(handle);
+			return;
+		}
+
+		Effekseer::Matrix43 mat = Matrix43FromFloat44(mat44);
+		g_efkManager->SetMatrix(handle, mat);
+
+		// Persistent follow at present-time.
+		g_followMatrixPtrs[handle] = mat44;
+		g_followPosPtrs.erase(handle);
+
+		TryImmediateHandleTransformUpdate(handle);
+	}
+
 
     void SetAllColor(EffekseerHandle handle, uint32_t color) {
         if (g_efkManager != nullptr && handle >= 0) {
@@ -699,6 +711,7 @@ public:
     // ============================================================================
 
 	void EffekseerSetDevil3Camera(Devil3::cCameraControl* devil3cam) {
+		auto& cameraData = *reinterpret_cast<CameraData*>(devil3cam);
 		const float fovY = devil3cam->FOV;
 
 		float aspectRatio = (float)g_windowDimensions[0] / (float)g_windowDimensions[1];
@@ -710,7 +723,7 @@ public:
 		float camDistance = sqrtf(dx * dx + dy * dy + dz * dz);
 
 		// Adjust near/far based on camera distance
-		float dynamicNear = camDistance * 17.0f;  // Estimated multiplier
+		float dynamicNear = camDistance * 30.0f;  // Estimated multiplier
 		float dynamicFar = 1.0f;
 
 		g_projectionMatrix.PerspectiveFovRH(fovY, aspectRatio, dynamicNear, dynamicFar);
@@ -782,6 +795,21 @@ public:
 		updateParam.DeltaFrame = (deltaTime * 60.0f) * adjustedSpeed;
 		updateParam.SyncUpdate = true;
 		g_efkManager->Update(updateParam);
+
+        // Fake Particle will keep spawning every 500 ms or so, needs testing on slower machines.
+        const auto now = std::chrono::steady_clock::now();
+       if (g_nextFakeParticlePulse.time_since_epoch().count() == 0 || now >= g_nextFakeParticlePulse) {
+            auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+            if (pool_10222 && pool_10222[3]) {
+                auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
+                static constexpr int fakeParticleBank = 3;
+                static constexpr int fakeParticleId = 4;
+                static constexpr float fakeParticleTime = 0.12f;
+                CrimsonDetours::CreateEffectDetour(mainActorData, fakeParticleBank, fakeParticleId, 1, 1, 0, fakeParticleTime);
+            }
+
+            g_nextFakeParticlePulse = now + std::chrono::milliseconds(500);
+        }
 
 		static float g_time = 0.0f;
 		g_time += deltaTime * (adjustedSpeed);
@@ -910,10 +938,10 @@ public:
         pRTV = render->renderTargets[g_rt_index].renderTargetView;
         ImGui::Text("pDSV: %p", pDSV);
         ImGui::Text("pRTV: %p", pRTV);
-        //     ImGui::SliderFloat("znear:", &EFK_Z_NEAR, -1000.0f, 1000.0f, "%.3f");
-        //     ImGui::SliderFloat("zfar:", &EFK_Z_FAR, -1000.0f, 1000.0f, "%.3f");
-        //     ImGui::SliderFloat("znear_render:", &EFK_Z_NEAR_RENDER, -1000.0f, 1000.0f, "%.3f");
-        //     ImGui::SliderFloat("zfar_render:", &EFK_Z_FAR_RENDER, -1000.0f, 1000.0f, "%.3f");
+//      ImGui::InputFloat("znear:", &EFK_Z_NEAR, -1000.0f, 40000.0f, "%.3f");
+//      ImGui::InputFloat("zfar:", &EFK_Z_FAR, -1000.0f, 1000.0f, "%.3f");
+//      ImGui::SliderFloat("znear_render:", &EFK_Z_NEAR_RENDER, -1000.0f, 1000.0f, "%.3f");
+//      ImGui::SliderFloat("zfar_render:", &EFK_Z_FAR_RENDER, -1000.0f, 1000.0f, "%.3f");
 
         ImGui::InputTextMultiline("ass", imgoo_buffer, sizeof(imgoo_buffer));
         if (ImGui::Button("parse rttit")) {

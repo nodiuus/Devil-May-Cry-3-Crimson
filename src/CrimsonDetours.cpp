@@ -640,6 +640,9 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 
 	// Context: Every move seems to have a specific offset from PlayerAddr for its collision data.
 	// We can use this to both id which move the collision pertains to and which player it belongs to / spawned it.
+	// You can identify this offset by putting a breakpoint at dmc3.exe + 2CCC98 and looking at RBX, 
+	// which points to the collisionMetadata struct. For attack hitboxes, it will usually end at ...0x420
+	// so just look at the relation between moveOffsetAddr (+0x20) and the playerAddr to get the hitbox offset for each move.
 	// This detour call is placed right before the game writes the radius value for the hitbox, 
 	// so we can check for specific moves and modify their hitbox size if we want to. - Mia
 
