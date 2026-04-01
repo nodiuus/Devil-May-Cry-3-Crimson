@@ -9,6 +9,7 @@ set(MASM_SRC
     masm/CreateEffect.asm
     masm/HoldToCrazyComboAsm.asm
     masm/DisableStaggerRoyalguard.asm
+    masm/DrawCollisions.asm
     masm/FasterTurnRate.asm
     masm/GuardBreakToNormalBlock.asm
     masm/FixBallsHangHitSpeed.asm

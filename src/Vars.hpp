@@ -2471,28 +2471,56 @@ static_assert(sizeof(StyleData) == 352);
 
 // $StyleDataEnd
 
+struct Matrix44 {
+	float matrix1[16]; //0x00
+	float matrix2[16];
+	float matrix3[16];
+	float matrix4[16];
+	float matrix5[16];
+	float matrix6[16];
+	float matrix7[16];
+	float matrix8[16];
+	float matrix9[16];
+	float matrix10[16];
+	float matrix11[16];
+	float matrix12[16];
+	float matrix13[16];
+	float matrix14[16];
+	float matrix15[16];
+	float matrix16[16];
+};
+
+//static_assert(sizeof(Matrix44) == 0x40);
+
 // $CollisionDataMetadataStart
 
 struct CollisionDataMetadata {
-    _(48);
-    vec4 data[8]; // 0x30
+    _(24);
+    float radius; // 0x18
+    _(4);
+    Matrix44* unreliableMatrixes; // 0x20
+    _(8);
+    float matrix1[16]; // 0x30
+    float matrix2[16];
     _(32);
     void* collisionDataAddr; // 0xD0
     _(8);
-    vec4 data2[3];   // 0xE0
+    vec4 pos2[3];   // 0xE0
     byte8* files[2]; // 0x110
     uint32 mode;     // 0x120
     _(12);
-    vec4 data3;             // 0x130
+    vec4 pos3;             // 0x130
     float heightAdjustment; // 0x140
 };
 
-static_assert(offsetof(CollisionDataMetadata, data) == 0x30);
+static_assert(offsetof(CollisionDataMetadata, radius) == 0x18);
+static_assert(offsetof(CollisionDataMetadata, unreliableMatrixes) == 0x20);
+static_assert(offsetof(CollisionDataMetadata, matrix1) == 0x30);
 static_assert(offsetof(CollisionDataMetadata, collisionDataAddr) == 0xD0);
-static_assert(offsetof(CollisionDataMetadata, data2) == 0xE0);
+static_assert(offsetof(CollisionDataMetadata, pos2) == 0xE0);
 static_assert(offsetof(CollisionDataMetadata, files) == 0x110);
 static_assert(offsetof(CollisionDataMetadata, mode) == 0x120);
-static_assert(offsetof(CollisionDataMetadata, data3) == 0x130);
+static_assert(offsetof(CollisionDataMetadata, pos3) == 0x130);
 static_assert(offsetof(CollisionDataMetadata, heightAdjustment) == 0x140);
 
 static_assert(sizeof(CollisionDataMetadata) == 324);
@@ -2818,27 +2846,6 @@ struct ModelPartitionData {
 };
 
 static_assert(sizeof(ModelPartitionData) == 0x380);
-
-struct Matrix44 {
-	float matrix1[16]; //0x00
-    float matrix2[16];
-	float matrix3[16];
-	float matrix4[16]; 
-	float matrix5[16];
-	float matrix6[16];
-	float matrix7[16];
-	float matrix8[16];
-	float matrix9[16];
-	float matrix10[16];
-	float matrix11[16];
-	float matrix12[16];
-	float matrix13[16];
-	float matrix14[16];
-	float matrix15[16];
-	float matrix16[16]; 
-};
-
-//static_assert(sizeof(Matrix44) == 0x40);
 
 // class cDrawReverse
 // {

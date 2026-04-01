@@ -335,6 +335,7 @@ const CrimsonConfigGameplayMask VANILLA_MASK = [] {
 	mask.Cheats.Mobility.trickUpCount = false;
 	mask.Cheats.Mobility.trickDownCount = false;
 	mask.Debug.debugTools = false;
+	mask.Debug.showHitboxes = false;
 	mask.Cheats.General.enemySpawnerTool = false;
 	mask.Cheats.General.teleporterTool = false;
 
@@ -403,6 +404,7 @@ const CrimsonConfigGameplayMask STYLE_SWITCHER_MASK = [] {
 	mask.Cheats.Mobility.trickUpCount = false;
 	mask.Cheats.Mobility.trickDownCount = false;
 	mask.Debug.debugTools = false;
+	mask.Debug.showHitboxes = false;
 	mask.Cheats.General.enemySpawnerTool = false;
 	mask.Cheats.General.teleporterTool = false;
 
@@ -472,6 +474,7 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Cheats.Mobility.trickUpCount = false;
 	mask.Cheats.Mobility.trickDownCount = false;
 	mask.Debug.debugTools = false;
+	mask.Debug.showHitboxes = false;
 	mask.Cheats.General.enemySpawnerTool = false;
 	mask.Cheats.General.teleporterTool = false;
 

@@ -7348,6 +7348,8 @@ void DebugSection() {
 
 		ImGui::Text("");
 
+		GUI_Checkbox2("Show Hitboxes", activeCrimsonGameplay.Debug.showHitboxes, queuedCrimsonGameplay.Debug.showHitboxes);
+
 		if (ImGui::Button("heheh")) {
 			CrimsonDetours::SampleModDetour1();
 		}

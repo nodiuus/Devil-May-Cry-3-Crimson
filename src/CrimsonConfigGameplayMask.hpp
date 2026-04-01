@@ -336,10 +336,12 @@ struct CrimsonConfigGameplayMask {
 
 	struct Debug {
 		bool debugTools = true;
+		bool showHitboxes = true;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("debugTools", &Debug::debugTools)
+				std::make_pair("debugTools", &Debug::debugTools),
+				std::make_pair("showHitboxes", &Debug::showHitboxes)
 			);
 		}
 	} Debug;

@@ -224,6 +224,11 @@ std::uint64_t g_DMC4LockOnDirection_ReturnAddr;
 void DMC4LockOnDirectionDetour();
 void* g_DMC4LockOnDirectionCall;
 
+// DrawCollisions
+std::uint64_t g_DrawCollisions_ReturnAddr;
+void DrawCollisionsDetour();
+void* g_DrawCollisionsCall;
+
 // FasterTurnRate
 std::uint64_t g_FasterTurnRate_ReturnAddr;
 std::uint64_t g_FasterTurnRateCallAddr;
@@ -625,6 +630,44 @@ void SetAnnouncerWasHit() {
 	}
 }
 
+void DebugDrawCollisions(byte8* metadataAddr) {
+	if (!activeCrimsonGameplay.Debug.showHitboxes || !activeCrimsonGameplay.Debug.debugTools) {
+		return;
+	}
+
+	// There are so many position variables and matrixes that I don't know the right combination. Maybe something for deep to help? - Mia
+	auto& collisionMeta = *reinterpret_cast<CollisionDataMetadata*>(metadataAddr - 0xE0);
+
+	vec3 right = { collisionMeta.matrix1[0], collisionMeta.matrix1[1], collisionMeta.matrix1[2] };
+	vec3 up = { collisionMeta.matrix1[4], collisionMeta.matrix1[5], collisionMeta.matrix1[6] };
+	vec3 forward = { collisionMeta.matrix1[8], collisionMeta.matrix1[9], collisionMeta.matrix1[10] };
+
+	vec4 position = { collisionMeta.matrix1[12], collisionMeta.matrix1[13], collisionMeta.matrix1[14],  collisionMeta.matrix1[15] };
+
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
+
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
+
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
+
+	vec3 right2 = { collisionMeta.matrix2[0], collisionMeta.matrix2[1], collisionMeta.matrix2[2] };
+	vec3 up2 = { collisionMeta.matrix2[4], collisionMeta.matrix2[5], collisionMeta.matrix2[6] };
+	vec3 forward2 = { collisionMeta.matrix2[8], collisionMeta.matrix2[9], collisionMeta.matrix2[10] };
+
+	vec4 position2 = { collisionMeta.matrix2[12], collisionMeta.matrix2[13], collisionMeta.matrix2[14],  collisionMeta.matrix2[15] };
+
+
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&up2, dd::colors::Coral, collisionMeta.radius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right2, dd::colors::Chartreuse, collisionMeta.radius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward2, dd::colors::Crimson, collisionMeta.radius, 8, 32);
+}
+
 bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
 	uint8 playerIndex = actorData.newPlayerIndex;
@@ -679,7 +722,14 @@ void InitDetours() {
     createEffectCallB  = (uintptr_t)appBaseAddr + 0x1FAA50;
     createEffectRBXMov = (uintptr_t)appBaseAddr + 0xC18AF8;
 
-       
+	// DrawCollisions
+	// dmc3.exe + 2CCC98 - F3 0F 11 8B 40 01 00 00 - movss[rbx + 00000140], xmm1 { Assigning Hitbox Radius }
+	static std::unique_ptr<Utility::Detour_t> DrawCollisionsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2CCC98, &DrawCollisionsDetour, 8);
+	g_DrawCollisions_ReturnAddr = DrawCollisionsHook->GetReturnAddress();
+	g_DrawCollisionsCall = &DebugDrawCollisions;
+	DrawCollisionsHook->Toggle(true);
+
     // VergilNeutralTrick // func is already detoured, Crimson.MobilityFunction<27>+B1
     // static std::unique_ptr<Utility::Detour_t> VergilNeutralTrickHook = std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x0,
     // &VergilNeutralTrickDetour, 5); g_VergilNeutralTrick_ReturnAddr = VergilNeutralTrickHook->GetReturnAddress();
