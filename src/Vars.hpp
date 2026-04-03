@@ -2495,8 +2495,10 @@ struct Matrix44 {
 // $CollisionDataMetadataStart
 
 struct CollisionDataMetadata {
-    _(24);
-    float radius; // 0x18
+    _(12);
+    uint32 instanceId; //0xC
+    _(8);
+    float radiusCopy; // 0x18
     _(4);
     byte8* moveOffsetAddr; // 0x20
     _(8);
@@ -2509,21 +2511,24 @@ struct CollisionDataMetadata {
     byte8* files[2]; // 0x110
     uint32 mode;     // 0x120
     _(12);
-    vec4 pos3;             // 0x130
-    float heightAdjustment; // 0x140
+    vec4 hitboxPos;             // 0x130
+    float hitboxRadius; // 0x140
+    _(460);
+    byte8* dmgDataAddr; // 0x310
 };
 
-static_assert(offsetof(CollisionDataMetadata, radius) == 0x18);
+static_assert(offsetof(CollisionDataMetadata, instanceId) == 0xC);
+static_assert(offsetof(CollisionDataMetadata, radiusCopy) == 0x18);
 static_assert(offsetof(CollisionDataMetadata, moveOffsetAddr) == 0x20);
 static_assert(offsetof(CollisionDataMetadata, matrix1) == 0x30);
 static_assert(offsetof(CollisionDataMetadata, collisionDataAddr) == 0xD0);
 static_assert(offsetof(CollisionDataMetadata, pos2) == 0xE0);
 static_assert(offsetof(CollisionDataMetadata, files) == 0x110);
 static_assert(offsetof(CollisionDataMetadata, mode) == 0x120);
-static_assert(offsetof(CollisionDataMetadata, pos3) == 0x130);
-static_assert(offsetof(CollisionDataMetadata, heightAdjustment) == 0x140);
+static_assert(offsetof(CollisionDataMetadata, hitboxPos) == 0x130);
+static_assert(offsetof(CollisionDataMetadata, hitboxRadius) == 0x140);
+static_assert(offsetof(CollisionDataMetadata, dmgDataAddr) == 0x310);
 
-static_assert(sizeof(CollisionDataMetadata) == 324);
 
 // $CollisionDataMetadataEnd
 
@@ -2540,6 +2545,8 @@ struct CollisionData {
     byte32 flags; // 0x140
     _(204);
     vec4 data[8]; // 0x210
+    _(272);
+	byte8* playerBaseAddr; // 0x3A0
 };
 
 static_assert(offsetof(CollisionData, group) == 4);
@@ -2547,8 +2554,22 @@ static_assert(offsetof(CollisionData, metadataAddr) == 0x88);
 static_assert(offsetof(CollisionData, baseAddr) == 0x130);
 static_assert(offsetof(CollisionData, flags) == 0x140);
 static_assert(offsetof(CollisionData, data) == 0x210);
+static_assert(offsetof(CollisionData, playerBaseAddr) == 0x3A0);
 
-static_assert(sizeof(CollisionData) == 656);
+struct CollisionDataPlayer {
+	_(4);
+	uint32 group; // 4
+	_(128);
+	CollisionDataMetadata* metadataAddr; // 0x88
+	_(160);
+	byte8* baseAddr; // 0x130
+	_(8);
+	byte32 flags; // 0x140
+	_(204);
+	vec4 data[8]; // 0x210
+};
+
+static_assert(sizeof(CollisionDataPlayer) == 656);
 
 // $CollisionDataEnd
 
@@ -3387,7 +3408,7 @@ struct PlayerActorDataBase : ActorDataBase {
     _(36);
     BodyPartData bodyPartData[3][2]; // 0x6950
     _(576);
-    CollisionData collisionData; // 0x7250
+    CollisionDataPlayer collisionData; // 0x7250
     byte16 buttons[4];           // 0x74E0
     _(16);
     uint16 rightStickPosition; // 0x74F8
@@ -4449,7 +4470,7 @@ static_assert(offsetof(EnemyActorDataPride, state) == 0x3A38);
 
 struct EnemyActorDataLady : ActorDataBase {
     _(21400);
-    CollisionData collisionData; // 0x5460
+    CollisionDataPlayer collisionData; // 0x5460
     _(104);
     float hitPoints; // 0x5758
     _(556);
@@ -4490,7 +4511,7 @@ struct EnemyActorDataVergil : ActorDataBase {
     _(272);
     float nextEventTimer; // 0x1D8
     _(58964);
-    CollisionData collisionData; // 0xE830
+    CollisionDataPlayer collisionData; // 0xE830
     _(104);
     float hitPoints; // 0xEB28
     _(584);
@@ -5264,6 +5285,8 @@ struct DanteDriveRework {
     bool inQuickDrive = false;
     bool part2Played = false;
     bool part3Played = false;
+    bool inPart2 = false;
+    bool inPart3 = false;
     bool meleePressedForOverdrive = false;
     float motion19Timer = 0.0f;
     bool resetMotion19Timer = false;

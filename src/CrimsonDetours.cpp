@@ -6,6 +6,8 @@
 #include "Utility/Detour.hpp"
 #include <intrin.h>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
 #include "CrimsonUtil.hpp"
 #include "DMC3Input.hpp"
 #include "Global.hpp"
@@ -19,6 +21,7 @@
 #include "Actor.hpp"
 #include "CrimsonOnTick.hpp"
 #include "CrimsonEfk.hpp"
+#include "Internal.hpp"
 
 namespace CrimsonDetours {
 
@@ -638,18 +641,91 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 		return radius;
 	}
 
+ const uintptr_t metadataKey = reinterpret_cast<uintptr_t>(metadataAddr);
+
 	// Context: Every move seems to have a specific offset from PlayerAddr for its collision data.
 	// We can use this to both id which move the collision pertains to and which player it belongs to / spawned it.
 	// You can identify this offset by putting a breakpoint at dmc3.exe + 2CCC98 and looking at RBX, 
-	// which points to the collisionMetadata struct. For attack hitboxes, it will usually end at ...0x420
+	// which points to the collisionMetadata struct. For attack hitboxes, it will usually end at ...0x420 (for Vergil) and 0x760 (for Dante).
 	// so just look at the relation between moveOffsetAddr (+0x20) and the playerAddr to get the hitbox offset for each move.
 	// This detour call is placed right before the game writes the radius value for the hitbox, 
 	// so we can check for specific moves and modify their hitbox size if we want to. - Mia
+
+	static constexpr const wchar_t* driveParticlePath = L"Crimson\\vfx\\drive.efkefc";
+	static EffekseerRefHandle driveParticleRef = CrimsonEfk::LoadEffect(driveParticlePath, 40.0f);
+
+	static constexpr const wchar_t* drive2ParticlePath = L"Crimson\\vfx\\drive2.efkefc";
+	static EffekseerRefHandle drive2ParticleRef = CrimsonEfk::LoadEffect(drive2ParticlePath, 40.0f);
+
+	static constexpr const wchar_t* drive3ParticlePath = L"Crimson\\vfx\\drive3.efkefc";
+	static EffekseerRefHandle drive3ParticleRef = CrimsonEfk::LoadEffect(drive3ParticlePath, 40.0f);
+
 
 	// Yamato High Time hitbox increase
 	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x66640;
 	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->moveOffsetAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
 	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
+
+	// Drive hitbox tracking -- original radius == 90.0f
+	uintptr_t driveHitboxOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x3460F0; // Drive hitbox seems to be at a consistent offset between normal and DT.
+	uintptr_t driveHitboxOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr + 0x44710;
+
+  // Track effect handles per collision instance
+	enum class DriveFxPhase : uint8_t { Part1, Part2, Part3 };
+   struct DriveMetadataState {
+		std::unordered_map<uint32, EffekseerHandle> effectsByInstanceId;
+	};
+	static std::unordered_map<uintptr_t, DriveMetadataState> driveEffectsByMetadata;
+
+	
+	const bool isDriveCollision =
+		reinterpret_cast<uintptr_t>(collisionMeta->dmgDataAddr) == reinterpret_cast<uintptr_t>(appBaseAddr + 0x5CB1E0);
+
+	if (isDriveCollision) {
+		auto& collisionData = *reinterpret_cast<CollisionData*>(collisionMeta->collisionDataAddr);
+		auto& actorData = *reinterpret_cast<PlayerActorData*>(collisionData.playerBaseAddr);
+		auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[actorData.newPlayerIndex].drive : crimsonPlayer[actorData.newPlayerIndex].driveClone;
+
+        auto& metadataState = driveEffectsByMetadata[metadataKey];
+
+		// Latch phase at spawn per instanceId inside this metadata stream.
+		if (metadataState.effectsByInstanceId.find(collisionMeta->instanceId) == metadataState.effectsByInstanceId.end()) {
+			const auto desiredPhase = drive.inPart3
+				? DriveFxPhase::Part3
+				: (drive.inPart2 ? DriveFxPhase::Part2 : DriveFxPhase::Part1);
+
+			EffekseerHandle handle{};
+			if (desiredPhase == DriveFxPhase::Part3) {
+				handle = CrimsonEfk::PlayEffectAtMatrix(drive3ParticleRef, collisionMeta->matrix1, NULL);
+			} else if (desiredPhase == DriveFxPhase::Part2) {
+				handle = CrimsonEfk::PlayEffectAtMatrix(drive2ParticleRef, collisionMeta->matrix1, NULL);
+			} else {
+				handle = CrimsonEfk::PlayEffectAtMatrix(driveParticleRef, collisionMeta->matrix1, NULL);
+			}
+
+			metadataState.effectsByInstanceId[collisionMeta->instanceId] = handle;
+		}
+		vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
+		vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
+		matrixPos.y += 50.0f;
+		hitboxPos.y += 50.0f;
+		if (drive.inPart2 && !drive.inPart3) {
+			matrixPos.x += 400.0f;
+			hitboxPos.x += 400.0f;
+		}
+
+
+	}
+	else {
+		// Only stop effect tied to THIS instance (not globally)
+        auto metadataIt = driveEffectsByMetadata.find(metadataKey);
+		if (metadataIt != driveEffectsByMetadata.end()) {
+			for (auto& kvp : metadataIt->second.effectsByInstanceId) {
+				CrimsonEfk::StopEffect(kvp.second);
+			}
+			driveEffectsByMetadata.erase(metadataIt);
+		}
+	}
 
 	// Checking for all Players and Clones
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {
@@ -662,7 +738,7 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 				continue;
 			}
 			auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
-			auto& inYamatoHighTime = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime : 
+			auto& inYamatoHighTime = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime :
 				crimsonPlayer[playerIndex].inYamatoHighTimeClone;
 
 			if ((((yamatoHighTimeOffset == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTime) ||
@@ -671,9 +747,11 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 
 				return radius * 3.5f;
 			}
-		
+
 		}
 	}
+
+
 	return radius;
 }
 
@@ -690,27 +768,9 @@ void DebugDrawCollisions(byte8* metadataAddr) {
 
 	vec4 position = { collisionMeta.matrix1[12], collisionMeta.matrix1[13], collisionMeta.matrix1[14],  collisionMeta.matrix1[15] };
 
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
-	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
-
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[1], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
-// 
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&up, dd::colors::Coral, collisionMeta.heightAdjustment, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.heightAdjustment, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[2], *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.heightAdjustment, 8, 32);
-// 
-// 	vec3 right2 = { collisionMeta.matrix2[0], collisionMeta.matrix2[1], collisionMeta.matrix2[2] };
-// 	vec3 up2 = { collisionMeta.matrix2[4], collisionMeta.matrix2[5], collisionMeta.matrix2[6] };
-// 	vec3 forward2 = { collisionMeta.matrix2[8], collisionMeta.matrix2[9], collisionMeta.matrix2[10] };
-// 
-// 	vec4 position2 = { collisionMeta.matrix2[12], collisionMeta.matrix2[13], collisionMeta.matrix2[14],  collisionMeta.matrix2[15] };
-// 
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&up2, dd::colors::Coral, collisionMeta.radius, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&right2, dd::colors::Chartreuse, collisionMeta.radius, 8, 32);
-// 	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.pos2[0], *(ddVec3*)&forward2, dd::colors::Crimson, collisionMeta.radius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.hitboxPos, *(ddVec3*)&up, dd::colors::Coral, collisionMeta.hitboxRadius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.hitboxPos, *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.hitboxRadius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.hitboxPos, *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.hitboxRadius, 8, 32);
 }
 
 bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {

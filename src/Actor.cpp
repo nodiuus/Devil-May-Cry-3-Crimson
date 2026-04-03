@@ -4541,8 +4541,8 @@ void CharacterSwitchController() {
     uint16* activeRotationAddr = 0;
     uint16* rotationAddr       = 0;
 
-    CollisionData* activeCollisionDataAddr = 0;
-    CollisionData* collisionDataAddr       = 0;
+    CollisionDataPlayer* activeCollisionDataAddr = 0;
+    CollisionDataPlayer* collisionDataAddr       = 0;
 
     if (!newActorData.baseAddr) {
         continue;
@@ -4670,12 +4670,19 @@ void CharacterSwitchController() {
         auto& activeMetadata = *activeMetadataAddr;
         auto& metadata       = *metadataAddr;
 
+        vec4& matrixPos = *reinterpret_cast<vec4*>(&metadata.matrix1[12]);
+        vec4& activeMatrixPos = *reinterpret_cast<vec4*>(&activeMetadata.matrix1[12]);
+
         metadata.pos2[0] = activeMetadata.pos2[0];
         metadata.pos2[1] = activeMetadata.pos2[1];
         metadata.pos2[2] = activeMetadata.pos2[2];
 
-        metadata.pos3 = activeMetadata.pos3;
-        metadata.pos3.a = 1.0f;
+        metadata.hitboxPos.x = activeMetadata.hitboxPos.x;
+		metadata.hitboxPos.y = activeMetadata.hitboxPos.y + 400.0f;
+		metadata.hitboxPos.z = activeMetadata.hitboxPos.z;
+        metadata.hitboxPos.a = 1.0f;
+
+		matrixPos.y = activeMatrixPos.y + 400.0f;
 
         // metadata.data2[0] = activePosition;
         metadata.pos2[0].a = 1.0f;

@@ -4081,16 +4081,18 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     if ((actorData.action == REBELLION_DRIVE_1) &&
         (actorData.motionData[0].index == 17 || actorData.motionData[0].index == 18)) {
         drive.runLevelTimer = true;
-	}
-	else if ((actorData.action == REBELLION_DRIVE_1) &&
-		actorData.motionData[0].index == 19) {
+	} else if (actorData.action != REBELLION_DRIVE_1 || actorData.motionData[0].index == 19) {
 		drive.runLevelTimer = false;
 	}
 
-	// Reset the level charge timer.
+	// Reset the charge Effect bool
     if (actorData.action != REBELLION_DRIVE_1) {
-        drive.runLevelTimer = false;
 		drive.chargeEffectPlayed = false;
+		drive.level1EffectPlayed = false;
+		drive.level2EffectPlayed = false;
+		drive.level3EffectPlayed = false;
+		drive.inPart2 = false;
+		drive.inPart3 = false;
     }
 
 	// Incrementing level timer
@@ -4144,6 +4146,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 			actorData.action = REBELLION_DRIVE_1;
 			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
 			actorData.rotation = GetRotationTowardsEnemy(actorData);
+			drive.inPart2 = true;
 			drive.part2Played = true;
 			
 		}
@@ -4155,6 +4158,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 			actorData.action = REBELLION_DRIVE_1;
 			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
 			actorData.rotation = GetRotationTowardsEnemy(actorData);
+			drive.inPart3 = true;
 			drive.part3Played = true;
 		}
 	}
@@ -4209,11 +4213,6 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
         uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[0]);
 
-        if (drive.levelTimer < 1.0f) {
-            drive.level1EffectPlayed = false;
-            drive.level2EffectPlayed = false;
-            drive.level3EffectPlayed = false;
-        }
 
 //         if (drive.levelTimer >= 1.1f) {
 //             if (!drive.level1EffectPlayed) {
