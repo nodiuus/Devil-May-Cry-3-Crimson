@@ -525,13 +525,34 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
    
 }
 
-void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, uint32_t color) {
+void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, uint8 style, uint32_t color) {
 	if (!actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-	static constexpr const wchar_t* kStyleSwitchEffectPath = L"Crimson\\vfx\\style_switch2.efkefc";
-	static EffekseerRefHandle styleSwitchRef = CrimsonEfk::LoadEffect(kStyleSwitchEffectPath, 40.0f);
+
+	static constexpr const wchar_t* styleSwitchEffectPath[7] = {
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\swordmaster.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\gunslinger.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\trickster.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\royalguard.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quickcsilver.efkefc"
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\doppelganger.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\darkslayer.efkefc",
+	};
+
+	static constexpr const wchar_t* styleSwitchSwooshEffectPath[7] = {
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\swordmaster_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\gunslinger_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\trickster_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\royalguard_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quickcsilver_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\doppelganger_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\darkslayer_swoosh.efkefc",
+	};
+
+	static EffekseerRefHandle styleSwitchRef = CrimsonEfk::LoadEffect(styleSwitchEffectPath[style], 40.0f);
+	static EffekseerRefHandle styleSwitchSwooshRef = CrimsonEfk::LoadEffect(styleSwitchSwooshEffectPath[style], 40.0f);
 
 	uint8 handleId = 0;
 
@@ -550,8 +571,65 @@ void NewStyleSwitchFlux(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandle
 	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones); 
 
     
-	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, kStyleSwitchEffectPath, 40.0f);
+	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, styleSwitchEffectPath[style], 40.0f);
 	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
+
+	styleSwitchSwooshRef = CrimsonEfk::ReloadEffect(styleSwitchSwooshRef, styleSwitchSwooshEffectPath[style], 40.0f);
+	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchSwooshRef, boneMatrix->matrix3, &actorData);
+	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
+}
+
+void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, uint8 style, uint32_t color) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+
+	static constexpr const wchar_t* styleSwitchEffectPath[7] = {
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\swordmaster.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\gunslinger.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\trickster.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\royalguard.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quickcsilver.efkefc"
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\doppelganger.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\darkslayer.efkefc",
+	};
+
+	static constexpr const wchar_t* styleSwitchSwooshEffectPath[7] = {
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\swordmaster_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\gunslinger_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\trickster_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\royalguard_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quickcsilver_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\doppelganger_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\darkslayer_swoosh.efkefc",
+	};
+
+	static EffekseerRefHandle styleSwitchRef = CrimsonEfk::LoadEffect(styleSwitchEffectPath[style], 40.0f);
+	static EffekseerRefHandle styleSwitchSwooshRef = CrimsonEfk::LoadEffect(styleSwitchSwooshEffectPath[style], 40.0f);
+
+	uint8 handleId = 0;
+
+	for (uint8 i = 0; i < 10; i++) {
+		if (CrimsonEfk::IsPlaying(styleSwitchHandles[i])) {
+			if (i == 9) {
+				handleId = 0;
+			}
+			else {
+				handleId++;
+			}
+		}
+	}
+
+	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones);
+
+
+	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, styleSwitchEffectPath[style], 40.0f);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
+
+	styleSwitchSwooshRef = CrimsonEfk::ReloadEffect(styleSwitchSwooshRef, styleSwitchSwooshEffectPath[style], 40.0f);
+	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchSwooshRef, boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }
 

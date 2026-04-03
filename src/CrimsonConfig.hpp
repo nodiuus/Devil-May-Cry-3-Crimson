@@ -68,6 +68,13 @@ enum {
 };
 }
 
+namespace STYLESWITCHVFXTYPE {
+	enum {
+	CRIMSON,
+	NSWITCH
+};
+}
+
 struct CrimsonConfig {
 	struct MultiplayerBars2D {
 		bool show = true;
@@ -234,6 +241,7 @@ struct CrimsonConfig {
 
 		struct Flux {
 			bool enable = true;
+			uint8 type = STYLESWITCHVFXTYPE::CRIMSON;
 
 			uint8 color[7][4] = {
 				// r   g  b  a 
@@ -249,6 +257,7 @@ struct CrimsonConfig {
 			static constexpr auto Metadata() {
 				return std::make_tuple(
 					std::make_pair("enable", &StyleSwitchFX::Flux::enable),
+					std::make_pair("type", &StyleSwitchFX::Flux::type),
                     std::make_pair("color", &StyleSwitchFX::Flux::color)
 				);
 			}

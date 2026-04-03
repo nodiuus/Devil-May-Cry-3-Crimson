@@ -1271,6 +1271,16 @@ uint8 cameraShakeMap[] = {
 	2,
 };
 
+const char* styleSwitchTypeNames[] = {
+	"Crimson",
+	"DMC3 Switch",
+};
+
+uint8 styleSwitchTypeMap[] = {
+	0,
+	1,
+};
+
 const char* styleRankNames[] = {
 	"None",
 	"Dope",
@@ -10578,6 +10588,12 @@ void VisualSection(size_t defaultFontSize) {
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
     GUI_Checkbox2("STYLE SWITCH FLUX", activeCrimsonConfig.StyleSwitchFX.Flux.enable, queuedCrimsonConfig.StyleSwitchFX.Flux.enable);
 	ImGui::PopFont();
+
+	ImGui::SameLine();
+	ImGui::PushItemWidth(itemWidth);
+	UI::ComboMapValue2("Type", styleSwitchTypeNames, styleSwitchTypeMap,
+		activeCrimsonConfig.StyleSwitchFX.Flux.type, queuedCrimsonConfig.StyleSwitchFX.Flux.type);
+	ImGui::PopItemWidth();
 
 	for (int style = 0; style < 6; style++) {
 	

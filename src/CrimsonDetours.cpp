@@ -660,29 +660,19 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 	static constexpr const wchar_t* drive3ParticlePath = L"Crimson\\vfx\\drive3.efkefc";
 	static EffekseerRefHandle drive3ParticleRef = CrimsonEfk::LoadEffect(drive3ParticlePath, 40.0f);
 
-
-	// Yamato High Time hitbox increase
-	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x66640;
-	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->moveOffsetAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
-	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
-
-	// Drive hitbox tracking -- original radius == 90.0f
-	uintptr_t driveHitboxOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x3460F0; // Drive hitbox seems to be at a consistent offset between normal and DT.
-	uintptr_t driveHitboxOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr + 0x44710;
-
 	// Track effect handles per collision instance
 	enum class DriveFxPhase : uint8_t { Part1, Part2, Part3 };
 	struct DriveInstanceState {
 		EffekseerHandle handle{};
 		DriveFxPhase phase = DriveFxPhase::Part1;
-      bool hasLockedTargetHeight = false;
-        bool hasLockedDirection = false;
+		bool hasLockedTargetHeight = false;
+		bool hasLockedDirection = false;
 		float startY = 0.0f;
 		float lockedTargetY = 0.0f;
 		float startX = 0.0f;
 		float startZ = 0.0f;
 		float targetDistXZ = 1.0f;
-      float dirX = 0.0f;
+		float dirX = 0.0f;
 		float dirZ = 0.0f;
 	};
 	struct DriveMetadataState {
@@ -718,7 +708,7 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 				handle = CrimsonEfk::PlayEffectAtMatrix(driveParticleRef, collisionMeta->matrix1, NULL);
 			}
 
-            DriveInstanceState instanceState{};
+			DriveInstanceState instanceState{};
 			instanceState.handle = handle;
 			instanceState.phase = desiredPhase;
 			vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
@@ -726,18 +716,18 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 
 			auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
 			instanceState.startX = hitboxPos.x;
-         instanceState.startZ = hitboxPos.z;
+			instanceState.startZ = hitboxPos.z;
 			instanceState.startY = hitboxPos.y + 50.0f;
 
 			// Lock target height once at projectile spawn if lock-on target exists.
 			if (actorData.lockOnData.targetBaseAddr60 != 0) {
 				auto& enemyActorData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
-                instanceState.lockedTargetY = (std::max)(instanceState.startY, enemyActorData.position.y);
+				instanceState.lockedTargetY = (std::max)(instanceState.startY, enemyActorData.position.y);
 				const float dx = enemyActorData.position.x - instanceState.startX;
 				const float dz = enemyActorData.position.z - instanceState.startZ;
 				instanceState.targetDistXZ = (std::max)(0.001f, std::sqrt(dx * dx + dz * dz));
 				instanceState.hasLockedTargetHeight = true;
-               instanceState.dirX = dx / instanceState.targetDistXZ;
+				instanceState.dirX = dx / instanceState.targetDistXZ;
 				instanceState.dirZ = dz / instanceState.targetDistXZ;
 				instanceState.hasLockedDirection = true;
 			}
@@ -752,12 +742,12 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 
 		vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
 		vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
-       if (instanceIt != metadataState.effectsByInstanceId.end() && instanceIt->second.hasLockedTargetHeight) {
+		if (instanceIt != metadataState.effectsByInstanceId.end() && instanceIt->second.hasLockedTargetHeight) {
 			auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
 			auto& state = instanceIt->second;
 			const float dx = projectileData.position.x - state.startX;
 			const float dz = projectileData.position.z - state.startZ;
-          float traveledXZ = std::sqrt(dx * dx + dz * dz);
+			float traveledXZ = std::sqrt(dx * dx + dz * dz);
 			if (state.hasLockedDirection) {
 				// Keep trajectory locked to the initial spawn direction.
 				traveledXZ = (std::max)(0.0f, dx * state.dirX + dz * state.dirZ);
@@ -768,9 +758,10 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 			}
 			const float t = std::clamp(traveledXZ / state.targetDistXZ, 0.0f, 1.0f);
 			const float desiredY = state.startY + (state.lockedTargetY - state.startY) * t;
-         matrixPos.y = (std::max)(matrixPos.y, desiredY);
+			matrixPos.y = (std::max)(matrixPos.y, desiredY);
 			hitboxPos.y = (std::max)(hitboxPos.y, desiredY);
-		} else {
+		}
+		else {
 			matrixPos.y += 50.0f;
 			hitboxPos.y += 50.0f;
 		}
@@ -804,6 +795,11 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 			driveEffectsByMetadata.erase(metadataIt);
 		}
 	}
+
+	// Yamato High Time hitbox increase
+	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x66640;
+	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->moveOffsetAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
+	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
 
 	// Checking for all Players and Clones
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {

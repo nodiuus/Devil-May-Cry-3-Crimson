@@ -3203,8 +3203,8 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 		return;
 	}
 	auto& hudData = *reinterpret_cast<HUDData*>(name_80);
-	auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchHandles : 
-        crimsonPlayer[playerIndex].styleSwitchHandlesClone;
+	auto& styleSwitchVFX = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchVFX : 
+        crimsonPlayer[playerIndex].styleSwitchVFXClone;
 
     actorData.style = style; // Changes the style.
 
@@ -3263,7 +3263,16 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
         uint32 vergilColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[6]);
 //         CrimsonDetours::CreateEffectDetour(actorBaseAddr, 3, 144, 1, true, 
 //             actorData.character == CHARACTER::DANTE ? actualColor : vergilColor, 0.73f);
-        CrimsonFX::NewStyleSwitchFlux(actorData, styleSwitchHandles, actorData.character == CHARACTER::DANTE ? actualColor : vergilColor);
+
+        if (activeCrimsonConfig.StyleSwitchFX.Flux.type == STYLESWITCHVFXTYPE::CRIMSON) {
+			CrimsonFX::StyleSwitchFluxCrimson(actorData, styleSwitchVFX.handles, styleSwitchVFX.swooshHandles, style,
+				actorData.character == CHARACTER::DANTE ? actualColor : vergilColor);
+		}
+        else if (activeCrimsonConfig.StyleSwitchFX.Flux.type == STYLESWITCHVFXTYPE::NSWITCH) {
+			CrimsonFX::StyleSwitchFluxNS(actorData, styleSwitchVFX.handles, styleSwitchVFX.swooshHandles, style,
+				actorData.character == CHARACTER::DANTE ? actualColor : vergilColor);
+        }
+        
     }
 
     if (!actorData.cloneActorBaseAddr) {
@@ -3306,9 +3315,9 @@ void StyleSwitchController(byte8* actorBaseAddr) {
 	auto& playerData = GetPlayerData(actorData);
 	auto& characterData = GetCharacterData(actorData);
 	auto playerIndex = actorData.newPlayerIndex;
-    auto& styleSwitchHandles = (actorData.newEntityIndex == ENTITY::MAIN)
-        ? crimsonPlayer[playerIndex].styleSwitchHandles
-        : crimsonPlayer[playerIndex].styleSwitchHandlesClone;
+    auto& styleSwitchVFX = (actorData.newEntityIndex == ENTITY::MAIN)
+        ? crimsonPlayer[playerIndex].styleSwitchVFX
+        : crimsonPlayer[playerIndex].styleSwitchVFXClone;
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 	auto name_80 = *reinterpret_cast<byte8**>(appBaseAddr + 0xCF2680);
 	if (!name_80) {
@@ -3321,8 +3330,8 @@ void StyleSwitchController(byte8* actorBaseAddr) {
         const bool hideFluxes = (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK);
 
         for (uint8 i = 0; i < 10; i++) {
-            if (CrimsonEfk::IsPlaying(styleSwitchHandles[i])) {
-                CrimsonEfk::SetVisible(styleSwitchHandles[i], !hideFluxes);
+            if (CrimsonEfk::IsPlaying(styleSwitchVFX.handles[i])) {
+                CrimsonEfk::SetVisible(styleSwitchVFX.handles[i], !hideFluxes);
             }
         }
     }

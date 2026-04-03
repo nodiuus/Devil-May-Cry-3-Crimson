@@ -5349,6 +5349,11 @@ struct BackToForward {
     float forwardBuffer          = forwardDuration;
 };
 
+struct StyleSwitchVFX {
+    EffekseerHandle handles[10] = { 0 };
+    EffekseerHandle swooshHandles[10] = { 0 };
+};
+
 struct StyleSwitchText {
     float duration  = 0.45f;
     float time[9] = { 0 };
@@ -5521,7 +5526,7 @@ struct CrimsonPlayerData {
     RoyalRelease royalRelease;
     ImprovedCancels cancels;
     BackToForward b2F;
-    EffekseerHandle styleSwitchHandles[10] = { 0 };
+    StyleSwitchVFX styleSwitchVFX;
     StyleSwitchText styleSwitchText;
     DTESFX dTESFX;
     DTEVFX dTEVFX;
@@ -5595,7 +5600,7 @@ struct CrimsonPlayerData {
     DanteDriveRework driveClone;
     RoyalRelease royalReleaseClone;
     SkyLaunch skyLaunchClone;
-    EffekseerHandle styleSwitchHandlesClone[10] = { 0 };
+    StyleSwitchVFX styleSwitchVFXClone;
     VergilMoveAdjustments vergilMovesClone;
     ImprovedCancels cancelsClone;
     BackToForward b2FClone;
