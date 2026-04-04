@@ -3359,8 +3359,8 @@ void DTInfusedRoyalguardController(byte8* actorBaseAddr) {
 		return;
 	}
 
-    CrimsonDetours::ToggleDTInfusedRoyalguardDetours(activeCrimsonGameplay.Gameplay.Dante.dTInfusedRoyalguard);
-    if (!activeCrimsonGameplay.Gameplay.Dante.dTInfusedRoyalguard) {
+    CrimsonDetours::ToggleDTInfusedRoyalguardDetours((activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES]));
+    if (!(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES])) {
         return;
     }
 
@@ -4268,7 +4268,7 @@ void GroundTrickFlagSet(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-	if (!activeCrimsonGameplay.Gameplay.Dante.groundTrick) return;
+	if (!(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::TRICKSTER_MODDED_MOVES])) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto& b2F = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].b2F : crimsonPlayer[playerIndex].b2FClone;
 	auto& playerData = GetPlayerData(playerIndex);

@@ -5535,6 +5535,8 @@ struct ShopExperienceStyleHelper {
 	int64 styleid;
 	int64 stylelevel;
 	int64 styleexp;
+	int64 moddedunlock;
+	int64 moddedchild;
 };
 
 
@@ -5584,24 +5586,27 @@ ShopExperienceStyleHelper shopHelpersDanteStyle[] = {
 //	{"Quicksilver Level 2", 20000, STYLE::QUICKSILVER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
 //	{"Quicksilver Level 3", 30000, STYLE::QUICKSILVER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
 
-	{"Swordmaster Level 2", 20000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Swordmaster Level 3", 30000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Swordmaster Level 2", 20000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Swordmaster Level 3", 30000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES},
+	{"Swordmaster Level 4", 5, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE, UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES,-1},
 	
-	{"Gunslinger Level 2", 20000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Gunslinger Level 3", 30000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Gunslinger Level 2", 20000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Gunslinger Level 3", 30000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,-1},
 
-	{"Trickster Level 2", 20000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Trickster Level 3", 30000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Trickster Level 2", 20000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Trickster Level 3", 30000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES},
+	{"Trickster Level 4", 5, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES,-1},
 
-	{"Royal Guard Level 2", 20000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Royal Guard Level 3", 30000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Royal Guard Level 2", 20000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Royal Guard Level 3", 30000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES},
+	{"Royal Guard Level 4", 5, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES,-1},
 
 
 };
 
 ShopExperienceStyleHelper shopHelpersVergilStyle[] = {
-	{"Dark Slayer Level 2", 20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Dark Slayer Level 3", 30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Dark Slayer Level 2", 20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Dark Slayer Level 3", 30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,-1},
 };
 
 
@@ -6045,10 +6050,13 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 	const float columnWidth = 0.48f * queuedConfig.globalScale;
 	const float rowHeight = 40.0f * queuedConfig.globalScale;
 	int columnTracker = 0;
-	if (ImGui::BeginTable("SkillTable", 2)) {
-		ImGui::TableSetupColumn("Col1", ImGuiTableColumnFlags_WidthAuto, 400.0f * scaleFactorY); // Default to 100.0f
-		ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_WidthAuto, 400.0f * scaleFactorY); // Default to 100.0f
-
+	if (ImGui::BeginTable("SkillTable", 6)) {
+		ImGui::TableSetupColumn("Col1", ImGuiTableColumnFlags_WidthAuto, 250.0f * scaleFactorY); // Default to 100.0f
+		ImGui::TableSetupColumn("SellCol1", ImGuiTableColumnFlags_WidthAuto, 50.0f * scaleFactorY); // Default to 200.0f
+		ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_WidthAuto, 250.0f * scaleFactorY); // Default to 100.0f
+		ImGui::TableSetupColumn("SellCol2", ImGuiTableColumnFlags_WidthAuto, 50.0f * scaleFactorY); // Default to 200.0f
+		ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthAuto, 250.0f * scaleFactorY); // Default to 100.0f
+		ImGui::TableSetupColumn("SellCol3", ImGuiTableColumnFlags_WidthAuto, 50.0f * scaleFactorY); // Default to 200.0f
 		for (size_t helperIndex = 0; helperIndex < styleHelperCount; ++helperIndex) {
 			auto& helper = styleHelpers[helperIndex];
 
@@ -6059,78 +6067,197 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 				if (helper.styleid == STYLE::DOPPELGANGER and !sessionData.weaponAndStyleUnlocks[WEAPONANDSTYLEUNLOCKS::DOPPELGANGER])
 					continue;
 			}
-			ImGui::TableNextColumn();
-			//calculates how far through leveling up a style you were as a percentage
-			uint32 percentage_discount = static_cast<uint32>(floor(100 * expData.styleExpPoints[helper.styleid] / helper.styleexp));
-			if (percentage_discount < 0)
-				percentage_discount = 0;
-			if (percentage_discount > 100)
-				percentage_discount = 100;
 
-			//calculates cost of red orbs as the base price with a percentage discount based on how close you were to leveling up style
-			//so 30% of the exp to level 2 = 30% discount
-			uint32 rorb_cost_calculated = helper.price - (static_cast<uint32>(helper.price / 100) * percentage_discount);
-			auto Buy = [&]() {
-				if (missionData.redOrbs < rorb_cost_calculated) {
-					FMOD_PlaySound(0, 19);
-					return;
-				}
-				HeldStyleExpData& heldStyleExpData = (character == CHARACTER::DANTE)
-					? heldStyleExpDataDante
-					: heldStyleExpDataVergil;
-				missionData.redOrbs -= rorb_cost_calculated;
-				FMOD_PlaySound(0, 18);
-				expData.styleLevels[helper.styleid] = helper.stylelevel;
-				expData.styleExpPoints[helper.styleid] = 0;
-				heldStyleExpData.missionStyleLevels[helper.styleid] = helper.stylelevel;
-				heldStyleExpData.accumulatedStylePoints[helper.styleid] = 0;
-				ExpConfig::UpdatePlayerActorExps();
+			//Just making sure our style id is in range
+			if (helper.styleid >= STYLE::MAX)
+				continue;
+
+			//Check if we're doing modded style or vanilla style
+			if (helper.moddedunlock > -1) {
+				//don't show if extra_shop disabled AND modded move not already purchased (expData.unlocks[moddedunlock] false)
+				if (!activeCrimsonGameplay.Gameplay.General.extramoves && !expData.unlocks[helper.moddedunlock])
+					continue;
+
+
+				ImGui::TableNextColumn();
+				//calculates how far through leveling up a style you were as a percentage
+
+				auto Buy = [&]() {
+					if (missionData.redOrbs < helper.price) {
+						FMOD_PlaySound(0, 19);
+						return;
+					}
+
+					missionData.redOrbs -= helper.price;
+					FMOD_PlaySound(0, 18);
+					expData.unlocks[helper.moddedunlock] = true;
+					ExpConfig::UpdatePlayerActorExps();
 				};
-			bool condition = !(expData.styleLevels[helper.styleid] + 1 == helper.stylelevel);
-			GUI_PushDisable(condition);
 
-			// Begin a new row
-			ImGui::BeginGroup();
 
-			if (GUI_Button(helper.name, ImVec2(500.0f * scaleFactorY, 80.0f * scaleFactorY))) {
-				Buy();
-			}
+				auto Sell = [&]() {
+					missionData.redOrbs += helper.price;
+					FMOD_PlaySound(0, 18);
+					expData.unlocks[helper.moddedunlock] = false;
+					ExpConfig::UpdatePlayerActorExps();
+					};
 
-			GUI_PopDisable(condition);
+				//Buy Button gui element starts
+				bool condition = expData.unlocks[helper.moddedunlock] || (expData.styleLevels[helper.styleid] != STYLE_LEVEL::LEVEL_THREE);
+				GUI_PushDisable(condition);
 
-			// Display price and bullet point in a new column
-			ImGui::SameLine(120);
+				// Begin a new row
+				ImGui::BeginGroup();
 
-			bool priceCondition = (missionData.redOrbs < rorb_cost_calculated);
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
-			constexpr auto BULLET = u8"•";
-			ImGui::Text((const char*)BULLET);
-			ImGui::PopFont();
-			ImGui::PopStyleColor();
+				if (GUI_Button(helper.name, ImVec2(250.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Buy();
+				}
 
-			GUI_PushDisable(priceCondition);
-			ImGui::SameLine();
-			if (expData.styleLevels[helper.styleid] >= helper.stylelevel) {
-				ImGui::Text("Sold out!");
+				GUI_PopDisable(condition);
+
+				// Display price and bullet point in a new column
+				ImGui::SameLine(120);
+
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+				ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
+				constexpr auto BULLET = u8"•";
+				ImGui::Text((const char*)BULLET);
+				ImGui::PopFont();
+				ImGui::PopStyleColor();
+				ImGui::SameLine();
+				ImGui::Text("%u", helper.price);
+
+				//Sell button begins:
+				// Display the sell button in a new column
+				ImGui::EndGroup(); // End the group for the current row
+				ImGui::TableNextColumn();
+				//Disable selling when: The item is not our current style level OR if there's a modded style linked to this style that's been purchased.
+				bool sellcondition = !expData.unlocks[helper.moddedunlock];
+				GUI_PushDisable(sellcondition);
+
+				if (GUI_Button("Sell", ImVec2(50.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Sell();
+				}
+				GUI_PopDisable(sellcondition);
+
+
+				ImGui::Spacing(); // Add spacing between rows
+				ImGui::TableNextRow(0, rowHeight);
+
+
 			}
 			else {
-				if (rorb_cost_calculated == helper.price) {
-					ImGui::Text("%u", rorb_cost_calculated);
+				ImGui::TableNextColumn();
+				//calculates how far through leveling up a style you were as a percentage
+				uint32 percentage_discount = static_cast<uint32>(floor(100 * expData.styleExpPoints[helper.styleid] / helper.styleexp));
+				if (percentage_discount < 0)
+					percentage_discount = 0;
+				if (percentage_discount > 100)
+					percentage_discount = 100;
+
+				//calculates cost of red orbs as the base price with a percentage discount based on how close you were to leveling up style
+				//so 30% of the exp to level 2 = 30% discount
+				uint32 rorb_cost_calculated = helper.price - (static_cast<uint32>(helper.price / 100) * percentage_discount);
+
+
+				auto Buy = [&]() {
+					if (missionData.redOrbs < rorb_cost_calculated) {
+						FMOD_PlaySound(0, 19);
+						return;
+					}
+					HeldStyleExpData& heldStyleExpData = (character == CHARACTER::DANTE)
+						? heldStyleExpDataDante
+						: heldStyleExpDataVergil;
+					missionData.redOrbs -= rorb_cost_calculated;
+					FMOD_PlaySound(0, 18);
+					expData.styleLevels[helper.styleid] = helper.stylelevel;
+					expData.styleExpPoints[helper.styleid] = 0;
+					heldStyleExpData.missionStyleLevels[helper.styleid] = helper.stylelevel;
+					heldStyleExpData.accumulatedStylePoints[helper.styleid] = 0;
+					ExpConfig::UpdatePlayerActorExps();
+					};
+
+
+				auto Sell = [&]() {
+					missionData.redOrbs += helper.price;
+					FMOD_PlaySound(0, 18);
+					HeldStyleExpData& heldStyleExpData = (character == CHARACTER::DANTE)
+						? heldStyleExpDataDante
+						: heldStyleExpDataVergil;
+
+					expData.styleLevels[helper.styleid] = helper.stylelevel - 1;
+					expData.styleExpPoints[helper.styleid] = 0;
+					heldStyleExpData.missionStyleLevels[helper.styleid] = helper.stylelevel - 1;
+					heldStyleExpData.accumulatedStylePoints[helper.styleid] = 0;
+					ExpConfig::UpdatePlayerActorExps();
+					};
+
+				//Buy Button gui element starts
+				bool condition = !(expData.styleLevels[helper.styleid] + 1 == helper.stylelevel);
+				GUI_PushDisable(condition);
+
+				// Begin a new row
+				ImGui::BeginGroup();
+
+				if (GUI_Button(helper.name, ImVec2(250.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Buy();
+				}
+
+				GUI_PopDisable(condition);
+
+				// Display price and bullet point in a new column
+				ImGui::SameLine(120);
+
+				bool priceCondition = (missionData.redOrbs < rorb_cost_calculated) || condition;
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+				ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
+				constexpr auto BULLET = u8"•";
+				ImGui::Text((const char*)BULLET);
+				ImGui::PopFont();
+				ImGui::PopStyleColor();
+
+
+				GUI_PushDisable(priceCondition);
+				ImGui::SameLine();
+				if (expData.styleLevels[helper.styleid] >= helper.stylelevel) {
+					ImGui::Text("Sold out!");
 				}
 				else {
-					ImGui::Text("%u (%u%% off!)", rorb_cost_calculated, percentage_discount);
-					ImGui::SameLine();
-					GUI_PopDisable(priceCondition);
-					TooltipHelper("(?)", "Discount is based on XP earned for this style. Resets on purchase.");
-					GUI_PushDisable(priceCondition);
+					if (rorb_cost_calculated == helper.price) {
+						ImGui::Text("%u", rorb_cost_calculated);
+					}
+					else {
+						ImGui::Text("%u (%u%% off!)", rorb_cost_calculated, percentage_discount);
+						ImGui::SameLine();
+						GUI_PopDisable(priceCondition);
+						TooltipHelper("(?)", "Discount is based on XP earned for this style. Resets on purchase.");
+						GUI_PushDisable(priceCondition);
 
+					}
+				}
+				GUI_PopDisable(priceCondition);
+
+
+
+				//Sell button begins:
+				// Display the sell button in a new column
+				ImGui::EndGroup(); // End the group for the current row
+				ImGui::TableNextColumn();
+				//Disable selling when: The item is not our current style level OR if there's a modded style linked to this style that's been purchased.
+				bool sellcondition = (expData.styleLevels[helper.styleid] != helper.stylelevel) || (helper.moddedchild > -1 && expData.unlocks[helper.moddedchild]);
+				GUI_PushDisable(sellcondition);
+
+				if (GUI_Button("Sell", ImVec2(50.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Sell();
+				}
+				GUI_PopDisable(sellcondition);
+
+
+				if (helper.stylelevel == STYLE_LEVEL::LEVEL_THREE && (helper.moddedchild == -1 || !activeCrimsonGameplay.Gameplay.General.extramoves)) {
+					ImGui::Spacing(); // Add spacing between rows
+					ImGui::TableNextRow(0, rowHeight);
 				}
 			}
-			GUI_PopDisable(priceCondition);
-
-			ImGui::EndGroup(); // End the group for the current row
-			ImGui::Spacing(); // Add spacing between rows
 		}
 		ImGui::EndTable();
 	}
@@ -11453,7 +11580,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.Dante.airTornado);
+			GUI_PushDisable(!activeConfig.Actor.enable || !(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]));
 			if (GUI_Checkbox2("Swap Hammer Volcano Inputs",
 				activeCrimsonGameplay.Gameplay.Dante.swapHammerVocalnoInputs,
 				queuedCrimsonGameplay.Gameplay.Dante.swapHammerVocalnoInputs,
@@ -11466,7 +11593,7 @@ void DanteGameplayOptions() {
 				"and Volcano input to be Air Lock On + Style + Back.\n"
 				"Ground Volcano will still be Lock On + Forward + Style not to confuse with Real Impact.\n"
 				"This will swap the order in which you unlock both moves.");
-			GUI_PopDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.Dante.airTornado);
+			GUI_PopDisable(!activeConfig.Actor.enable || !(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]));
 
 			/*ImGui::TableNextColumn();
 

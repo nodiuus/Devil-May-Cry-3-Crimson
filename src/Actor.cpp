@@ -4061,7 +4061,8 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonPatches::DisableJCRestriction(activeCrimsonGameplay.Gameplay.General.disableJCRestriction);
     CrimsonPatches::BulletStop(activeCrimsonGameplay.Gameplay.Dante.bulletStop);
     CrimsonPatches::RainstormLift(activeCrimsonGameplay.Gameplay.Dante.rainstormLift);
-    CrimsonPatches::ReduceAirTornadoDamage(activeCrimsonGameplay.Gameplay.Dante.airTornado);
+    //Base off extra moves and whether we have swordmaster lvl 4
+    CrimsonPatches::ReduceAirTornadoDamage(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]);
     CrimsonGameplay::DanteDownertia(actorBaseAddr);
     CrimsonGameplay::DanteStingerInputCrazyCombo(actorBaseAddr);
     CrimsonGameplay::FixAirStingerCancelTime(actorBaseAddr);
@@ -9454,7 +9455,7 @@ void SetAction(byte8* actorBaseAddr) {
 
 
 		// Swap Beowulf The Hammer and Volcano Inputs if Air Tornado is enabled
-		if (activeCrimsonGameplay.Gameplay.Dante.swapHammerVocalnoInputs && activeCrimsonGameplay.Gameplay.Dante.airTornado) {
+        if (activeCrimsonGameplay.Gameplay.Dante.swapHammerVocalnoInputs && (activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES])) {
 			if ((actorData.action == BEOWULF_THE_HAMMER) && lockOn && (actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) &&
 				(tiltDirection == TILT_DIRECTION::DOWN)) {
 
@@ -9471,7 +9472,8 @@ void SetAction(byte8* actorBaseAddr) {
 
         // Air Tornado  // Taking Swap Logic in mind
         if ((actorData.action == BEOWULF_THE_HAMMER) && (actorData.style == STYLE::SWORDMASTER) &&
-            activeCrimsonGameplay.Gameplay.Dante.airTornado &&
+            activeCrimsonGameplay.Gameplay.General.extramoves && 
+            ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES] &&
             ExpConfig::missionExpDataDante.styleLevels[STYLE::SWORDMASTER] >= 2 &&
             actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
             airCounts.airTornado < 1) {
