@@ -5531,6 +5531,7 @@ struct ShopExperienceHelper {
 
 struct ShopExperienceStyleHelper {
 	const char* name;
+	const char* description;
 	uint32 price;
 	int64 styleid;
 	int64 stylelevel;
@@ -5586,27 +5587,30 @@ ShopExperienceStyleHelper shopHelpersDanteStyle[] = {
 //	{"Quicksilver Level 2", 20000, STYLE::QUICKSILVER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
 //	{"Quicksilver Level 3", 30000, STYLE::QUICKSILVER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
 
-	{"Swordmaster Level 2", 20000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
-	{"Swordmaster Level 3", 30000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES},
-	{"Swordmaster Level 4", 5, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE, UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES,-1},
+	{"Swordmaster Level 2", "",20000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Swordmaster Level 3","", 30000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES},
+	{"Swordmaster Level 4","With Beowulf: Neutral + Style while in air. Reduces Tornado damage across the board. Carries inertia.", 15000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE, UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES,-1},
 	
-	{"Gunslinger Level 2", 20000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
-	{"Gunslinger Level 3", 30000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,-1},
+	{"Gunslinger Level 2", "", 20000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Gunslinger Level 3","", 30000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,-1},
 
-	{"Trickster Level 2", 20000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
-	{"Trickster Level 3", 30000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES},
-	{"Trickster Level 4", 5, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES,-1},
+	{"Trickster Level 2", "",20000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Trickster Level 3", "",30000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES},
+	{"Trickster Level 4", "Lock On + Back to Forward + Style.\n"
+				"Dante Teleports to the Ground near the enemy.",15000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES,-1},
 
-	{"Royal Guard Level 2", 20000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
-	{"Royal Guard Level 3", 30000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES},
-	{"Royal Guard Level 4", 5, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES,-1},
+	{"Royal Guard Level 2", "",20000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Royal Guard Level 3", "",30000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES},
+	{"Royal Guard Level 4", "Royalguard Normal Blocks will consume DT instead, until you're low on DT. This will also prevent Guard Breaks by converting them into Normal Blocks.",15000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES,-1},
 
 
 };
 
 ShopExperienceStyleHelper shopHelpersVergilStyle[] = {
-	{"Dark Slayer Level 2", 20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
-	{"Dark Slayer Level 3", 30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,-1},
+	{"Dark Slayer Level 2", "",20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Dark Slayer Level 3", "",30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES},
+	{"Dark Slayer Level 4", "Allows Vergil to Trick Up instead of Air Tricking when using the Style Button without Lock On.\n"
+				"Similar to DMC5.",15000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES,-1},
 };
 
 
@@ -5949,13 +5953,13 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 
 			// Begin a new row
 			ImGui::BeginGroup();
-			bool result = GUI_Button(helper.name, ImVec2(400.0f * scaleFactorY, 80.0f * scaleFactorY));
+			bool result = GUI_Button(helper.name, ImVec2(320.0f * scaleFactorY, 80.0f * scaleFactorY));
 			if (helper.description != "")
 			{
 				if (ImGui::IsItemHovered()) {
 					ImGui::BeginTooltip();
 					ImGui::SetWindowFontScale(scaleFactorY);
-					ImGui::PushTextWrapPos(400.0f * scaleFactorY);
+					ImGui::PushTextWrapPos(320.0f * scaleFactorY);
 					ImGui::Text(helper.description);
 					ImGui::PopTextWrapPos();
 					ImGui::EndTooltip();
@@ -5991,9 +5995,9 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 			// Display the sell button in a new column
 			ImGui::EndGroup(); // End the group for the current row
 			ImGui::TableNextColumn();
-			if (expData.unlocks[helper.id]) {
+			//if (expData.unlocks[helper.id]) {
 				//check if there's a "next move" and if it's unlocked. That means we shouldn't be able to refund. 
-				condition = ((helper.next > -1) && expData.unlocks[helper.next]);
+				condition = !expData.unlocks[helper.id] ||((helper.next > -1) && expData.unlocks[helper.next]);
 				//if next is a modded move and extra moves is off, ignore that requirement 
 				//if ((helper.next > baseMoveCount) && !activeCrimsonGameplay.Gameplay.General.extramoves)
 					//condition = false;
@@ -6018,7 +6022,7 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 					Sell();
 				}
 				GUI_PopDisable(condition);
-			}
+			//}
 
 
 			
@@ -6108,15 +6112,29 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 
 				// Begin a new row
 				ImGui::BeginGroup();
+				
 
-				if (GUI_Button(helper.name, ImVec2(250.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+				if (GUI_Button(helper.name, ImVec2(200.0f * scaleFactorY, 80.0f * scaleFactorY))) {
 					Buy();
+				}
+
+				if (helper.description != "")
+				{
+					if (ImGui::IsItemHovered()) {
+						ImGui::BeginTooltip();
+						ImGui::SetWindowFontScale(scaleFactorY);
+						ImGui::PushTextWrapPos(180.0f * scaleFactorY);
+						ImGui::Text(helper.description);
+						ImGui::PopTextWrapPos();
+						ImGui::EndTooltip();
+					}
+					//TooltipHelper("(?)", helper.description);
 				}
 
 				GUI_PopDisable(condition);
 
 				// Display price and bullet point in a new column
-				ImGui::SameLine(120);
+				ImGui::SameLine(90);
 
 				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
 				ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
@@ -6135,7 +6153,7 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 				bool sellcondition = !expData.unlocks[helper.moddedunlock];
 				GUI_PushDisable(sellcondition);
 
-				if (GUI_Button("Sell", ImVec2(50.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+				if (GUI_Button("Sell", ImVec2(80.0f * scaleFactorY, 80.0f * scaleFactorY))) {
 					Sell();
 				}
 				GUI_PopDisable(sellcondition);
@@ -6199,14 +6217,14 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 				// Begin a new row
 				ImGui::BeginGroup();
 
-				if (GUI_Button(helper.name, ImVec2(250.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+				if (GUI_Button(helper.name, ImVec2(200.0f * scaleFactorY, 80.0f * scaleFactorY))) {
 					Buy();
 				}
 
 				GUI_PopDisable(condition);
 
 				// Display price and bullet point in a new column
-				ImGui::SameLine(120);
+				ImGui::SameLine(90);
 
 				bool priceCondition = (missionData.redOrbs < rorb_cost_calculated) || condition;
 				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
@@ -6247,7 +6265,7 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 				bool sellcondition = (expData.styleLevels[helper.styleid] != helper.stylelevel) || (helper.moddedchild > -1 && expData.unlocks[helper.moddedchild]);
 				GUI_PushDisable(sellcondition);
 
-				if (GUI_Button("Sell", ImVec2(50.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+				if (GUI_Button("Sell", ImVec2(80.0f * scaleFactorY, 80.0f * scaleFactorY))) {
 					Sell();
 				}
 				GUI_PopDisable(sellcondition);
@@ -11566,7 +11584,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Tornado",
 				activeCrimsonGameplay.Gameplay.Dante.airTornado,
 				queuedCrimsonGameplay.Gameplay.Dante.airTornado,
@@ -11578,7 +11596,7 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "With Beowulf: Neutral + Style while in air. Reduces Tornado damage across the board. Carries inertia.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			GUI_PushDisable(!activeConfig.Actor.enable || !(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]));
 			if (GUI_Checkbox2("Swap Hammer Volcano Inputs",
@@ -11627,7 +11645,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (!activeConfig.Actor.enable) {
 				activeCrimsonGameplay.Gameplay.Dante.dTInfusedRoyalguard = false;
 			}
@@ -11642,7 +11660,7 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "Royalguard Normal Blocks will consume DT instead, until you're low on DT. This will also prevent Guard Breaks by converting them into Normal Blocks.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			// Adding Air Hike section
 			if (GUI_Checkbox2("Air Hike Core Ability",
@@ -11700,7 +11718,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Ground Trick",
 				activeCrimsonGameplay.Gameplay.Dante.groundTrick,
 				queuedCrimsonGameplay.Gameplay.Dante.groundTrick,
@@ -11713,7 +11731,7 @@ void DanteGameplayOptions() {
 				"Dante Teleports to the Ground near the enemy. Requires Trickster level 3.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			if (GUI_Checkbox2("Swap Artemis' Inputs",
 				activeCrimsonGameplay.Gameplay.Dante.swapArtemisMultiLockNormalShot,
@@ -12000,7 +12018,7 @@ void VergilGameplayOptions() {
 				"Jump Cancelling won't interrupt this behavior.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			/*ImGui::TableNextColumn();
 			if (GUI_Checkbox2("Trick Up When Not Locked On",
 				activeCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn,
 				queuedCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn,
@@ -12008,7 +12026,7 @@ void VergilGameplayOptions() {
 			}
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Allows Vergil to Trick Up instead of Air Tricking when using the Style Button without Lock On.\n"
-				"Similar to DMC5.");
+				"Similar to DMC5.");*/
 
 			ImGui::TableNextColumn();
 			GUI_PushDisable(!activeConfig.Actor.enable);
