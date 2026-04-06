@@ -674,6 +674,8 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 		float targetDistXZ = 1.0f;
 		float dirX = 0.0f;
 		float dirZ = 0.0f;
+      float furthestTraveledXZ = 0.0f;
+      float verticalSlopePerXZ = 0.0f;
 	};
 	struct DriveMetadataState {
 		std::unordered_map<uint32, DriveInstanceState> effectsByInstanceId;
@@ -722,10 +724,18 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 			// Lock target height once at projectile spawn if lock-on target exists.
 			if (actorData.lockOnData.targetBaseAddr60 != 0) {
 				auto& enemyActorData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
-				instanceState.lockedTargetY = (std::max)(instanceState.startY, enemyActorData.position.y);
 				const float dx = enemyActorData.position.x - instanceState.startX;
 				const float dz = enemyActorData.position.z - instanceState.startZ;
 				instanceState.targetDistXZ = (std::max)(0.001f, std::sqrt(dx * dx + dz * dz));
+
+				// Cap vertical targeting by angle so very close lock-on targets don't force extreme upward arcs.
+             constexpr float maxVerticalAimAngleDeg = 40.0f;
+				constexpr float degToRad = 0.01745329251994329577f;
+				const float maxVerticalDelta = std::tan(maxVerticalAimAngleDeg * degToRad) * instanceState.targetDistXZ;
+				const float desiredVerticalDelta = (std::max)(0.0f, enemyActorData.position.y - instanceState.startY);
+				instanceState.lockedTargetY = instanceState.startY + (std::min)(desiredVerticalDelta, maxVerticalDelta);
+				instanceState.verticalSlopePerXZ = (instanceState.lockedTargetY - instanceState.startY) / instanceState.targetDistXZ;
+
 				instanceState.hasLockedTargetHeight = true;
 				instanceState.dirX = dx / instanceState.targetDistXZ;
 				instanceState.dirZ = dz / instanceState.targetDistXZ;
@@ -751,19 +761,26 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 			if (state.hasLockedDirection) {
 				// Keep trajectory locked to the initial spawn direction.
 				traveledXZ = (std::max)(0.0f, dx * state.dirX + dz * state.dirZ);
+			}
+
+			// Keep progression monotonic so path never changes mid-flight.
+			traveledXZ = (std::max)(state.furthestTraveledXZ, traveledXZ);
+			state.furthestTraveledXZ = traveledXZ;
+
+			if (state.hasLockedDirection) {
 				matrixPos.x = state.startX + state.dirX * traveledXZ;
 				hitboxPos.x = matrixPos.x;
 				matrixPos.z = state.startZ + state.dirZ * traveledXZ;
 				hitboxPos.z = matrixPos.z;
 			}
-			const float t = std::clamp(traveledXZ / state.targetDistXZ, 0.0f, 1.0f);
-			const float desiredY = state.startY + (state.lockedTargetY - state.startY) * t;
-			matrixPos.y = (std::max)(matrixPos.y, desiredY);
-			hitboxPos.y = (std::max)(hitboxPos.y, desiredY);
+
+            const float desiredY = state.startY + state.verticalSlopePerXZ * traveledXZ;
+            matrixPos.y = desiredY;
+			hitboxPos.y = desiredY;
 		}
 		else {
-			matrixPos.y += 50.0f;
-			hitboxPos.y += 50.0f;
+			matrixPos.y += 120.0f;
+			hitboxPos.y += 120.0f;
 		}
 
 		if (latchedPhase == DriveFxPhase::Part2) {
@@ -772,7 +789,7 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 			float len = std::sqrt(right.x * right.x + right.z * right.z);
 			if (len > 0.0001f) { right.x /= len; right.z /= len; }
 
-			constexpr float leftOffset = -120.0f;
+			constexpr float leftOffset = -100.0f;
 			const float ox = -right.x * leftOffset;
 			const float oz = -right.z * leftOffset;
 
