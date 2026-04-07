@@ -634,6 +634,217 @@ void SetAnnouncerWasHit() {
 	}
 }
 
+namespace DriveCol {
+	// Track effect handles per collision instance
+	enum class DriveFxPhase : uint8_t { Part1, Part2, Part3 };
+	struct DriveInstanceState {
+		EffekseerHandle handle{};
+		DriveFxPhase phase = DriveFxPhase::Part1;
+
+		// Enables custom vertical pathing (Y) for this projectile instance.
+		bool hasLockedTargetHeight = false;
+		// Enables custom horizontal pathing (XZ) for this projectile instance.
+		bool hasLockedDirection = false;
+		// Tracks whether we have previous projectile position for step accumulation.
+		bool hasLastProjectilePos = false;
+
+		// Spawn/start values used to build deterministic pathing.
+		float startY = 0.0f;
+		float lockedTargetY = 0.0f;
+		float startX = 0.0f;
+		float startZ = 0.0f;
+
+		// Last frame projectile world position (for measuring traveled distance this frame).
+		float lastProjectileX = 0.0f;
+		float lastProjectileZ = 0.0f;
+
+		// Horizontal distance to target sampled at spawn (for normalized slope math).
+		float targetDistXZ = 1.0f;
+		// Locked horizontal direction sampled at spawn.
+		float dirX = 0.0f;
+		float dirZ = 0.0f;
+
+		// Monotonic traveled distance along the path; never decreases.
+		float furthestTraveledXZ = 0.0f;
+		// Constant Y increase per 1 unit of XZ travel (fixed at spawn time).
+		float verticalSlopePerXZ = 0.0f;
+	};
+
+	struct DriveMetadataState {
+		std::unordered_map<uint32, DriveInstanceState> effectsByInstanceId;
+	};
+
+	static std::unordered_map<uintptr_t, DriveMetadataState> s_driveEffectsByMetadata;
+	static std::unordered_map<uintptr_t, float> s_lastDriveVerticalSlopeByShooter;
+
+	void HandleDriveCollisionLogic(CollisionDataMetadata* collisionMeta, uintptr_t metadataKey) {
+       // Keep effect loading lazy (first use) so initialization order remains identical to pre-refactor behavior.
+		static constexpr const wchar_t* driveParticlePath = L"Crimson\\vfx\\drive.efkefc";
+		static EffekseerRefHandle driveParticleRef = CrimsonEfk::LoadEffect(driveParticlePath, 40.0f);
+
+		static constexpr const wchar_t* drive2ParticlePath = L"Crimson\\vfx\\drive2.efkefc";
+		static EffekseerRefHandle drive2ParticleRef = CrimsonEfk::LoadEffect(drive2ParticlePath, 40.0f);
+
+		static constexpr const wchar_t* drive3ParticlePath = L"Crimson\\vfx\\drive3.efkefc";
+		static EffekseerRefHandle drive3ParticleRef = CrimsonEfk::LoadEffect(drive3ParticlePath, 40.0f);
+
+		const bool isDriveCollision =
+			reinterpret_cast<uintptr_t>(collisionMeta->dmgDataAddr) == reinterpret_cast<uintptr_t>(appBaseAddr + 0x5CB1E0);
+
+		if (isDriveCollision) {
+			auto& collisionData = *reinterpret_cast<CollisionData*>(collisionMeta->collisionDataAddr);
+			auto& actorData = *reinterpret_cast<PlayerActorData*>(collisionData.playerBaseAddr);
+			auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[actorData.newPlayerIndex].drive : crimsonPlayer[actorData.newPlayerIndex].driveClone;
+
+			auto& metadataState = s_driveEffectsByMetadata[metadataKey];
+
+			// Latch phase at spawn per instanceId inside this metadata stream.
+			if (metadataState.effectsByInstanceId.find(collisionMeta->instanceId) == metadataState.effectsByInstanceId.end()) {
+				const auto desiredPhase = drive.inPart3
+					? DriveFxPhase::Part3
+					: (drive.inPart2 ? DriveFxPhase::Part2 : DriveFxPhase::Part1);
+
+				EffekseerHandle handle{};
+				if (desiredPhase == DriveFxPhase::Part3) {
+                 handle = CrimsonEfk::PlayEffectAtMatrix(drive3ParticleRef, collisionMeta->matrix1, NULL);
+				}
+				else if (desiredPhase == DriveFxPhase::Part2) {
+                 handle = CrimsonEfk::PlayEffectAtMatrix(drive2ParticleRef, collisionMeta->matrix1, NULL);
+				}
+				else {
+                  handle = CrimsonEfk::PlayEffectAtMatrix(driveParticleRef, collisionMeta->matrix1, NULL);
+				}
+
+				DriveInstanceState instanceState{};
+				instanceState.handle = handle;
+				instanceState.phase = desiredPhase;
+				vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
+				vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
+
+				auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
+				instanceState.startX = hitboxPos.x;
+				instanceState.startZ = hitboxPos.z;
+				instanceState.startY = hitboxPos.y + 50.0f;
+				instanceState.lastProjectileX = projectileData.position.x;
+				instanceState.lastProjectileZ = projectileData.position.z;
+				instanceState.hasLastProjectilePos = true;
+
+				// Lock-on logic is evaluated once at projectile spawn.
+				// The result is latched into instanceState so trajectory remains stable afterward.
+				if (actorData.lockOnData.targetBaseAddr60 != 0) {
+					const uintptr_t shooterKey = reinterpret_cast<uintptr_t>(collisionData.playerBaseAddr);
+					auto& enemyActorData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
+					const float dx = enemyActorData.position.x - instanceState.startX;
+					const float dz = enemyActorData.position.z - instanceState.startZ;
+					const float targetDistXZRaw = std::sqrt(dx * dx + dz * dz);
+					instanceState.targetDistXZ = (std::max)(0.001f, targetDistXZRaw);
+
+					// Cap vertical targeting by angle so very close lock-on targets don't force extreme upward arcs.
+					constexpr float maxVerticalAimAngleDeg = 40.0f;
+					constexpr float degToRad = 0.01745329251994329577f;
+					const float maxVerticalDelta = std::tan(maxVerticalAimAngleDeg * degToRad) * instanceState.targetDistXZ;
+					const float desiredVerticalDelta = (std::max)(0.0f, enemyActorData.position.y - instanceState.startY);
+
+					constexpr float minTrackingDistanceXZ = 120.0f;
+					const bool targetTooClose = targetDistXZRaw < minTrackingDistanceXZ;
+					const bool hitsAngleCap = desiredVerticalDelta > maxVerticalDelta;
+
+					// Decision gate:
+					// - Normal case: lock to enemy (custom XZ + custom Y).
+					// - Close/capped case: reuse previous valid vertical slope for this shooter,
+					//   but keep default forward XZ (no custom direction lock).
+					if (!targetTooClose && !hitsAngleCap) {
+						instanceState.lockedTargetY = instanceState.startY + desiredVerticalDelta;
+						instanceState.verticalSlopePerXZ = (instanceState.lockedTargetY - instanceState.startY) / instanceState.targetDistXZ;
+						instanceState.hasLockedTargetHeight = true;
+						instanceState.dirX = dx / instanceState.targetDistXZ;
+						instanceState.dirZ = dz / instanceState.targetDistXZ;
+						instanceState.hasLockedDirection = true;
+						s_lastDriveVerticalSlopeByShooter[shooterKey] = instanceState.verticalSlopePerXZ;
+					}
+					else {
+						auto previousSlopeIt = s_lastDriveVerticalSlopeByShooter.find(shooterKey);
+						if (previousSlopeIt != s_lastDriveVerticalSlopeByShooter.end()) {
+							instanceState.verticalSlopePerXZ = previousSlopeIt->second;
+							instanceState.hasLockedTargetHeight = true;
+							instanceState.hasLockedDirection = false; // keep default forward XZ travel
+						}
+					}
+				}
+
+				metadataState.effectsByInstanceId[collisionMeta->instanceId] = instanceState;
+			}
+
+			auto instanceIt = metadataState.effectsByInstanceId.find(collisionMeta->instanceId);
+			const DriveFxPhase latchedPhase = (instanceIt != metadataState.effectsByInstanceId.end())
+				? instanceIt->second.phase
+				: DriveFxPhase::Part1;
+
+			vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
+			vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
+			// When locked on to an enemy, apply custom trajectory logic to steer towards the target.
+			if (instanceIt != metadataState.effectsByInstanceId.end() && instanceIt->second.hasLockedTargetHeight) {
+				auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
+				auto& state = instanceIt->second;
+
+				// Accumulate horizontal travel by per-frame XZ step length.
+				// This avoids jitter from recomputing from spawn every frame.
+				float traveledXZ = state.furthestTraveledXZ;
+				if (state.hasLastProjectilePos) {
+					const float stepDx = projectileData.position.x - state.lastProjectileX;
+					const float stepDz = projectileData.position.z - state.lastProjectileZ;
+					traveledXZ += std::sqrt(stepDx * stepDx + stepDz * stepDz);
+				}
+				state.lastProjectileX = projectileData.position.x;
+				state.lastProjectileZ = projectileData.position.z;
+				state.hasLastProjectilePos = true;
+
+				// Keep progression monotonic so path never changes mid-flight.
+				traveledXZ = (std::max)(state.furthestTraveledXZ, traveledXZ);
+				state.furthestTraveledXZ = traveledXZ;
+
+				
+
+				// Custom vertical steering along a fixed slope from spawn.
+				const float desiredY = state.startY + state.verticalSlopePerXZ * traveledXZ;
+				matrixPos.y = desiredY;
+				hitboxPos.y = desiredY;
+			}
+			else { // When no enemy is locked-on to, just apply a simple vertical offset to keep particles above the ground.
+				matrixPos.y += 120.0f;
+				hitboxPos.y += 120.0f;
+			}
+
+			if (latchedPhase == DriveFxPhase::Part2) {
+				vec3 right = { collisionMeta->matrix1[0], collisionMeta->matrix1[1], collisionMeta->matrix1[2] };
+				right.y = 0.0f;
+				float len = std::sqrt(right.x * right.x + right.z * right.z);
+				if (len > 0.0001f) { right.x /= len; right.z /= len; }
+
+				constexpr float leftOffset = -80.0f;
+				const float ox = -right.x * leftOffset;
+				const float oz = -right.z * leftOffset;
+
+				auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
+				matrixPos.x += ox; matrixPos.z += oz;
+				hitboxPos.x += ox; hitboxPos.z += oz;
+				//projectileData.position.x += ox; projectileData.position.z += oz;
+				//projectileData.position.x += 200.0f;
+			}
+		}
+		else {
+			// Only stop effect tied to THIS instance (not globally)
+			auto metadataIt = s_driveEffectsByMetadata.find(metadataKey);
+			if (metadataIt != s_driveEffectsByMetadata.end()) {
+				for (auto& kvp : metadataIt->second.effectsByInstanceId) {
+					CrimsonEfk::StopEffect(kvp.second.handle);
+				}
+				s_driveEffectsByMetadata.erase(metadataIt);
+			}
+		}
+	}
+}
+
 float InterceptingCollisions(byte8* metadataAddr, float radius) {
 	auto collisionMeta = reinterpret_cast<CollisionDataMetadata*>(metadataAddr);
 
@@ -651,167 +862,7 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 	// This detour call is placed right before the game writes the radius value for the hitbox, 
 	// so we can check for specific moves and modify their hitbox size if we want to. - Mia
 
-	static constexpr const wchar_t* driveParticlePath = L"Crimson\\vfx\\drive.efkefc";
-	static EffekseerRefHandle driveParticleRef = CrimsonEfk::LoadEffect(driveParticlePath, 40.0f);
-
-	static constexpr const wchar_t* drive2ParticlePath = L"Crimson\\vfx\\drive2.efkefc";
-	static EffekseerRefHandle drive2ParticleRef = CrimsonEfk::LoadEffect(drive2ParticlePath, 40.0f);
-
-	static constexpr const wchar_t* drive3ParticlePath = L"Crimson\\vfx\\drive3.efkefc";
-	static EffekseerRefHandle drive3ParticleRef = CrimsonEfk::LoadEffect(drive3ParticlePath, 40.0f);
-
-	// Track effect handles per collision instance
-	enum class DriveFxPhase : uint8_t { Part1, Part2, Part3 };
-	struct DriveInstanceState {
-		EffekseerHandle handle{};
-		DriveFxPhase phase = DriveFxPhase::Part1;
-		bool hasLockedTargetHeight = false;
-		bool hasLockedDirection = false;
-		float startY = 0.0f;
-		float lockedTargetY = 0.0f;
-		float startX = 0.0f;
-		float startZ = 0.0f;
-		float targetDistXZ = 1.0f;
-		float dirX = 0.0f;
-		float dirZ = 0.0f;
-      float furthestTraveledXZ = 0.0f;
-      float verticalSlopePerXZ = 0.0f;
-	};
-	struct DriveMetadataState {
-		std::unordered_map<uint32, DriveInstanceState> effectsByInstanceId;
-	};
-	static std::unordered_map<uintptr_t, DriveMetadataState> driveEffectsByMetadata;
-
-
-	const bool isDriveCollision =
-		reinterpret_cast<uintptr_t>(collisionMeta->dmgDataAddr) == reinterpret_cast<uintptr_t>(appBaseAddr + 0x5CB1E0);
-
-	if (isDriveCollision) {
-		auto& collisionData = *reinterpret_cast<CollisionData*>(collisionMeta->collisionDataAddr);
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(collisionData.playerBaseAddr);
-		auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[actorData.newPlayerIndex].drive : crimsonPlayer[actorData.newPlayerIndex].driveClone;
-
-		auto& metadataState = driveEffectsByMetadata[metadataKey];
-
-		// Latch phase at spawn per instanceId inside this metadata stream.
-		if (metadataState.effectsByInstanceId.find(collisionMeta->instanceId) == metadataState.effectsByInstanceId.end()) {
-			const auto desiredPhase = drive.inPart3
-				? DriveFxPhase::Part3
-				: (drive.inPart2 ? DriveFxPhase::Part2 : DriveFxPhase::Part1);
-
-			EffekseerHandle handle{};
-			if (desiredPhase == DriveFxPhase::Part3) {
-				handle = CrimsonEfk::PlayEffectAtMatrix(drive3ParticleRef, collisionMeta->matrix1, NULL);
-			}
-			else if (desiredPhase == DriveFxPhase::Part2) {
-				handle = CrimsonEfk::PlayEffectAtMatrix(drive2ParticleRef, collisionMeta->matrix1, NULL);
-			}
-			else {
-				handle = CrimsonEfk::PlayEffectAtMatrix(driveParticleRef, collisionMeta->matrix1, NULL);
-			}
-
-			DriveInstanceState instanceState{};
-			instanceState.handle = handle;
-			instanceState.phase = desiredPhase;
-			vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
-			vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
-
-			auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
-			instanceState.startX = hitboxPos.x;
-			instanceState.startZ = hitboxPos.z;
-			instanceState.startY = hitboxPos.y + 50.0f;
-
-			// Lock target height once at projectile spawn if lock-on target exists.
-			if (actorData.lockOnData.targetBaseAddr60 != 0) {
-				auto& enemyActorData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
-				const float dx = enemyActorData.position.x - instanceState.startX;
-				const float dz = enemyActorData.position.z - instanceState.startZ;
-				instanceState.targetDistXZ = (std::max)(0.001f, std::sqrt(dx * dx + dz * dz));
-
-				// Cap vertical targeting by angle so very close lock-on targets don't force extreme upward arcs.
-             constexpr float maxVerticalAimAngleDeg = 40.0f;
-				constexpr float degToRad = 0.01745329251994329577f;
-				const float maxVerticalDelta = std::tan(maxVerticalAimAngleDeg * degToRad) * instanceState.targetDistXZ;
-				const float desiredVerticalDelta = (std::max)(0.0f, enemyActorData.position.y - instanceState.startY);
-				instanceState.lockedTargetY = instanceState.startY + (std::min)(desiredVerticalDelta, maxVerticalDelta);
-				instanceState.verticalSlopePerXZ = (instanceState.lockedTargetY - instanceState.startY) / instanceState.targetDistXZ;
-
-				instanceState.hasLockedTargetHeight = true;
-				instanceState.dirX = dx / instanceState.targetDistXZ;
-				instanceState.dirZ = dz / instanceState.targetDistXZ;
-				instanceState.hasLockedDirection = true;
-			}
-
-			metadataState.effectsByInstanceId[collisionMeta->instanceId] = instanceState;
-		}
-
-		auto instanceIt = metadataState.effectsByInstanceId.find(collisionMeta->instanceId);
-		const DriveFxPhase latchedPhase = (instanceIt != metadataState.effectsByInstanceId.end())
-			? instanceIt->second.phase
-			: DriveFxPhase::Part1;
-
-		vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
-		vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
-		if (instanceIt != metadataState.effectsByInstanceId.end() && instanceIt->second.hasLockedTargetHeight) {
-			auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
-			auto& state = instanceIt->second;
-			const float dx = projectileData.position.x - state.startX;
-			const float dz = projectileData.position.z - state.startZ;
-			float traveledXZ = std::sqrt(dx * dx + dz * dz);
-			if (state.hasLockedDirection) {
-				// Keep trajectory locked to the initial spawn direction.
-				traveledXZ = (std::max)(0.0f, dx * state.dirX + dz * state.dirZ);
-			}
-
-			// Keep progression monotonic so path never changes mid-flight.
-			traveledXZ = (std::max)(state.furthestTraveledXZ, traveledXZ);
-			state.furthestTraveledXZ = traveledXZ;
-
-			if (state.hasLockedDirection) {
-				matrixPos.x = state.startX + state.dirX * traveledXZ;
-				hitboxPos.x = matrixPos.x;
-				matrixPos.z = state.startZ + state.dirZ * traveledXZ;
-				hitboxPos.z = matrixPos.z;
-			}
-
-            const float desiredY = state.startY + state.verticalSlopePerXZ * traveledXZ;
-            matrixPos.y = desiredY;
-			hitboxPos.y = desiredY;
-		}
-		else {
-			matrixPos.y += 120.0f;
-			hitboxPos.y += 120.0f;
-		}
-
-		if (latchedPhase == DriveFxPhase::Part2) {
-			vec3 right = { collisionMeta->matrix1[0], collisionMeta->matrix1[1], collisionMeta->matrix1[2] };
-			right.y = 0.0f;
-			float len = std::sqrt(right.x * right.x + right.z * right.z);
-			if (len > 0.0001f) { right.x /= len; right.z /= len; }
-
-			constexpr float leftOffset = -100.0f;
-			const float ox = -right.x * leftOffset;
-			const float oz = -right.z * leftOffset;
-
-			auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
-			matrixPos.x += ox; matrixPos.z += oz;
-			hitboxPos.x += ox; hitboxPos.z += oz;
-			//projectileData.position.x += ox; projectileData.position.z += oz;
-			//projectileData.position.x += 200.0f;
-
-		}
-
-	}
-	else {
-		// Only stop effect tied to THIS instance (not globally)
-		auto metadataIt = driveEffectsByMetadata.find(metadataKey);
-		if (metadataIt != driveEffectsByMetadata.end()) {
-			for (auto& kvp : metadataIt->second.effectsByInstanceId) {
-				CrimsonEfk::StopEffect(kvp.second.handle);
-			}
-			driveEffectsByMetadata.erase(metadataIt);
-		}
-	}
+	DriveCol::HandleDriveCollisionLogic(collisionMeta, metadataKey);
 
 	// Yamato High Time hitbox increase
 	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x66640;
