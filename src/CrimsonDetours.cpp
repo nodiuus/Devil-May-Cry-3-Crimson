@@ -860,7 +860,9 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 	// which points to the collisionMetadata struct. For attack hitboxes, it will usually end at ...0x420 (for Vergil) and 0x760 (for Dante).
 	// so just look at the relation between moveOffsetAddr (+0x20) and the playerAddr to get the hitbox offset for each move.
 	// This detour call is placed right before the game writes the radius value for the hitbox, 
-	// so we can check for specific moves and modify their hitbox size if we want to. - Mia
+	// so we can check for specific moves and modify their hitbox size if we want to.
+	// Conversely, we can also use the dmgDatastruct and playerAddr present in the Collision Structs to id them (more reliable). 
+	// - Mia
 
 	DriveCol::HandleDriveCollisionLogic(collisionMeta, metadataKey);
 

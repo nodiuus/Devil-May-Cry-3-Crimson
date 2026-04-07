@@ -1487,7 +1487,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
 	static constexpr const wchar_t* jdcChargeParticlePath = L"Crimson\\vfx\\jdc_charge.efkefc";
-	static constexpr const wchar_t* jdcChargeDTParticlePath = L"Crimson\\vfx\\jdc_charge_DT.efkefc";
 	static EffekseerRefHandle chargeParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 1.0f);
 	static EffekseerRefHandle chargeDTParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge_dt.efkefc", 1.0f);
 
@@ -1599,14 +1598,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.swordcDraw); // first cDraw is the katana part
 				Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[0].bones); // index 1 is the hilt
-				if (actorData.activeModelIndexMirror > 0) {
-					chargeDTParticleRef = CrimsonEfk::ReloadEffect(chargeDTParticleRef, jdcChargeDTParticlePath, 1.0f);
-					chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeDTParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
-				}
-				else {
-					chargeParticleRef = CrimsonEfk::ReloadEffect(chargeParticleRef, jdcChargeParticlePath, 1.0f);
-					chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
-				}
+				chargeParticleRef = CrimsonEfk::ReloadEffect(chargeParticleRef, jdcChargeParticlePath, 1.0f);
+				chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
+				
 				
 				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 
