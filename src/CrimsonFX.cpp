@@ -536,7 +536,7 @@ void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHa
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\gunslinger.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\trickster.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\royalguard.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quickcsilver.efkefc"
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quicksilver.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\doppelganger.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\darkslayer.efkefc",
 	};
@@ -546,7 +546,7 @@ void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHa
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\gunslinger_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\trickster_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\royalguard_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quickcsilver_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quicksilver_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\doppelganger_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\crimsonvers\\darkslayer_swoosh.efkefc",
 	};
@@ -590,7 +590,7 @@ void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\gunslinger.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\trickster.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\royalguard.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quickcsilver.efkefc"
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quicksilver.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\doppelganger.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\darkslayer.efkefc",
 	};
@@ -600,7 +600,7 @@ void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\gunslinger_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\trickster_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\royalguard_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quickcsilver_swoosh.efkefc",
+			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quicksilver_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\doppelganger_swoosh.efkefc",
 			L"Crimson\\vfx\\styleswitch\\nswitchvers\\darkslayer_swoosh.efkefc",
 	};
