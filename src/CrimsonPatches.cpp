@@ -270,6 +270,25 @@ void RainstormLift(bool enable) {
 	run = enable;
 }
 
+void DriveProjectileThroughWalls(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1CBA20 - C6 02 05 - mov byte ptr [rdx],05 { DriveCollisionFile wallpenetrationflag }
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x1CBA20), (char*)"\xC6\x02\x03", 3);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x1CBA20), (char*)"\xC6\x02\x05", 3);
+	}
+
+	run = enable;
+}
+
 void ToggleIncreasedEnemyJuggleTime(bool enable) {
 	static bool run = false;
 

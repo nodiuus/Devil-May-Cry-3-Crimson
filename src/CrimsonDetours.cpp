@@ -678,6 +678,9 @@ namespace DriveCol {
 	static std::unordered_map<uintptr_t, float> s_lastDriveVerticalSlopeByShooter;
 
 	void HandleDriveCollisionLogic(CollisionDataMetadata* collisionMeta, uintptr_t metadataKey) {
+		if (!activeCrimsonGameplay.Gameplay.Dante.driveRework) {
+			return;
+		}
        // Keep effect loading lazy (first use) so initialization order remains identical to pre-refactor behavior.
 		static constexpr const wchar_t* driveParticlePath = L"Crimson\\vfx\\drive.efkefc";
 		static EffekseerRefHandle driveParticleRef = CrimsonEfk::LoadEffect(driveParticlePath, 40.0f);
@@ -740,7 +743,7 @@ namespace DriveCol {
 					instanceState.targetDistXZ = (std::max)(0.001f, targetDistXZRaw);
 
 					// Cap vertical targeting by angle so very close lock-on targets don't force extreme upward arcs.
-					constexpr float maxVerticalAimAngleDeg = 40.0f;
+					constexpr float maxVerticalAimAngleDeg = 30.0f;
 					constexpr float degToRad = 0.01745329251994329577f;
 					const float maxVerticalDelta = std::tan(maxVerticalAimAngleDeg * degToRad) * instanceState.targetDistXZ;
 					const float desiredVerticalDelta = (std::max)(0.0f, enemyActorData.position.y - instanceState.startY);
@@ -831,6 +834,10 @@ namespace DriveCol {
 				//projectileData.position.x += ox; projectileData.position.z += oz;
 				//projectileData.position.x += 200.0f;
 			}
+
+// 			auto& collisionFile = *reinterpret_cast<uint32*>(collisionMeta->files[0]);
+// 			collisionFile = 3; // Allows Drive collision go through walls
+			//collisionMeta->mode = 6; // Allows Drive collision go through walls
 		}
 		else {
 			// Only stop effect tied to THIS instance (not globally)

@@ -15,6 +15,7 @@ void ImprovedBufferedReversals(bool enable);
 void DisableJCRestriction(bool enable);
 void BulletStop(bool enable);
 void RainstormLift(bool enable);
+void DriveProjectileThroughWalls(bool enable);
 void ToggleIncreasedEnemyJuggleTime(bool enable);
 void DisableAirSlashKnockback(bool enable);
 void ToggleIncreasedArtemisInstantChargeResponsiveness(bool enable);

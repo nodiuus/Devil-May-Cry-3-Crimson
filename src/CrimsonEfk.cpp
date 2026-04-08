@@ -944,13 +944,16 @@ public:
         ImGui::SliderInt("RtIndex:", &g_rt_index, 0, 28);
         ImGui::SliderInt("effect_id", &effect_id, 0, 255);
         // Capture current render target and depth buffer from game
-        Devil3::sRender* render = (Devil3::sRender*)0x140C0B410;
-        ID3D11RenderTargetView* pRTV = nullptr;
-        ID3D11DepthStencilView* pDSV = nullptr;
-        pDSV = render->renderTargets[g_rt_index].depthStencilView;
-        pRTV = render->renderTargets[g_rt_index].renderTargetView;
-        ImGui::Text("pDSV: %p", pDSV);
-        ImGui::Text("pRTV: %p", pRTV);
+        Devil3::sRender* render = reinterpret_cast<Devil3::sRender*>(0x140C0B410);
+        if (render) {
+            ID3D11RenderTargetView* pRTV = nullptr;
+            ID3D11DepthStencilView* pDSV = nullptr;
+            pDSV = render->renderTargets[g_rt_index].depthStencilView;
+            pRTV = render->renderTargets[g_rt_index].renderTargetView;
+
+            ImGui::Text("pDSV: %p", pDSV);
+            ImGui::Text("pRTV: %p", pRTV);
+        }
 //      ImGui::InputFloat("znear:", &EFK_Z_NEAR, -1000.0f, 40000.0f, "%.3f");
 //      ImGui::InputFloat("zfar:", &EFK_Z_FAR, -1000.0f, 1000.0f, "%.3f");
 //      ImGui::SliderFloat("znear_render:", &EFK_Z_NEAR_RENDER, -1000.0f, 1000.0f, "%.3f");
