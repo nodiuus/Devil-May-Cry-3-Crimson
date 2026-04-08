@@ -2494,6 +2494,23 @@ struct Matrix44 {
 
 //static_assert(sizeof(Matrix44) == 0x40);
 
+struct DamageData {
+    uint32 knockbackAnimation; // 0x0
+    _(8);
+    float projectileDamage; // 0xC
+    _(4);
+    float displacement; // 0x14
+    float angle; // 0x18
+    _(36);
+    float knockbackSpeed; // 0x40
+};
+
+static_assert(offsetof(DamageData, knockbackAnimation) == 0x0);
+static_assert(offsetof(DamageData, projectileDamage) == 0xC);
+static_assert(offsetof(DamageData, displacement) == 0x14);
+static_assert(offsetof(DamageData, angle) == 0x18);
+static_assert(offsetof(DamageData, knockbackSpeed) == 0x40);
+
 // $CollisionDataMetadataStart
 
 struct CollisionDataMetadata {

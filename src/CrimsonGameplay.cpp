@@ -4076,7 +4076,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     if ((actorData.action == REBELLION_DRIVE_1) &&
         (actorData.motionData[0].index == 17 || actorData.motionData[0].index == 18)) {
         drive.runLevelTimer = true;
-	} else if (actorData.action != REBELLION_DRIVE_1 || actorData.motionData[0].index == 19) {
+	} else if (actorData.action != REBELLION_DRIVE_1) {
 		drive.runLevelTimer = false;
 	}
 
@@ -4091,10 +4091,10 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
 
 	// Incrementing level timer
-	if (drive.runLevelTimer) {
+	if (drive.runLevelTimer && (actorData.motionData[0].index == 17 || actorData.motionData[0].index == 18)) {
 		drive.levelTimer += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
 	}
-	else {
+	else if (!drive.runLevelTimer) {
 		drive.levelTimer = 0.0f;
 	}
 

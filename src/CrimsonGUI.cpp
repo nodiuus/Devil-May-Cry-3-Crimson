@@ -8736,8 +8736,8 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
-			ImGui::Text("drive level2Effect : %d", crimsonPlayer[0].drive.inPart2);
-			ImGui::Text("drive level3Effect : %d", crimsonPlayer[0].drive.inPart3);
+			ImGui::Text("drive inPart2 : %d", crimsonPlayer[0].drive.inPart2);
+			ImGui::Text("drive inPart3 : %d", crimsonPlayer[0].drive.inPart3);
 			ImGui::Text("yamatoHighTimeClone : %d", crimsonPlayer[0].inYamatoHighTimeClone);
 			ImGui::Text("yamatoMotionState : %d", actorData.weaponMotionState[7]);
 			ImGui::Text("airSwordAttackCount : %d", actorData.airSwordAttackCount);
