@@ -4014,7 +4014,7 @@ void ToggleRebellionHoldDrive(bool enable) {
 
 void DanteDriveRework(byte8* actorBaseAddr) {
     // This function alters some of Drive, it alters its damage to accommodate new "Charge Levels", mimicing DMC4/5 Drive behaviour.
-
+	// Custom new Drive Collision logic present in HandleDriveCollision in CrimsonDetours.cpp
     using namespace ACTION_DANTE;
 
     if (!actorBaseAddr) {

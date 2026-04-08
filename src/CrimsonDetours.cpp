@@ -743,7 +743,7 @@ namespace DriveCol {
 					instanceState.targetDistXZ = (std::max)(0.001f, targetDistXZRaw);
 
 					// Cap vertical targeting by angle so very close lock-on targets don't force extreme upward arcs.
-					constexpr float maxVerticalAimAngleDeg = 30.0f;
+					constexpr float maxVerticalAimAngleDeg = 38.0f;
 					constexpr float degToRad = 0.01745329251994329577f;
 					const float maxVerticalDelta = std::tan(maxVerticalAimAngleDeg * degToRad) * instanceState.targetDistXZ;
 					const float desiredVerticalDelta = (std::max)(0.0f, enemyActorData.position.y - instanceState.startY);
