@@ -8736,8 +8736,9 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
-			ImGui::Text("inertiaRotation : % g", actorData.inertiaRotation);
-			ImGui::Text("inertiaRotation2 : % g", actorData.inertiaRotation2);
+			ImGui::Text("ACTION:  %u", actorData.action);
+			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
+			ImGui::Text("inertiaRotation : % x", actorData.inertiaRotation);
 			ImGui::Text("drive inPart2 : %d", crimsonPlayer[0].drive.inPart2);
 			ImGui::Text("drive inPart3 : %d", crimsonPlayer[0].drive.inPart3);
 			ImGui::Text("yamatoHighTimeClone : %d", crimsonPlayer[0].inYamatoHighTimeClone);
@@ -8752,7 +8753,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("meleeHold jcut %g", crimsonPlayer[0].jCut.meleeButtonHold);
 			ImGui::Text("meleeHold stinger %g", crimsonPlayer[0].stingerInput.meleeButtonHold);
 			ImGui::Text("melee Released Stinger %u", crimsonPlayer[0].stingerInput.meleeReleasedStinger);
-			ImGui::Text("ACTION:  %u", actorData.action);
 			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
 			ImGui::Text("action Timer Trick not change:  %g", crimsonPlayer[0].actionTimerNotTrickChange);
 			ImGui::Text("Event Data %u", actorData.eventData[0].event);

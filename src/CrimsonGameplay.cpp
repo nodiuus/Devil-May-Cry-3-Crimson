@@ -45,6 +45,11 @@
 
 namespace CrimsonGameplay {
 
+static bool IsActiveCharacterActor(const PlayerActorData& actorData) {
+	auto& playerData = GetPlayerData(actorData.newPlayerIndex);
+	return (actorData.newCharacterIndex == playerData.activeCharacterIndex);
+}
+
 #pragma region CrimsonPlayers
 
 void UpdateCrimsonPlayerData() {
@@ -184,6 +189,7 @@ void FixAirStingerCancelTime(byte8* actorBaseAddr) {
 	using namespace ACTION_VERGIL;
 	if (!actorBaseAddr) return;
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+   if (!IsActiveCharacterActor(actorData)) return;
 	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto inAir = (actorData.state & STATE::IN_AIR);
@@ -234,6 +240,7 @@ void DanteStingerInputCrazyCombo(byte8* actorBaseAddr) {
 	using namespace ACTION_DANTE;
 	if (!actorBaseAddr) return;
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
 
 	auto playerIndex = actorData.newPlayerIndex; // simply using actorData.newPlayerIndex also works here.
 	auto entityIndex = actorData.newEntityIndex;
@@ -289,6 +296,12 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& playerData = GetPlayerData(playerIndex);
+
+	if (actorData.newCharacterIndex != playerData.activeCharacterIndex) {
+		return;
+	}
 
     auto& gamepad = GetGamepad(actorData.newPlayerIndex);
 
@@ -297,7 +310,6 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     auto inAir = (actorData.state & STATE::IN_AIR);
 
     auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-    auto playerIndex = actorData.newPlayerIndex;
     auto& actionTimer = (actorData.newEntityIndex == 0) ? 
         crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
 	auto& actorCancels = (actorData.newEntityIndex == 0) ?
@@ -306,6 +318,8 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
         crimsonPlayer[playerIndex].storedAirCounts : crimsonPlayer[playerIndex].storedAirCountsClone;
 	auto& airCounts = (actorData.newEntityIndex == 0) ?
 		crimsonPlayer[playerIndex].airCounts : crimsonPlayer[playerIndex].airCountsClone;
+	auto& bulletMagnetism = (actorData.newEntityIndex == 0) ?
+		crimsonPlayer[playerIndex].bulletMagnetism : crimsonPlayer[playerIndex].bulletMagnetismClone;
 
 	if ((actorData.action == CERBERUS_REVOLVER_LEVEL_1 || actorData.action == CERBERUS_REVOLVER_LEVEL_2) && actorCancels.revolverTimer < 1.1f) {
 		if (inAir) {
@@ -467,6 +481,48 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
         }
     }
 
+	if (actorData.character == CHARACTER::DANTE) {
+		static bool prevShootButton[PLAYER_COUNT][ENTITY_COUNT] = {};
+		auto entityIndex = actorData.newEntityIndex;
+		bool shootButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::SHOOT)) != 0;
+		bool shootButtonPressed = shootButtonDown && !prevShootButton[playerIndex][entityIndex];
+		prevShootButton[playerIndex][entityIndex] = shootButtonDown;
+		bool inEbonyAirShot = (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT);
+
+		if (inEbonyAirShot) {
+			if (shootButtonPressed) {
+				bulletMagnetism.gunButtonTimer = 0.0f;
+			}
+			else {
+				bulletMagnetism.gunButtonTimer += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+			}
+		}
+		else {
+			bulletMagnetism.gunButtonTimer = 0.0f;
+		}
+		// gunButtonTimer only runs in E&I Air Normal Shot and resets on shoot press.
+
+		// Bullet Magnetism
+		if (inEbonyAirShot && bulletMagnetism.gunButtonTimer >= 0.21667f) {
+			// Rotations use uint16 angle-space: 0..65535 maps to 0..2pi radians.
+			// Subtract in uint16-space first to preserve wraparound (modular angle subtraction).
+			int32 rotationDelta = static_cast<int32>(static_cast<uint16>(actorData.inertiaRotation - actorData.rotation));
+			if (rotationDelta > 0x7FFF) {
+				// Recenter to signed shortest-arc delta.
+				rotationDelta -= 0x10000;
+			}
+			int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
+
+			// Now we detect if player is going backwards relative to their inertia direction, 
+			// which would be indicated by a rotation delta greater than 90° (0x4000 in uint16-space).
+			
+			if (rotationDeltaAbs > 0x4000) {
+				// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
+				actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
+			}
+		}
+	}
+
 	// Reset ROYAL MAGNETISM availability when touching the ground or JCing.
 	if (actorData.state == 65537 || actorData.eventData[0].event == ACTOR_EVENT::LANDING || 
 		actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL || actorData.eventData[0].event == ACTOR_EVENT::JUMP ||
@@ -489,6 +545,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
     auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
     auto tiltDirection = GetRelativeTiltDirection(actorData);
     auto playerIndex = actorData.newPlayerIndex;
@@ -801,6 +858,7 @@ void DarkslayerCancelsVergilController(byte8* actorBaseAddr) {
 	}
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -895,6 +953,7 @@ void AirStingerJumpCancel(byte8* actorBaseAddr) {
 		return;
 	}
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
 	
 	auto playerIndex = actorData.newPlayerIndex;
 
@@ -955,6 +1014,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+   if (!IsActiveCharacterActor(actorData)) return;
     if (actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
@@ -1112,6 +1172,7 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	//}
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+   if (!IsActiveCharacterActor(actorData)) return;
     if (actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
@@ -1451,6 +1512,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
 	if (!activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework || actorData.character != CHARACTER::VERGIL) {
 		return;
 	}
@@ -1729,6 +1791,7 @@ void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
     }
 
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
     auto playerIndex = actorData.newPlayerIndex;
     auto entityIndex = actorData.newEntityIndex;
     auto& playerData = GetPlayerData(playerIndex);
@@ -1770,6 +1833,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+   if (!IsActiveCharacterActor(actorData)) return;
     if (actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
@@ -2079,6 +2143,7 @@ void LastEventStateQueue(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
     auto playerIndex = actorData.newPlayerIndex;
 
 
@@ -3799,6 +3864,7 @@ void DetectCloseToEnemy(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto& closeToEnemy = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].isCloseToEnemy : crimsonPlayer[playerIndex].isCloseToEnemyClone;
@@ -3923,6 +3989,7 @@ void ApplySkyLaunchProperties(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+    if (!IsActiveCharacterActor(actorData)) return;
     if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
     auto playerIndex = actorData.newPlayerIndex;
     auto& action      = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].action : crimsonPlayer[playerIndex].actionClone;
@@ -4021,6 +4088,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
     CrimsonDetours::ToggleDisableDriveHold(activeCrimsonGameplay.Gameplay.Dante.driveRework);
 	CrimsonPatches::DriveProjectileThroughWalls(activeCrimsonGameplay.Gameplay.Dante.driveRework);
     if (!activeCrimsonGameplay.Gameplay.Dante.driveRework || actorData.character != CHARACTER::DANTE) return;
@@ -4263,6 +4331,7 @@ void GroundTrickFlagSet(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+   if (!IsActiveCharacterActor(actorData)) return;
 	if (!(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::TRICKSTER_MODDED_MOVES])) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto& b2F = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].b2F : crimsonPlayer[playerIndex].b2FClone;

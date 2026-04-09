@@ -5491,6 +5491,10 @@ struct DanteStingerInput {
     bool meleeReleasedStinger = false;
 };
 
+struct BulletMagnetism {
+    float gunButtonTimer = 0;
+};
+
 extern bool inRoyalBlock;
 extern bool inGuardfly;
 extern float rainstormPull;
@@ -5593,6 +5597,7 @@ struct CrimsonPlayerData {
     EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
     DanteStingerInput stingerInput;
+    BulletMagnetism bulletMagnetism;
 
     uintptr_t clonePtr;
     uint8 actionClone     = 0;
@@ -5662,6 +5667,7 @@ struct CrimsonPlayerData {
     EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
     DanteStingerInput stingerInputClone;
+    BulletMagnetism bulletMagnetismClone;
 };
 
 extern CrimsonPlayerData crimsonPlayer[20];
