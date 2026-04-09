@@ -5491,6 +5491,11 @@ struct DanteStingerInput {
     bool meleeReleasedStinger = false;
 };
 
+struct VergilRisingStarInput {
+    float meleeButtonHold = 0.0f;
+	bool meleeReleasedRisingStar = false;
+};
+
 struct BulletMagnetism {
     float gunButtonTimer = 0;
 };
@@ -5597,6 +5602,7 @@ struct CrimsonPlayerData {
     EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
     DanteStingerInput stingerInput;
+	VergilRisingStarInput risingStarInput;
     BulletMagnetism bulletMagnetism;
 
     uintptr_t clonePtr;
@@ -5667,6 +5673,7 @@ struct CrimsonPlayerData {
     EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
     DanteStingerInput stingerInputClone;
+	VergilRisingStarInput risingStarInputClone;
     BulletMagnetism bulletMagnetismClone;
 };
 

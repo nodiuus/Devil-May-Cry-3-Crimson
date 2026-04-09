@@ -50,6 +50,55 @@ static bool IsActiveCharacterActor(const PlayerActorData& actorData) {
 	return (actorData.newCharacterIndex == playerData.activeCharacterIndex);
 }
 
+template <typename T> bool CanQueueMeleeAttack(T& actorData) {
+	using namespace NEXT_ACTION_REQUEST_POLICY;
+
+	auto& policy = actorData.nextActionRequestPolicy[MELEE_ATTACK];
+
+	if ((policy == BUFFER) || (policy == EXECUTE)) {
+		return true;
+	}
+
+	return false;
+}
+
+template <typename T> bool CanQueueStyleAction(T& actorData) {
+	using namespace NEXT_ACTION_REQUEST_POLICY;
+
+	switch (actorData.style) {
+	case STYLE::SWORDMASTER:
+	case STYLE::GUNSLINGER: {
+		auto& policy = actorData.nextActionRequestPolicy[SWORDMASTER_GUNSLINGER];
+
+		if ((policy == BUFFER) || (policy == EXECUTE)) {
+			return true;
+		}
+
+		break;
+	}
+	case STYLE::TRICKSTER: {
+		auto& policy = actorData.nextActionRequestPolicy[TRICKSTER_DARK_SLAYER];
+
+		if ((policy == BUFFER) || (policy == EXECUTE)) {
+			return true;
+		}
+
+		break;
+	}
+	case STYLE::ROYALGUARD: {
+		auto& policy = actorData.nextActionRequestPolicy[ROYALGUARD];
+
+		if ((policy == BUFFER) || (policy == EXECUTE)) {
+			return true;
+		}
+
+		break;
+	}
+	}
+
+	return false;
+}
+
 #pragma region CrimsonPlayers
 
 void UpdateCrimsonPlayerData() {
@@ -256,7 +305,8 @@ void DanteStingerInputCrazyCombo(byte8* actorBaseAddr) {
 		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
 	auto motionIndex = actorData.motionData[0].index;
 	// --- Melee button hold timer ---
-	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : crimsonPlayer[playerIndex].stingerInputClone;
+	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : 
+		crimsonPlayer[playerIndex].stingerInputClone;
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
 
 	if (meleeDown) {
@@ -984,6 +1034,8 @@ void VergilRisingStar(byte8* actorBaseAddr) {
         crimsonPlayer[playerIndex].inRisingStarClone;
 	auto& inYamatoHighTime = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
 		crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	auto& risingStarInput = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].risingStarInput :
+		crimsonPlayer[playerIndex].risingStarInputClone;
 	static bool applied[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	auto& apply = applied[playerIndex][entityIndex];
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
@@ -1003,24 +1055,23 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	static EffekseerHandle risingStarParticleHandle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 
 	// --- Melee button hold timer ---
-	static float meleeButtonHold[PLAYER_COUNT][ENTITY_COUNT] = {};
 	constexpr float MELEE_HOLD_TIME = 0.2f; // 200 ms
 
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
 
 	if (meleeDown) {
-		meleeButtonHold[playerIndex][entityIndex] += ImGui::GetIO().DeltaTime;
+		risingStarInput.meleeButtonHold += ImGui::GetIO().DeltaTime;
 	} else {
-		meleeButtonHold[playerIndex][entityIndex] = 0.0f;
+		risingStarInput.meleeButtonHold = 0.0f;
 	}
 
 	static bool meleeReleasedDuringRapidSlash[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_2) {
 		if (!meleeDown && actionTimer > 0.05f) { // Short grace period
-			meleeReleasedDuringRapidSlash[playerIndex][entityIndex] = true;
+			risingStarInput.meleeReleasedRisingStar = true;
 		}
-	} else {
-		meleeReleasedDuringRapidSlash[playerIndex][entityIndex] = false;
+	} else if (actionTimer <= 0.0f) {
+		risingStarInput.meleeReleasedRisingStar = false;
 	}
 	// ------------------------------
 
@@ -1046,14 +1097,14 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	bool canTransition =
 		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
 		actionTimer > 0.52f && actionTimer < 0.60f &&
-		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME &&
-		!meleeReleasedDuringRapidSlash[playerIndex][entityIndex];
+		risingStarInput.meleeButtonHold >= MELEE_HOLD_TIME &&
+		!risingStarInput.meleeReleasedRisingStar;
 
 	bool canTransitionClose =
 		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
 		closeEnemy &&
-		meleeButtonHold[playerIndex][entityIndex] >= MELEE_HOLD_TIME &&
-		!meleeReleasedDuringRapidSlash[playerIndex][entityIndex];
+		risingStarInput.meleeButtonHold >= MELEE_HOLD_TIME &&
+		!risingStarInput.meleeReleasedRisingStar;;
 
 	// Only allow transition once per action
 	if ((canTransition || canTransitionClose)) {
@@ -1107,9 +1158,9 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 
 	// Complementing Guetto Yamato vfx by hiding the sword during Rising Star and Yamato High Time since the 
 	// sword isn't parented to the hand's bone properly (and needs animation).
-// 	static bool shouldHide[PLAYER_COUNT][ENTITY_COUNT];
-// 	shouldHide[playerIndex][entityIndex] = inRisingStar || inYamatoHighTime;
-// 	vergilSwordcDraw[0].visible = !shouldHide[playerIndex][entityIndex];
+	// 	static bool shouldHide[PLAYER_COUNT][ENTITY_COUNT];
+	// 	shouldHide[playerIndex][entityIndex] = inRisingStar || inYamatoHighTime;
+	// 	vergilSwordcDraw[0].visible = !shouldHide[playerIndex][entityIndex];
 }
 
 void VergilYamatoHighTime(byte8* actorBaseAddr) {
@@ -2250,6 +2301,136 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	} else {
 		if (actorData.eventData[0].lastEvent == ACTOR_EVENT::ATTACK) {
 			currentMove = 0;  // Reset move tracking after the attack
+		}
+	}
+}
+
+void ConsecutiveDirectionalAttacks(byte8* actorBaseAddr) {
+	using namespace ACTION_DANTE;
+	using namespace ACTION_VERGIL;
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
+	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
+	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto& gamepad = GetGamepad(playerIndex);
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+	auto radius = gamepad.leftStickRadius;
+	auto& actionTimer = (entityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
+	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput :
+		crimsonPlayer[playerIndex].stingerInputClone;
+	auto& risingStarInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].risingStarInput :
+		crimsonPlayer[playerIndex].risingStarInputClone;
+
+	static bool prevMeleeButton[PLAYER_COUNT][ENTITY_COUNT] = {};
+	bool meleeButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+	bool meleeButtonPressed = meleeButtonDown && !prevMeleeButton[playerIndex][entityIndex];
+	prevMeleeButton[playerIndex][entityIndex] = meleeButtonDown;
+
+	if (actorData.character == CHARACTER::DANTE) {
+		// Consecutive Stinger level 2
+		if (lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == REBELLION_STINGER_LEVEL_2 &&
+			actionTimer >= 0.78f && meleeButtonPressed && CanQueueMeleeAttack(actorData)) {
+
+			actorData.action = REBELLION_STINGER_LEVEL_2;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+			stingerInput.meleeReleasedStinger = false;
+		}
+
+		// Consecutive Stinger level 1
+		if (lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == REBELLION_STINGER_LEVEL_1 &&
+			actionTimer >= 0.38f && meleeButtonPressed && CanQueueMeleeAttack(actorData)) {
+
+			actorData.action = REBELLION_STINGER_LEVEL_1;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+			stingerInput.meleeReleasedStinger = false;
+		}
+
+		// Override Serp's Stinger lvl 1 Intersperse
+		if (actorData.action == REBELLION_STINGER_LEVEL_1 && 
+			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2]) {
+			actorData.action = REBELLION_STINGER_LEVEL_2;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			stingerInput.meleeReleasedStinger = false;
+		}
+
+		// Consecutive High Times
+		if (lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == REBELLION_HIGH_TIME &&
+			meleeButtonPressed && actionTimer >= 0.5f && CanQueueMeleeAttack(actorData)) {
+			actorData.action = REBELLION_HIGH_TIME;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+		}
+	}
+	else if (actorData.character == CHARACTER::VERGIL) {
+		// Consecutive Rapid Slash level 2
+		if (lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 &&
+			actionTimer >= 0.78f && meleeButtonPressed && CanQueueMeleeAttack(actorData)) {
+
+			actorData.action = YAMATO_RAPID_SLASH_LEVEL_2;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+			risingStarInput.meleeReleasedRisingStar = false;
+		}
+
+		// Consecutive Rapid Slash level 1
+		if (lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 &&
+			actionTimer >= 0.38f && meleeButtonPressed && CanQueueMeleeAttack(actorData)) {
+
+			actorData.action = YAMATO_RAPID_SLASH_LEVEL_1;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+			risingStarInput.meleeReleasedRisingStar = false;
+		}
+
+		// Override Serp's Rapid Slash lvl 1 Intersperse
+		if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 &&
+			ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2]) {
+			actorData.action = YAMATO_RAPID_SLASH_LEVEL_2;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			risingStarInput.meleeReleasedRisingStar = false;
+		}
+
+		// Consecutive Force Edge Stinger level 2
+		if (lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2 &&
+			actionTimer >= 0.78f && meleeButtonPressed && CanQueueMeleeAttack(actorData)) {
+
+			actorData.action = YAMATO_FORCE_EDGE_STINGER_LEVEL_2;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+			stingerInput.meleeReleasedStinger = false;
+		}
+
+		// Consecutive Force Edge Stinger level 1
+		if (lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 &&
+			actionTimer >= 0.38f && meleeButtonPressed && CanQueueMeleeAttack(actorData)) {
+			actorData.action = YAMATO_FORCE_EDGE_STINGER_LEVEL_1;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
+			stingerInput.meleeReleasedStinger = false;
+		}
+
+		// Override Serp's Force Edge Stinger lvl 1 Intersperse
+		if (actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 &&
+			ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2]) {
+			actorData.action = YAMATO_FORCE_EDGE_STINGER_LEVEL_2;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			stingerInput.meleeReleasedStinger = false;
+		}
+
+		// Consecutive Force Edge High Times
+		if (lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME &&
+			meleeButtonPressed && actionTimer >= 0.5f && CanQueueMeleeAttack(actorData)) {
+			actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			actionTimer = 0.0f;
 		}
 	}
 }
