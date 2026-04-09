@@ -3259,14 +3259,17 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 
     // VFX - FLUX
     if (activeCrimsonConfig.StyleSwitchFX.Flux.enable) {
-        uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[styleColorIndex]);
-        uint32 vergilColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[6]);
+        uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[styleColorIndex]);
+        uint32 actualSwooshColor = 
+            CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxSwooshColor[styleColorIndex]);
+        uint32 vergilColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[7]);
 //         CrimsonDetours::CreateEffectDetour(actorBaseAddr, 3, 144, 1, true, 
 //             actorData.character == CHARACTER::DANTE ? actualColor : vergilColor, 0.73f);
 
         if (activeCrimsonConfig.StyleSwitchFX.Flux.type == STYLESWITCHVFXTYPE::CRIMSON) {
 			CrimsonFX::StyleSwitchFluxCrimson(actorData, styleSwitchVFX.handles, styleSwitchVFX.swooshHandles, style,
-				actorData.character == CHARACTER::DANTE ? actualColor : vergilColor);
+				actorData.character == CHARACTER::DANTE ? actualColor : vergilColor,
+                actorData.character == CHARACTER::DANTE ? actualSwooshColor : vergilColor);
 		}
         else if (activeCrimsonConfig.StyleSwitchFX.Flux.type == STYLESWITCHVFXTYPE::NSWITCH) {
 			CrimsonFX::StyleSwitchFluxNS(actorData, styleSwitchVFX.handles, styleSwitchVFX.swooshHandles, style,
@@ -7770,17 +7773,17 @@ void SetDevilAuraColor(PlayerActorData& actorData, uint8* dest) {
         auto& actorData2 = *reinterpret_cast<PlayerActorDataDante*>(&actorData);
 
         if (styleChanged[0]) {
-            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.color[1] , 4);
+            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[1] , 4);
         } else if (styleChanged[1]) {
-            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.color[2], 4);
+            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[2], 4);
         } else if (styleChanged[2]) {
-            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.color[0], 4);
+            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[0], 4);
         } else if (styleChanged[3]) {
-            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.color[3], 4);
+            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[3], 4);
         } else if (styleChanged[4]) {
-            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.color[4], 4);
+            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[4], 4);
         } else if (styleChanged[5]) {
-            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.color[5], 4);
+            CopyMemory(dest, activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[5], 4);
         } else {
             if (actorData2.sparda) {
                 CopyMemory(dest, activeConfig.Color.Aura.sparda, 4);

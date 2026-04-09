@@ -243,22 +243,36 @@ struct CrimsonConfig {
 			bool enable = true;
 			uint8 type = STYLESWITCHVFXTYPE::CRIMSON;
 
-			uint8 color[7][4] = {
+			uint8 fluxColor[7][4] = {
 				// r   g  b  a 
-				{ 29, 29, 0, 255 }, //trick  
-				{ 26, 0, 0, 255 }, //sword  
-				{ 0, 8, 34, 255 }, //gun    
-				{ 0, 35, 6, 255 }, //royal  
-				{ 26, 0, 35, 255 }, //quick  
-				{ 30, 14, 0, 255 }, //doppel 
+				{ 250, 237, 54, 255 }, //trick  
+				{ 252, 45, 45, 255 }, //sword  
+				{ 72, 49, 255, 255 }, //gun    
+				{ 47, 255, 72, 255 }, //royal  
+				{ 255, 55, 221, 255 }, //quick  
+				{ 255, 146, 65, 255 }, //doppel 
 				{ 0, 25, 30, 255 } // vergil
 			};
+
+			uint8 fluxSwooshColor[7][4] = {
+				// r   g  b  a 
+				{ 240, 255, 0, 255 }, //trick  
+				{ 255, 0, 0, 255 }, //sword  
+				{ 28, 0, 255, 255 }, //gun    
+				{ 0, 255, 35, 255 }, //royal  
+				{ 255, 0, 215, 255 }, //quick  
+				{ 255, 109, 0, 255 }, //doppel 
+				{ 0, 25, 30, 255 } // vergil
+			};
+			bool customSwooshColors = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
 					std::make_pair("enable", &StyleSwitchFX::Flux::enable),
 					std::make_pair("type", &StyleSwitchFX::Flux::type),
-                    std::make_pair("color", &StyleSwitchFX::Flux::color)
+                    std::make_pair("fluxColor", &StyleSwitchFX::Flux::fluxColor),
+					std::make_pair("fluxSwooshColor", &StyleSwitchFX::Flux::fluxSwooshColor),
+					std::make_pair("customSwooshColors", &StyleSwitchFX::Flux::customSwooshColors)
 				);
 			}
 

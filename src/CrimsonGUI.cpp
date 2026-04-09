@@ -7527,7 +7527,7 @@ void DebugSection() {
 		ImGui::InputInt("Player", &effectPlayerID);
 		ImGui::Checkbox("CustomColor", &enableCustomColor);
 		auto pPlayer = (void*)crimsonPlayer[effectPlayerID].playerPtr;
-		uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[0]);
+		uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[0]);
 		if (ImGui::Button("CreateEffect")) {
 			CrimsonDetours::CreateEffectDetour(pPlayer, vfxBank, vfxId, boneIdx, enableCustomColor, vfxColor, 1);
 		}
@@ -8736,6 +8736,8 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("inertiaRotation : % g", actorData.inertiaRotation);
+			ImGui::Text("inertiaRotation2 : % g", actorData.inertiaRotation2);
 			ImGui::Text("drive inPart2 : %d", crimsonPlayer[0].drive.inPart2);
 			ImGui::Text("drive inPart3 : %d", crimsonPlayer[0].drive.inPart3);
 			ImGui::Text("yamatoHighTimeClone : %d", crimsonPlayer[0].inYamatoHighTimeClone);
@@ -10745,27 +10747,44 @@ void VisualSection(size_t defaultFontSize) {
 		if (style > 0) {
 			ImGui::SameLine();
 		}
-		GUI_Color2("", activeCrimsonConfig.StyleSwitchFX.Flux.color[style], queuedCrimsonConfig.StyleSwitchFX.Flux.color[style]);
+		GUI_Color2("", activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[style], queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor[style]);
 		ImGui::SameLine();
 		ImGui::Text(styleNamesFX[style]);
 	}
 
+	if (activeCrimsonConfig.StyleSwitchFX.Flux.type == STYLESWITCHVFXTYPE::CRIMSON) {
+		ImGui::SameLine();
+		GUI_Checkbox2("Custom Swoosh Colors", activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors,
+			queuedCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors);
 
-	if (GUI_Button("Colorful Subtle")) {
-		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.colorfulSubtle, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.color));
-		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.colorfulSubtle, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.color));
+		if (activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors) {
+			for (int style = 0; style < 6; style++) {
+
+				if (style > 0) {
+					ImGui::SameLine();
+				}
+				GUI_Color2("", activeCrimsonConfig.StyleSwitchFX.Flux.fluxSwooshColor[style], queuedCrimsonConfig.StyleSwitchFX.Flux.fluxSwooshColor[style]);
+				ImGui::SameLine();
+				ImGui::Text(styleNamesFX[style]);
+			}
+		}
+	}
+
+	if (GUI_Button("Default Colors")) {
+		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.defaultColors, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
+		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.defaultColors, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
 	}
 
 	ImGui::SameLine();
 	if (GUI_Button("DMC3 Switch")) {
-		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.color));
-		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.color));
+		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
+		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
 	}
 
     ImGui::SameLine();
 	if (GUI_Button("All Red")) {
-		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.allRed, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.color));
-		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.allRed, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.color));
+		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.allRed, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
+		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.allRed, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
 	}
 
 	

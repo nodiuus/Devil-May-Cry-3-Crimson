@@ -525,7 +525,8 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
    
 }
 
-void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, uint8 style, uint32_t color) {
+void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, 
+	uint8 style, uint32_t color, uint32_t customSwooshColor) {
 	if (!actorBaseAddr) {
 		return;
 	}
@@ -577,6 +578,12 @@ void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHa
 	styleSwitchSwooshRef = CrimsonEfk::ReloadEffect(styleSwitchSwooshRef, styleSwitchSwooshEffectPath[style], 40.0f);
 	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchSwooshRef, boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
+	if (activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors) {
+		CrimsonEfk::SetAllColor(swooshHandles[handleId], customSwooshColor);
+	}
+	else {
+		CrimsonEfk::SetAllColor(swooshHandles[handleId], color);
+	}
 }
 
 void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, uint8 style, uint32_t color) {

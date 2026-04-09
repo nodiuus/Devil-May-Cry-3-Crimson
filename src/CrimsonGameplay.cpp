@@ -4206,7 +4206,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		}
 		
 
-        uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[0]);
+        uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[0]);
 
 
 //         if (drive.levelTimer >= 1.1f) {

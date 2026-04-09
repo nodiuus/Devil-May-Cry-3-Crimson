@@ -4819,36 +4819,39 @@ struct BossHelper {
 
 struct ColorPresets {
     struct StyleSwitchFlux {
-		uint8 colorfulSubtle[7][4] = {
+		uint8 defaultColors[8][4] = {
 			// r   g  b  a 
-			{ 29, 29, 0, 255 }, //trick  
-			{ 26, 0, 0, 255 }, //sword  
-			{ 0, 8, 34, 255 }, //gun    
-			{ 0, 35, 6, 255 }, //royal  
-			{ 26, 0, 35, 255 }, //quick  
-			{ 30, 14, 0, 255 }, //doppel 
-            { 0, 25, 30, 255 } // vergil
+			{ 250, 237, 54, 255 }, //trick  
+			{ 252, 45, 45, 255 }, //sword  
+			{ 72, 49, 255, 255 }, //gun    
+			{ 47, 255, 72, 255 }, //royal  
+			{ 255, 55, 221, 255 }, //quick  
+			{ 255, 146, 65, 255 }, //doppel 
+            { 179, 65, 255, 255 }, //darkslayer 
+			{ 0, 25, 30, 255 } // vergil
 		};
 
-		uint8 dMC3Switch[7][4] = {
+		uint8 dMC3Switch[8][4] = {
 			// r   g  b  a 
-			{ 55, 58, 6, 255 }, //trick  
-			{ 58, 5, 5, 255 }, //sword  
-			{ 13, 5, 58, 255 }, //gun    
-			{ 5, 58, 12, 255 }, //royal  
-			{ 58, 5, 49, 255 }, //quick  
-			{ 58, 28, 5, 255 }, //doppel 
-            { 5, 57, 58, 255 }, //vergil
+			{ 240, 255, 0, 255 }, //trick  
+			{ 255, 0, 0, 255 }, //sword  
+			{ 28, 0, 255, 255 }, //gun    
+			{ 0, 255, 35, 255 }, //royal  
+			{ 255, 0, 215, 255 }, //quick  
+			{ 255, 109, 0, 255 }, //doppel 
+            { 153, 0, 254, 255 }, //darkslayer 
+			{ 0, 25, 30, 255 } // vergil
 		};
 
-		uint8 allRed[7][4] = {
+		uint8 allRed[8][4] = {
 			// r   g  b  a 
-			{ 29, 0, 0, 255 }, //trick  
-			{ 29, 0, 0, 255 }, //sword  
-			{ 29, 0, 0, 255 }, //gun    
-			{ 29, 0, 0, 255 }, //royal  
-			{ 29, 0, 0, 255 }, //quick  
-			{ 29, 0, 0, 255 }, //doppel 
+			{ 252, 43, 51, 255 }, //trick  
+            { 252, 43, 51, 255 }, //sword  
+            { 252, 43, 51, 255 }, //gun    
+            { 252, 43, 51, 255 }, //royal  
+            { 252, 43, 51, 255 }, //quick  
+            { 252, 43, 51, 255 }, //doppel 
+            { 252, 43, 51, 255 }, //darkslayer 
             { 0, 25, 30, 255 } // vergil
 		};
     } StyleSwitchFlux;
