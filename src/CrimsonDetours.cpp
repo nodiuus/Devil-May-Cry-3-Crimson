@@ -334,7 +334,7 @@ bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
         }
         break;
     case REBELLION_STINGER_LEVEL_2:
-        if (motionIndex == 42 && stingerInput.meleeButtonHold >= 0.2f && !stingerInput.meleeReleasedStinger && inputException) {
+        if (motionIndex == 42 && stingerInput.meleeButtonHold >= 0.17f && !stingerInput.meleeReleasedStinger && inputException) {
             return true;
         }
         break;
