@@ -11127,7 +11127,8 @@ void GeneralGameplayOptions() {
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "Changes how physics behave during almost all aerial moves. Spices up your combos with more aerial momentum variance. Allows Guardflying.");
+			TooltipHelper("(?)", "Changes how physics behave during almost all aerial moves. Spices up your combos with more aerial momentum variance.\n"
+				"Enables Guardflying and Bullet Magnetism.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();

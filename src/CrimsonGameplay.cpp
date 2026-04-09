@@ -318,8 +318,6 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
         crimsonPlayer[playerIndex].storedAirCounts : crimsonPlayer[playerIndex].storedAirCountsClone;
 	auto& airCounts = (actorData.newEntityIndex == 0) ?
 		crimsonPlayer[playerIndex].airCounts : crimsonPlayer[playerIndex].airCountsClone;
-	auto& bulletMagnetism = (actorData.newEntityIndex == 0) ?
-		crimsonPlayer[playerIndex].bulletMagnetism : crimsonPlayer[playerIndex].bulletMagnetismClone;
 
 	if ((actorData.action == CERBERUS_REVOLVER_LEVEL_1 || actorData.action == CERBERUS_REVOLVER_LEVEL_2) && actorCancels.revolverTimer < 1.1f) {
 		if (inAir) {
@@ -480,48 +478,6 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
             }
         }
     }
-
-	if (actorData.character == CHARACTER::DANTE) {
-		static bool prevShootButton[PLAYER_COUNT][ENTITY_COUNT] = {};
-		auto entityIndex = actorData.newEntityIndex;
-		bool shootButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::SHOOT)) != 0;
-		bool shootButtonPressed = shootButtonDown && !prevShootButton[playerIndex][entityIndex];
-		prevShootButton[playerIndex][entityIndex] = shootButtonDown;
-		bool inEbonyAirShot = (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT);
-
-		if (inEbonyAirShot) {
-			if (shootButtonPressed) {
-				bulletMagnetism.gunButtonTimer = 0.0f;
-			}
-			else {
-				bulletMagnetism.gunButtonTimer += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
-			}
-		}
-		else {
-			bulletMagnetism.gunButtonTimer = 0.0f;
-		}
-		// gunButtonTimer only runs in E&I Air Normal Shot and resets on shoot press.
-
-		// Bullet Magnetism
-		if (inEbonyAirShot && bulletMagnetism.gunButtonTimer >= 0.21667f) {
-			// Rotations use uint16 angle-space: 0..65535 maps to 0..2pi radians.
-			// Subtract in uint16-space first to preserve wraparound (modular angle subtraction).
-			int32 rotationDelta = static_cast<int32>(static_cast<uint16>(actorData.inertiaRotation - actorData.rotation));
-			if (rotationDelta > 0x7FFF) {
-				// Recenter to signed shortest-arc delta.
-				rotationDelta -= 0x10000;
-			}
-			int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
-
-			// Now we detect if player is going backwards relative to their inertia direction, 
-			// which would be indicated by a rotation delta greater than 90° (0x4000 in uint16-space).
-			
-			if (rotationDeltaAbs > 0x4000) {
-				// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
-				actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
-			}
-		}
-	}
 
 	// Reset ROYAL MAGNETISM availability when touching the ground or JCing.
 	if (actorData.state == 65537 || actorData.eventData[0].event == ACTOR_EVENT::LANDING || 
@@ -2298,6 +2254,62 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	}
 }
 
+void BulletMagnetism(byte8* actorBaseAddr) {
+	using namespace ACTION_DANTE;
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
+	if (actorData.character != CHARACTER::DANTE) return;
+	if (!activeCrimsonGameplay.Gameplay.General.inertia) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto& gamepad = GetGamepad(playerIndex);
+	auto& bulletMagnetism = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].bulletMagnetism : 
+		crimsonPlayer[playerIndex].bulletMagnetismClone;
+	
+	// Bullet Magnetism
+	static bool prevShootButton[PLAYER_COUNT][ENTITY_COUNT] = {};
+	auto entityIndex = actorData.newEntityIndex;
+	bool shootButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::SHOOT)) != 0;
+	bool shootButtonPressed = shootButtonDown && !prevShootButton[playerIndex][entityIndex];
+	prevShootButton[playerIndex][entityIndex] = shootButtonDown;
+	bool inEbonyAirShot = (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT);
+
+	if (inEbonyAirShot) {
+		if (shootButtonPressed) {
+			bulletMagnetism.gunButtonTimer = 0.0f;
+		}
+		else {
+			bulletMagnetism.gunButtonTimer += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+		}
+	}
+	else {
+		bulletMagnetism.gunButtonTimer = 0.0f;
+	}
+	// gunButtonTimer only runs in E&I Air Normal Shot and resets on shoot press.
+
+	if (inEbonyAirShot && bulletMagnetism.gunButtonTimer >= 0.240f) {
+		// Rotations use uint16 angle-space: 0..65535 maps to 0..2pi radians.
+		// Subtract in uint16-space first to preserve wraparound (modular angle subtraction).
+		int32 rotationDelta = static_cast<int32>(static_cast<uint16>(actorData.inertiaRotation - actorData.rotation));
+		if (rotationDelta > 0x7FFF) {
+			// Recenter to signed shortest-arc delta.
+			rotationDelta -= 0x10000;
+		}
+		int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
+
+		// Now we detect if player is going backwards relative to their inertia direction, 
+		// which would be indicated by a rotation delta greater than 90° (0x4000 in uint16-space).
+
+		if (rotationDeltaAbs > 0x4000) {
+			// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
+			actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
+		}
+	}
+}
+
 void StoreInertia(byte8* actorBaseAddr) {
 	// Here we store Momentum (Horizontal Pull) for Inertia to work. - Mia
 	using namespace ACTION_DANTE;
@@ -2500,6 +2512,7 @@ void InertiaController(byte8* actorBaseAddr) {
         (action == AGNI_RUDRA_SKY_DANCE_PART_1 || action == AGNI_RUDRA_SKY_DANCE_PART_2 || action == AGNI_RUDRA_SKY_DANCE_PART_3);
     auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
     auto& guarflyTimer = i->guardflyTimer;
+	auto gamepad = GetGamepad(playerIndex);
 
     //CrimsonPatches::InertiaFixes();
 
@@ -2513,17 +2526,11 @@ void InertiaController(byte8* actorBaseAddr) {
 			actorData.verticalPullMultiplier = -2;
         }
 
-
         // This mimic's DMC4's Air Trick Inertia Boost behaviour, uses LastEventStateQueue
         if (event == ACTOR_EVENT::AIR_TRICK_END && lastLastEvent == ATTACK && lastLastState & STATE::IN_AIR) {
             actorData.horizontalPull = 7.5f;
         }
-
-        // Experimental shit: Reverse Shotgun Stinger
-        // 		if (actorData.action == 146 && actorData.eventData[0].event == 17) {
-        // 			actorData.horizontalPull = -25.0f;
-        // 		}
-
+		
         if (event == 17 && state & STATE::IN_AIR) { // Attacking in Air
 
             // Rainstorm
@@ -2540,49 +2547,7 @@ void InertiaController(byte8* actorBaseAddr) {
 
             // E&I Normal Shot
             else if (action == EBONY_IVORY_AIR_NORMAL_SHOT) {
-                /*if(inGunShoot) {
-                        if(ebonyIvoryShotInertia.cachedDirection == 1 || ebonyIvoryShotInertia.cachedDirection == 0) {
-                                if(ebonyIvoryShotInertia.cachedDirection == airRaveInertia.cachedDirection) {
-
-                                        ebonyIvoryShotInertia.cachedPull = ebonyIvoryShotInertia.cachedPull * 1.0f;
-
-
-
-                                }
-                                else {
-                                        if(ebonyIvoryShotInertia.cachedPull > 0) {
-                                                ebonyIvoryShotInertia.cachedPull = ebonyIvoryShotInertia.cachedPull * -1.0f;
-                                        }
-                                }
-                        }
-                        else {
-                                if(ebonyIvoryShotInertia.cachedDirection == airRaveInertia.cachedDirection) {
-
-                                        if(ebonyIvoryShotInertia.cachedPull < 0) {
-                                                ebonyIvoryShotInertia.cachedPull = ebonyIvoryShotInertia.cachedPull * -1.0f;
-                                        }
-
-
-                                }
-                                else {
-
-                                        if(ebonyIvoryShotInertia.cachedPull > 0) {
-                                                ebonyIvoryShotInertia.cachedPull = ebonyIvoryShotInertia.cachedPull * 1.0f;
-                                        }
-                                }*/
-
-                //}
-
-
-                /*}
-                else {
-                        if(ebonyIvoryShotInertia.cachedPull < 0) {
-                                ebonyIvoryShotInertia.cachedPull = ebonyIvoryShotInertia.cachedPull * -1.0f;
-                        }
-                        gunShootInverted = false;
-                        gunShootNormalized = false;
-                }*/
-
+               
                 if (i->ebonyShot.cachedPull < 0) {
                     i->ebonyShot.cachedPull = i->ebonyShot.cachedPull * -1.0f;
                 }

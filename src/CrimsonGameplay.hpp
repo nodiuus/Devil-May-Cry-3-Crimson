@@ -26,6 +26,7 @@ float DrainDTBar(float currentDT, float maxDT, float elapsedTime, bool dtOn, flo
 float DrainMirageGauge(float currentMP, float elapsedTime, float totalDrainTime);
 void LastEventStateQueue(byte8* actorBaseAddr);
 void FreeformSoftLockController(byte8* actorBaseAddr);
+void BulletMagnetism(byte8* actorBaseAddr);
 void StoreInertia(byte8* actorBaseAddr);
 void InertiaController(byte8* actorBaseAddr);
 void GravityCorrections(byte8* actorBaseAddr);

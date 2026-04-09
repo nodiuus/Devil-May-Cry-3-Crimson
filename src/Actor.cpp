@@ -4066,6 +4066,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonPatches::RainstormLift(activeCrimsonGameplay.Gameplay.Dante.rainstormLift);
     //Base off extra moves and whether we have swordmaster lvl 4
     CrimsonPatches::ReduceAirTornadoDamage(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]);
+    CrimsonGameplay::BulletMagnetism(actorBaseAddr);
     CrimsonGameplay::DanteDownertia(actorBaseAddr);
     CrimsonGameplay::DanteStingerInputCrazyCombo(actorBaseAddr);
     CrimsonGameplay::FixAirStingerCancelTime(actorBaseAddr);
@@ -4124,13 +4125,6 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
             LinearRangedWeaponSwitchController(actorData);
         }
     }
-
-	auto& collisionMeta = *reinterpret_cast<CollisionDataMetadata*>(actorData.collisionData.metadataAddr);
-
-// 	if (actorData.action == ACTION_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2 && crimsonPlayer[playerIndex].actionTimer > 0.7f && actorData.buttons[1] & GetBinding(BINDING::MELEE_ATTACK)) {
-// 		actorData.action = ACTION_VERGIL::BEOWULF_RISING_SUN;
-// 	}
-
 
     return true;
 }
