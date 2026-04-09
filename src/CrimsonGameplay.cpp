@@ -2290,7 +2290,7 @@ void BulletMagnetism(byte8* actorBaseAddr) {
 	}
 	// gunButtonTimer only runs in E&I Air Normal Shot and resets on shoot press.
 
-	if (inEbonyAirShot && bulletMagnetism.gunButtonTimer >= 0.240f) {
+	if (inEbonyAirShot && bulletMagnetism.gunButtonTimer >= 0.22667f) {
 		// Rotations use uint16 angle-space: 0..65535 maps to 0..2pi radians.
 		// Subtract in uint16-space first to preserve wraparound (modular angle subtraction).
 		int32 rotationDelta = static_cast<int32>(static_cast<uint16>(actorData.inertiaRotation - actorData.rotation));
@@ -2757,7 +2757,10 @@ void AerialRaveGravityTweaks(byte8* actorBaseAddr) {
     auto& action    = actorData.action;
     auto& event     = actorData.eventData[0].event;
     auto& state     = actorData.state;
-    auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+    auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer 
+		: crimsonPlayer[playerIndex].animTimerClone;
+	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer 
+		: crimsonPlayer[playerIndex].actionTimerClone;
 
     bool inAerialRave = (action == REBELLION_AERIAL_RAVE_PART_1 || action == REBELLION_AERIAL_RAVE_PART_2 ||
                          action == REBELLION_AERIAL_RAVE_PART_3 || action == REBELLION_AERIAL_RAVE_PART_4);
@@ -2773,11 +2776,17 @@ void AerialRaveGravityTweaks(byte8* actorBaseAddr) {
     if (event == ACTOR_EVENT::ATTACK && state & STATE::IN_AIR && actorData.character == CHARACTER::DANTE) {
 
 
-        if (inAerialRave && animTimer < 0.25f) { // animTimer has been added here to reduce the floatiness feel. - Mia
+        if (inAerialRave && animTimer < 0.25f) { 
             if (action != REBELLION_AERIAL_RAVE_PART_4) {
                 if (actorData.airSwordAttackCount == 1) {
-                    actorData.verticalPull           = 0;
-                    actorData.verticalPullMultiplier = 0;
+					if (actionTimer <= 0.08667f) {
+						actorData.verticalPull = 0;
+						actorData.verticalPullMultiplier = 0;
+					}
+					else {
+						actorData.verticalPullMultiplier = -0.14f;
+					}
+                    
                 } else if (actorData.airSwordAttackCount > 1) {
                     if (!tweak->gravityPre4Changed) {
 
@@ -2791,7 +2800,7 @@ void AerialRaveGravityTweaks(byte8* actorBaseAddr) {
             } else if (action == REBELLION_AERIAL_RAVE_PART_4) {
                 if (!tweak->gravity4Changed) {
 
-                    tweak->gravity += -1.5f;
+                    tweak->gravity += -1.0f;
                     tweak->gravity4Changed = true;
                 }
                 actorData.verticalPull           = tweak->gravity + (-0.2f * actorData.airSwordAttackCount);
