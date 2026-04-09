@@ -558,11 +558,11 @@ bool DetectIfInSkyLaunch(PlayerActorData& actorData) {
 }
 
 bool CheckSkyLaunchEnabled() {
-	return activeCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt;
+	return activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::AIR_TAUNT];
 }
 
 bool CheckAirTauntRisingSunEnabled() {
-	return activeCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun;
+	return activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::AIR_TAUNT];
 }
 
 uint16 ActorCameraDirectionToEnemyCameraDirection(PlayerActorData& actorData) {

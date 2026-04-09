@@ -6993,7 +6993,7 @@ uint32 AirTrickDante(PlayerActorData& actorData, uint8 action) {
 }
 
 uint32 AirTrickVergil(PlayerActorData& actorData, uint8 action) {
-    if (activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES] && !actorData.lockOn && actorData.styleLevel > 1) {
+    if (activeCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn && !actorData.lockOn && actorData.styleLevel > 1) {
 		return MobilityFunction<ACTOR_EVENT::DARK_SLAYER_TRICK_UP>(
 			actorData, action, actorData.newTrickUpCount, activeCrimsonGameplay.Cheats.Mobility.trickUpCount);
     }
@@ -8339,10 +8339,17 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 auto* vergilMoves = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves :
                     &crimsonPlayer[playerIndex].vergilMovesClone;
 
-                if (activeCrimsonGameplay.Gameplay.General.sprint) {
-                    CrimsonGameplay::SprintAbility(actorBaseAddr);
-                }
+                
+                //if (activeCrimsonGameplay.Gameplay.General.sprint) {
+                //    CrimsonGameplay::SprintAbility(actorBaseAddr);
+                //}
 
+                if (activeCrimsonGameplay.Gameplay.General.extramoves) {
+                    if (actorData.character == CHARACTER::DANTE && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SPRINT])
+                        CrimsonGameplay::SprintAbility(actorBaseAddr);
+                    if (actorData.character == CHARACTER::VERGIL && ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::SPRINT])
+                        CrimsonGameplay::SprintAbility(actorBaseAddr);
+                }
                 // InertiaController(actorData.cloneActorBaseAddr);
                 CrimsonGameplay::BackToForwardInputs(actorBaseAddr);
                 CrimsonGameplay::VergilAdjustAirMovesPos(actorBaseAddr);

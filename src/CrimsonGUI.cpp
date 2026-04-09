@@ -5542,6 +5542,8 @@ struct ShopExperienceStyleHelper {
 
 
 ShopExperienceHelper shopHelpersDante[] = {
+	{"Sprint","Sprints out of combat, similar to DMC4 and 5's Speed Ability.", UNLOCK_DANTE::SPRINT, 3000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_DANTE::AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Rebellion Stinger Level 1","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, 2500, -1, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2,-1,-1, {UNLOCK_DANTE::REBELLION_STINGER_AIR,-1,-1,-1,-1}},
 	{"Rebellion Stinger Level 2","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2, 10000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Rebellion Air Stinger","Lock On + Forward + Melee while in air.",UNLOCK_DANTE::REBELLION_STINGER_AIR, 5000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
@@ -5609,12 +5611,14 @@ ShopExperienceStyleHelper shopHelpersDanteStyle[] = {
 ShopExperienceStyleHelper shopHelpersVergilStyle[] = {
 	{"Dark Slayer Level 2", "",20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
 	{"Dark Slayer Level 3", "",30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES},
-	{"Dark Slayer Level 4", "Allows Vergil to Trick Up instead of Air Tricking when using the Style Button without Lock On.\n"
-				"Similar to DMC5.",15000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES,-1},
+	//{"Dark Slayer Level 4", "Allows Vergil to Trick Up instead of Air Tricking when using the Style Button without Lock On.\n"
+	//			"Similar to DMC5.",15000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES,-1},
 };
 
 
 ShopExperienceHelper shopHelpersVergil[] = {
+	{"Sprint","Sprints out of combat, similar to DMC4 and 5's Speed Ability.", UNLOCK_VERGIL::SPRINT, 3000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_VERGIL::AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Yamato Rapid Slash Level 1","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_RISING_STAR,-1,-1,-1,-1}},
 	{"Yamato Rapid Slash Level 2","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2, 15000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Yamato Rising Star","During Rapid Slash HOLD Melee.",UNLOCK_VERGIL::YAMATO_RISING_STAR, 10000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
@@ -11131,19 +11135,19 @@ void GeneralGameplayOptions() {
 				"Enables Guardflying and Bullet Magnetism.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			//ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Sprint",
-				activeCrimsonGameplay.Gameplay.General.sprint,
-				queuedCrimsonGameplay.Gameplay.General.sprint,
-				activeCrimsonGameplayMask.Gameplay.General.sprint)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Sprints out of combat, similar to DMC4 and 5's Speed Ability.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Sprint",
+			//	activeCrimsonGameplay.Gameplay.General.sprint,
+			//	queuedCrimsonGameplay.Gameplay.General.sprint,
+			//	activeCrimsonGameplayMask.Gameplay.General.sprint)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "Sprints out of combat, similar to DMC4 and 5's Speed Ability.");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
 
@@ -11590,19 +11594,19 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Sky Launch Air Taunt",
-				activeCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
-				queuedCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
-				activeCrimsonGameplayMask.Gameplay.Dante.skyLaunchAirTaunt)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "With any Weapon or Style: Press Taunt button while in air.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Sky Launch Air Taunt",
+			//	activeCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
+			//	queuedCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
+			//	activeCrimsonGameplayMask.Gameplay.Dante.skyLaunchAirTaunt)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "With any Weapon or Style: Press Taunt button while in air.");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			//ImGui::TableNextColumn();
 
 			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Tornado",
@@ -11995,20 +11999,20 @@ void VergilGameplayOptions() {
 
 			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Air Taunt Rising Sun",
-				activeCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
-				queuedCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
-				activeCrimsonGameplayMask.Gameplay.Vergil.airTauntRisingSun)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "With any Weapon: Press Taunt button while in air.\n"
-				"Differs a bit from Air Rising Sun's positioning. ");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Air Taunt Rising Sun",
+			//	activeCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
+			//	queuedCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
+			//	activeCrimsonGameplayMask.Gameplay.Vergil.airTauntRisingSun)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "With any Weapon: Press Taunt button while in air.\n"
+			//	"Differs a bit from Air Rising Sun's positioning. ");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			//ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Mirage Trigger",
@@ -12038,7 +12042,7 @@ void VergilGameplayOptions() {
 				"Jump Cancelling won't interrupt this behavior.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			/*ImGui::TableNextColumn();
+			ImGui::TableNextColumn();
 			if (GUI_Checkbox2("Trick Up When Not Locked On",
 				activeCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn,
 				queuedCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn,
@@ -12046,7 +12050,7 @@ void VergilGameplayOptions() {
 			}
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Allows Vergil to Trick Up instead of Air Tricking when using the Style Button without Lock On.\n"
-				"Similar to DMC5.");*/
+				"Similar to DMC5.");
 
 			ImGui::TableNextColumn();
 			GUI_PushDisable(!activeConfig.Actor.enable);
