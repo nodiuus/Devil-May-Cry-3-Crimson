@@ -3048,20 +3048,31 @@ struct WeaponData {
     byte8* baseAddr; // 0x48
     _(194);
     uint8 weapon; // 0x112
-    _(5);
+    _(1);
+    uint8 playerBoneAttachment; // 0x114
+    uint8 sheathPlayerBoneAttachment; // 0x115
+    _(2);
     uint8 value; // 0x118
     _(7);
     byte8* actorBaseAddr; // 0x120
+	_(8);
+	ModelData* weaponCDraw; // 0x130
+	_(3384);
+	bool hideYamatoTip; // 0xE70
 };
 
 static_assert(offsetof(WeaponData, speed) == 0x14);
 static_assert(offsetof(WeaponData, speedMultiplier) == 0x18);
 static_assert(offsetof(WeaponData, baseAddr) == 0x48);
 static_assert(offsetof(WeaponData, weapon) == 0x112);
+static_assert(offsetof(WeaponData, playerBoneAttachment) == 0x114);
+static_assert(offsetof(WeaponData, sheathPlayerBoneAttachment) == 0x115);
 static_assert(offsetof(WeaponData, value) == 0x118);
 static_assert(offsetof(WeaponData, actorBaseAddr) == 0x120);
+static_assert(offsetof(WeaponData, weaponCDraw) == 0x130);
+static_assert(offsetof(WeaponData, hideYamatoTip) == 0xE70);
 
-static_assert(sizeof(WeaponData) == 296);
+using Sword = WeaponData;
 
 // $WeaponDataEnd
 
@@ -3238,25 +3249,6 @@ static_assert(offsetof(ActorDataBase, rotation) == 0xC0);*/
 
 
 // static_assert(sizeof(ActorDataBase) == 200);
-
-
-struct Sword {
-	_(276);
-	uint8 playerBoneAttachment; // 0x114
-	uint8 sheathPlayerBoneAttachment; // 0x115
-    _(10);
-	byte8* actorBaseAddr; // 0x120
-    _(8);
-    ModelData* swordcDraw; // 0x130
-    _(3384);
-    bool hideYamatoTip; // 0xE70
-};
-
-static_assert(offsetof(Sword, playerBoneAttachment) == 0x114);
-static_assert(offsetof(Sword, sheathPlayerBoneAttachment) == 0x115);
-static_assert(offsetof(Sword, actorBaseAddr) == 0x120);
-static_assert(offsetof(Sword, swordcDraw) == 0x130);
-static_assert(offsetof(Sword, hideYamatoTip) == 0xE70);
 
 struct PlayerActorDataBase : ActorDataBase {
     _(80);
@@ -5457,6 +5449,7 @@ struct DelayedComboFX {
 	uint8 weaponThatStartedMove = 20;
 	int bank = 3;
 	int id = 143;
+    EffekseerHandle efkHandle = 0;
 };
 
 constexpr float maxMiragePointsAmount = 10000;

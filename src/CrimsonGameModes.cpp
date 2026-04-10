@@ -63,6 +63,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	general.increasedEnemyJuggleTime = false;
 	general.fasterTurnRate = false;
 	general.disableSoulEaterInvis = false;
+	general.consecutiveDirectionalMoves = false;
 
 	// Dante section
 	auto& dante = preset.Gameplay.Dante;
@@ -127,7 +128,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	general.disableSoulEaterInvis = false;
 	general.disableHeightRestriction = true;
 	general.fasterTurnRate = true;
-
+	general.consecutiveDirectionalMoves = false;
 
 	// Dante section
 	auto& dante = preset.Gameplay.Dante;
@@ -212,6 +213,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	general.increasedEnemyJuggleTime = true;
 	general.disableSoulEaterInvis = true;
 	general.fasterTurnRate = true;
+	general.consecutiveDirectionalMoves = true;
 
 	// Dante section
 	auto& dante = preset.Gameplay.Dante;

@@ -11379,6 +11379,18 @@ void GeneralGameplayOptions() {
 				"3 Players -> 0.5\n"
 				"4 Players -> 0.4");
 
+			ImGui::TableNextColumn();
+			GUI_PushDisable(!activeConfig.Actor.enable);
+			GUI_Checkbox2("Consecutive Directional Moves",
+				activeCrimsonGameplay.Gameplay.General.consecutiveDirectionalMoves,
+				queuedCrimsonGameplay.Gameplay.General.consecutiveDirectionalMoves,
+				activeCrimsonGameplayMask.Gameplay.General.consecutiveDirectionalMoves);
+			GUI_PopDisable(!activeConfig.Actor.enable);
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Allows Directional Moves like Stinger to be executed consecutively without another move in between.");
+
 			ImGui::EndTable();
 		}
 	}

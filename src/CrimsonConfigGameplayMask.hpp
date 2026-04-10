@@ -24,6 +24,7 @@ struct CrimsonConfigGameplayMask {
 			bool vanillaWeaponSwitchDelay = true;
 			bool disableSoulEaterInvis = true;
 			bool multiplayerDamageScaling = true;
+			bool consecutiveDirectionalMoves = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
@@ -45,7 +46,8 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("fasterTurnRate", &General::fasterTurnRate),
 					std::make_pair("vanillaWeaponSwitchDelay", &General::vanillaWeaponSwitchDelay),
 					std::make_pair("disableSoulEaterInvis", &General::disableSoulEaterInvis),
-					std::make_pair("multiplayerDamageScaling", &General::multiplayerDamageScaling)
+					std::make_pair("multiplayerDamageScaling", &General::multiplayerDamageScaling),
+					std::make_pair("consecutiveDirectionalMoves", &General::consecutiveDirectionalMoves)
 				);
 			}
 		} General;

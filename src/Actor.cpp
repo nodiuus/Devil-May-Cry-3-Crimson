@@ -4067,7 +4067,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     //Base off extra moves and whether we have swordmaster lvl 4
     CrimsonPatches::ReduceAirTornadoDamage(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]);
     CrimsonGameplay::BulletMagnetism(actorBaseAddr);
-    CrimsonGameplay::ConsecutiveDirectionalAttacks(actorBaseAddr);
+    CrimsonGameplay::ConsecutiveDirectionalMoves(actorBaseAddr);
     CrimsonGameplay::DanteDownertia(actorBaseAddr);
     CrimsonGameplay::DanteStingerInputCrazyCombo(actorBaseAddr);
     CrimsonGameplay::FixAirStingerCancelTime(actorBaseAddr);
