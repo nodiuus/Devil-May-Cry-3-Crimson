@@ -148,7 +148,7 @@ void AnimTimers() {
             if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) continue;
             auto& currentAnim = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].currentAnim : crimsonPlayer[playerIndex].currentAnimClone;
             auto& actorMotion = actorData.motionData[0].index;
-            auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+            auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 
 
             // Reset Timer By Animation IDs

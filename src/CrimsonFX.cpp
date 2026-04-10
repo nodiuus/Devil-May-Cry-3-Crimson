@@ -440,89 +440,161 @@ template <typename T> auto GetMeleeWeapon(T& actorData) {
 }
 
 void DelayedComboFXController(byte8* actorBaseAddr) {
-    using namespace ACTION_DANTE;
+	using namespace ACTION_DANTE;
 
 	if (!actorBaseAddr) {
 		return;
 	}
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-    auto& motionDataIndex = actorData.motionData[0].index;
+	if (!CrimsonGameplay::IsActiveCharacterActor(actorData)) return;
+	if (!activeCrimsonConfig.VFX.delayedComboVFX) return;
+	if (actorData.character != CHARACTER::DANTE) return;
+	auto& motionIndex = actorData.motionData[0].index;
 
 	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
 	auto weapon = GetMeleeWeapon(actorData);
-
+	auto& gamepad = GetGamepad(playerIndex);
 	auto inAttack = (actorData.eventData[0].event == 17);
-	auto rebellionCombo1Anim = (actorData.motionData[0].index == 3);
-	auto inRebellionCombo1 = (actorData.action == REBELLION_COMBO_1_PART_1 && motionDataIndex == 3 && inAttack);
-    auto inRebellionCombo2 = (actorData.action == REBELLION_COMBO_2_PART_2 && motionDataIndex == 6 && inAttack);
-	auto inCerberusCombo2 = (actorData.action == CERBERUS_COMBO_1_PART_2 && motionDataIndex == 4 && inAttack);
-	auto inAgniCombo1 = (actorData.action == AGNI_RUDRA_COMBO_1_PART_1 && motionDataIndex == 3 && inAttack);
-	auto inAgniCombo2 = (actorData.action == AGNI_RUDRA_COMBO_2_PART_2 && motionDataIndex == 8 && inAttack);
-	auto inBeoCombo1 = (actorData.action == BEOWULF_COMBO_1_PART_2 && motionDataIndex == 4 && inAttack);
+	auto inRebellionCombo1 = (actorData.action == REBELLION_COMBO_1_PART_1 && motionIndex == 3 && inAttack);
+	auto inRebellionCombo2 = (actorData.action == REBELLION_COMBO_2_PART_2 && motionIndex == 6 && inAttack);
+	auto inCerberusCombo2 = (actorData.action == CERBERUS_COMBO_1_PART_2 && motionIndex == 4 && inAttack);
+	auto inAgniCombo1 = (actorData.action == AGNI_RUDRA_COMBO_1_PART_1 && motionIndex == 3 && inAttack);
+	auto inAgniCombo2 = (actorData.action == AGNI_RUDRA_COMBO_2_PART_2 && motionIndex == 8 && inAttack);
+	auto inBeoCombo1 = (actorData.action == BEOWULF_COMBO_1_PART_2 &&
+		(motionIndex == 4 || motionIndex == 43 || motionIndex == 44) && inAttack);
+	auto inBeoCombo2 = (actorData.action == BEOWULF_COMBO_2_PART_3 &&
+		(motionIndex == 7 || motionIndex == 47 || motionIndex == 48) && inAttack);
 	auto meleeWeapon = actorData.newWeapons[actorData.meleeWeaponIndex];
-	auto& delayedComboFX = crimsonPlayer[playerIndex].delayedComboFX;
-    auto& actionTimer = crimsonPlayer[playerIndex].actionTimer;
+	auto& delayedComboFX = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].delayedComboFX :
+		crimsonPlayer[playerIndex].delayedComboFXClone;
+	auto& actionTimer = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
+	auto& motionTimer = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].motionTimer :
+		crimsonPlayer[playerIndex].motionTimerClone;
+
+	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	if (!actorData.newWeaponDataAddr[weapon]) {
+		return;
+	}
+	static constexpr const wchar_t* delayedComboFXPath[6] = {
+			L"Crimson\\vfx\\delayedcombo\\rebellion.efkefc",
+			L"Crimson\\vfx\\delayedcombo\\cerberus.efkefc",
+			L"Crimson\\vfx\\delayedcombo\\agni_rudra_1.efkefc",
+			L"Crimson\\vfx\\delayedcombo\\agni_rudra_2.efkefc",
+			L"Crimson\\vfx\\delayedcombo\\beowulf_arms.efkefc",
+			L"Crimson\\vfx\\delayedcombo\\beowulf_legs.efkefc",
+	};
+	static EffekseerRefHandle delayedComboFXRef = CrimsonEfk::LoadEffect(delayedComboFXPath[weapon], 1.0f);
+
+	cDrawReverse playerDanteCDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerDanteCDraw.bones);
 
 	if (inRebellionCombo1) {
 		delayedComboFX.duration = 0.485f;
-		delayedComboFX.weaponThatStartedMove = 0;
+		delayedComboFX.weaponThatStartedMove = WEAPON::REBELLION;
 	}
-    else if (inRebellionCombo2) {
+	else if (inRebellionCombo2) {
 		delayedComboFX.duration = 0.85f;
-		delayedComboFX.weaponThatStartedMove = 0;
-    }
+		delayedComboFX.weaponThatStartedMove = WEAPON::REBELLION;
+	}
 	else if (inCerberusCombo2) {
 		delayedComboFX.duration = 0.55f;
-		delayedComboFX.weaponThatStartedMove = 1;
+		delayedComboFX.weaponThatStartedMove = WEAPON::CERBERUS;
 	}
 	else if (inAgniCombo1) {
 		delayedComboFX.duration = 0.53f;
-		delayedComboFX.weaponThatStartedMove = 2;
+		delayedComboFX.weaponThatStartedMove = WEAPON::AGNI_RUDRA;
 	}
 	else if (inAgniCombo2) {
 		delayedComboFX.duration = 0.70f;
-		delayedComboFX.weaponThatStartedMove = 2;
+		delayedComboFX.weaponThatStartedMove = WEAPON::AGNI_RUDRA;
 	}
 	else if (inBeoCombo1) {
-		delayedComboFX.duration = 0.55f; // Beowulf's time can be very inconsistent due to charge time (the more you charge the less you
+		delayedComboFX.duration = 0.5f; // Beowulf's time can be very inconsistent due to charge time (the more you charge the less you
 		// need to wait between delays)
-		delayedComboFX.weaponThatStartedMove = 4;
+		delayedComboFX.weaponThatStartedMove = WEAPON::BEOWULF_DANTE;
+	}
+	else if (inBeoCombo2 && motionIndex == 7) {
+		delayedComboFX.duration = 1.1f;
+		delayedComboFX.weaponThatStartedMove = WEAPON::BEOWULF_DANTE;
+	}
+	else if (inBeoCombo2 && (motionIndex == 47 || motionIndex == 48)) {
+		delayedComboFX.duration = 0.60f;
+		delayedComboFX.weaponThatStartedMove = WEAPON::BEOWULF_DANTE;
 	}
 
+	if ((inRebellionCombo1 || inRebellionCombo2 || inCerberusCombo2 || inAgniCombo1 || inAgniCombo2 || inBeoCombo1 || inBeoCombo2) &&
+		delayedComboFX.playCount == 0 && weapon == delayedComboFX.weaponThatStartedMove) {
+		bool playedEffect = false;
 
-	if (actorData.character == CHARACTER::DANTE) {
-		if (actionTimer >= delayedComboFX.duration &&
-			(inRebellionCombo1 || inRebellionCombo2 || inCerberusCombo2 || inAgniCombo1 || inAgniCombo2 || inBeoCombo1) && delayedComboFX.playCount == 0 &&
-			weapon == delayedComboFX.weaponThatStartedMove) {
+		// VFX
+		// uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.delayedComboColor);
+		// CrimsonDetours::CreateEffectDetour(pPlayer, delayedComboFX.bank, delayedComboFX.id, 1, true, actualColor, 1.2f);
+		auto& danteWeapon = *reinterpret_cast<WeaponData*>(actorData.newWeaponDataAddr[weapon]);
+		cDrawReverse* danteWeaponCDraw = reinterpret_cast<cDrawReverse*>(danteWeapon.weaponCDraw);
+		Matrix44* weaponBoneMatrix = reinterpret_cast<Matrix44*>(danteWeaponCDraw[0].bones);
 
-            // SFX
+
+		if (weapon == WEAPON::REBELLION && actionTimer >= delayedComboFX.duration) {
+			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix1, actorData);
+			playedEffect = true;
+		}
+		else if (weapon == WEAPON::CERBERUS && actionTimer >= delayedComboFX.duration) {
+			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix2, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix9, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix10, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix11, actorData);
+
+			// INCLUDE 2 (additional for extra brightness), 9 (held rod), 10 (rod 2), 11 (rod 3)
+			playedEffect = true;
+		}
+		else if (weapon == WEAPON::AGNI_RUDRA && actionTimer >= delayedComboFX.duration) {
+			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix2, actorData);
+			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon + 1], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix3, actorData);
+			playedEffect = true;
+		}
+		else if (weapon == WEAPON::BEOWULF_DANTE && (inBeoCombo1 || inBeoCombo2) && motionTimer >= delayedComboFX.duration) {
+			if (inBeoCombo2 && delayedComboFX.transitioningToHyperFist) {
+				return;
+			}
+			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix10, actorData); // right hand
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix14, actorData); // left hand
+			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon + 1], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix19, actorData); // right foot
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix23, actorData); // left foot
+			playedEffect = true;
+		}
+
+		if (playedEffect) {
+			// SFX
 			if (activeCrimsonConfig.SFX.delayedComboEffectType == DELAYEDCOMBOSFX::TYPE_A) {
 				CrimsonSDL::PlayDelayedCombo2(actorData.newPlayerIndex);
-			} else {
+			}
+			else {
 				CrimsonSDL::PlayDelayedCombo1(actorData.newPlayerIndex);
 			}
-			
-			
-            // VFX
-			if (activeCrimsonConfig.VFX.delayedComboVFX) {
-				auto pPlayer = (void*)crimsonPlayer[playerIndex].playerPtr;
-				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.delayedComboColor);
-				CrimsonDetours::CreateEffectDetour(pPlayer, delayedComboFX.bank, delayedComboFX.id, 1, true, actualColor, 1.2f);
 
-				// VIBRATION
-				CrimsonSDL::VibrateController(playerIndex, 0, 0x5555, 130);
-			}
-
-
+			// VIBRATION
+			CrimsonSDL::VibrateController(playerIndex, 0, 0x5555, 130);
 			delayedComboFX.playCount++;
 		}
-		else if (actionTimer < 0.485f) {
-			delayedComboFX.playCount = 0;
-		}
-
 	}
-   
+	else if (actionTimer < 0.485f) {
+		delayedComboFX.playCount = 0;
+		delayedComboFX.transitioningToHyperFist = false;
+	}
+
+	if (!(inRebellionCombo1 || inRebellionCombo2 || inCerberusCombo2 || inAgniCombo1 || inAgniCombo2 || inBeoCombo1 || inBeoCombo2)) {
+		CrimsonEfk::StopEffect(delayedComboFX.efkHandle);
+	}
 }
 
 void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, 

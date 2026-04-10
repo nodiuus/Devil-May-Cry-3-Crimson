@@ -6,7 +6,7 @@
 namespace CrimsonGameplay {
 
 extern bool startingFromGround[4];
-
+bool IsActiveCharacterActor(byte8* actorBaseAddr);
 void UpdateCrimsonPlayerData();
 void FixAirStingerCancelTime(byte8* actorBaseAddr);
 void DanteStingerInputCrazyCombo(byte8* actorBaseAddr);

@@ -45,7 +45,11 @@
 
 namespace CrimsonGameplay {
 
-static bool IsActiveCharacterActor(const PlayerActorData& actorData) {
+bool IsActiveCharacterActor(byte8* actorBaseAddr) {
+	if (!actorBaseAddr) {
+		return false;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	auto& playerData = GetPlayerData(actorData.newPlayerIndex);
 	return (actorData.newCharacterIndex == playerData.activeCharacterIndex);
 }
@@ -302,7 +306,7 @@ void DanteStingerInputCrazyCombo(byte8* actorBaseAddr) {
 	auto actionTimer =
 		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
 	auto animTimer =
-		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 	auto motionIndex = actorData.motionData[0].index;
 	// --- Melee button hold timer ---
 	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : 
@@ -1028,8 +1032,8 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto& gamepad = GetGamepad(playerIndex);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
-	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer :
-		crimsonPlayer[playerIndex].animTimerClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer :
+		crimsonPlayer[playerIndex].motionTimerClone;
     auto& inRisingStar = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
         crimsonPlayer[playerIndex].inRisingStarClone;
 	auto& inYamatoHighTime = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
@@ -1187,8 +1191,8 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	auto& gamepad = GetGamepad(playerIndex);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
-	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer :
-		crimsonPlayer[playerIndex].animTimerClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer :
+		crimsonPlayer[playerIndex].motionTimerClone;
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
@@ -1894,7 +1898,7 @@ void VergilAdjustAirMovesPos(byte8* actorBaseAddr) {
     auto state  = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].state : crimsonPlayer[playerIndex].stateClone;
     auto actionTimer =
         (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
-    auto animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+    auto animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     auto& inAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun :
         crimsonPlayer[playerIndex].inAirTauntRisingSunClone;
     auto lastAction = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastAction : crimsonPlayer[playerIndex].lastActionClone;
@@ -2008,7 +2012,7 @@ void VergilDownertia(byte8* actorBaseAddr) {
 	auto state = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].state : crimsonPlayer[playerIndex].stateClone;
 	auto actionTimer =
 		(actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
-	auto animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 	auto& inAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun :
 		crimsonPlayer[playerIndex].inAirTauntRisingSunClone;
 	auto lastAction = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastAction : crimsonPlayer[playerIndex].lastActionClone;
@@ -2665,7 +2669,7 @@ void StoreInertia(byte8* actorBaseAddr) {
 	bool inSkyDance =
 		(action == AGNI_RUDRA_SKY_DANCE_PART_1 || action == AGNI_RUDRA_SKY_DANCE_PART_2 || action == AGNI_RUDRA_SKY_DANCE_PART_3);
 
-	auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
 	auto& guardflyTimer = i->guardflyTimer;
 
@@ -2834,7 +2838,7 @@ void InertiaController(byte8* actorBaseAddr) {
 
     bool inSkyDance =
         (action == AGNI_RUDRA_SKY_DANCE_PART_1 || action == AGNI_RUDRA_SKY_DANCE_PART_2 || action == AGNI_RUDRA_SKY_DANCE_PART_3);
-    auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+    auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     auto& guarflyTimer = i->guardflyTimer;
 	auto gamepad = GetGamepad(playerIndex);
 
@@ -3033,7 +3037,7 @@ void GravityCorrections(byte8* actorBaseAddr) {
 	auto& action = actorData.action;
 	auto& event = actorData.eventData[0].event;
 	auto& state = actorData.state;
-	auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     static bool setSkyStarGravityPlayer[PLAYER_COUNT][ENTITY_COUNT] = { false };
     auto& setSkyStarGravity = setSkyStarGravityPlayer[playerIndex][entityIndex];
 
@@ -3081,8 +3085,8 @@ void AerialRaveGravityTweaks(byte8* actorBaseAddr) {
     auto& action    = actorData.action;
     auto& event     = actorData.eventData[0].event;
     auto& state     = actorData.state;
-    auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer 
-		: crimsonPlayer[playerIndex].animTimerClone;
+    auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer 
+		: crimsonPlayer[playerIndex].motionTimerClone;
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer 
 		: crimsonPlayer[playerIndex].actionTimerClone;
 
@@ -4402,7 +4406,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     // 	drive projectile damage dmc3.exe + 5CB1EC, 300.0f
     uintptr_t drivePhysicalDamageAddr   = (uintptr_t)appBaseAddr + 0x5C6D2C;
     uintptr_t driveProjectileDamageAddr = (uintptr_t)appBaseAddr + 0x5CB1EC;
-	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 	auto gamepad = GetGamepad(playerIndex);
 
 	static constexpr const wchar_t* driveChargeParticlePath = L"Crimson\\vfx\\drive_charge.efkefc";

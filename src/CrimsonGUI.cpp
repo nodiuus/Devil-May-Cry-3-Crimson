@@ -8740,9 +8740,12 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("transitioningToHyperFirst:  %d", crimsonPlayer[0].delayedComboFX.transitioningToHyperFist);
 			ImGui::Text("ACTION:  %u", actorData.action);
 			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
 			ImGui::Text("inertiaRotation : % x", actorData.inertiaRotation);
+			ImGui::Text("MOTION TIMER:  %g", crimsonPlayer[0].motionTimer);
+			ImGui::Text("MOTION INDEX:  %u", actorData.motionData[0].index);
 			ImGui::Text("drive inPart2 : %d", crimsonPlayer[0].drive.inPart2);
 			ImGui::Text("drive inPart3 : %d", crimsonPlayer[0].drive.inPart3);
 			ImGui::Text("yamatoHighTimeClone : %d", crimsonPlayer[0].inYamatoHighTimeClone);
@@ -8829,8 +8832,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("Royal Block: %u", actorData.royalBlock);
 			ImGui::Text("Guard: %u", actorData.guard);
 			ImGui::Text("maxDT: %g", actorData.maxMagicPoints);
-			ImGui::Text("anim Timer Main Actor:  %g", crimsonPlayer[0].animTimer);
-			ImGui::Text("anim Timer Clone:  %g", crimsonPlayer[0].animTimerClone);
+			ImGui::Text("anim Timer Clone:  %g", crimsonPlayer[0].motionTimerClone);
 			ImGui::Text("action Timer Clone:  %g", crimsonPlayer[0].actionTimerClone);
 			ImGui::Text("AIR GUARD: %u", actorData.airGuard);
 			ImGui::Text("GUARDFLY PULL: %g", crimsonPlayer[0].inertia.airGuard.cachedPull);

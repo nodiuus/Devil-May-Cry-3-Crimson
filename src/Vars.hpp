@@ -2496,6 +2496,13 @@ struct Matrix44 {
 	float matrix14[16];
 	float matrix15[16];
 	float matrix16[16];
+	float matrix17[16];
+	float matrix18[16];
+	float matrix19[16];
+	float matrix20[16];
+	float matrix21[16];
+	float matrix22[16];
+    float matrix23[16];
 };
 
 //static_assert(sizeof(Matrix44) == 0x40);
@@ -5449,6 +5456,7 @@ struct DelayedComboFX {
 	uint8 weaponThatStartedMove = 20;
 	int bank = 3;
 	int id = 143;
+    bool transitioningToHyperFist = false;
     EffekseerHandle efkHandle = 0;
 };
 
@@ -5536,7 +5544,7 @@ struct CrimsonPlayerData {
     float actionTimerNotEventChange = 0;
     float actionTimerNotTrickChange = 0;
     float lastActionTime = 0;
-    float animTimer   = 0;
+    float motionTimer   = 0;
     float eventTimer = 0;
     float trickDashTimer = 0;
     uint32 currentEvent = 0;
@@ -5619,7 +5627,7 @@ struct CrimsonPlayerData {
 	float actionTimerNotEventChangeClone = 0;
     float actionTimerNotTrickChangeClone = 0;
     float lastActionTimeClone = 0;
-    float animTimerClone   = 0;
+    float motionTimerClone   = 0;
     float eventTimerClone = 0;
     float trickDashTimerClone = 0;
     uint32 currentEventClone = 0;
@@ -5637,6 +5645,7 @@ struct CrimsonPlayerData {
     ImprovedCancels cancelsClone;
     BackToForward b2FClone;
     Inertia inertiaClone;
+    DelayedComboFX delayedComboFXClone;
     float cameraCloneDistance = 0;
     float cameraCloneDistanceClamped = 0;
     float cloneTo1PDistance = 0;

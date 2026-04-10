@@ -320,10 +320,11 @@ bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
     // if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
 	auto actionTimer =
 		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
-	auto animTimer =
-		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].animTimer : crimsonPlayer[playerIndex].animTimerClone;
+	auto motionTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 	auto motionIndex = actorData.motionData[0].index;
 	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : crimsonPlayer[playerIndex].stingerInputClone;
+	auto& delayedComboFX = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].delayedComboFX : crimsonPlayer[playerIndex].delayedComboFXClone;
 
 
     switch (actorData.action) { // from vars, namespace ACTION_DANTE {
@@ -349,7 +350,8 @@ bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
         }
         break;
     case BEOWULF_COMBO_2_PART_3:
-        if (std::clamp<float>(animTimer, 0.5f, 1.09f) == animTimer && inputException) {
+        if (std::clamp<float>(motionTimer, 0.5f, 1.0f) == motionTimer && inputException) {
+			if (motionIndex != 27) delayedComboFX.transitioningToHyperFist = true;
             return true;
         }
         break;
