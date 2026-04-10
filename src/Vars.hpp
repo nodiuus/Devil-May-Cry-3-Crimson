@@ -75,7 +75,7 @@ enum {
     ROYALGUARD_MODDED_MOVES,
 
     SPRINT,
-    AIR_TAUNT,
+    SKY_LAUNCH_AIR_TAUNT,
 
     MOD_COUNT,
 };
@@ -116,7 +116,7 @@ enum {
     MIRAGE_TRIGGER,
 
     SPRINT,
-    AIR_TAUNT,
+    RISING_SUN_AIR_TAUNT,
 
     MOD_COUNT,
 };

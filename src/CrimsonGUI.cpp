@@ -5543,7 +5543,7 @@ struct ShopExperienceStyleHelper {
 
 ShopExperienceHelper shopHelpersDante[] = {
 	{"Sprint","Sprints out of combat, similar to DMC4 and 5's Speed Ability.", UNLOCK_DANTE::SPRINT, 3000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_DANTE::AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Sky Launch Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_DANTE::SKY_LAUNCH_AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Rebellion Stinger Level 1","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, 2500, -1, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2,-1,-1, {UNLOCK_DANTE::REBELLION_STINGER_AIR,-1,-1,-1,-1}},
 	{"Rebellion Stinger Level 2","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2, 10000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Rebellion Air Stinger","Lock On + Forward + Melee while in air.",UNLOCK_DANTE::REBELLION_STINGER_AIR, 5000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
@@ -5618,7 +5618,7 @@ ShopExperienceStyleHelper shopHelpersVergilStyle[] = {
 
 ShopExperienceHelper shopHelpersVergil[] = {
 	{"Sprint","Sprints out of combat, similar to DMC4 and 5's Speed Ability.", UNLOCK_VERGIL::SPRINT, 3000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
-	{"Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_VERGIL::AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rising Sun Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_VERGIL::RISING_SUN_AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Yamato Rapid Slash Level 1","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_RISING_STAR,-1,-1,-1,-1}},
 	{"Yamato Rapid Slash Level 2","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2, 15000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 	{"Yamato Rising Star","During Rapid Slash HOLD Melee.",UNLOCK_VERGIL::YAMATO_RISING_STAR, 10000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
