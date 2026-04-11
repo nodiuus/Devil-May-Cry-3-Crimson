@@ -4084,6 +4084,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonFX::StyleRankHudFadeoutController();
     CrimsonFX::DelayedComboFXController(actorBaseAddr);
     CrimsonGameplay::DanteDriveRework(actorBaseAddr);
+    CrimsonGameplay::DanteShotgunBackslide(actorBaseAddr);
     
     if (sessionData.unlockDevilTrigger) {
         CrimsonFX::DTExplosionFXController(actorBaseAddr);

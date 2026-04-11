@@ -53,6 +53,7 @@ void DetectCloseToEnemy(byte8* actorBaseAddr);
 void SkyLaunchAirTauntController(byte8* actorBaseAddr);
 void ToggleRebellionHoldDrive(bool enable);
 void DanteDriveRework(byte8* actorBaseAddr);
+void DanteShotgunBackslide(byte8* actorBaseAddr);
 void GroundTrickFlagSet(byte8* actorBaseAddr);
 
 

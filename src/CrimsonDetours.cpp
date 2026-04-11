@@ -931,7 +931,12 @@ bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
 	uint8 playerIndex = actorData.newPlayerIndex;
 	uint8 entityIndex = actorData.newEntityIndex;
 	auto& jCut = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
+	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto& gamepad = GetGamepad(playerIndex);
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
+	// Here we can block certain actions from being performed.
+	
 // 	if (jCut.isJustFrameCharged || jCut.isAfterJustFrameCharged || actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.eventData[0].event == 33) {
 // 		return false;
 // 	}

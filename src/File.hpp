@@ -36,6 +36,7 @@ extern byte8* newJudgementCutAirJF_pl021_00_3;
 extern byte8* newDrivePart1_pl000_00_3;
 extern byte8* newDrivePart2_pl000_00_3;
 extern byte8* newDrivePart3_pl000_00_3;
+extern byte8* newBackslide_pl000_00_19;
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex);
 

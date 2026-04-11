@@ -4627,6 +4627,40 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
 }
 
+
+void DanteShotgunBackslide(byte8* actorBaseAddr) {
+	using namespace ACTION_DANTE;
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
+	if (actorData.character != CHARACTER::DANTE) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
+	bool inAir = (actorData.state & STATE::IN_AIR);
+	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto& gamepad = GetGamepad(playerIndex);
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+	auto& characterData = GetCharacterData(actorData);
+	auto rangedWeaponEquipped = characterData.rangedWeapons[characterData.rangedWeaponIndex];
+	static bool prevStyleButton[PLAYER_COUNT][ENTITY_COUNT] = {};
+	bool styleButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) != 0;
+	bool shootButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::SHOOT)) != 0;
+	bool styleButtonPressed = styleButtonDown && !prevStyleButton[playerIndex][entityIndex];
+	prevStyleButton[playerIndex][entityIndex] = styleButtonDown;
+	
+	if (!inAir && lockOn && tiltDirection == TILT_DIRECTION::DOWN && styleButtonPressed
+		&& actorData.action != SHOTGUN_POINT_BLANK && actorData.style == STYLE::GUNSLINGER && rangedWeaponEquipped == WEAPON::SHOTGUN) {
+		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = newBackslide_pl000_00_19;
+		actorData.action = SHOTGUN_POINT_BLANK;
+		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+	}
+	else if (actorData.action != SHOTGUN_POINT_BLANK) {
+		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = File_staticFiles[pl000_00_19];
+	}
+}
+
 void GroundTrickFlagSet(byte8* actorBaseAddr) {
     // Works in tandem with DanteTrickAlterations Detour in CrimsonDetours (requirement)
 	if (!actorBaseAddr) {

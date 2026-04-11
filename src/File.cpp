@@ -350,6 +350,7 @@ byte8* newJudgementCutAirJF_pl021_00_3 = 0;
 byte8* newDrivePart1_pl000_00_3 = 0;
 byte8* newDrivePart2_pl000_00_3 = 0;
 byte8* newDrivePart3_pl000_00_3 = 0;
+byte8* newBackslide_pl000_00_19 = 0;
 
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex) {
@@ -588,6 +589,7 @@ bool File_Init() {
 		const char* newDrivePart1Filename = "newDrivePart1_pl000_00_3.pac";
 		const char* newDrivePart2Filename = "newDrivePart2_pl000_00_3.pac";
 		const char* newDrivePart3Filename = "newDrivePart3_pl000_00_3.pac";
+		const char* newBackslideFilename = "newBackslide_pl000_00_19.pac";
 
         auto& file = demo_pl000_00_3 = File_staticFiles.Push(filename);
         auto& file2 = vergil_pl021_00_3 = File_staticFiles.Push(vergilYamatoFilename);
@@ -603,6 +605,7 @@ bool File_Init() {
 		auto& file12 = newDrivePart1_pl000_00_3 = File_staticFiles.Push(newDrivePart1Filename);
 		auto& file13 = newDrivePart2_pl000_00_3 = File_staticFiles.Push(newDrivePart2Filename);
 		auto& file14 = newDrivePart3_pl000_00_3 = File_staticFiles.Push(newDrivePart3Filename);
+		auto& file15 = newBackslide_pl000_00_19 = File_staticFiles.Push(newBackslideFilename);
         if (!file) {
             return;
         }
@@ -621,6 +624,10 @@ bool File_Init() {
 		AdjustPointers(file9);
 		AdjustPointers(file10);
 		AdjustPointers(file11);
+		AdjustPointers(file12);
+		AdjustPointers(file13);
+		AdjustPointers(file14);
+		AdjustPointers(file15);
     }();
 
 
