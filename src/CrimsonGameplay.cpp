@@ -4636,6 +4636,9 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (!IsActiveCharacterActor(actorData)) return;
 	if (actorData.character != CHARACTER::DANTE) return;
+
+	if (!(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::GUNSLINGER_MODDED_MOVES]))
+		return;
 	CrimsonDetours::ToggleShotgunShlSpawnAnglePointBlank(true);
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;

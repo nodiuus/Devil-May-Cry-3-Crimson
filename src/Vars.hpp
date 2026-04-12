@@ -77,6 +77,9 @@ enum {
     SPRINT,
     SKY_LAUNCH_AIR_TAUNT,
 
+    //Backslide
+    GUNSLINGER_MODDED_MOVES,
+
     MOD_COUNT,
 };
 };
