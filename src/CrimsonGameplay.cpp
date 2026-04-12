@@ -4636,6 +4636,7 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (!IsActiveCharacterActor(actorData)) return;
 	if (actorData.character != CHARACTER::DANTE) return;
+	CrimsonDetours::ToggleShotgunShlSpawnAnglePointBlank(true);
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	bool inAir = (actorData.state & STATE::IN_AIR);
@@ -4646,18 +4647,20 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	auto rangedWeaponEquipped = characterData.rangedWeapons[characterData.rangedWeaponIndex];
 	static bool prevStyleButton[PLAYER_COUNT][ENTITY_COUNT] = {};
 	bool styleButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) != 0;
-	bool shootButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::SHOOT)) != 0;
 	bool styleButtonPressed = styleButtonDown && !prevStyleButton[playerIndex][entityIndex];
 	prevStyleButton[playerIndex][entityIndex] = styleButtonDown;
-	
+	auto& inBackslide = (entityIndex == 0) ? crimsonPlayer[playerIndex].inBackslide : crimsonPlayer[playerIndex].inBackslideClone;
+
 	if (!inAir && lockOn && tiltDirection == TILT_DIRECTION::DOWN && styleButtonPressed
 		&& actorData.action != SHOTGUN_POINT_BLANK && actorData.style == STYLE::GUNSLINGER && rangedWeaponEquipped == WEAPON::SHOTGUN) {
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = newBackslide_pl000_00_19;
 		actorData.action = SHOTGUN_POINT_BLANK;
 		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+		inBackslide = true;
 	}
 	else if (actorData.action != SHOTGUN_POINT_BLANK) {
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = File_staticFiles[pl000_00_19];
+		inBackslide = false;
 	}
 }
 

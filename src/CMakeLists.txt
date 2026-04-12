@@ -32,6 +32,7 @@ set(MASM_SRC
     masm/DMC4LockOnDirection.asm
     masm/DTMustStyleArmor.asm
     masm/EnemyAITarget.asm
+    masm/ShotgunShlSpawnAnglePointBlank.asm
     masm/SetAirTauntAsm.asm
     masm/SkyLaunchAirTaunt.asm
     masm/StyleLevellingCCSFix.asm

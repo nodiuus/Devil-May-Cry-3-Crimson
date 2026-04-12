@@ -5606,6 +5606,7 @@ struct CrimsonPlayerData {
     bool inYamatoHighTime = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
+    bool inBackslide = false;
     EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
     DanteStingerInput stingerInput;
@@ -5678,6 +5679,7 @@ struct CrimsonPlayerData {
 	bool inYamatoHighTimeClone = false;
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
+	bool inBackslideClone = false;
     EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
     DanteStingerInput stingerInputClone;
