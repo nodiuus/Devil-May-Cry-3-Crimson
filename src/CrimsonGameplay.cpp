@@ -2233,7 +2233,7 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 		(actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].actionTimerClone : crimsonPlayer[playerIndex].actionTimer;
 
 	// We add Backslide here as a way to always guarantee Freeform Soft Lock Helper is on during it. So that it may behave in a similar fashion to 
-	// Royal Release which the default Point Blank move does not. (disables the game's own rotation set when executing the move)
+	// Royal Release which the default Point Blank move does not. (disables the game's own rotation set when executing the move) - Mia
 	CrimsonDetours::ToggleFreeformSoftLockHelper(activeCrimsonGameplay.Gameplay.General.freeformSoftLock || inBackslide);
 	float bufferTime = (activeCrimsonGameplay.Gameplay.General.bufferlessReversals) ? 0.3f : 0.02f;
 
@@ -2276,8 +2276,7 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 						actorData.action == ROYALGUARD_RELEASE_2 || actorData.action == ROYALGUARD_RELEASE_3 ||
 						actorData.action == ROYALGUARD_RELEASE_4 || actorData.action == ROYALGUARD_AIR_RELEASE_1 ||
 						actorData.action == ROYALGUARD_AIR_RELEASE_2 || actorData.action == ROYALGUARD_AIR_RELEASE_3 ||
-						actorData.action == ROYALGUARD_AIR_RELEASE_4 ||
-						(actorData.action == SHOTGUN_POINT_BLANK && inBackslide)) return;
+						actorData.action == ROYALGUARD_AIR_RELEASE_4) return;
 
 					HandleRotationForMultiPartMove({ ROYALGUARD_RELEASE_1, ROYALGUARD_RELEASE_2 }, stickRotation);
 					HandleRotationForMultiPartMove({ ROYALGUARD_AIR_RELEASE_1, ROYALGUARD_AIR_RELEASE_2 }, stickRotation);
