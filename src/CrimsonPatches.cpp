@@ -353,6 +353,26 @@ void ToggleIncreasedArtemisInstantChargeResponsiveness(bool enable) {
 	run = enable;
 }
 
+void ToggleKillPointBlankCCEffects(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// dmc3.exe+20EE2F - E8 6C 8E 0D 00 - call dmc3.exe+2E7CA0 { Point Blank CC effect CreateEffectA }
+	// dmc3.exe+20EE82 - E8 99 A4 12 00 - call dmc3.exe+339320 { Point Blank CC Sound Effect }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x20EE2F), 5);
+		_nop((char*)(appBaseAddr + 0x20EE82), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x20EE2F), (char*)"\xE8\x6C\x8E\x0D\x00", 5);
+		_patch((char*)(appBaseAddr + 0x20EE82), (char*)"\xE8\x99\xA4\x12\x00", 5);
+	}
+	
+	run = enable;
+}
+
 #pragma endregion
 
 #pragma region CameraStuff

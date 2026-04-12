@@ -4656,10 +4656,12 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = newBackslide_pl000_00_19;
 		actorData.action = SHOTGUN_POINT_BLANK;
 		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+		CrimsonPatches::ToggleKillPointBlankCCEffects(true);
 		inBackslide = true;
 	}
 	else if (actorData.action != SHOTGUN_POINT_BLANK) {
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = File_staticFiles[pl000_00_19];
+		CrimsonPatches::ToggleKillPointBlankCCEffects(false);
 		inBackslide = false;
 	}
 }

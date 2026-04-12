@@ -19,6 +19,7 @@ void DriveProjectileThroughWalls(bool enable);
 void ToggleIncreasedEnemyJuggleTime(bool enable);
 void DisableAirSlashKnockback(bool enable);
 void ToggleIncreasedArtemisInstantChargeResponsiveness(bool enable);
+void ToggleKillPointBlankCCEffects(bool enable);
 
 #pragma endregion
 
