@@ -4655,7 +4655,10 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	auto& inBackslide = (entityIndex == 0) ? crimsonPlayer[playerIndex].inBackslide : crimsonPlayer[playerIndex].inBackslideClone;
 
 	if (!inAir && lockOn && tiltDirection == TILT_DIRECTION::DOWN && styleButtonPressed
-		&& actorData.action != SHOTGUN_POINT_BLANK && actorData.style == STYLE::GUNSLINGER && rangedWeaponEquipped == WEAPON::SHOTGUN) {
+		&& actorData.action != SHOTGUN_POINT_BLANK && actorData.style == STYLE::GUNSLINGER && 
+		rangedWeaponEquipped == WEAPON::SHOTGUN && 
+		(!(actorData.state & STATE::BUSY) || CanQueueStyleAction(actorData))) {
+
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = newBackslide_pl000_00_19;
 		actorData.action = SHOTGUN_POINT_BLANK;
 		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
