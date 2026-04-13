@@ -4632,6 +4632,19 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
 }
 
+static constexpr uintptr_t SHOTGUN_SHL_FIRE_OFFSET() { return 0x1CA390; }
+
+using ShotgunShlFire_t = void(__fastcall*)(PlayerActorData* actorData, vec4* pos, vec4* pos2, uint8 mode, uint16 shotType);
+
+static void CallShotgunShlFire(PlayerActorData& actorData, vec4& pos, vec4& pos2, uint8 mode = 0, uint16 shotType = 8) {
+	auto shotgunShlFire = reinterpret_cast<ShotgunShlFire_t>(appBaseAddr + SHOTGUN_SHL_FIRE_OFFSET());
+	if (!shotgunShlFire) {
+		return;
+	}
+
+	shotgunShlFire(&actorData, &pos, &pos2, mode, shotType);
+}
+
 
 void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	using namespace ACTION_DANTE;
@@ -4667,6 +4680,22 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = newBackslide_pl000_00_19;
 		actorData.action = SHOTGUN_POINT_BLANK;
+
+		/* TEST
+		vec4 shellSpawnPos = actorData.position;
+		vec4 shellTargetPos = shellSpawnPos;
+
+		if (actorData.lockOnData.targetBaseAddr60) {
+			shellTargetPos = actorData.lockOnData.targetPosition;
+		}
+		else {
+			float angle = actorData.rotation * (3.14159265f / 32768.0f);
+			shellTargetPos.x += std::sin(angle) * 250.0f;
+			shellTargetPos.z += std::cos(angle) * 250.0f;
+		}
+
+		CallShotgunShlFire(actorData, shellSpawnPos, shellTargetPos, 0, 8);*/
+
 		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
 		CrimsonPatches::ToggleKillPointBlankCCEffects(true);
 		inBackslide = true;
