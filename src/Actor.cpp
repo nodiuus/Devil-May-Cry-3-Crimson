@@ -9438,6 +9438,15 @@ void SetAction(byte8* actorBaseAddr) {
             drive.inQuickDrive = false;
         }
 
+        // BACKSLIDE -- let's guarantee Buffering works properly without Fireworks overlap
+        // but the main implementation is inside CrimsonGameplay::DanteShotgunBackslide
+        if (lockOn && tiltDirection == TILT_DIRECTION::DOWN && actorData.action == SHOTGUN_FIREWORKS &&
+            (activeCrimsonGameplay.Gameplay.General.extramoves && 
+                ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::GUNSLINGER_MODDED_MOVES])) {
+            CrimsonPatches::ToggleKillPointBlankCCEffects(true);
+            actorData.action = SHOTGUN_POINT_BLANK;
+        }
+
         // Swap Sword Pierce and Dance Macabre
         if (activeCrimsonGameplay.Gameplay.Dante.swapDancePierceInputs) {
             if ((actorData.action == REBELLION_SWORD_PIERCE)) {

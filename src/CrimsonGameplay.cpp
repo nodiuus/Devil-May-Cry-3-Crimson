@@ -54,6 +54,538 @@ bool IsActiveCharacterActor(byte8* actorBaseAddr) {
 	return (actorData.newCharacterIndex == playerData.activeCharacterIndex);
 }
 
+template <typename T> uint8 GetNextMeleeAction(T& activeActorData, T& actorData) {
+	uint8 action = 0;
+
+	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+
+	auto inAir = (activeActorData.state & STATE::IN_AIR);
+
+	auto lockOn = (gamepad.buttons[0] & GetBinding(BINDING::LOCK_ON));
+
+	switch (actorData.character) {
+	case CHARACTER::DANTE: {
+		using namespace ACTION_DANTE;
+
+		// @Todo: Use GetMeleeWeapon.
+		auto weapon = actorData.newWeapons[actorData.meleeWeaponIndex];
+
+		switch (weapon) {
+		case WEAPON::REBELLION: {
+			if (inAir) {
+				action = REBELLION_HELM_BREAKER;
+			}
+			else {
+				action = REBELLION_COMBO_1_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = REBELLION_STINGER_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = REBELLION_HIGH_TIME;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::CERBERUS: {
+			if (inAir) {
+				action = CERBERUS_SWING;
+			}
+			else {
+				action = CERBERUS_COMBO_1_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = CERBERUS_REVOLVER_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = CERBERUS_WINDMILL;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::AGNI_RUDRA: {
+			if (inAir) {
+				action = AGNI_RUDRA_AERIAL_CROSS;
+			}
+			else {
+				action = AGNI_RUDRA_COMBO_1_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = AGNI_RUDRA_JET_STREAM_LEVEL_3;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = AGNI_RUDRA_WHIRLWIND;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::NEVAN: {
+			if (inAir) {
+				action = NEVAN_AIR_PLAY;
+			}
+			else {
+				action = NEVAN_TUNE_UP;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = NEVAN_REVERB_SHOCK_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = NEVAN_BAT_RIFT_LEVEL_1;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::BEOWULF_DANTE: {
+			if (inAir) {
+				action = BEOWULF_KILLER_BEE;
+			}
+			else {
+				action = BEOWULF_COMBO_1_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = BEOWULF_STRAIGHT_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = BEOWULF_RISING_DRAGON;
+					}
+				}
+			}
+
+			break;
+		}
+		}
+
+		break;
+	}
+	case CHARACTER::VERGIL: {
+		using namespace ACTION_VERGIL;
+
+		// @Todo: Use GetMeleeWeapon.
+		auto weapon = actorData.newWeapons[actorData.activeMeleeWeaponIndex];
+
+		switch (weapon) {
+		case WEAPON::YAMATO_VERGIL: {
+			if (inAir) {
+				action = YAMATO_AERIAL_RAVE_PART_1;
+			}
+			else {
+				action = YAMATO_COMBO_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = YAMATO_RAPID_SLASH_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = YAMATO_UPPER_SLASH_PART_1;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::BEOWULF_VERGIL: {
+			if (inAir) {
+				action = BEOWULF_STARFALL_LEVEL_2;
+			}
+			else {
+				action = BEOWULF_COMBO_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = BEOWULF_LUNAR_PHASE_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = BEOWULF_RISING_SUN;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::YAMATO_FORCE_EDGE: {
+			if (inAir) {
+				action = YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2;
+			}
+			else {
+				action = YAMATO_FORCE_EDGE_COMBO_PART_1;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = YAMATO_FORCE_EDGE_STINGER_LEVEL_2;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = YAMATO_FORCE_EDGE_HIGH_TIME;
+					}
+				}
+			}
+
+			break;
+		}
+		}
+
+		break;
+	}
+	}
+
+	return action;
+}
+
+uint8 GetNextMeleeAction(
+	CharacterData& activeCharacterData, NewActorData& activeNewActorData, CharacterData& characterData, NewActorData& newActorData) {
+	if (!((activeCharacterData.character < CHARACTER::MAX) && (characterData.character < CHARACTER::MAX))) {
+		return 0;
+	}
+
+	if (!activeNewActorData.baseAddr) {
+		return 0;
+	}
+	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+	if (!newActorData.baseAddr) {
+		return 0;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+
+	return GetNextMeleeAction(activeActorData, actorData);
+}
+
+template <typename T> void SetNextMeleeAction(T& activeActorData, T& actorData) {
+	auto action = GetNextMeleeAction(activeActorData, actorData);
+
+	if (action > 0) {
+		actorData.bufferedAction = action;
+	}
+}
+
+void SetNextMeleeAction(
+	CharacterData& activeCharacterData, NewActorData& activeNewActorData, CharacterData& characterData, NewActorData& newActorData) {
+	if (!((activeCharacterData.character < CHARACTER::MAX) && (characterData.character < CHARACTER::MAX))) {
+		return;
+	}
+
+	if (!activeNewActorData.baseAddr) {
+		return;
+	}
+	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+	if (!newActorData.baseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+
+	return SetNextMeleeAction(activeActorData, actorData);
+}
+
+template <typename T> uint8 GetNextStyleAction(T& activeActorData, T& actorData) {
+	uint8 action = 0;
+
+	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+
+	auto inAir = (activeActorData.state & STATE::IN_AIR);
+
+	auto lockOn = (gamepad.buttons[0] & GetBinding(BINDING::LOCK_ON));
+
+	if (actorData.character != CHARACTER::DANTE) {
+		return 0;
+	}
+
+	using namespace ACTION_DANTE;
+
+	if (actorData.style == STYLE::SWORDMASTER) {
+		// @Todo: Use GetMeleeWeapon.
+		auto weapon = actorData.newWeapons[actorData.meleeWeaponIndex];
+
+		switch (weapon) {
+		case WEAPON::REBELLION: {
+			if (inAir) {
+				action = REBELLION_AERIAL_RAVE_PART_1;
+			}
+			else {
+				action = REBELLION_PROP;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = REBELLION_SWORD_PIERCE;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = REBELLION_DANCE_MACABRE_PART_1;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::CERBERUS: {
+			if (inAir) {
+				action = CERBERUS_FLICKER;
+			}
+			else {
+				action = CERBERUS_AIR_FLICKER;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = CERBERUS_CRYSTAL;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = CERBERUS_ICE_AGE;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::AGNI_RUDRA: {
+			if (inAir) {
+				action = AGNI_RUDRA_SKY_DANCE_PART_1;
+			}
+			else {
+				action = AGNI_RUDRA_CROSSED_SWORDS;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = AGNI_RUDRA_CRAWLER;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = AGNI_RUDRA_TWISTER;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::NEVAN: {
+			if (inAir) {
+				action = NEVAN_AIR_SLASH_PART_1;
+			}
+			else {
+				action = NEVAN_SLASH;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = NEVAN_FEEDBACK;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = NEVAN_DISTORTION;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::BEOWULF_DANTE: {
+			if (inAir) {
+				action = BEOWULF_THE_HAMMER;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = BEOWULF_AIR_VOLCANO;
+					}
+				}
+			}
+			else {
+				action = BEOWULF_ZODIAC;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = BEOWULF_VOLCANO;
+					}
+					else if (tiltDirection == TILT_DIRECTION::DOWN) {
+						action = BEOWULF_REAL_IMPACT;
+					}
+				}
+			}
+
+			break;
+		}
+		}
+	}
+	else if (actorData.style == STYLE::GUNSLINGER) {
+		// @Todo: Use GetRangedWeapon.
+		auto weapon = actorData.newWeapons[actorData.rangedWeaponIndex];
+
+		switch (weapon) {
+		case WEAPON::EBONY_IVORY: {
+			if (inAir) {
+				action = EBONY_IVORY_RAIN_STORM;
+			}
+			else {
+				action = EBONY_IVORY_TWOSOME_TIME;
+			}
+
+			break;
+		}
+		case WEAPON::SHOTGUN: {
+			if (inAir) {
+				action = SHOTGUN_AIR_FIREWORKS;
+			}
+			else {
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = SHOTGUN_GUN_STINGER;
+					}
+
+					if (tiltDirection == TILT_DIRECTION::DOWN &&
+						(activeCrimsonGameplay.Gameplay.General.extramoves && 
+							ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::GUNSLINGER_MODDED_MOVES])) {
+						action = SHOTGUN_POINT_BLANK;
+					}
+				}
+				else {
+					action = SHOTGUN_FIREWORKS;
+				}
+			}
+
+			break;
+		}
+		case WEAPON::ARTEMIS: {
+			if (inAir) {
+				action = ARTEMIS_AIR_MULTI_LOCK_SHOT;
+			}
+			else {
+				action = ARTEMIS_MULTI_LOCK_SHOT;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = ARTEMIS_SPHERE;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::SPIRAL: {
+			if (inAir) {
+				action = 0;
+			}
+			else {
+				action = SPIRAL_TRICK_SHOT;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = SPIRAL_SNIPER;
+					}
+				}
+			}
+
+			break;
+		}
+		case WEAPON::KALINA_ANN: {
+			if (inAir) {
+				action = 0;
+			}
+			else {
+				action = KALINA_ANN_HYSTERIC;
+
+				if (lockOn) {
+					if (tiltDirection == TILT_DIRECTION::UP) {
+						action = KALINA_ANN_GRAPPLE;
+					}
+				}
+			}
+
+			break;
+		}
+		}
+	}
+	else if (actorData.style == STYLE::TRICKSTER) {
+		if (inAir) {
+
+			action = TRICKSTER_SKY_STAR;
+
+			if (lockOn) {
+
+				if (tiltDirection == TILT_DIRECTION::UP) {
+					action = TRICKSTER_AIR_TRICK;
+				}
+			}
+		}
+		else {
+			if (lockOn) {
+				if (tiltDirection == TILT_DIRECTION::UP) {
+					action = TRICKSTER_AIR_TRICK;
+				}
+			}
+		}
+
+	}
+	else if (actorData.style == STYLE::ROYALGUARD) {
+		if (inAir) {
+
+			if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP))) {
+				action = ROYAL_AIR_BLOCK;
+			}
+
+		}
+		else {
+			if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && (!(lockOn && tiltDirection == TILT_DIRECTION::DOWN))) {
+				action = ROYAL_BLOCK;
+			}
+		}
+	}
+
+
+	return action;
+}
+
+uint8 GetNextStyleAction(
+	CharacterData& activeCharacterData, NewActorData& activeNewActorData, CharacterData& characterData, NewActorData& newActorData) {
+	if (!((activeCharacterData.character < CHARACTER::MAX) && (characterData.character < CHARACTER::MAX))) {
+		return 0;
+	}
+
+	if (!activeNewActorData.baseAddr) {
+		return 0;
+	}
+	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+	if (!newActorData.baseAddr) {
+		return 0;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+
+	return GetNextStyleAction(activeActorData, actorData);
+}
+
+template <typename T> void SetNextStyleAction(T& activeActorData, T& actorData) {
+	auto action = GetNextStyleAction(activeActorData, actorData);
+
+	if (action > 0) {
+		actorData.bufferedAction = action;
+	}
+}
+
+void SetNextStyleAction(
+	CharacterData& activeCharacterData, NewActorData& activeNewActorData, CharacterData& characterData, NewActorData& newActorData) {
+	if (!((activeCharacterData.character < CHARACTER::MAX) && (characterData.character < CHARACTER::MAX))) {
+		return;
+	}
+
+	if (!activeNewActorData.baseAddr) {
+		return;
+	}
+	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+	if (!newActorData.baseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+
+	return SetNextStyleAction(activeActorData, actorData);
+}
+
 template <typename T> bool CanQueueMeleeAttack(T& actorData) {
 	using namespace NEXT_ACTION_REQUEST_POLICY;
 
@@ -2207,8 +2739,8 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	uint16 relativeTilt = 0;
 	relativeTilt = (actorData.cameraDirection + actorData.leftStickPosition);
 	uint16 rotationStick = (relativeTilt - 0x8000);
-	auto& inBackslide = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inBackslide 
-		: crimsonPlayer[playerIndex].inBackslideClone;
+	auto& backslide = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].backslide
+		: crimsonPlayer[actorData.newPlayerIndex].backslideClone;
 
 
 	auto* i = &crimsonPlayer[playerIndex].inertia;
@@ -2234,10 +2766,10 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 
 	// We add Backslide here as a way to always guarantee Freeform Soft Lock Helper is on during it. So that it may behave in a similar fashion to 
 	// Royal Release which the default Point Blank move does not. (disables the game's own rotation set when executing the move) - Mia
-	CrimsonDetours::ToggleFreeformSoftLockHelper(activeCrimsonGameplay.Gameplay.General.freeformSoftLock || inBackslide);
+	CrimsonDetours::ToggleFreeformSoftLockHelper(activeCrimsonGameplay.Gameplay.General.freeformSoftLock || backslide.performing);
 	float bufferTime = (activeCrimsonGameplay.Gameplay.General.bufferlessReversals) ? 0.3f : 0.02f;
 
-	if (!activeCrimsonGameplay.Gameplay.General.freeformSoftLock && !inBackslide) {
+	if (!activeCrimsonGameplay.Gameplay.General.freeformSoftLock && !backslide.performing) {
 		return;
 	}
 
@@ -2301,7 +2833,7 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 				actorData.action == ROYALGUARD_RELEASE_4 ||
 				actorData.action == ROYALGUARD_AIR_RELEASE_2 || actorData.action == ROYALGUARD_AIR_RELEASE_3 ||
 				actorData.action == ROYALGUARD_AIR_RELEASE_4 ||
-				(actorData.action == SHOTGUN_POINT_BLANK && inBackslide))) return;
+				(actorData.action == SHOTGUN_POINT_BLANK && backslide.performing))) return;
 
 			actorData.rotation = GetAutoRotation();
 
@@ -4637,12 +5169,28 @@ static constexpr uintptr_t SHOTGUN_SHL_FIRE_OFFSET() { return 0x1CA390; }
 using ShotgunShlFire_t = void(__fastcall*)(PlayerActorData* actorData, vec4* pos, vec4* pos2, uint8 mode, uint16 shotType);
 
 static void CallShotgunShlFire(PlayerActorData& actorData, vec4& pos, vec4& pos2, uint8 mode = 0, uint16 shotType = 8) {
+	// This func fires only the projectiles, without muzzle flash or sound effects. 
 	auto shotgunShlFire = reinterpret_cast<ShotgunShlFire_t>(appBaseAddr + SHOTGUN_SHL_FIRE_OFFSET());
 	if (!shotgunShlFire) {
 		return;
 	}
 
 	shotgunShlFire(&actorData, &pos, &pos2, mode, shotType);
+}
+
+
+static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
+
+using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
+
+static void CallShotgunFire(PlayerActorData& actorData, uint8 mode=8, uint32 unk3=0) {
+	// Fire Mode 8 is Charged Shot, Fire Mode is 0 is normal shot
+	auto shotgunFire = reinterpret_cast<ShotgunFire_t>(appBaseAddr + SHOTGUN_FIRE_OFFSET());
+	if (!shotgunFire) {
+		return;
+	}
+
+	shotgunFire(&actorData, mode, unk3);
 }
 
 
@@ -4670,40 +5218,56 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	bool styleButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) != 0;
 	bool styleButtonPressed = styleButtonDown && !prevStyleButton[playerIndex][entityIndex];
 	prevStyleButton[playerIndex][entityIndex] = styleButtonDown;
-	auto& inBackslide = (entityIndex == 0) ? crimsonPlayer[playerIndex].inBackslide : crimsonPlayer[playerIndex].inBackslideClone;
-	
+	auto& backslide = (entityIndex == 0) ? crimsonPlayer[playerIndex].backslide : crimsonPlayer[playerIndex].backslideClone;
+    auto& actionTimer = (entityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
+	using namespace NEXT_ACTION_REQUEST_POLICY;
+	auto& policyMelee = actorData.nextActionRequestPolicy[MELEE_ATTACK];
+	auto& policyStyle = actorData.nextActionRequestPolicy[SWORDMASTER_GUNSLINGER];
 
+	// Triggering the move
 	if (!inAir && lockOn && tiltDirection == TILT_DIRECTION::DOWN && styleButtonPressed
-		&& actorData.action != SHOTGUN_POINT_BLANK && actorData.style == STYLE::GUNSLINGER && 
+      && (actorData.action != SHOTGUN_POINT_BLANK && actorData.style == STYLE::GUNSLINGER && 
 		rangedWeaponEquipped == WEAPON::SHOTGUN && 
-		(!(actorData.state & STATE::BUSY) || CanQueueStyleAction(actorData))) {
+		(!(actorData.state & STATE::BUSY) || CanQueueStyleAction(actorData)))) {
 
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = newBackslide_pl000_00_19;
 		actorData.action = SHOTGUN_POINT_BLANK;
 
-		/* TEST
-		vec4 shellSpawnPos = actorData.position;
-		vec4 shellTargetPos = shellSpawnPos;
-
-		if (actorData.lockOnData.targetBaseAddr60) {
-			shellTargetPos = actorData.lockOnData.targetPosition;
-		}
-		else {
-			float angle = actorData.rotation * (3.14159265f / 32768.0f);
-			shellTargetPos.x += std::sin(angle) * 250.0f;
-			shellTargetPos.z += std::cos(angle) * 250.0f;
-		}
-
-		CallShotgunShlFire(actorData, shellSpawnPos, shellTargetPos, 0, 8);*/
-
+		backslide.performing = true;
 		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
 		CrimsonPatches::ToggleKillPointBlankCCEffects(true);
-		inBackslide = true;
 	}
+
+	// Let's fire the goddamn shotgun (with a delay queued up from the detour)
+	if (backslide.pendingFire && actorData.action == SHOTGUN_POINT_BLANK && actionTimer >= 0.1f) {
+		CallShotgunFire(actorData, 8, 0);
+		backslide.pendingFire = false;
+	}
+	// Resetting stuff
 	else if (actorData.action != SHOTGUN_POINT_BLANK) {
 		actorData.motionArchives[MOTION_GROUP_DANTE::GUNSLINGER_SHOTGUN] = File_staticFiles[pl000_00_19];
 		CrimsonPatches::ToggleKillPointBlankCCEffects(false);
-		inBackslide = false;
+		backslide.performing = false;
+		backslide.pendingFire = false;
+	}
+
+	// Buffering logic
+	if (backslide.performing && actionTimer > 0.5f && actionTimer < 0.83f) {
+		policyMelee = BUFFER;
+		policyStyle = BUFFER;
+
+		if (CanQueueMeleeAttack(actorData) && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) &&
+			(GetNextMeleeAction(actorData, actorData) > 0)) {
+			SetNextMeleeAction(actorData, actorData);
+		}
+		else if (CanQueueStyleAction(actorData) && (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) &&
+			(GetNextStyleAction(actorData, actorData) > 0)) {
+			SetNextStyleAction(actorData, actorData);
+		}
+	}
+	else if (backslide.performing && actionTimer >= 0.83f && actorData.bufferedAction != 0) {
+		policyMelee = EXECUTE;
+		policyStyle = EXECUTE;
 	}
 }
 

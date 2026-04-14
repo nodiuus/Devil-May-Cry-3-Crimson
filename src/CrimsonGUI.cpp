@@ -8742,7 +8742,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
-			ImGui::Text("transitioningToHyperFirst:  %d", crimsonPlayer[0].delayedComboFX.transitioningToHyperFist);
+			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
 			ImGui::Text("ACTION:  %u", actorData.action);
 			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
 			ImGui::Text("inertiaRotation : % x", actorData.inertiaRotation);

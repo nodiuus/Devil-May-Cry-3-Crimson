@@ -358,8 +358,8 @@ void ToggleKillPointBlankCCEffects(bool enable) {
 	if (run == enable) {
 		return;
 	}
-	// dmc3.exe+20EE2F - E8 6C 8E 0D 00 - call dmc3.exe+2E7CA0 { Point Blank CC effect CreateEffectA }
-	// dmc3.exe+20EE82 - E8 99 A4 12 00 - call dmc3.exe+339320 { Point Blank CC Sound Effect }
+	// dmc3.exe+20EE2F - E8 6C 8E 0D 00 - call dmc3.exe+2E7CA0 { Point Blank CC effect CreateEffectA } -- VFX
+	// dmc3.exe+20EE82 - E8 99 A4 12 00 - call dmc3.exe+339320 { Point Blank CC Sound Effect } -- SFX
 
 	if (enable) {
 		_nop((char*)(appBaseAddr + 0x20EE2F), 5);

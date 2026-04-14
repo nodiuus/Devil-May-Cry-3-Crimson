@@ -5506,6 +5506,11 @@ struct VergilRisingStarInput {
 	bool meleeReleasedRisingStar = false;
 };
 
+struct DanteBackslide {
+    bool performing = false;
+    bool pendingFire = false;
+};
+
 struct BulletMagnetism {
     float gunButtonTimer = 0;
 };
@@ -5609,9 +5614,9 @@ struct CrimsonPlayerData {
     bool inYamatoHighTime = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
-    bool inBackslide = false;
     EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
+    DanteBackslide backslide;
     DanteStingerInput stingerInput;
 	VergilRisingStarInput risingStarInput;
     BulletMagnetism bulletMagnetism;
@@ -5682,9 +5687,9 @@ struct CrimsonPlayerData {
 	bool inYamatoHighTimeClone = false;
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
-	bool inBackslideClone = false;
     EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
+	DanteBackslide backslideClone;
     DanteStingerInput stingerInputClone;
 	VergilRisingStarInput risingStarInputClone;
     BulletMagnetism bulletMagnetismClone;

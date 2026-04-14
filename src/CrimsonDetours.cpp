@@ -1,5 +1,8 @@
 // UNSTUPIFY(Disclaimer: by 5%)... POOOF
 #include <algorithm>
+#include <windows.h>
+#include <thread>
+#include <chrono>
 #include "CrimsonEnemyAITarget.hpp"
 #include "Core/Core.hpp"
 #include <stdio.h>
@@ -304,6 +307,14 @@ std::uint64_t g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2;
 void ShotgunShlSpawnAnglePointBlankDetour2();
 void* g_ShotgunShlSpawnAnglePointBlankCheckCall;
 
+// PointBlankShotgunFire
+std::uint64_t g_PointBlankShotgunFire_ReturnAddr;
+void PointBlankShotgunFireDetour();
+std::uint64_t g_PointBlankShotgunFireOgCall;
+std::uint64_t g_PointBlankShotgunFireTailCall_ReturnAddr;
+void PointBlankShotgunFireTailCallDetour();
+void* g_PointBlankShotgunFireDelayCall;
+std::uint64_t g_PointBlankShotgunCancelAnimTailCall;
 
 // DTMustStyleArmor
 std::uint64_t g_DTMustStyleArmor_ReturnAddr;
@@ -648,13 +659,38 @@ bool CheckIfInBackslide(uintptr_t playerAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
 	if (actorData.character != CHARACTER::DANTE) return false;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& inBackslide = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inBackslide 
-		: crimsonPlayer[playerIndex].inBackslideClone;
+	auto& backslide = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].backslide
+		: crimsonPlayer[actorData.newPlayerIndex].backslideClone;
 
-	if (inBackslide) {
+	if (backslide.performing) {
 		return true;
 	}
 	return false;
+}
+
+static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
+
+using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
+
+static void CallShotgunFire(PlayerActorData& actorData, uint8 mode = 8, uint32 unk3 = 0) {
+	auto shotgunFire = reinterpret_cast<ShotgunFire_t>(appBaseAddr + SHOTGUN_FIRE_OFFSET());
+	if (!shotgunFire) {
+		return;
+	}
+
+	shotgunFire(&actorData, mode, unk3);
+}
+
+void QueueDelayPointBlankShotgunFire(uintptr_t playerAddr, uint8 fireMode, uint8 unk3) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	auto& backslide = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].backslide 
+		: crimsonPlayer[actorData.newPlayerIndex].backslideClone;
+	auto& actionTimer = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].actionTimer 
+		: crimsonPlayer[actorData.newPlayerIndex].actionTimerClone;
+	actionTimer = 0.0f; // this is needed for the repeated shots' delay
+	backslide.pendingFire = true;
+
+	// Actual delay and subsequent call happens from CrimsonGameplay::DanteShotgunBackslide
 }
 
 namespace DriveCol {
@@ -1630,8 +1666,8 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 		return;
 	}
 
-	// dmc3.exe+21828B - 66 03 8B C0 00 00 00 - add cx,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank } -- VFX
-	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank 2 } -- SFX
+	// dmc3.exe+21828B - 66 03 8B C0 00 00 00 - add cx,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank } 
+	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank 2 } 
 	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook1 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x21828B, &ShotgunShlSpawnAnglePointBlankDetour, 7);
 	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1 = ShotgunShlSpawnAngleHook1->GetReturnAddress();
@@ -1643,6 +1679,28 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 	ShotgunShlSpawnAngleHook2->Toggle(enable);
 
 	g_ShotgunShlSpawnAnglePointBlankCheckCall = &CheckIfInBackslide;
+
+	// dmc3.exe + 20EE11 - E8 DA 91 00 00 - call dmc3.exe + 217FF0{ Point Blank's ShotgunFire }
+	// player in RCX, fireMode in RDX, R8 is 0
+	static std::unique_ptr<Utility::Detour_t> PointBlankShotgunFireHook =
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x20EE11, &PointBlankShotgunFireDetour, 5);
+	g_PointBlankShotgunFire_ReturnAddr = PointBlankShotgunFireHook->GetReturnAddress();
+	PointBlankShotgunFireHook->Toggle(enable);
+
+	g_PointBlankShotgunFireDelayCall = &QueueDelayPointBlankShotgunFire;
+	g_PointBlankShotgunFireOgCall = (uintptr_t)appBaseAddr + 0x217FF0;
+
+	// dmc3.exe+20ED1A - E9 D1 92 00 00 - jmp dmc3.exe+217FF0 { Tail Func Call for PB's ShotgunFire(repeated shot) }
+	static std::unique_ptr<Utility::Detour_t> PointBlankShotgunFireTailHook =
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x20ED1A, &PointBlankShotgunFireTailCallDetour, 5);
+	g_PointBlankShotgunFireTailCall_ReturnAddr = PointBlankShotgunFireTailHook->GetReturnAddress();
+	PointBlankShotgunFireTailHook->Toggle(enable);
+
+	// In case we want to do normal shots instead
+	// dmc3.exe + 2180C8 - 0F B7 8B C0 00 00 00 - movzx ecx, word ptr[rbx + 000000C0]{ Spawn Angle taking Player Rotation for Normal Shots}
+	// dmc3.exe+2180DC - 0F B7 8B C0 00 00 00 - movzx ecx,word ptr [rbx+000000C0] { Spawn Angle taking Player Rotation for Normal Shots 2 }
+
+	g_PointBlankShotgunCancelAnimTailCall = (uintptr_t)appBaseAddr + 0x1FC4F0;
 
 	run = enable;
 }
