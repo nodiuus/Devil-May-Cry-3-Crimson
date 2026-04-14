@@ -306,6 +306,7 @@ void ShotgunShlSpawnAnglePointBlankDetour();
 std::uint64_t g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2;
 void ShotgunShlSpawnAnglePointBlankDetour2();
 void* g_ShotgunShlSpawnAnglePointBlankCheckCall;
+std::uint64_t g_ShotgunShlSpawnAnglePointBlankLockedOnEnemyJmp;
 
 // PointBlankShotgunFire
 std::uint64_t g_PointBlankShotgunFire_ReturnAddr;
@@ -1665,12 +1666,14 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 	if (run == enable) {
 		return;
 	}
-
+	
+	// dmc3.exe + 2180C6 - 75 53 - jne dmc3.exe+21811B { Check if locked on enemy is near} -- needs killing
 	// dmc3.exe + 2180C8 - 0F B7 8B C0 00 00 00 - movzx ecx, word ptr[rbx + 000000C0]{ Spawn Angle taking Player Rotation for Normal Shots}
 	// dmc3.exe+2180DC - 0F B7 8B C0 00 00 00 - movzx ecx,word ptr [rbx+000000C0] { Spawn Angle taking Player Rotation for Normal Shots 2 }
 	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook1 =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180C8, &ShotgunShlSpawnAnglePointBlankDetour, 7);
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180C6, &ShotgunShlSpawnAnglePointBlankDetour, 9);
 	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1 = ShotgunShlSpawnAngleHook1->GetReturnAddress();
+	g_ShotgunShlSpawnAnglePointBlankLockedOnEnemyJmp = (uintptr_t)appBaseAddr + 0x21811B;
 	ShotgunShlSpawnAngleHook1->Toggle(enable);
 
 	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook2 =

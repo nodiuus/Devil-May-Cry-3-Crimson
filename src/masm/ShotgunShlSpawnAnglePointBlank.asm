@@ -3,6 +3,7 @@ INCLUDE CommonMacros.inc
 EXTERN g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1:QWORD
 EXTERN g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2:QWORD
 EXTERN g_ShotgunShlSpawnAnglePointBlankCheckCall:QWORD
+EXTERN g_ShotgunShlSpawnAnglePointBlankLockedOnEnemyJmp:QWORD
 EXTERN g_PointBlankShotgunFire_ReturnAddr:QWORD
 EXTERN g_PointBlankShotgunFireTailCall_ReturnAddr:QWORD
 EXTERN g_PointBlankShotgunFireDelayCall:QWORD
@@ -28,8 +29,13 @@ AlterAngle:
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1]
 
 OriginalCode:
+	jne CheckLockOnEnemy
 	movzx ecx, word ptr[rbx + 0C0h]
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1]
+
+CheckLockOnEnemy:
+	jmp [g_ShotgunShlSpawnAnglePointBlankLockedOnEnemyJmp]
+
 ShotgunShlSpawnAnglePointBlankDetour ENDP
 
 
@@ -54,6 +60,8 @@ AlterAngle:
 OriginalCode:
 	movzx ecx, word ptr[rbx + 0C0h]
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2]
+
+
 ShotgunShlSpawnAnglePointBlankDetour2 ENDP
 
 
