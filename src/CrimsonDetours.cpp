@@ -1666,8 +1666,8 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 		return;
 	}
 
-	// dmc3.exe+21828B - 66 03 8B C0 00 00 00 - add cx,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank } 
-	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank 2 } 
+	// dmc3.exe + 2180C8 - 0F B7 8B C0 00 00 00 - movzx ecx, word ptr[rbx + 000000C0]{ Spawn Angle taking Player Rotation for Normal Shots}
+	// dmc3.exe+2180DC - 0F B7 8B C0 00 00 00 - movzx ecx,word ptr [rbx+000000C0] { Spawn Angle taking Player Rotation for Normal Shots 2 }
 	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook1 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180C8, &ShotgunShlSpawnAnglePointBlankDetour, 7);
 	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1 = ShotgunShlSpawnAngleHook1->GetReturnAddress();
@@ -1696,9 +1696,9 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 	g_PointBlankShotgunFireTailCall_ReturnAddr = PointBlankShotgunFireTailHook->GetReturnAddress();
 	PointBlankShotgunFireTailHook->Toggle(enable);
 
-	// In case we want to do normal shots instead
-	// dmc3.exe + 2180C8 - 0F B7 8B C0 00 00 00 - movzx ecx, word ptr[rbx + 000000C0]{ Spawn Angle taking Player Rotation for Normal Shots}
-	// dmc3.exe+2180DC - 0F B7 8B C0 00 00 00 - movzx ecx,word ptr [rbx+000000C0] { Spawn Angle taking Player Rotation for Normal Shots 2 }
+	// In case we want to do Charged shots instead
+	// dmc3.exe+21828B - 66 03 8B C0 00 00 00 - add cx,[rbx+000000C0] { Spawn Angle taking Player Rotation for Charged Shot } 
+	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Charged Shot 2 } 
 
 	g_PointBlankShotgunCancelAnimTailCall = (uintptr_t)appBaseAddr + 0x1FC4F0;
 
