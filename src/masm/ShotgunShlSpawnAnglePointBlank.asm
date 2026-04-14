@@ -23,12 +23,12 @@ ShotgunShlSpawnAnglePointBlankDetour PROC
 	
 AlterAngle:
 	PopAllRegs
-	add cx,[rbx+0C0h]
+	movzx ecx, word ptr[rbx + 0C0h]
 	add cx, 8000h ; Add 180 degrees to the angle
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1]
 
 OriginalCode:
-	add cx,[rbx+0C0h]
+	movzx ecx, word ptr[rbx + 0C0h]
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1]
 ShotgunShlSpawnAnglePointBlankDetour ENDP
 
@@ -47,12 +47,12 @@ ShotgunShlSpawnAnglePointBlankDetour2 PROC
 	
 AlterAngle:
 	PopAllRegs
-	add r14w,[rbx+0C0h]
-	add r14w, 8000h ; Add 180 degrees to the angle
+	movzx ecx, word ptr[rbx + 0C0h]
+	add cx, 8000h ; Add 180 degrees to the angle
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2]
 
 OriginalCode:
-	add r14w,[rbx+0C0h]
+	movzx ecx, word ptr[rbx + 0C0h]
 	jmp [g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2]
 ShotgunShlSpawnAnglePointBlankDetour2 ENDP
 

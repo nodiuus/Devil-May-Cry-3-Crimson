@@ -1669,12 +1669,12 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 	// dmc3.exe+21828B - 66 03 8B C0 00 00 00 - add cx,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank } 
 	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Point Blank 2 } 
 	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook1 =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x21828B, &ShotgunShlSpawnAnglePointBlankDetour, 7);
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180C8, &ShotgunShlSpawnAnglePointBlankDetour, 7);
 	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1 = ShotgunShlSpawnAngleHook1->GetReturnAddress();
 	ShotgunShlSpawnAngleHook1->Toggle(enable);
 
 	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook2 =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2182BD, &ShotgunShlSpawnAnglePointBlankDetour2, 8);
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180DC, &ShotgunShlSpawnAnglePointBlankDetour2, 7);
 	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2 = ShotgunShlSpawnAngleHook2->GetReturnAddress();
 	ShotgunShlSpawnAngleHook2->Toggle(enable);
 

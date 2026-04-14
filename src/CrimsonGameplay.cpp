@@ -5240,7 +5240,7 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 
 	// Let's fire the goddamn shotgun (with a delay queued up from the detour)
 	if (backslide.pendingFire && actorData.action == SHOTGUN_POINT_BLANK && actionTimer >= 0.1f) {
-		CallShotgunFire(actorData, 8, 0);
+		CallShotgunFire(actorData, 0, 0);
 		backslide.pendingFire = false;
 	}
 	// Resetting stuff
