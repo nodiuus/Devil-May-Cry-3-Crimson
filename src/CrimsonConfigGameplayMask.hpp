@@ -11,6 +11,7 @@ struct CrimsonConfigGameplayMask {
 			bool charHotswap = true;
 			bool freeformSoftLock = true;
 			bool bufferlessReversals = true;
+			bool reversalWindow = true;
 			bool dmc4LockOnDirection = true;
 			bool holdToCrazyCombo = true;
 			bool holdToShoot = true;
@@ -34,6 +35,7 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("charHotswap",&General::charHotswap),
 					std::make_pair("freeformSoftLock", &General::freeformSoftLock),
 					std::make_pair("bufferlessReversals", &General::bufferlessReversals),
+					std::make_pair("reversalWindow", &General::reversalWindow),
 					std::make_pair("dmc4LockOnDirection", &General::dmc4LockOnDirection),
 					std::make_pair("holdToCrazyCombo", &General::holdToCrazyCombo),
 					std::make_pair("holdToShoot", &General::holdToShoot),

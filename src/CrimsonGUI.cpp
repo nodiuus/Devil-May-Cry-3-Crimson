@@ -11248,6 +11248,21 @@ void GeneralGameplayOptions() {
 			TooltipHelper("(?)", "Allows you to do Reversals without buffering a move first.");
 			GUI_PopDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.General.freeformSoftLock);
 
+			
+			if (activeCrimsonGameplay.Gameplay.General.bufferlessReversals) {
+				ImGui::TableNextColumn();
+
+             ImGui::PushItemWidth(itemWidth * 0.8f);
+				GUI_Slider2FloatDefault("Reversal Window",
+					activeCrimsonGameplay.Gameplay.General.reversalWindow,
+					queuedCrimsonGameplay.Gameplay.General.reversalWindow,
+					defaultCrimsonGameplay.Gameplay.General.reversalWindow,
+					100.0f, 300.0f, 5.0f, "%.0f");
+				ImGui::SameLine();
+				TooltipHelper("(?)", "Time window in milliseconds to perform a Bufferless Reversal.");
+				ImGui::PopItemWidth();
+			}
+
 			ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);

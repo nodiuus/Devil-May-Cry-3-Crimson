@@ -2767,7 +2767,25 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	// We add Backslide here as a way to always guarantee Freeform Soft Lock Helper is on during it. So that it may behave in a similar fashion to 
 	// Royal Release which the default Point Blank move does not. (disables the game's own rotation set when executing the move) - Mia
 	CrimsonDetours::ToggleFreeformSoftLockHelper(activeCrimsonGameplay.Gameplay.General.freeformSoftLock || backslide.performing);
-	float bufferTime = (activeCrimsonGameplay.Gameplay.General.bufferlessReversals) ? 0.3f : 0.02f;
+
+	const float minReversalWindowMs = 100.0f;
+	const float maxReversalWindowMs = 300.0f;
+
+	if (activeCrimsonGameplay.Gameplay.General.reversalWindow < minReversalWindowMs) {
+		activeCrimsonGameplay.Gameplay.General.reversalWindow = minReversalWindowMs;
+	} else if (activeCrimsonGameplay.Gameplay.General.reversalWindow > maxReversalWindowMs) {
+		activeCrimsonGameplay.Gameplay.General.reversalWindow = maxReversalWindowMs;
+	}
+
+	if (queuedCrimsonGameplay.Gameplay.General.reversalWindow < minReversalWindowMs) {
+		queuedCrimsonGameplay.Gameplay.General.reversalWindow = minReversalWindowMs;
+	} else if (queuedCrimsonGameplay.Gameplay.General.reversalWindow > maxReversalWindowMs) {
+		queuedCrimsonGameplay.Gameplay.General.reversalWindow = maxReversalWindowMs;
+	}
+
+	float reversalWindow = (activeCrimsonGameplay.Gameplay.General.bufferlessReversals) ? 
+		activeCrimsonGameplay.Gameplay.General.reversalWindow / 1000.0f
+		: 0.02f;
 
 	if (!activeCrimsonGameplay.Gameplay.General.freeformSoftLock && !backslide.performing) {
 		return;
@@ -2797,7 +2815,7 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 
 	if (actorData.eventData[0].event == ACTOR_EVENT::ATTACK) {
 
-		if (!lockOn && actionTimer < bufferTime) {
+		if (!lockOn && actionTimer < reversalWindow) {
 			uint16 stickRotation = (radius >= RIGHT_STICK_DEADZONE) ? rotationStick : static_cast<uint16>(-1);  // Use -1 as a flag for neutral stick
 
 			if (currentMove != actorData.action) {
