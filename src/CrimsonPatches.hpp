@@ -20,6 +20,7 @@ void ToggleIncreasedEnemyJuggleTime(bool enable);
 void DisableAirSlashKnockback(bool enable);
 void ToggleIncreasedArtemisInstantChargeResponsiveness(bool enable);
 void ToggleKillPointBlankCCEffects(bool enable);
+void ToggleKillTornadoCCEffects(bool enable);
 
 #pragma endregion
 

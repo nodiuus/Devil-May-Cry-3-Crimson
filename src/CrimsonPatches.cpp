@@ -373,6 +373,30 @@ void ToggleKillPointBlankCCEffects(bool enable) {
 	run = enable;
 }
 
+void ToggleKillTornadoCCEffects(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+20B217 - E8 84CA0D00 - call dmc3.PlayVFX_sub_1402E7CA0 { Tornado's CC Effect CreateEffectA } -- VFX
+	// dmc3.exe+20B224 - 74 26 - je dmc3.exe+20B24C
+	// dmc3.exe+20B26C - E8 AF E0 12 00  - call dmc3.PlaySFXWithPos_sub_140339320 { Tornado's CC Sound Effect } -- SFX
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x20B217), 5);
+		_patch((char*)(appBaseAddr + 0x20B224), (char*)"\xEB\x26", 2); // change to jmp
+		_nop((char*)(appBaseAddr + 0x20B26C), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x20B217), (char*)"\xE8\x84\xCA\x0D\x00", 5);
+		_patch((char*)(appBaseAddr + 0x20B224), (char*)"\x74\x26", 2);
+		_patch((char*)(appBaseAddr + 0x20B26C), (char*)"\xE8\xAF\xE0\x12\x00", 5);
+	}
+	
+	run = enable;
+}
+
 #pragma endregion
 
 #pragma region CameraStuff

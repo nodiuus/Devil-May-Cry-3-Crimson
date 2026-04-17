@@ -5614,6 +5614,7 @@ struct CrimsonPlayerData {
     bool inYamatoHighTime = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
+    bool inAirTornado = false;
     EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
     DanteBackslide backslide;
@@ -5687,6 +5688,7 @@ struct CrimsonPlayerData {
 	bool inYamatoHighTimeClone = false;
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
+	bool inAirTornadoClone = false;
     EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
 	DanteBackslide backslideClone;

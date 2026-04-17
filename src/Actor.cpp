@@ -9352,16 +9352,13 @@ void SetAction(byte8* actorBaseAddr) {
         crimsonPlayer[playerIndex].lastActionTimeClone;
     bool inRebellionAttack = (action == REBELLION_COMBO_1_PART_1 || action == REBELLION_COMBO_1_PART_2 ||
         action == REBELLION_COMBO_1_PART_3 || action == REBELLION_COMBO_2_PART_2 || action == REBELLION_COMBO_2_PART_3);
-
     bool wasRebellionAttack = (lastAction == REBELLION_COMBO_1_PART_1 || lastAction == REBELLION_COMBO_1_PART_2 ||
         lastAction == REBELLION_COMBO_1_PART_3 || lastAction == REBELLION_COMBO_2_PART_2 || lastAction == REBELLION_COMBO_2_PART_3);
 	auto& drive = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].driveClone;
 	auto& inYamatoHighTime = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime : 
         crimsonPlayer[playerIndex].inYamatoHighTimeClone;
-	static constexpr const wchar_t* weaponParticlePath = L"Crimson\\vfx\\yamato_sword.efkefc";
-	static EffekseerRefHandle weaponParticleRef = CrimsonEfk::LoadEffect(weaponParticlePath, 1.0f);
-	auto& yamatoGroundedHighTimeHandle = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandle :
-		crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandleClone;
+
+    auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado : crimsonPlayer[playerIndex].inAirTornadoClone;
 	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
 	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerVergilcDraw.bones);
 
@@ -9500,7 +9497,13 @@ void SetAction(byte8* actorBaseAddr) {
 
                 actorData.action = BEOWULF_TORNADO;
                 airCounts.airTornado++;
+                inAirTornado = true;
+                CrimsonPatches::ToggleKillTornadoCCEffects(true);
             }
+		}
+		else if (actorData.action != BEOWULF_TORNADO) {
+            inAirTornado = false;
+            CrimsonPatches::ToggleKillTornadoCCEffects(false);
         }
 
 		// Air Rising Dragon Launch
