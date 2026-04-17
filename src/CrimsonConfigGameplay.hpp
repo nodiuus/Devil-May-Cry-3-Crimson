@@ -50,6 +50,7 @@ struct CrimsonConfigGameplay {
 			static constexpr auto Metadata() {
 				return std::make_tuple(
 					std::make_pair("inertia", &General::inertia),
+					std::make_pair("extramoves", &General::extramoves),
 					std::make_pair("sprint", &General::sprint),
 					std::make_pair("charHotswap",&General::charHotswap),
 					std::make_pair("freeformSoftLock", &General::freeformSoftLock),
