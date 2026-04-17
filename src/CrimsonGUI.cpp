@@ -8747,6 +8747,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
 			ImGui::Text("inertiaRotation : % x", actorData.inertiaRotation);
 			ImGui::Text("MOTION TIMER:  %g", crimsonPlayer[0].motionTimer);
+			ImGui::Text("MOTION GROUP:  %u", actorData.motionData[0].group);
 			ImGui::Text("MOTION INDEX:  %u", actorData.motionData[0].index);
 			ImGui::Text("drive inPart2 : %d", crimsonPlayer[0].drive.inPart2);
 			ImGui::Text("drive inPart3 : %d", crimsonPlayer[0].drive.inPart3);
