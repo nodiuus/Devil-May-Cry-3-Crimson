@@ -3295,7 +3295,9 @@ public:
 	char pad_0010[4]; //0x0010
 	float displacement; //0x0014
 	float angle; //0x0018
-	char pad_001C[36]; //0x001C
+	char pad_001C[16]; //0x001C
+	float styleMeterIncrease; //0x002C
+	char pad_0030[16]; //0x0030
 	float knockbackSpeed; //0x0040
 	char pad_0044[84]; //0x0044
 }; //Size: 0x0098
@@ -3306,6 +3308,7 @@ static_assert(offsetof(DamageData, unk2) == 0x8);
 static_assert(offsetof(DamageData, projectileDmg) == 0xC);
 static_assert(offsetof(DamageData, displacement) == 0x14);
 static_assert(offsetof(DamageData, angle) == 0x18);
+static_assert(offsetof(DamageData, styleMeterIncrease) == 0x2C);
 static_assert(offsetof(DamageData, knockbackSpeed) == 0x40);
 
 
