@@ -2100,6 +2100,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static EffekseerRefHandle chargeDTParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge_dt.efkefc", 1.0f);
 
 	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+	CharSettings2& charSettings2 = **reinterpret_cast<CharSettings2**>(actorBaseAddr + 0x3DF8); 
+	DamageData& jdcDmgData = *reinterpret_cast<DamageData*>(appBaseAddr + 0x5CDF40);
 
 	// JUDGEMENT CUT SFX
 	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 ||
@@ -2307,21 +2309,54 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	}
 
     bool isJudgementCutAction = (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1);
-	if (isJudgementCutAction) {
-      if (pendingJustFrameJDC[playerIndex][entityIndex]) {
-			jCut.inJustFrameJDC = true;
-			pendingJustFrameJDC[playerIndex][entityIndex] = false;
-		}
+	if (pendingJustFrameJDC[playerIndex][entityIndex] && isJudgementCutAction) {
+		pendingJustFrameJDC[playerIndex][entityIndex] = false;
 	}
 
-	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 1.0f) && jCut.inJustFrameJDC) {
+	if (pendingJustFrameJDC[playerIndex][entityIndex] &&
+		(actionTimerNotEventChange > 0.20f || actorData.eventData[0].event == ACTOR_EVENT::STAGGER)) {
+		pendingJustFrameJDC[playerIndex][entityIndex] = false;
+	}
+
+	bool isJustFrameJdcState = (jCut.state == JDC_STATE::JUST_FRAME_GROUNDED || jCut.state == JDC_STATE::JUST_FRAME_AIR);
+	jCut.inJustFrameJDC = (isJudgementCutAction && isJustFrameJdcState);
+
+	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 2.0f) {
 		jCut.inJustFrameJDC = false;
 	}
-    else if (!isJudgementCutAction) {
-		jCut.inJustFrameJDC = false;
-		if (pendingJustFrameJDC[playerIndex][entityIndex] &&
-			(actionTimerNotEventChange > 0.20f || actorData.eventData[0].event == ACTOR_EVENT::STAGGER)) {
-			pendingJustFrameJDC[playerIndex][entityIndex] = false;
+
+  static bool jdcDefaultsApplied = false;
+
+	if (jCut.inJustFrameJDC) {
+		jdcDefaultsApplied = false;
+		charSettings2.jdcRadius = 220.0f;
+		charSettings2.jdcDelay1 = 10.0f;
+		jdcDmgData.knockbackAnimation = 2;
+		jdcDmgData.unk1 = 4;
+		jdcDmgData.displacement = 10.0f;
+		jdcDmgData.angle = 0.0f;
+		jdcDmgData.knockbackSpeed = 10.0f;
+
+
+	}
+	else if (!isJudgementCutAction) {
+		bool anyJustFrameJdcActive = false;
+		old_for_all(uint8, idx, PLAYER_COUNT) {
+			if (crimsonPlayer[idx].jCut.inJustFrameJDC || crimsonPlayer[idx].jCutClone.inJustFrameJDC) {
+				anyJustFrameJdcActive = true;
+				break;
+			}
+		}
+
+       if (!anyJustFrameJdcActive && !jdcDefaultsApplied) {
+			charSettings2.jdcRadius = 160.0f;
+			charSettings2.jdcDelay1 = 35.0f;
+			jdcDmgData.knockbackAnimation = 0;
+			jdcDmgData.unk1 = 6;
+			jdcDmgData.displacement = 300.0f;
+			jdcDmgData.angle = 10.0f;
+			jdcDmgData.knockbackSpeed = 20.0f;
+           jdcDefaultsApplied = true;
 		}
 	}
 

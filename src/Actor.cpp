@@ -2230,9 +2230,9 @@ void UpdateActorDante(PlayerActorDataDante& actorData) {
     actorData.actionData[0] = *reinterpret_cast<byte8**>(appBaseAddr + 0x590598);
     actorData.actionData[1] = *reinterpret_cast<byte8**>(appBaseAddr + 0x58A2A0);
     actorData.actionData[2] = (appBaseAddr + 0x5905B0);
-    actorData.actionData[3] = File_staticFiles[pl000][9];
+    actorData.actionData[3] = File_staticFiles[pl000][9]; // Character Settings 1
     actorData.actionData[4] = File_staticFiles[pl000][10];
-    actorData.actionData[5] = File_staticFiles[pl000][11];
+    actorData.actionData[5] = File_staticFiles[pl000][11]; // Character Settings 3
     /*
     dmc3.exe+214B50 - 48 8B 05 41BA3700 - mov rax,[dmc3.exe+590598]
     dmc3.exe+214B5E - 48 89 86 D03D0000 - mov [rsi+00003DD0],rax

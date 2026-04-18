@@ -1744,7 +1744,7 @@ void ToggleJudgementCutDetours(bool enable) {
 	g_JudgementCutStartDelayCall = (uintptr_t)appBaseAddr + 0x1DC130;
 	g_JudgementCutSpawnCollisionCall = (uintptr_t)appBaseAddr + 0x1DC4E0;
 	g_JudgementCutCheckJustFrameCall = &CheckIfInJustFrameJDC;
-	JudgementCutSpeedHook->Toggle(enable);
+	JudgementCutSpeedHook->Toggle(false);
 
 	run = enable;
 }

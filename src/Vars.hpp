@@ -2510,23 +2510,6 @@ struct Matrix44 {
 
 //static_assert(sizeof(Matrix44) == 0x40);
 
-struct DamageData {
-    uint32 knockbackAnimation; // 0x0
-    _(8);
-    float projectileDamage; // 0xC
-    _(4);
-    float displacement; // 0x14
-    float angle; // 0x18
-    _(36);
-    float knockbackSpeed; // 0x40
-};
-
-static_assert(offsetof(DamageData, knockbackAnimation) == 0x0);
-static_assert(offsetof(DamageData, projectileDamage) == 0xC);
-static_assert(offsetof(DamageData, displacement) == 0x14);
-static_assert(offsetof(DamageData, angle) == 0x18);
-static_assert(offsetof(DamageData, knockbackSpeed) == 0x40);
-
 // $CollisionDataMetadataStart
 
 struct CollisionDataMetadata {
@@ -3260,6 +3243,72 @@ static_assert(offsetof(ActorDataBase, rotation) == 0xC0);*/
 
 // static_assert(sizeof(ActorDataBase) == 200);
 
+class CharSettings1 {
+public:
+	char pad_0000[276]; //0x0000
+	float raveHeightRestriction; //0x0114
+	char pad_0118[480]; //0x0118
+	float rainstormHeightRestriction; //0x02F8
+	float helmBreakerHeightRestriction; //0x02FC
+	char pad_0300[200]; //0x0300
+}; //Size: 0x03C8
+
+static_assert(offsetof(CharSettings1, raveHeightRestriction) == 0x114);
+static_assert(offsetof(CharSettings1, rainstormHeightRestriction) == 0x2F8);
+static_assert(offsetof(CharSettings1, helmBreakerHeightRestriction) == 0x2FC);
+
+class CharSettings2 {
+public:
+	float attackTurnSpeed; //0x0000
+	char pad_0004[72]; //0x0004
+	float bufferedAttackTurnSpeed; //0x004C
+	char pad_0050[60]; //0x0050
+	float millionStabDuration; //0x008C
+	char pad_0090[40]; //0x0090
+	float roundTripHitDelay; //0x00B8
+	float roundTripDuration; //0x00BC
+	char pad_00C0[112]; //0x00C0
+	float jdcRadius; //0x0130
+	float jdcDelay1; //0x0134
+	float jdcDelay2; //0x0138
+	char pad_013C[84]; //0x013C
+	float rainstormPop; //0x0190
+	char pad_0194[696]; //0x0194
+}; //Size: 0x044C
+
+static_assert(offsetof(CharSettings2, attackTurnSpeed) == 0x0);
+static_assert(offsetof(CharSettings2, bufferedAttackTurnSpeed) == 0x4C);
+static_assert(offsetof(CharSettings2, millionStabDuration) == 0x8C);
+static_assert(offsetof(CharSettings2, roundTripHitDelay) == 0xB8);
+static_assert(offsetof(CharSettings2, roundTripDuration) == 0xBC);
+static_assert(offsetof(CharSettings2, jdcRadius) == 0x130);
+static_assert(offsetof(CharSettings2, jdcDelay1) == 0x134);
+static_assert(offsetof(CharSettings2, jdcDelay2) == 0x138);
+static_assert(offsetof(CharSettings2, rainstormPop) == 0x190);
+
+class DamageData {
+public:
+	uint32_t knockbackAnimation; //0x0000
+	uint32_t unk1; //0x0004
+	uint32_t unk2; //0x0008
+	float projectileDmg; //0x000C
+	char pad_0010[4]; //0x0010
+	float displacement; //0x0014
+	float angle; //0x0018
+	char pad_001C[36]; //0x001C
+	float knockbackSpeed; //0x0040
+	char pad_0044[84]; //0x0044
+}; //Size: 0x0098
+
+static_assert(offsetof(DamageData, knockbackAnimation) == 0x0);
+static_assert(offsetof(DamageData, unk1) == 0x4);
+static_assert(offsetof(DamageData, unk2) == 0x8);
+static_assert(offsetof(DamageData, projectileDmg) == 0xC);
+static_assert(offsetof(DamageData, displacement) == 0x14);
+static_assert(offsetof(DamageData, angle) == 0x18);
+static_assert(offsetof(DamageData, knockbackSpeed) == 0x40);
+
+
 struct PlayerActorDataBase : ActorDataBase {
     _(80);
     uint8 id; // 0x118
@@ -3295,7 +3344,8 @@ struct PlayerActorDataBase : ActorDataBase {
     RecoveryData recoveryData[3]; // 0x3B00
     byte8 var_3C50[2];            // 0x3C50
     _(382);
-    byte8* actionData[6];        // 0x3DD0
+    byte8* actionData[6];        // 0x3DD0 // All Character Settings,
+	//CharSettings1 is 0x3DE8 which is index 2, CharSettings2 is 0x3DF8 which is index 4
     ActorEventData eventData[2]; // 0x3E00
     uint8 recoverState[32];          // 0x3E10
     _(4);
@@ -4198,6 +4248,94 @@ inline PhysicsData* GetBonePhysicsData(PhysicsMetadata* boneMetadata) {
     return boneMetadata ? boneMetadata->physicsData : nullptr;
 }
 }
+
+class CPl021Shl02Actor
+{
+public:
+	uint8_t aliveStatus; //0x0008
+	char pad_0009[11]; //0x0009
+	float speed; //0x0014
+	float speedMultiplier; //0x0018
+	char pad_001C[44]; //0x001C
+	uintptr_t itselfBaseAddr; //0x0048
+	char pad_0048[16];
+	uintptr_t shlVfTable; //0x0060
+	char pad_0070[24];
+	vec4 position; //0x0080
+    char pad_0090[36];
+	float facingAngle; //0x00B4
+	char pad_00B8[8]; //0x00B8
+	uint16_t rotation; //0x00C0
+	char pad_00C2[126]; //0x00C2
+	vec3 direction; //0x0140
+	char pad_014C[84]; //0x014C
+	float matrix[16]; //0x01A0
+	int32_t collisionDataStart; //0x01E0
+	char pad_01E4[828]; //0x01E4
+	void* CGeneratorPtr; //0x0520
+	float delay; //0x0528
+	char pad_052C[4]; //0x052C
+	uint32_t* playerActorAddr; //0x0530
+	int8_t idk538; //0x0538
+	char pad_0539[4159]; //0x0539
+
+	virtual void DestroyJDC_sub_1401DC0C0();
+	virtual void UpdateJDC_sub_1401DC620();
+	virtual void Function2();
+	virtual void Function3();
+	virtual void Function4();
+	virtual void Function5();
+	virtual void Function6();
+	virtual void Function7();
+	virtual void Function8();
+	virtual void Function9();
+	virtual void Function10();
+	virtual void Function11();
+	virtual void Function12();
+	virtual void Function13();
+	virtual void Function14();
+	virtual void Function15();
+	virtual void Function16();
+	virtual void Function17();
+	virtual void Function18();
+	virtual void Function19();
+	virtual void Function20();
+	virtual void Function21();
+	virtual void Function22();
+	virtual void Function23();
+	virtual void Function24();
+	virtual void Function25();
+	virtual void Function26();
+	virtual void Function27();
+	virtual void Function28();
+	virtual void Function29();
+	virtual void Function30();
+	virtual void Function31();
+	virtual void Function32();
+	virtual void Function33();
+	virtual void Function34();
+	virtual void Function35();
+	virtual void Function36();
+	virtual void Function37();
+	virtual void SpawnJDCShl_sub_1401DC320();
+	virtual void DestroyJDCActor_sub_1401DC0A0();
+}; //Size: 0x1578
+
+static_assert(offsetof(CPl021Shl02Actor, aliveStatus) == 0x8);
+static_assert(offsetof(CPl021Shl02Actor, speed) == 0x14);
+static_assert(offsetof(CPl021Shl02Actor, speedMultiplier) == 0x18);
+static_assert(offsetof(CPl021Shl02Actor, itselfBaseAddr) == 0x48);
+static_assert(offsetof(CPl021Shl02Actor, shlVfTable) == 0x60);
+static_assert(offsetof(CPl021Shl02Actor, position) == 0x80);
+static_assert(offsetof(CPl021Shl02Actor, facingAngle) == 0xB4);
+static_assert(offsetof(CPl021Shl02Actor, rotation) == 0xC0);
+static_assert(offsetof(CPl021Shl02Actor, direction) == 0x140);
+static_assert(offsetof(CPl021Shl02Actor, matrix) == 0x1A0);
+static_assert(offsetof(CPl021Shl02Actor, collisionDataStart) == 0x1E0);
+static_assert(offsetof(CPl021Shl02Actor, CGeneratorPtr) == 0x520);
+static_assert(offsetof(CPl021Shl02Actor, delay) == 0x528);
+static_assert(offsetof(CPl021Shl02Actor, playerActorAddr) == 0x530);
+static_assert(sizeof(CPl021Shl02Actor) == 0x1578);
 
 
 // float maxHitPointsDullahan; // 0x238

@@ -13,13 +13,16 @@ JudgementCutSpeedDetour PROC
 	call qword ptr [g_JudgementCutCheckJustFrameCall] ; Check if in JustFrameJDC
 	add rsp, 20h
 	cmp al, 1
-	je SpawnCollisionRightAway
+	je ChangeDelay
 	PopAllRegs
 	jmp OriginalCode
 	
-SpawnCollisionRightAway:
+ChangeDelay:
 	PopAllRegs
-	jmp [g_JudgementCutSpawnCollisionCall]
+	xor r11, r11
+	mov r11, 42a00000h ; 80.0f in hex
+	mov qword ptr [rcx+528h], r11 ; Set jdcDelay to 80.0f
+	jmp OriginalCode
 
 OriginalCode:
 	jmp [g_JudgementCutStartDelayCall]
