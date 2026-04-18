@@ -5492,7 +5492,7 @@ struct VergilJudgementCut {
     float meleeMaxHoldTime = 0.0f;
     bool isJustFrameCharged = false;
     bool isAfterJustFrameCharged = false;
-    bool performing = false;
+    bool inJustFrameJDC = false;
     bool fireSound = true;
 };
 

@@ -8742,6 +8742,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("in JustFrame JDC:  %u", crimsonPlayer[0].jCut.inJustFrameJDC);
 			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
 			ImGui::Text("ACTION:  %u", actorData.action);
 			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
@@ -8769,7 +8770,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("Actor Data Permissions: %d", actorData.permissions);
 			ImGui::Text("isAJustFrameCharged %d", crimsonPlayer[0].jCut.isJustFrameCharged);
 			ImGui::Text("isAfterJustFrameCharged %d", crimsonPlayer[0].jCut.isAfterJustFrameCharged);
-			ImGui::Text("jCut performing %d", crimsonPlayer[0].jCut.performing);
 			ImGui::Text("Motion Data 1: %u", crimsonPlayer[0].motion);
 			ImGui::Text("characterData.weapon %d", characterData.meleeWeapons[characterData.meleeWeaponIndex]);
 			ImGui::Text("Crazy announcer timer %g \ was hit %d", rankAnnouncer[1].timer, rankAnnouncer[1].wasHit);

@@ -317,6 +317,13 @@ void PointBlankShotgunFireTailCallDetour();
 void* g_PointBlankShotgunFireDelayCall;
 std::uint64_t g_PointBlankShotgunCancelAnimTailCall;
 
+// JudgementCutDetours
+std::uint64_t g_JudgementCutSpeed_ReturnAddr;
+void JudgementCutSpeedDetour();
+std::uint64_t g_JudgementCutStartDelayCall;
+std::uint64_t g_JudgementCutSpawnCollisionCall;
+void* g_JudgementCutCheckJustFrameCall;
+
 // DTMustStyleArmor
 std::uint64_t g_DTMustStyleArmor_ReturnAddr;
 void DTMustStyleArmorDetour();
@@ -664,6 +671,18 @@ bool CheckIfInBackslide(uintptr_t playerAddr) {
 		: crimsonPlayer[actorData.newPlayerIndex].backslideClone;
 
 	if (backslide.performing) {
+		return true;
+	}
+	return false;
+}
+
+bool CheckIfInJustFrameJDC(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	if (actorData.character != CHARACTER::VERGIL) return false;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& jCut = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].jCut
+		: crimsonPlayer[actorData.newPlayerIndex].jCutClone;
+	if (jCut.inJustFrameJDC) {
 		return true;
 	}
 	return false;
@@ -1704,6 +1723,28 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Charged Shot 2 } 
 
 	g_PointBlankShotgunCancelAnimTailCall = (uintptr_t)appBaseAddr + 0x1FC4F0;
+
+	run = enable;
+}
+
+
+void ToggleJudgementCutDetours(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// JudgementCutDetours
+	// dmc3.exe+1DC678 - E9 B3 FA FF FF - jmp dmc3.StartupDelayJDC_sub_1401DC130
+	// dmc3.exe+1DC66B - E9 70FEFFFF           - jmp dmc3.SpawnJDCCollision_sub_1401DC4E0
+
+	static std::unique_ptr<Utility::Detour_t> JudgementCutSpeedHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC678, &JudgementCutSpeedDetour, 5);
+	g_JudgementCutSpeed_ReturnAddr = JudgementCutSpeedHook->GetReturnAddress();
+	g_JudgementCutStartDelayCall = (uintptr_t)appBaseAddr + 0x1DC130;
+	g_JudgementCutSpawnCollisionCall = (uintptr_t)appBaseAddr + 0x1DC4E0;
+	g_JudgementCutCheckJustFrameCall = &CheckIfInJustFrameJDC;
+	JudgementCutSpeedHook->Toggle(enable);
 
 	run = enable;
 }

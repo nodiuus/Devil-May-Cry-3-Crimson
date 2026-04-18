@@ -2056,6 +2056,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (!IsActiveCharacterActor(actorData)) return;
+	CrimsonDetours::ToggleJudgementCutDetours(activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework);
 	if (!activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework || actorData.character != CHARACTER::VERGIL) {
 		return;
 	}
@@ -2069,6 +2070,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		return; // Ensure the character is currently using Vergil
 	}
 	auto& gamepad = GetGamepad(playerIndex);
+	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& actionTimerNotTrickChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotTrickChange :
 		crimsonPlayer[playerIndex].actionTimerNotTrickChangeClone;
 	auto& actionTimerNotEventChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotEventChange :
@@ -2223,6 +2226,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 		// JUST FRAME RELEASE LOGIC
 		if (jCut.isJustFrameCharged) { 
+			jCut.inJustFrameJDC = true;
 
 			if (!inAir) {
 				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCut_pl021_00_3; // Swap to Just Frame Judgement Cut animation
@@ -2289,6 +2293,11 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jCut.isJustFrameCharged = false; // Reset charge when released
 		jCut.isAfterJustFrameCharged = false;
 		indicatorFired[playerIndex][entityIndex] = false;
+	}
+
+	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 1.0f) &&
+		jCut.inJustFrameJDC) {
+		jCut.inJustFrameJDC = false; // Reset JF state if we leave JDC or hit the final hit (motion 3-5) to prevent JF from being retained into the next move if we buffer another JDC.
 	}
 
 	if (actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
