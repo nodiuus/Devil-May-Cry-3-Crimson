@@ -430,7 +430,6 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Gameplay.Dante.swapHammerVocalnoInputs = false;
 
 	mask.Gameplay.Dante.downertiaD = false; // This should be optional
-	// NEW MOVES are optional
 	mask.Gameplay.Dante.airRevolver = false;
 	mask.Gameplay.Dante.airTornado = false;
 	mask.Gameplay.Dante.airRisingDragonLaunch = false;

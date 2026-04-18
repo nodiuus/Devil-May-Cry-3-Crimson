@@ -4,6 +4,10 @@ EXTERN g_JudgementCutSpeed_ReturnAddr:QWORD
 EXTERN g_JudgementCutStartDelayCall:QWORD
 EXTERN g_JudgementCutSpawnCollisionCall:QWORD
 EXTERN g_JudgementCutCheckJustFrameCall:QWORD
+EXTERN g_JudgementCutVFX_ReturnAddr:QWORD
+EXTERN g_JudgementCutRegularVFXCall:QWORD
+EXTERN g_JudgementCutJustFrameVFXCall:QWORD
+
 
 .CODE
 JudgementCutSpeedDetour PROC
@@ -28,6 +32,35 @@ OriginalCode:
 	jmp [g_JudgementCutStartDelayCall]
 
 JudgementCutSpeedDetour ENDP
+
+
+.CODE
+JudgementCutVFXDetour PROC
+	PushAllRegs
+	sub		rsp, 20h ; Shadow space for the call
+	mov rcx, qword ptr [rbx+4D0h] ; playerAddr in rbx (shlAddr) + 530h
+	call qword ptr [g_JudgementCutCheckJustFrameCall] ; Check if in JustFrameJDC
+	add rsp, 20h
+	cmp al, 1
+	je PlayJustFrameJDCVFX
+	PopAllRegs
+	jmp OriginalCode
+	
+PlayJustFrameJDCVFX:
+	PopAllRegs
+	PushAllRegs
+	mov rcx, rbx
+	call [g_JudgementCutJustFrameVFXCall]
+	PopAllRegs
+	jmp [g_JudgementCutVFX_ReturnAddr]
+
+OriginalCode:
+	call [g_JudgementCutRegularVFXCall]
+	jmp [g_JudgementCutVFX_ReturnAddr]
+
+JudgementCutVFXDetour ENDP
+
+
 
 
 END

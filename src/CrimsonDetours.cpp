@@ -324,6 +324,12 @@ std::uint64_t g_JudgementCutStartDelayCall;
 std::uint64_t g_JudgementCutSpawnCollisionCall;
 void* g_JudgementCutCheckJustFrameCall;
 
+std::uint64_t g_JudgementCutVFX_ReturnAddr;
+void JudgementCutVFXDetour();
+std::uint64_t g_JudgementCutRegularVFXCall;
+void* g_JudgementCutJustFrameVFXCall;
+
+
 // DTMustStyleArmor
 std::uint64_t g_DTMustStyleArmor_ReturnAddr;
 void DTMustStyleArmorDetour();
@@ -686,6 +692,14 @@ bool CheckIfInJustFrameJDC(uintptr_t playerAddr) {
 		return true;
 	}
 	return false;
+}
+
+void PlayJustFrameJDCVFX(uintptr_t shlAddr) {
+	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
+	static constexpr const wchar_t* justFrameVFXPath = L"Crimson\\vfx\\judgementcut\\justframejdc.efkefc";
+	EffekseerRefHandle justFrameVFXRef = CrimsonEfk::LoadEffect(justFrameVFXPath, 40.0f);
+
+	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(justFrameVFXRef, shlActorData.matrix, NULL);
 }
 
 static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
@@ -1745,6 +1759,15 @@ void ToggleJudgementCutDetours(bool enable) {
 	g_JudgementCutSpawnCollisionCall = (uintptr_t)appBaseAddr + 0x1DC4E0;
 	g_JudgementCutCheckJustFrameCall = &CheckIfInJustFrameJDC;
 	JudgementCutSpeedHook->Toggle(false);
+
+
+	// dmc3.exe+1DC3B5 - E8 E6 B8 10 00 - call dmc3.PlayVFX_sub_1402E7CA0 { JudgementCut PlayVFX Call }
+	static std::unique_ptr<Utility::Detour_t> JudgementCutVFXHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC3B5, &JudgementCutVFXDetour, 5);
+	g_JudgementCutVFX_ReturnAddr = JudgementCutVFXHook->GetReturnAddress();
+	g_JudgementCutRegularVFXCall = (uintptr_t)appBaseAddr + 0x2E7CA0;
+	g_JudgementCutJustFrameVFXCall = &PlayJustFrameJDCVFX;
+	JudgementCutVFXHook->Toggle(enable);
 
 	run = enable;
 }
