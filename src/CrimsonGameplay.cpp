@@ -2093,6 +2093,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool chargeInitialized[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
+	static bool pendingJustFrameJDC[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
 	static constexpr const wchar_t* jdcChargeParticlePath = L"Crimson\\vfx\\jdc_charge.efkefc";
 	static EffekseerRefHandle chargeParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 1.0f);
@@ -2130,6 +2131,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jCut.meleeButtonHold = 0.0f;
 		jCut.isJustFrameCharged = false;
 		jCut.isAfterJustFrameCharged = false;
+       pendingJustFrameJDC[playerIndex][entityIndex] = false;
 		indicatorFired[playerIndex][entityIndex] = false;
 		if (meleeDown) {
 			if (jCut.meleeButtonHold == 0.0f) {
@@ -2148,6 +2150,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jCut.meleeButtonHold = 0.0f;
 		jCut.isJustFrameCharged = false;
 		jCut.isAfterJustFrameCharged = false;
+       pendingJustFrameJDC[playerIndex][entityIndex] = false;
 		indicatorFired[playerIndex][entityIndex] = false;
 		return;
 	}
@@ -2226,7 +2229,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 		// JUST FRAME RELEASE LOGIC
 		if (jCut.isJustFrameCharged) { 
-			jCut.inJustFrameJDC = true;
+			pendingJustFrameJDC[playerIndex][entityIndex] = true;
 
 			if (!inAir) {
 				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCut_pl021_00_3; // Swap to Just Frame Judgement Cut animation
@@ -2246,11 +2249,14 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
 				
 				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+				actionTimer = 0.0f;
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xfc0366ff), 1.2f); DEBUG COLOR JF
 			}
 			else {
+
 				actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 				actorData.recoverState[0] = 0;
+				actionTimer = 0.0f;
 			}
 			
 			actorData.rotation = GetRotationTowardsEnemy(actorData); // Snap to auto-rotation on JF release for better consistency in direction
@@ -2263,6 +2269,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		else if (jCut.isAfterJustFrameCharged && actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
 			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3) { 
+			pendingJustFrameJDC[playerIndex][entityIndex] = false;
 			
 			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 			if ((actorData.eventData[0].event == 3 || actorData.eventData[0].event == 6 || actorData.eventData[0].event == 2
@@ -2275,7 +2282,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 					jCut.state = JDC_STATE::NORMAL_AIR;
 				}
 
+				
 				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+				actionTimer = 0.0f;
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xf71a0a), 1.2f); DEBUG COLOR NORMAL
 			}
 			else {
@@ -2283,7 +2292,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 					actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAir_pl021_00_3; // Swap to Normal Air Just Frame Judgement Cut animation
 					jCut.state = JDC_STATE::NORMAL_AIR;
 				}
+				
 				actorData.recoverState[0] = 0;
+				actionTimer = 0.0f;
 			}
 
 			actorData.rotation = GetRotationTowardsEnemy(actorData); // Snap to auto-rotation on J release for better consistency in direction
@@ -2295,9 +2306,23 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		indicatorFired[playerIndex][entityIndex] = false;
 	}
 
-	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 1.0f) &&
-		jCut.inJustFrameJDC) {
-		jCut.inJustFrameJDC = false; // Reset JF state if we leave JDC or hit the final hit (motion 3-5) to prevent JF from being retained into the next move if we buffer another JDC.
+    bool isJudgementCutAction = (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1);
+	if (isJudgementCutAction) {
+      if (pendingJustFrameJDC[playerIndex][entityIndex]) {
+			jCut.inJustFrameJDC = true;
+			pendingJustFrameJDC[playerIndex][entityIndex] = false;
+		}
+	}
+
+	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 1.0f) && jCut.inJustFrameJDC) {
+		jCut.inJustFrameJDC = false;
+	}
+    else if (!isJudgementCutAction) {
+		jCut.inJustFrameJDC = false;
+		if (pendingJustFrameJDC[playerIndex][entityIndex] &&
+			(actionTimerNotEventChange > 0.20f || actorData.eventData[0].event == ACTOR_EVENT::STAGGER)) {
+			pendingJustFrameJDC[playerIndex][entityIndex] = false;
+		}
 	}
 
 	if (actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
