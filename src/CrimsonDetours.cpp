@@ -726,7 +726,7 @@ uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 
 	float fakeVFXMatrix[16] = { 0 };
 	std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
-	fakeVFXMatrix[13] -= 10000000.0f;  // Make it go out of bounds
+	if (!activeCrimsonConfig.VFX.originalJDCReference) fakeVFXMatrix[13] -= 10000000.0f;  // Make it go out of bounds
 	shlActorData.CGeneratorPtr = PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
 	if (shlActorData.CGeneratorPtr) {
 		auto& cGenerator = *reinterpret_cast<CGenerator*>(shlActorData.CGeneratorPtr);

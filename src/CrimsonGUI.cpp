@@ -7540,6 +7540,9 @@ void DebugSection() {
 
 		ImGui::Text("");
 
+		GUI_Checkbox2("Original JDC VFX Reference for JF", activeCrimsonConfig.VFX.originalJDCReference,
+			queuedCrimsonConfig.VFX.originalJDCReference);
+
 		GUI_Checkbox("g_noTeleport", g_noTeleport);
 
 
