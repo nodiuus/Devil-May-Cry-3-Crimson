@@ -1562,6 +1562,8 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
 	auto& gamepad = GetGamepad(playerIndex);
+	auto& characterData = GetCharacterData(actorData);
+	auto meleeWeaponEquipped = characterData.meleeWeapons[characterData.meleeWeaponIndex];
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer :
@@ -1634,13 +1636,15 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
 		actionTimer > 0.52f && actionTimer < 0.60f &&
 		risingStarInput.meleeButtonHold >= MELEE_HOLD_TIME &&
-		!risingStarInput.meleeReleasedRisingStar;
+		!risingStarInput.meleeReleasedRisingStar &&
+		meleeWeaponEquipped == WEAPON::YAMATO_VERGIL;
 
 	bool canTransitionClose =
 		(actorData.action == YAMATO_RAPID_SLASH_LEVEL_2 || actorData.action == YAMATO_RAPID_SLASH_LEVEL_1) &&
 		closeEnemy &&
 		risingStarInput.meleeButtonHold >= MELEE_HOLD_TIME &&
-		!risingStarInput.meleeReleasedRisingStar;;
+		!risingStarInput.meleeReleasedRisingStar &&
+		meleeWeaponEquipped == WEAPON::YAMATO_VERGIL;
 
 	// Only allow transition once per action
 	if ((canTransition || canTransitionClose)) {
