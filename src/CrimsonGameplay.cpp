@@ -1583,9 +1583,9 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	static EffekseerRefHandle risingStarParticleRef = CrimsonEfk::LoadEffect(risingStarParticlePath, 1.0f);
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
-	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[0].bones); // index 1 is the hilt
+	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
 	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
-	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerVergilcDraw.bones);
+	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerVergilcDraw.bonesMatrixesPtr);
 
 	static EffekseerHandle weaponParticleHandle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	static EffekseerHandle risingStarParticleHandle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
@@ -1726,11 +1726,13 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer :
 		crimsonPlayer[playerIndex].motionTimerClone;
     auto tiltDirection = GetRelativeTiltDirection(actorData);
+	auto& characterData = GetCharacterData(actorData);
+	auto meleeWeaponEquipped = characterData.meleeWeapons[characterData.meleeWeaponIndex];
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
-	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[0].bones); // index 1 is the hilt
+	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
 	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
-	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerVergilcDraw.bones);
+	Matrix44Ptr* playerBoneMatrix = reinterpret_cast<Matrix44Ptr*>(playerVergilcDraw.bonesMatrixesPtr);
 	static EffekseerHandle weaponParticleHandle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	auto& yamatoGroundedHighTimeHandle = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandle :
 		crimsonPlayer[playerIndex].yamatoGroundedHighTimeHandleClone;
@@ -1765,7 +1767,8 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 
 	if (actorData.action == YAMATO_UPPER_SLASH_PART_1
 		&& actionTimer > 0.36f && actionTimer < 0.4f && (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK) &&
-			meleeButtonHold[playerIndex][entityIndex] >= 0.3f && !meleeReleasedDuringUpperSlash[playerIndex][entityIndex])) {
+			meleeButtonHold[playerIndex][entityIndex] >= 0.3f && !meleeReleasedDuringUpperSlash[playerIndex][entityIndex]) 
+		&& meleeWeaponEquipped == WEAPON::YAMATO_VERGIL) {
 
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = newYamatoHighTime_pl021_00_5; // Swap Force Edge High Time animation
 		actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
@@ -2210,7 +2213,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
-				Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[0].bones); // index 1 is the hilt
+				Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
 				chargeParticleRef = CrimsonEfk::ReloadEffect(chargeParticleRef, jdcChargeParticlePath, 1.0f);
 				chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
 				
@@ -2391,7 +2394,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 // 	if (!actorData.nextBaseAddr) return;
 // 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 // 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw);
-// 	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(vergilSwordcDraw[1].bones);
+// 	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[1].bonesMatrixesPtr);
 //     auto& chargeHandle = chargeParticle[playerIndex][entityIndex];
 	
 	ApplyJDCFlyingArc(actorData);
@@ -5049,7 +5052,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
 	auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* danteSwordcDraw = reinterpret_cast<cDrawReverse*>(danteSword.weaponCDraw);
-	Matrix44* swordMatrix = reinterpret_cast<Matrix44*>(danteSwordcDraw[0].bones); // index 1 is the hilt
+	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(danteSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
 
 	static bool prevMeleeButton[PLAYER_COUNT][ENTITY_COUNT] = {};
 	bool meleePressed = meleeDown && !prevMeleeButton[playerIndex][entityIndex];

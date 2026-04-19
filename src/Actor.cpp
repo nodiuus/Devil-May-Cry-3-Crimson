@@ -9357,10 +9357,12 @@ void SetAction(byte8* actorBaseAddr) {
 	auto& drive = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].driveClone;
 	auto& inYamatoHighTime = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime : 
         crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	auto& characterData = GetCharacterData(actorData);
+	auto meleeWeaponEquipped = characterData.meleeWeapons[characterData.meleeWeaponIndex];
 
     auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado : crimsonPlayer[playerIndex].inAirTornadoClone;
 	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
-	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerVergilcDraw.bones);
+	Matrix44Ptr* playerBoneMatrix = reinterpret_cast<Matrix44Ptr*>(playerVergilcDraw.bonesMatrixesPtr);
 
 
 
@@ -9596,7 +9598,8 @@ void SetAction(byte8* actorBaseAddr) {
         }
         // GROUNDED YAMATO HIGH TIME (AFTER UPPER SLASH 1)
 		else if ((actorData.action == YAMATO_UPPER_SLASH_PART_2) &&
-			actorData.lockOn && (tiltDirection == TILT_DIRECTION::DOWN)) {
+			actorData.lockOn && (tiltDirection == TILT_DIRECTION::DOWN)
+            && meleeWeaponEquipped == WEAPON::YAMATO_VERGIL) {
 
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] = newYamatoHighTime_pl021_00_5; // Swap Force Edge High Time animation
 			actorData.action = YAMATO_FORCE_EDGE_HIGH_TIME;
