@@ -2328,7 +2328,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	bool isJustFrameJdcState = (jCut.state == JDC_STATE::JUST_FRAME_GROUNDED || jCut.state == JDC_STATE::JUST_FRAME_AIR);
 	jCut.inJustFrameJDC = (isJudgementCutAction && isJustFrameJdcState);
 
-	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 2.0f) {
+	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 0.5f) {
 		jCut.inJustFrameJDC = false;
 	}
 
