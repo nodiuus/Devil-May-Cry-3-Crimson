@@ -2482,7 +2482,7 @@ static_assert(sizeof(StyleData) == 352);
 
 // $StyleDataEnd
 
-struct Matrix44 {
+struct Matrix44Ptr {
 	float matrix1[16]; //0x00
 	float matrix2[16];
 	float matrix3[16];
@@ -2508,7 +2508,7 @@ struct Matrix44 {
     float matrix23[16];
 };
 
-//static_assert(sizeof(Matrix44) == 0x40);
+//static_assert(sizeof(Matrix44Ptr) == 0x40);
 
 // $CollisionDataMetadataStart
 
@@ -2892,12 +2892,12 @@ static_assert(sizeof(ModelPartitionData) == 0x380);
 // 	_(24); //0x0000
 // 	uint8_t drawBool; //0x0018
 // 	_(495); //0x0019
-// 	Matrix44* bones; //0x0208
+// 	Matrix44Ptr* bonesMatrixesPtr; //0x0208
 // 	_(1384); //0x0210
 // 	uint64_t end; //0x0778
 // }; //Size: 0x0780
 // 
-// static_assert(offsetof(cDrawReverse, bones) == 0x208);
+// static_assert(offsetof(cDrawReverse, bonesMatrixesPtr) == 0x208);
 
 struct ModelData {
     _(8);
@@ -2908,7 +2908,7 @@ struct ModelData {
     _(358);
     ModelPartitionData* modelPartitionData; // 0x180
     _(128);
-    Matrix44* bones; // 0x208
+    Matrix44Ptr* bonesMatrixesPtr; // 0x208
     _(752);
     struct {
         _(84);
@@ -2929,7 +2929,7 @@ static_assert(offsetof(ModelData, funcAddrs) == 8);
 static_assert(offsetof(ModelData, visible) == 0x18);
 static_assert(offsetof(ModelData, physics) == 0x19);
 static_assert(offsetof(ModelData, modelPartitionData) == 0x180);
-static_assert(offsetof(ModelData, bones) == 0x208);
+static_assert(offsetof(ModelData, bonesMatrixesPtr) == 0x208);
 static_assert(offsetof(ModelData, Motion.duration) == 0x554);
 static_assert(offsetof(ModelData, Motion.duration2) == 0x594);
 static_assert(offsetof(ModelData, Motion.init) == 0x690);
@@ -4252,6 +4252,26 @@ inline PhysicsData* GetBonePhysicsData(PhysicsMetadata* boneMetadata) {
 }
 }
 
+class CGenerator {
+public:
+	char pad_0000[24]; //0x0000
+	float speed; //0x0018
+	char pad_001C[44]; //0x001C
+	uintptr_t itselfBaseAddr; //0x0048
+	char pad_0050[96]; //0x0050
+	vec4 position; //0x00B0
+	Matrix44Ptr* matrixPtr; //0x00C0
+	char pad_00C8[24]; //0x00C8
+	uint32_t color; //0x00E0
+	char pad_00E4[28]; //0x00E4
+}; //Size: 0x0100
+
+static_assert(offsetof(CGenerator, speed) == 0x18);
+static_assert(offsetof(CGenerator, itselfBaseAddr) == 0x48);
+static_assert(offsetof(CGenerator, position) == 0xB0);
+static_assert(offsetof(CGenerator, matrixPtr) == 0xC0);
+static_assert(offsetof(CGenerator, color) == 0xE0);
+
 class CPl021Shl02Actor
 {
 public:
@@ -4275,10 +4295,10 @@ public:
 	float matrix[16]; //0x01A0
 	int32_t collisionDataStart; //0x01E0
 	char pad_01E4[828]; //0x01E4
-	void* CGeneratorPtr; //0x0520
+	uintptr_t CGeneratorPtr; //0x0520
 	float delay; //0x0528
 	char pad_052C[4]; //0x052C
-	uint32_t* playerActorAddr; //0x0530
+	uintptr_t playerActorAddr; //0x0530
 	int8_t idk538; //0x0538
 	char pad_0539[4159]; //0x0539
 

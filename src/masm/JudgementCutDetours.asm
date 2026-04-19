@@ -5,9 +5,12 @@ EXTERN g_JudgementCutStartDelayCall:QWORD
 EXTERN g_JudgementCutSpawnCollisionCall:QWORD
 EXTERN g_JudgementCutCheckJustFrameCall:QWORD
 EXTERN g_JudgementCutVFX_ReturnAddr:QWORD
+EXTERN g_JudgementCutVFX_ReturnAddr2:QWORD
 EXTERN g_JudgementCutRegularVFXCall:QWORD
 EXTERN g_JudgementCutJustFrameVFXCall:QWORD
-
+EXTERN g_JudgementCutPosition_ReturnAddr:QWORD
+EXTERN g_JudgementCutSetPositionCall:QWORD
+cgeneratorptr dq 0
 
 .CODE
 JudgementCutSpeedDetour PROC
@@ -51,8 +54,10 @@ PlayJustFrameJDCVFX:
 	PushAllRegs
 	mov rcx, rbx
 	call [g_JudgementCutJustFrameVFXCall]
+	mov qword ptr [cgeneratorptr], rax
 	PopAllRegs
-	jmp [g_JudgementCutVFX_ReturnAddr]
+	mov rax, qword ptr [cgeneratorptr]
+	jmp [g_JudgementCutVFX_ReturnAddr2]
 
 OriginalCode:
 	call [g_JudgementCutRegularVFXCall]
@@ -61,6 +66,20 @@ OriginalCode:
 JudgementCutVFXDetour ENDP
 
 
+.CODE
+JudgementCutPositionDetour PROC
+	PushAllRegs
+	sub		rsp, 20h ; Shadow space for the call
+	mov rcx, rbx ; shlAddr
+	call qword ptr [g_JudgementCutSetPositionCall] ; New Tracking
+	add rsp, 20h
+	PopAllRegs
+	jmp OriginalCode
 
+OriginalCode:
+	mov qword ptr [rbx+17Ch], 3F800000h ; Set W position to 1.0f
+	jmp [g_JudgementCutPosition_ReturnAddr]
+
+JudgementCutPositionDetour ENDP
 
 END

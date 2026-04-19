@@ -490,7 +490,7 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 	static EffekseerRefHandle delayedComboFXRef = CrimsonEfk::LoadEffect(delayedComboFXPath[weapon], 1.0f);
 
 	cDrawReverse playerDanteCDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
-	Matrix44* playerBoneMatrix = reinterpret_cast<Matrix44*>(playerDanteCDraw.bones);
+	Matrix44Ptr* playerBoneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDanteCDraw.bonesMatrixesPtr);
 
 	if (inRebellionCombo1) {
 		delayedComboFX.duration = 0.485f;
@@ -535,7 +535,7 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 		// CrimsonDetours::CreateEffectDetour(pPlayer, delayedComboFX.bank, delayedComboFX.id, 1, true, actualColor, 1.2f);
 		auto& danteWeapon = *reinterpret_cast<WeaponData*>(actorData.newWeaponDataAddr[weapon]);
 		cDrawReverse* danteWeaponCDraw = reinterpret_cast<cDrawReverse*>(danteWeapon.weaponCDraw);
-		Matrix44* weaponBoneMatrix = reinterpret_cast<Matrix44*>(danteWeaponCDraw[0].bones);
+		Matrix44Ptr* weaponBoneMatrix = reinterpret_cast<Matrix44Ptr*>(danteWeaponCDraw[0].bonesMatrixesPtr);
 
 
 		if (weapon == WEAPON::REBELLION && actionTimer >= delayedComboFX.duration) {
@@ -641,7 +641,7 @@ void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHa
 	}
 
 	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
-	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones); 
+	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDantecDraw.bonesMatrixesPtr); 
 
     
 	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, styleSwitchEffectPath[style], 40.0f);
@@ -701,7 +701,7 @@ void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles
 	}
 
 	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
-	Matrix44* boneMatrix = reinterpret_cast<Matrix44*>(playerDantecDraw.bones);
+	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDantecDraw.bonesMatrixesPtr);
 
 
 	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, styleSwitchEffectPath[style], 40.0f);

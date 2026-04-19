@@ -25,6 +25,7 @@
 #include "CrimsonOnTick.hpp"
 #include "CrimsonEfk.hpp"
 #include "Internal.hpp"
+#include "CrimsonDetours.hpp"
 
 namespace CrimsonDetours {
 
@@ -325,9 +326,14 @@ std::uint64_t g_JudgementCutSpawnCollisionCall;
 void* g_JudgementCutCheckJustFrameCall;
 
 std::uint64_t g_JudgementCutVFX_ReturnAddr;
+std::uint64_t g_JudgementCutVFX_ReturnAddr2;
 void JudgementCutVFXDetour();
 std::uint64_t g_JudgementCutRegularVFXCall;
 void* g_JudgementCutJustFrameVFXCall;
+
+std::uint64_t g_JudgementCutPosition_ReturnAddr;
+void JudgementCutPositionDetour();
+void* g_JudgementCutSetPositionCall;
 
 
 // DTMustStyleArmor
@@ -694,12 +700,77 @@ bool CheckIfInJustFrameJDC(uintptr_t playerAddr) {
 	return false;
 }
 
-void PlayJustFrameJDCVFX(uintptr_t shlAddr) {
+static constexpr uintptr_t PLAYVFX_OFFSET() { return 0x2E7CA0; }
+
+using PlayVFX_t = uintptr_t(__fastcall*)(int group, uint16 index, uintptr_t matrixPtr, int a4);
+
+static uintptr_t PlayVFX_sub_1402E7CA0(int group, uint16 index, uintptr_t matrixPtr, int a4) {
+	// This func fires only the projectiles, without muzzle flash or sound effects. 
+    PlayVFX_t PlayVFXFunc = reinterpret_cast<PlayVFX_t>(appBaseAddr + PLAYVFX_OFFSET());
+	if (!PlayVFXFunc) {
+		return NULL;
+	}
+
+	return PlayVFXFunc(group, index, matrixPtr, a4);
+}
+
+uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
 	static constexpr const wchar_t* justFrameVFXPath = L"Crimson\\vfx\\judgementcut\\justframejdc.efkefc";
 	EffekseerRefHandle justFrameVFXRef = CrimsonEfk::LoadEffect(justFrameVFXPath, 40.0f);
 
 	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(justFrameVFXRef, shlActorData.matrix, NULL);
+
+	// Spawn Default JDC VFX for the JDCs CGenerator not to be NULL
+	// Default JDC VFX is group 2 index 456
+
+	float fakeVFXMatrix[16] = { 0 };
+	std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
+	fakeVFXMatrix[13] -= 10000000.0f;  // Make it go out of bounds
+	shlActorData.CGeneratorPtr = PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
+	if (shlActorData.CGeneratorPtr) {
+		auto& cGenerator = *reinterpret_cast<CGenerator*>(shlActorData.CGeneratorPtr);
+		cGenerator.color = 0xFF36EDFA;
+		cGenerator.speed = 1.5f;
+	}
+
+	return shlActorData.CGeneratorPtr;
+}
+
+void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
+	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+
+    auto SpawnJDCInFrontOfPlayer = [] (CPl021Shl02Actor& shlActorData, PlayerActorData& actorData) {
+		constexpr float jdcForwardOffset = 800.0f;
+		constexpr float rotationToRadians = 6.28318530717958647692f / 65536.0f;
+
+		const float yaw = static_cast<float>(actorData.rotation) * rotationToRadians;
+		const float forwardX = std::sin(yaw);
+		const float forwardZ = std::cos(yaw);
+
+		shlActorData.position.x = actorData.position.x + forwardX * jdcForwardOffset;
+		shlActorData.position.y = actorData.position.y + 120.0f;
+		shlActorData.position.z = actorData.position.z + forwardZ * jdcForwardOffset;
+	};
+
+	if (actorData.lockOnData.targetBaseAddr60) {
+		float heightOffset = 120.0f;
+		if (actorData.state & STATE::IN_AIR) {
+			heightOffset = 0.0f; // slightly higher spawn for airborne JDCs to avoid ground collision and look better visually
+		}
+		auto& enemyData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
+		shlActorData.position.x = enemyData.position.x;
+		shlActorData.position.y = enemyData.position.y + heightOffset;
+		shlActorData.position.z = enemyData.position.z;
+	}
+	else {
+		SpawnJDCInFrontOfPlayer(shlActorData, actorData);
+	}
+
+	shlActorData.matrix[12] = shlActorData.position.x;
+	shlActorData.matrix[13] = shlActorData.position.y;
+	shlActorData.matrix[14] = shlActorData.position.z;
 }
 
 static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
@@ -1755,6 +1826,7 @@ void ToggleJudgementCutDetours(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> JudgementCutSpeedHook =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC678, &JudgementCutSpeedDetour, 5);
 	g_JudgementCutSpeed_ReturnAddr = JudgementCutSpeedHook->GetReturnAddress();
+	g_JudgementCutVFX_ReturnAddr2 = (uintptr_t)appBaseAddr + 0x1DC3D7;
 	g_JudgementCutStartDelayCall = (uintptr_t)appBaseAddr + 0x1DC130;
 	g_JudgementCutSpawnCollisionCall = (uintptr_t)appBaseAddr + 0x1DC4E0;
 	g_JudgementCutCheckJustFrameCall = &CheckIfInJustFrameJDC;
@@ -1768,6 +1840,13 @@ void ToggleJudgementCutDetours(bool enable) {
 	g_JudgementCutRegularVFXCall = (uintptr_t)appBaseAddr + 0x2E7CA0;
 	g_JudgementCutJustFrameVFXCall = &PlayJustFrameJDCVFX;
 	JudgementCutVFXHook->Toggle(enable);
+
+	// dmc3.exe+1DC3AB - C7 83 7C 01 00 00 00 00 80 3F - mov [rbx+0000017C],3F800000 { Setting JDC W position at matrix }
+	static std::unique_ptr<Utility::Detour_t> JudgementCutPositionHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC3AB, &JudgementCutPositionDetour, 10);
+	g_JudgementCutPosition_ReturnAddr = JudgementCutPositionHook->GetReturnAddress();
+	g_JudgementCutSetPositionCall = &SetJDCPositionAtMatrix;
+	JudgementCutPositionHook->Toggle(enable);
 
 	run = enable;
 }
