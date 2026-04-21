@@ -10,6 +10,8 @@ EXTERN g_JudgementCutRegularVFXCall:QWORD
 EXTERN g_JudgementCutJustFrameVFXCall:QWORD
 EXTERN g_JudgementCutPosition_ReturnAddr:QWORD
 EXTERN g_JudgementCutSetPositionCall:QWORD
+EXTERN g_JudgementCutExtraShl_ReturnAddr:QWORD
+EXTERN g_JudgementCutExtraShlCall:QWORD
 cgeneratorptr dq 0
 
 .CODE
@@ -81,5 +83,35 @@ OriginalCode:
 	jmp [g_JudgementCutPosition_ReturnAddr]
 
 JudgementCutPositionDetour ENDP
+
+
+.CODE
+JudgementCutExtraShlDetour PROC
+	PushAllRegs
+	sub		rsp, 20h ; Shadow space for the call
+	mov rcx, qword ptr [rbx+530h] ; playerAddr in rbx (shlActorAddr) + 530h
+	call qword ptr [g_JudgementCutCheckJustFrameCall] ; Check if in JustFrameJDC
+	add rsp, 20h
+	cmp al, 1
+	je AddExtraJDCs
+	PopAllRegs
+	jmp OriginalCode
+	
+AddExtraJDCs:
+	PopAllRegs
+	PushAllRegs
+	mov rcx, rbx ; shlAddr in rbx
+	sub        rsp, 20h ; Shadow space for the call
+	call qword ptr [g_JudgementCutExtraShlCall] ; Add extra collisions for JustFrameJDC
+	add        rsp, 20h
+	PopAllRegs
+	jmp OriginalCode
+
+OriginalCode:
+	 movzx edx, byte ptr [rbx+08]
+	 test edx, edx
+	 jmp [g_JudgementCutExtraShl_ReturnAddr]
+
+JudgementCutExtraShlDetour ENDP
 
 END

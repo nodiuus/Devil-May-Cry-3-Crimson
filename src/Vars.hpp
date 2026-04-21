@@ -2574,7 +2574,7 @@ static_assert(offsetof(CollisionData, flags) == 0x140);
 static_assert(offsetof(CollisionData, data) == 0x210);
 static_assert(offsetof(CollisionData, playerBaseAddr) == 0x3A0);
 
-struct CollisionDataPlayer {
+struct CollisionDataActor {
 	_(4);
 	uint32 group; // 4
 	_(128);
@@ -2587,7 +2587,7 @@ struct CollisionDataPlayer {
 	vec4 data[8]; // 0x210
 };
 
-static_assert(sizeof(CollisionDataPlayer) == 656);
+static_assert(sizeof(CollisionDataActor) == 656);
 
 // $CollisionDataEnd
 
@@ -3488,7 +3488,7 @@ struct PlayerActorDataBase : ActorDataBase {
     _(36);
     BodyPartData bodyPartData[3][2]; // 0x6950
     _(576);
-    CollisionDataPlayer collisionData; // 0x7250
+    CollisionDataActor collisionData; // 0x7250
     byte16 buttons[4];           // 0x74E0
     _(16);
     uint16 rightStickPosition; // 0x74F8
@@ -4293,8 +4293,8 @@ public:
 	vec3 direction; //0x0140
 	char pad_014C[84]; //0x014C
 	float matrix[16]; //0x01A0
-	int32_t collisionDataStart; //0x01E0
-	char pad_01E4[828]; //0x01E4
+	CollisionDataActor collisionDataStart; //0x01E0
+	char pad_01E4[176]; //0x01E4
 	uintptr_t CGeneratorPtr; //0x0520
 	float delay; //0x0528
 	char pad_052C[4]; //0x052C
@@ -4303,7 +4303,7 @@ public:
 	char pad_0539[4159]; //0x0539
 
 	virtual void DestroyJDC_sub_1401DC0C0();
-	virtual void UpdateJDC_sub_1401DC620();
+	virtual void UpdateJDC_sub_1401DC620(uintptr_t shlActorAddr);
 	virtual void Function2();
 	virtual void Function3();
 	virtual void Function4();
@@ -4340,7 +4340,7 @@ public:
 	virtual void Function35();
 	virtual void Function36();
 	virtual void Function37();
-	virtual void SpawnJDCShl_sub_1401DC320();
+	virtual void SpawnJDCShl_sub_1401DC320(uintptr_t shlAddr);
 	virtual void DestroyJDCActor_sub_1401DC0A0();
 }; //Size: 0x1578
 
@@ -4658,7 +4658,7 @@ static_assert(offsetof(EnemyActorDataPride, state) == 0x3A38);
 
 struct EnemyActorDataLady : ActorDataBase {
     _(21400);
-    CollisionDataPlayer collisionData; // 0x5460
+    CollisionDataActor collisionData; // 0x5460
     _(104);
     float hitPoints; // 0x5758
     _(556);
@@ -4699,7 +4699,7 @@ struct EnemyActorDataVergil : ActorDataBase {
     _(272);
     float nextEventTimer; // 0x1D8
     _(58964);
-    CollisionDataPlayer collisionData; // 0xE830
+    CollisionDataActor collisionData; // 0xE830
     _(104);
     float hitPoints; // 0xEB28
     _(584);

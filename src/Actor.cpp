@@ -4550,8 +4550,8 @@ void CharacterSwitchController() {
     uint16* activeRotationAddr = 0;
     uint16* rotationAddr       = 0;
 
-    CollisionDataPlayer* activeCollisionDataAddr = 0;
-    CollisionDataPlayer* collisionDataAddr       = 0;
+    CollisionDataActor* activeCollisionDataAddr = 0;
+    CollisionDataActor* collisionDataAddr       = 0;
 
     if (!newActorData.baseAddr) {
         continue;

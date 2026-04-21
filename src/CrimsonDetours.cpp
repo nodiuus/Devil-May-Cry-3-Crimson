@@ -11,6 +11,7 @@
 #include <string>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 #include "CrimsonUtil.hpp"
 #include "DMC3Input.hpp"
 #include "Global.hpp"
@@ -335,6 +336,9 @@ std::uint64_t g_JudgementCutPosition_ReturnAddr;
 void JudgementCutPositionDetour();
 void* g_JudgementCutSetPositionCall;
 
+std::uint64_t g_JudgementCutExtraShl_ReturnAddr;
+void JudgementCutExtraShlDetour();
+void* g_JudgementCutExtraShlCall;
 
 // DTMustStyleArmor
 std::uint64_t g_DTMustStyleArmor_ReturnAddr;
@@ -705,7 +709,6 @@ static constexpr uintptr_t PLAYVFX_OFFSET() { return 0x2E7CA0; }
 using PlayVFX_t = uintptr_t(__fastcall*)(int group, uint16 index, uintptr_t matrixPtr, int a4);
 
 static uintptr_t PlayVFX_sub_1402E7CA0(int group, uint16 index, uintptr_t matrixPtr, int a4) {
-	// This func fires only the projectiles, without muzzle flash or sound effects. 
     PlayVFX_t PlayVFXFunc = reinterpret_cast<PlayVFX_t>(appBaseAddr + PLAYVFX_OFFSET());
 	if (!PlayVFXFunc) {
 		return NULL;
@@ -737,11 +740,52 @@ uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 	return shlActorData.CGeneratorPtr;
 }
 
+struct JdcSourceKey {
+	uintptr_t ownerPlayerActorAddr = 0;
+	uintptr_t sourceAddr = 0;
+
+	bool operator==(const JdcSourceKey& other) const {
+		return ownerPlayerActorAddr == other.ownerPlayerActorAddr && sourceAddr == other.sourceAddr;
+	}
+};
+
+struct JdcSourceKeyHash {
+	std::size_t operator()(const JdcSourceKey& key) const {
+		return std::hash<uintptr_t>{}(key.ownerPlayerActorAddr) ^ (std::hash<uintptr_t>{}(key.sourceAddr) << 1);
+	}
+};
+
+static std::unordered_map<JdcSourceKey, std::chrono::steady_clock::time_point, JdcSourceKeyHash> s_pendingSinceBySource;
+static std::unordered_map<JdcSourceKey, uint8, JdcSourceKeyHash> s_spawnedExtraCountBySource;
+static std::unordered_map<JdcSourceKey, vec3, JdcSourceKeyHash> s_primaryPosBySource;
+static std::unordered_map<JdcSourceKey, vec3, JdcSourceKeyHash> s_fixedExtraPosBySource;
+static std::unordered_map<uintptr_t, JdcSourceKey> s_extraAddrToSource;
+
 void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
 	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+	auto shlActorBaseAddr = shlAddr - 0x60;
+	const bool isJustFrameJdc = CheckIfInJustFrameJDC(shlActorData.playerActorAddr);
 
-    auto SpawnJDCInFrontOfPlayer = [] (CPl021Shl02Actor& shlActorData, PlayerActorData& actorData) {
+	if (isJustFrameJdc) {
+		auto extraIt = s_extraAddrToSource.find(shlActorBaseAddr);
+		if (extraIt != s_extraAddrToSource.end()) {
+			auto fixedPosIt = s_fixedExtraPosBySource.find(extraIt->second);
+			if (fixedPosIt != s_fixedExtraPosBySource.end()) {
+				shlActorData.position.x = fixedPosIt->second.x;
+				shlActorData.position.y = fixedPosIt->second.y;
+				shlActorData.position.z = fixedPosIt->second.z;
+				shlActorData.matrix[12] = shlActorData.position.x;
+				shlActorData.matrix[13] = shlActorData.position.y;
+				shlActorData.matrix[14] = shlActorData.position.z;
+				return;
+			}
+
+			s_extraAddrToSource.erase(extraIt);
+		}
+	}
+
+	auto SpawnJDCInFrontOfPlayer = [](CPl021Shl02Actor& shlActorData, PlayerActorData& actorData) {
 		constexpr float jdcForwardOffset = 800.0f;
 		constexpr float rotationToRadians = 6.28318530717958647692f / 65536.0f;
 
@@ -752,7 +796,7 @@ void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
 		shlActorData.position.x = actorData.position.x + forwardX * jdcForwardOffset;
 		shlActorData.position.y = actorData.position.y + 120.0f;
 		shlActorData.position.z = actorData.position.z + forwardZ * jdcForwardOffset;
-	};
+		};
 
 	if (actorData.lockOnData.targetBaseAddr60) {
 		float heightOffset = 120.0f;
@@ -771,6 +815,135 @@ void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
 	shlActorData.matrix[12] = shlActorData.position.x;
 	shlActorData.matrix[13] = shlActorData.position.y;
 	shlActorData.matrix[14] = shlActorData.position.z;
+
+	if (isJustFrameJdc) {
+		JdcSourceKey sourceKey{ shlActorData.playerActorAddr, shlActorBaseAddr };
+		s_primaryPosBySource[sourceKey] = {
+			shlActorData.position.x,
+			shlActorData.position.y,
+			shlActorData.position.z
+		};
+	}
+}
+
+static constexpr uintptr_t SPAWNCOLLISION_OFFSET() { return 0x5C320; }
+
+using SpawnCollision_t = uintptr_t(__fastcall*)(uintptr_t collisionDataStruct, uint8 a2);
+
+static uintptr_t SpawnCollision_sub_14005C320(uintptr_t collisionDataStruct, uint8 a2) {
+	SpawnCollision_t SpawnCollisionFunc = reinterpret_cast<SpawnCollision_t>(appBaseAddr + SPAWNCOLLISION_OFFSET());
+	if (!SpawnCollisionFunc) {
+		return NULL;
+	}
+
+	return SpawnCollisionFunc(collisionDataStruct, a2);
+}
+
+static constexpr uintptr_t SETJDCPOSITION_OFFSET() { return 0x1DC1A0; }
+
+using SetJDCPosition_t = uintptr_t(__fastcall*)(uintptr_t posPtr, uintptr_t matrixPtr, uintptr_t playerActorAddr, uint8 a4);
+
+static uintptr_t SetJDCPosition_sub_1401DC1A0(uintptr_t posPtr, uintptr_t matrixPtr, uintptr_t playerActorAddr, uint8 a4) {
+	SetJDCPosition_t SetJDCPositionFunc = reinterpret_cast<SetJDCPosition_t>(appBaseAddr + SETJDCPOSITION_OFFSET());
+	if (!SetJDCPositionFunc) {
+		return NULL;
+	}
+
+	return SetJDCPositionFunc(posPtr, matrixPtr, playerActorAddr, a4);
+}
+
+static constexpr uintptr_t SPAWNJDCSHL_OFFSET() { return 0x1DC320; }
+
+using SpawnJDCShl = uintptr_t(__fastcall*)(uintptr_t shlAddr);
+
+static uintptr_t SpawnJDCShl_sub_1401DC320(uintptr_t shlAddr) {
+	SpawnJDCShl SpawnJDCShlFunc = reinterpret_cast<SpawnJDCShl>(appBaseAddr + SPAWNJDCSHL_OFFSET());
+	if (!SpawnJDCShlFunc) {
+		return NULL;
+	}
+
+	return SpawnJDCShlFunc(shlAddr);
+}
+
+
+void SpawnExtraJDCs(uintptr_t shlActorAddr) {
+	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlActorAddr);
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+	JdcSourceKey sourceKey{ shlActorData.playerActorAddr, shlActorAddr };
+	constexpr uint8 targetExtraJdcCount = 1; // Total JDCs = 1 base + 2 extras = 3
+
+	if (!shlActorData.aliveStatus) {
+		auto extraIt = s_extraAddrToSource.find(shlActorAddr);
+		if (extraIt != s_extraAddrToSource.end()) {
+			s_extraAddrToSource.erase(extraIt);
+			return;
+		}
+
+		s_pendingSinceBySource.erase(sourceKey);
+		s_spawnedExtraCountBySource.erase(sourceKey);
+		s_primaryPosBySource.erase(sourceKey);
+		s_fixedExtraPosBySource.erase(sourceKey);
+
+		for (auto it = s_extraAddrToSource.begin(); it != s_extraAddrToSource.end(); ) {
+			if (it->second == sourceKey) {
+				it = s_extraAddrToSource.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+		return;
+	}
+
+	if (!CheckIfInJustFrameJDC(shlActorData.playerActorAddr)) {
+		return;
+	}
+
+	if (s_extraAddrToSource.find(shlActorAddr) != s_extraAddrToSource.end()) {
+		return;
+	}
+
+	auto spawnedCountIt = s_spawnedExtraCountBySource.find(sourceKey);
+	const uint8 spawnedExtraCount = (spawnedCountIt != s_spawnedExtraCountBySource.end()) ? spawnedCountIt->second : 0;
+	if (spawnedExtraCount >= targetExtraJdcCount) {
+		return;
+	}
+
+	vec3 newPosition = { shlActorData.position.x, shlActorData.position.y, shlActorData.position.z };
+	auto primaryPosIt = s_primaryPosBySource.find(sourceKey);
+	if (primaryPosIt != s_primaryPosBySource.end()) {
+		newPosition = primaryPosIt->second;
+	}
+	float newMatrix[16] = { 0 };
+	std::memcpy(newMatrix, shlActorData.matrix, sizeof(float) * 16);
+	newMatrix[12] = newPosition.x;
+	newMatrix[13] = newPosition.y;
+	newMatrix[14] = newPosition.z;
+
+	const float speedScale = actorData.speed / (std::max)(0.001f, g_FrameRateTimeMultiplier);
+	const int scaledDelayMs = (std::max)(1, static_cast<int>(200.0f * speedScale));
+	auto extraJdcDelay = std::chrono::milliseconds(scaledDelayMs);
+
+	auto now = std::chrono::steady_clock::now();
+	auto pendingIt = s_pendingSinceBySource.find(sourceKey);
+	if (pendingIt == s_pendingSinceBySource.end()) {
+		s_pendingSinceBySource[sourceKey] = now + extraJdcDelay;
+		return;
+	}
+
+	if (now < pendingIt->second) {
+		return;
+	}
+
+	uintptr_t newJDC = SetJDCPosition_sub_1401DC1A0((uintptr_t)&newPosition, (uintptr_t)newMatrix, shlActorData.playerActorAddr, 10);
+	if (newJDC) {
+		s_spawnedExtraCountBySource[sourceKey] = spawnedExtraCount + 1;
+		s_pendingSinceBySource[sourceKey] = now + extraJdcDelay;
+		s_extraAddrToSource[newJDC] = sourceKey;
+		s_fixedExtraPosBySource[sourceKey] = newPosition;
+		auto& newShlActorData = *reinterpret_cast<CPl021Shl02Actor*>(newJDC);
+		SpawnJDCShl_sub_1401DC320(newJDC + 0x60);
+	}
 }
 
 static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
@@ -1847,6 +2020,14 @@ void ToggleJudgementCutDetours(bool enable) {
 	g_JudgementCutPosition_ReturnAddr = JudgementCutPositionHook->GetReturnAddress();
 	g_JudgementCutSetPositionCall = &SetJDCPositionAtMatrix;
 	JudgementCutPositionHook->Toggle(enable);
+
+	// dmc3.exe+1DC62E - 0F B6 53 08 - movzx edx,byte ptr [rbx+08] { Checking aliveStatus for comparisons }
+	// dmc3.exe+1DC632 - 85 D2 - test edx,edx
+	static std::unique_ptr<Utility::Detour_t> JudgementCutExtraShlHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC62E, &JudgementCutExtraShlDetour, 6);
+	g_JudgementCutExtraShl_ReturnAddr = JudgementCutExtraShlHook->GetReturnAddress();
+	g_JudgementCutExtraShlCall = &SpawnExtraJDCs;
+	JudgementCutExtraShlHook->Toggle(enable);
 
 	run = enable;
 }

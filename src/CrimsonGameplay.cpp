@@ -2335,14 +2335,16 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
   static bool jdcDefaultsApplied = false;
 
 	if (jCut.inJustFrameJDC) {
+		// We halve the damage because Just Frame JDCs hit twice.
 		jdcDefaultsApplied = false;
 		charSettings2.jdcRadius = 220.0f;
 		charSettings2.jdcDelay1 = 10.0f;
 		jdcDmgData.knockbackAnimation = 2;
 		jdcDmgData.unk1 = 4;
 		jdcDmgData.displacement = 10.0f;
+		jdcDmgData.projectileDmg = 180.0f;
 		jdcDmgData.angle = 0.0f;
-		jdcDmgData.styleMeterIncrease = 300.0f;
+		jdcDmgData.styleMeterIncrease = 200.0f;
 		jdcDmgData.knockbackSpeed = 10.0f;
 
 
@@ -2362,8 +2364,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			jdcDmgData.knockbackAnimation = 0;
 			jdcDmgData.unk1 = 6;
 			jdcDmgData.displacement = 300.0f;
+			jdcDmgData.projectileDmg = 300.0f;
 			jdcDmgData.angle = 10.0f;
-			jdcDmgData.styleMeterIncrease = 600.0f;
+			jdcDmgData.styleMeterIncrease = 300.0f;
 			jdcDmgData.knockbackSpeed = 20.0f;
            jdcDefaultsApplied = true;
 		}
