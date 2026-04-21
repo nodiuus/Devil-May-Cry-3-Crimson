@@ -717,8 +717,20 @@ static uintptr_t PlayVFX_sub_1402E7CA0(int group, uint16 index, uintptr_t matrix
 	return PlayVFXFunc(group, index, matrixPtr, a4);
 }
 
+static std::unordered_set<uintptr_t> s_suppressJustFrameVFXForShl;
+
 uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
+  auto shlActorBaseAddr = shlAddr - 0x60;
+
+	if (s_suppressJustFrameVFXForShl.find(shlActorBaseAddr) != s_suppressJustFrameVFXForShl.end()) {
+		float fakeVFXMatrix[16] = { 0 };
+		std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
+		fakeVFXMatrix[13] -= 10000000.0f;
+		shlActorData.CGeneratorPtr = PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
+		return shlActorData.CGeneratorPtr;
+	}
+
 	static constexpr const wchar_t* justFrameVFXPath = L"Crimson\\vfx\\judgementcut\\justframejdc.efkefc";
 	EffekseerRefHandle justFrameVFXRef = CrimsonEfk::LoadEffect(justFrameVFXPath, 40.0f);
 
@@ -875,6 +887,7 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
 	if (!shlActorData.aliveStatus) {
 		auto extraIt = s_extraAddrToSource.find(shlActorAddr);
 		if (extraIt != s_extraAddrToSource.end()) {
+         s_suppressJustFrameVFXForShl.erase(shlActorAddr);
 			s_extraAddrToSource.erase(extraIt);
 			return;
 		}
@@ -886,6 +899,7 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
 
 		for (auto it = s_extraAddrToSource.begin(); it != s_extraAddrToSource.end(); ) {
 			if (it->second == sourceKey) {
+             s_suppressJustFrameVFXForShl.erase(it->first);
 				it = s_extraAddrToSource.erase(it);
 			}
 			else {
@@ -940,6 +954,7 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
 		s_spawnedExtraCountBySource[sourceKey] = spawnedExtraCount + 1;
 		s_pendingSinceBySource[sourceKey] = now + extraJdcDelay;
 		s_extraAddrToSource[newJDC] = sourceKey;
+       s_suppressJustFrameVFXForShl.insert(newJDC);
 		s_fixedExtraPosBySource[sourceKey] = newPosition;
 		auto& newShlActorData = *reinterpret_cast<CPl021Shl02Actor*>(newJDC);
 		SpawnJDCShl_sub_1401DC320(newJDC + 0x60);
