@@ -2055,6 +2055,19 @@ void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 	}
 }
 
+static constexpr uintptr_t PLAYSFXWITHPOSBYTYPE_OFFSET() { return 0x339930; }
+
+using PlaySFXWithPosByType_t = uintptr_t(__fastcall*)(uintptr_t fileAddr, uint32 index, uintptr_t posPtr, uint32 type);
+
+static uintptr_t PlaySFXWithPos_ByType_sub_140339930(uintptr_t fileAddr, uint32 index, uintptr_t posPtr, uint32 type) {
+	PlaySFXWithPosByType_t PlaySFXWithPosByTypeFunc = reinterpret_cast<PlaySFXWithPosByType_t>(appBaseAddr + PLAYSFXWITHPOSBYTYPE_OFFSET());
+	if (!PlaySFXWithPosByTypeFunc) {
+		return NULL;
+	}
+
+	return PlaySFXWithPosByTypeFunc(fileAddr, index, posPtr, type);
+}
+
 void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	using namespace ACTION_VERGIL;
 	using namespace NEXT_ACTION_REQUEST_POLICY;
@@ -2119,13 +2132,14 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCut_pl021_00_3) {
 				if (jCut.fireSound) {
 					CrimsonSDL::PlayJDC(playerIndex, true, 0);
+					PlaySFXWithPos_ByType_sub_140339930((uintptr_t)appBaseAddr + 0xD6DC90, 8, (uintptr_t)&actorData.position, 11);
 					jCut.fireSound = false;
 				}
 
 			}
 			else if (actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3) {
 				if (jCut.fireSound) {
-					CrimsonSDL::PlayJDC(playerIndex, false, 0);
+					PlaySFXWithPos_ByType_sub_140339930((uintptr_t)appBaseAddr + 0xD6DC90, 8, (uintptr_t)&actorData.position, 11);
 					jCut.fireSound = false;
 				}
 			}
