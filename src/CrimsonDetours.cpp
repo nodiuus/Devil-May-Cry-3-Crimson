@@ -882,7 +882,7 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
 	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlActorAddr);
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
 	JdcSourceKey sourceKey{ shlActorData.playerActorAddr, shlActorAddr };
-	constexpr uint8 targetExtraJdcCount = 1; // Total JDCs = 1 base + 2 extras = 3
+	constexpr uint8 targetExtraJdcCount = 3; // Total JDCs = 1 base + 2 extras = 3
 
 	if (!shlActorData.aliveStatus) {
 		auto extraIt = s_extraAddrToSource.find(shlActorAddr);
@@ -935,7 +935,7 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
 	newMatrix[14] = newPosition.z;
 
 	const float speedScale = actorData.speed / (std::max)(0.001f, g_FrameRateTimeMultiplier);
-	const int scaledDelayMs = (std::max)(1, static_cast<int>(200.0f * speedScale));
+	const int scaledDelayMs = (std::max)(1, static_cast<int>(100.0f * speedScale));
 	auto extraJdcDelay = std::chrono::milliseconds(scaledDelayMs);
 
 	auto now = std::chrono::steady_clock::now();

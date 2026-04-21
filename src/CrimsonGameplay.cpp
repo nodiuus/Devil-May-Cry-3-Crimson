@@ -2349,16 +2349,16 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
   static bool jdcDefaultsApplied = false;
 
 	if (jCut.inJustFrameJDC) {
-		// We halve the damage because Just Frame JDCs hit twice.
+		// We 1/4 the damage because Just Frame JDCs hit four times.
 		jdcDefaultsApplied = false;
 		charSettings2.jdcRadius = 220.0f;
 		charSettings2.jdcDelay1 = 10.0f;
 		jdcDmgData.knockbackAnimation = 2;
 		jdcDmgData.unk1 = 4;
-		jdcDmgData.displacement = 10.0f;
-		jdcDmgData.projectileDmg = 180.0f;
+		jdcDmgData.displacement = 5.0f;
+		jdcDmgData.projectileDmg = 90.0f;
 		jdcDmgData.angle = 0.0f;
-		jdcDmgData.styleMeterIncrease = 200.0f;
+		jdcDmgData.styleMeterIncrease = 100.0f;
 		jdcDmgData.knockbackSpeed = 10.0f;
 
 
