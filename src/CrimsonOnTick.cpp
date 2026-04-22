@@ -154,6 +154,19 @@ void GameTrackDetection() {
 	g_gameTrackPlaying = (std::string)reinterpret_cast<char*>(appBaseAddr + 0xD23906);
 }
 
+static constexpr uintptr_t REGISTERMISSIONDATAUNLOCK_OFFSET() { return 0x1AA6E0; }
+
+using RegisterMissionDataUnlock_t = uintptr_t(__fastcall*)(uintptr_t CEventMissionAddr, uint32 index, uint32_t flags);
+
+static uintptr_t RegisterMissionDataUnlock_sub_1401AA6E0(uintptr_t CEventMissionAddr, uint32 index, uint32_t flags) {
+	RegisterMissionDataUnlock_t RegisterMissionDataUnlockFunc = reinterpret_cast<RegisterMissionDataUnlock_t>(appBaseAddr + REGISTERMISSIONDATAUNLOCK_OFFSET());
+	if (!RegisterMissionDataUnlockFunc) {
+		return NULL;
+	}
+
+	return RegisterMissionDataUnlockFunc(CEventMissionAddr, index, flags);
+}
+
 void FixWeaponUnlocksDante() {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 	auto  name_10723 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
@@ -281,6 +294,7 @@ void FixWeaponUnlocksDante() {
 	// If we saw the boss before and now they're gone, unlock the weapon
 	if (cerberusExists && !cerberusAlive && cerberusMissionContext) {
 		missionData.itemCounts[ITEM::CERBERUS] = 1;
+		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::CERBERUS, -1);
 		cerberusExists = false;
 	} else if (!cerberusMissionContext) {
 		cerberusExists = false; 
@@ -288,6 +302,7 @@ void FixWeaponUnlocksDante() {
 
 	if (agniRudraExists && !agniRudraAlive && agniRudraMissionContext) {
 		missionData.itemCounts[ITEM::AGNI_RUDRA] = 1;
+		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::AGNI_RUDRA, -1);
 		agniRudraExists = false; 
 	} else if (!agniRudraMissionContext) {
 		agniRudraExists = false;
@@ -295,6 +310,7 @@ void FixWeaponUnlocksDante() {
 
 	if (nevanExists && !nevanAlive && nevanMissionContext) {
 		missionData.itemCounts[ITEM::NEVAN] = 1;
+		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::NEVAN, -1);
 		nevanExists = false;
 	} else if (!nevanMissionContext) {
 		nevanExists = false;
@@ -309,6 +325,7 @@ void FixWeaponUnlocksDante() {
 
 	if (ladyExists && !ladyAlive && ladyMissionContext) {
 		missionData.itemCounts[ITEM::KALINA_ANN] = 1;
+		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::KALINA_ANN, -1);
 		ladyExists = false;
 	} else if (!ladyMissionContext) {
 		ladyExists = false;
@@ -320,6 +337,7 @@ void FixWeaponUnlocksDante() {
 		eventData.room == ROOM::LAIR_OF_JUDGEMENT_RUINS &&
 		missionData.itemCounts[ITEM::BEOWULF] != 1) {
 		missionData.itemCounts[ITEM::BEOWULF] = 1;
+		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::BEOWULF, -1);
 	}
 
 	if (doppelExists && !doppelAlive && doppelMissionContext) {

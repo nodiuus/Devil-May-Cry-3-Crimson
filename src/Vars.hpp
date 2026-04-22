@@ -2373,7 +2373,9 @@ static_assert(sizeof(SessionData) == 304);
 // $MissionDataStart
 
 struct MissionData {
-    _(56);
+	_(8);
+    uintptr_t CEventMissionAddr; // 0x8
+    _(40);
     uint32 redOrbs;       // 0x38
     uint8 itemCounts[62]; // 0x3C
     uint8 buyCounts[8];   // 0x7A
@@ -2386,6 +2388,9 @@ struct MissionData {
     _(4);
 };
 
+using CGameW = MissionData;
+
+static_assert(offsetof(MissionData, CEventMissionAddr) == 0x8);
 static_assert(offsetof(MissionData, redOrbs) == 0x38);
 static_assert(offsetof(MissionData, itemCounts) == 0x3C);
 static_assert(offsetof(MissionData, buyCounts) == 0x7A);
