@@ -447,6 +447,10 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 	if (!pool_166 || !pool_166[3]) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
 
+	if (cameraMetadata.fixedCameraAddr != 0) {
+		return; // Disable adjustment when a fixed camera is active
+	}
+
 	static std::chrono::time_point<std::chrono::steady_clock> lockOnStartTime;
 	static bool isLockOnTimerActive = false;
 	static byte8* targetAddr = nullptr;
@@ -940,6 +944,10 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 	}
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
+	if (cameraMetadata.fixedCameraAddr != 0) {
+		return; // Disable distance adjustment when a fixed camera is active
+	}
+
 	static bool wasMPCamActive = false;
 	bool isMPCamActiveNow = g_isMPCamActive && activeConfig.Actor.enable;
 
@@ -1009,6 +1017,11 @@ void CameraLockOnDistanceController() {
 		return;
 	}
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
+	auto& cameraMetadata = *reinterpret_cast<CameraControlMetadata*>(pool_4449);
+
+	if (cameraMetadata.fixedCameraAddr != 0) {
+		return; // Disable lock-on distance adjustment when a fixed camera is active
+	}
 
 	static bool wasMPCamActiveLockOn = false;
 	bool isMPCamActiveNow = g_isMPCamActive && activeConfig.Actor.enable;
@@ -1056,13 +1069,44 @@ void CameraLockOnDistanceController() {
 }
 
 void CameraTiltController(CameraData* cameraData, CameraControlMetadata& cameraMetadata) {
-    if (activeCrimsonConfig.Camera.verticalTilt == 0 || cameraMetadata.fixedCameraAddr != 0) { // Original (Vanilla Default)
+  static CameraData* lastCameraData = nullptr;
+	static int lastVerticalTilt = -1;
+	static bool tiltApplied = false;
+
+	if (!cameraData) {
+		lastCameraData = nullptr;
+		tiltApplied = false;
+		return;
+	}
+
+	if (lastCameraData != cameraData) {
+		lastCameraData = cameraData;
+		tiltApplied = false;
+	}
+
+	if (cameraMetadata.fixedCameraAddr != 0) {
+        tiltApplied = false;
+		return; // Disable tilt adjustment when a fixed camera is active
+	}
+
+	if (lastVerticalTilt != activeCrimsonConfig.Camera.verticalTilt) {
+		lastVerticalTilt = activeCrimsonConfig.Camera.verticalTilt;
+		tiltApplied = false;
+	}
+
+	if (tiltApplied) {
+		return;
+	}
+
+    if (activeCrimsonConfig.Camera.verticalTilt == 0) { // Original (Vanilla Default)
 		cameraData->tilt = 0.253073f;
     }
 
     if (activeCrimsonConfig.Camera.verticalTilt == 1) { // Closer to Ground
         cameraData->tilt = 0.103073f;
     }
+
+	tiltApplied = true;
 }
 
 void DisableCameraShake(bool enable) {

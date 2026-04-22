@@ -5030,7 +5030,7 @@ void CameraSection(size_t defaultFontSize) {
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(activeCrimsonConfig.Camera.multiplayerCamera || activeCrimsonConfig.Camera.panoramicCam);
+			GUI_PushDisable(activeCrimsonConfig.Camera.panoramicCam);
 			ImGui::PushItemWidth(itemWidth * 1.1f);
 			UI::Combo2("Distance", cameraDistanceNames, activeCrimsonConfig.Camera.distance, queuedCrimsonConfig.Camera.distance);
 			ImGui::SameLine();
@@ -5049,7 +5049,7 @@ void CameraSection(size_t defaultFontSize) {
 				"\n"
 				"Dynamic Option adjusts based on whether player is airborne.");
 			ImGui::PopItemWidth();
-			GUI_PopDisable(activeCrimsonConfig.Camera.multiplayerCamera || activeCrimsonConfig.Camera.panoramicCam);
+			GUI_PopDisable(activeCrimsonConfig.Camera.panoramicCam);
 
 			ImGui::TableNextColumn();
 
@@ -8745,7 +8745,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
-			ImGui::Text("thirdPersonCamera: %u", activeCrimsonConfig.Camera.thirdPersonCamera);
+			ImGui::Text("fixedCamAddr: %x", cameraControlMetadata.fixedCameraAddr);
 			ImGui::Text("in JustFrame JDC:  %u", crimsonPlayer[0].jCut.inJustFrameJDC);
 			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
 			ImGui::Text("ACTION:  %u", actorData.action);
