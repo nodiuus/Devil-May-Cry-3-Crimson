@@ -1676,6 +1676,31 @@ void ToggleM6CrashFix(bool enable) {
 	run = enable;
 }
 
+void ToggleTempFixHighFPSEnigmaShls(bool enable) {
+	// This fixes the Enigma Shells ghost hits at High FPS by skipping velocity normalization
+	// Likely a temporary fix until we can properly address the underlying issue, 
+	// which is related to how collsion desyncs a bit at high FPS.
+	// See: StateAssignmentCollision_sub_1402CC530 with collision matrix assignment.
+	// This fix seems to work fine and doesn't cause any noticeable issues, but it does feel a bit hacky, 
+	// so ideally we'd want to address the root cause eventually. -- Berth
+	// From FireEnigmaShl_sub_1401A3550:
+	// dmc3.exe+1A361C - 76 1D                 - jna dmc3.exe+1A363B
+	// dmc3.exe+1A361C - EB 1D                 - jmp dmc3.exe+1A363B
+
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x1A361C), (char*)"\xEB\x1D", 2);
+	} else {
+		_patch((char*)(appBaseAddr + 0x1A361C), (char*)"\x76\x1D", 2);
+	}
+	run = enable;
+}
+
 #pragma endregion
 
 # pragma region Enemy

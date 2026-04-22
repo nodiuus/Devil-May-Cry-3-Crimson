@@ -1217,7 +1217,7 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 	// We can use this to both id which move the collision pertains to and which player it belongs to / spawned it.
 	// You can identify this offset by putting a breakpoint at dmc3.exe + 2CCC98 and looking at RBX, 
 	// which points to the collisionMetadata struct. For attack hitboxes, it will usually end at ...0x420 (for Vergil) and 0x760 (for Dante).
-	// so just look at the relation between moveOffsetAddr (+0x20) and the playerAddr to get the hitbox offset for each move.
+	// so just look at the relation between sourceMatrixAddr (+0x20) and the playerAddr to get the hitbox offset for each move.
 	// This detour call is placed right before the game writes the radius value for the hitbox, 
 	// so we can check for specific moves and modify their hitbox size if we want to.
 	// Conversely, we can also use the dmgDatastruct and playerAddr present in the Collision Structs to id them (more reliable). 
@@ -1226,9 +1226,9 @@ float InterceptingCollisions(byte8* metadataAddr, float radius) {
 	DriveCol::HandleDriveCollisionLogic(collisionMeta, metadataKey);
 
 	// Yamato High Time hitbox increase
-	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->moveOffsetAddr - 0x66640;
-	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->moveOffsetAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
-	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->moveOffsetAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
+	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->sourceMatrixAddr - 0x66640;
+	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->sourceMatrixAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
+	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->sourceMatrixAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
 
 	// Checking for all Players and Clones
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {

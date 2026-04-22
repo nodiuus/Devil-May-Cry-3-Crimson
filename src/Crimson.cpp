@@ -302,6 +302,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         CrimsonDetours::ToggleVergilM3CrashFix(true);
         CrimsonDetours::ToggleMission5CrashFix(true);
         CrimsonPatches::ToggleM6CrashFix(true);
+        CrimsonPatches::ToggleTempFixHighFPSEnigmaShls(true);
         CrimsonDetours::ToggleArkhamPt2GrabCrashFix(true);
         CrimsonDetours::ToggleArkhamPt2DoppelCrashFix(true);
         CrimsonDetours::ToggleCerbDamageFix(true);
