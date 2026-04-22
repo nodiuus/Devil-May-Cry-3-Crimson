@@ -64,6 +64,8 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
                     }
                     auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado : 
                         crimsonPlayer[playerIndex].inAirTornadoClone;
+                    auto& skyLaunch = (entityIndex == 0) ? crimsonPlayer[playerIndex].skyLaunch : 
+						crimsonPlayer[playerIndex].skyLaunchClone;
 
                     auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
                     if (actorData.character == CHARACTER::DANTE) {
@@ -79,6 +81,13 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
 							g_helperIndices[CHANNEL::COMMON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
                             g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
                             continue;
+                        }
+
+                        if (skyLaunch.executing) {
+							// Mute the Sky Launch's Royal Release SFX.
+							g_helperIndices[CHANNEL::COMMON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+							g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+							continue;
                         }
                     }
 

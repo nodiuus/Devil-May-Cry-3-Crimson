@@ -4860,6 +4860,7 @@ void TrackRoyalReleaseAndSkyLaunch(byte8* actorBaseAddr) {
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (actorData.character != CHARACTER::DANTE) return;
+	if (!IsActiveCharacterActor(actorData)) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto& royalRelease = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].royalRelease : crimsonPlayer[playerIndex].royalReleaseClone;
 	auto& skyLaunch = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].skyLaunch : crimsonPlayer[playerIndex].skyLaunchClone;
@@ -4911,6 +4912,7 @@ void CheckRoyalReleaseAndSkyLaunch(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
 
 	// Centralized tracking function to handle both states
 	TrackRoyalReleaseAndSkyLaunch(actorData);
@@ -4920,6 +4922,7 @@ void CheckRoyalReleaseAndSkyLaunch(byte8* actorBaseAddr) {
 void StoreSkyLaunchProperties(PlayerActorData& actorData) {
     auto playerIndex = actorData.newPlayerIndex;
     auto& skyLaunch = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].skyLaunch : crimsonPlayer[playerIndex].skyLaunchClone;
+	if (!IsActiveCharacterActor(actorData)) return;
     auto& event = actorData.eventData[0].event;
     auto& state = actorData.state;
 
@@ -4957,11 +4960,6 @@ void ApplySkyLaunchProperties(byte8* actorBaseAddr) {
         actorData.position.z     = skyLaunch.storedPos.z;
         actorData.styleData.rank = skyLaunch.storedRank;
         actorData.magicPoints = skyLaunch.storedDevilTrigger;
-
-        if (!skyLaunch.setVolume) {
-            SetVolume(2, 0);
-            skyLaunch.setVolume = true;
-        }
 
         if (!skyLaunch.appliedProperties) {
             skyLaunch.forceJustFrameReleaseToggledOff = false;
