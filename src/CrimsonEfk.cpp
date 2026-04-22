@@ -811,7 +811,7 @@ public:
 
         // Fake Particle will keep spawning every 500 ms or so, but only when active Handles exist. Needs testing on slower machines.
         const auto now = std::chrono::steady_clock::now();
-       if (!g_activeEffectHandles.empty() && (g_nextFakeParticlePulse.time_since_epoch().count() == 0 || now >= g_nextFakeParticlePulse)) {
+       if ((g_nextFakeParticlePulse.time_since_epoch().count() == 0 || now >= g_nextFakeParticlePulse)) {
             auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
             if (pool_10222 && pool_10222[3]) {
                 auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
