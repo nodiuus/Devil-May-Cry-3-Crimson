@@ -1191,11 +1191,6 @@ void ForceThirdPersonCameraController() {
 	}
 	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
 
-	if ((eventData.event == EVENT::TELEPORT) || (eventData.event == EVENT::INIT)) {
-		CrimsonPatches::ForceThirdPersonCamera(true);
-	}
-
-
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
 	//get event & nextevent

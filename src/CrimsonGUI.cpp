@@ -8745,6 +8745,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("thirdPersonCamera: %u", activeCrimsonConfig.Camera.thirdPersonCamera);
 			ImGui::Text("in JustFrame JDC:  %u", crimsonPlayer[0].jCut.inJustFrameJDC);
 			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
 			ImGui::Text("ACTION:  %u", actorData.action);
