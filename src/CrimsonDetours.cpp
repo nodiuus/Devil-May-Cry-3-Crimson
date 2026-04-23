@@ -31,7 +31,7 @@
 namespace CrimsonDetours {
 
 extern "C" {
-std::uint64_t DetourBaseAddr;
+std::uint64_t g_appBaseAddr;
 
 // SampleMod
 std::uint64_t g_SampleMod_ReturnAddr1;
@@ -1300,7 +1300,7 @@ bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
 
 void InitDetours() {
     using namespace Utility;
-    DetourBaseAddr = (uintptr_t)appBaseAddr;
+    g_appBaseAddr = (uintptr_t)appBaseAddr;
 
 	// cEnemySetCtrl__spawnGuy_sub_1401A4680
 	//dmc3.exe+1A4680 - 40 57 - push rdi
@@ -1625,7 +1625,6 @@ void ToggleHoldToCrazyCombo(bool enable) {
 
 void SkyLaunchDetours(bool enable) {
 	using namespace Utility;
-	DetourBaseAddr = (uintptr_t)appBaseAddr;
 	static bool run = false;
 
 	if (run == enable) {
@@ -1829,7 +1828,6 @@ void RerouteRedOrbsCounterAlpha(bool enable, volatile uint16_t& alphaVar) {
 
 void ToggleClassicHUDPositionings(bool enable) {
 	using namespace Utility;
-	DetourBaseAddr = (uintptr_t)appBaseAddr;
 
 	// HudHPSeparation
 	static std::unique_ptr<Utility::Detour_t> HudHPSeparationHook =
@@ -1974,11 +1972,14 @@ void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
 	ShotgunShlSpawnAngleHook2->Toggle(enable);
 
 	g_ShotgunShlSpawnAnglePointBlankCheckCall = &CheckIfInBackslide;
+	
 
+	// dmc3.exe+20EDEB - 75 1C                 - jne dmc3.exe+20EE09
+	// dmc3.exe+20EDED - 48 8D 8B 10 65 00 00  - lea rcx,[rbx+00006510]
 	// dmc3.exe + 20EE11 - E8 DA 91 00 00 - call dmc3.exe + 217FF0{ Point Blank's ShotgunFire }
 	// player in RCX, fireMode in RDX, R8 is 0
 	static std::unique_ptr<Utility::Detour_t> PointBlankShotgunFireHook =
-	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x20EE11, &PointBlankShotgunFireDetour, 5);
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x20EDEB, &PointBlankShotgunFireDetour, 9);
 	g_PointBlankShotgunFire_ReturnAddr = PointBlankShotgunFireHook->GetReturnAddress();
 	PointBlankShotgunFireHook->Toggle(enable);
 

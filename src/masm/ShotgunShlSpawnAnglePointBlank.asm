@@ -9,6 +9,8 @@ EXTERN g_PointBlankShotgunFireTailCall_ReturnAddr:QWORD
 EXTERN g_PointBlankShotgunFireDelayCall:QWORD
 EXTERN g_PointBlankShotgunFireOgCall:QWORD
 EXTERN g_PointBlankShotgunCancelAnimTailCall:QWORD
+originalJumpAddr dq 0
+newJumpAddr dq 0
 
 .CODE
 ShotgunShlSpawnAnglePointBlankDetour PROC
@@ -69,6 +71,7 @@ ShotgunShlSpawnAnglePointBlankDetour2 ENDP
 PointBlankShotgunFireDetour PROC
 	PushAllRegs
 	sub		rsp, 20h ; Shadow space for the call
+	mov rcx, rbx ; playerAddr in rbx
 	call qword ptr [g_ShotgunShlSpawnAnglePointBlankCheckCall] ; Check if in Backslide
 	add rsp, 20h
 	cmp al, 1
@@ -78,14 +81,33 @@ PointBlankShotgunFireDetour PROC
 	
 DelayCall:
 	PopAllRegs
+	PushAllRegs
 	sub		rsp, 20h ; Shadow space for the call
+	mov rcx, rbx
 	call qword ptr [g_PointBlankShotgunFireDelayCall] ; Queue the delay function to prevent the shotgun from firing on his foot
 	add rsp, 20h
-	jmp [g_PointBlankShotgunFire_ReturnAddr]
+	PopAllRegs
+	jmp NewJump
 
 OriginalCode:
-	call [g_PointBlankShotgunFireOgCall]
+	jne OriginalJump
+	lea rcx, [rbx+6510h] 
 	jmp [g_PointBlankShotgunFire_ReturnAddr]
+
+OriginalJump:
+	push r13
+	mov r13, 14020EE09h
+	mov qword ptr [originalJumpAddr], r13
+	pop r13
+	jmp originalJumpAddr
+
+NewJump:
+	push r13
+	mov r13, 14020EE16h
+	mov qword ptr [newJumpAddr], r13
+	pop r13
+	jmp newJumpAddr
+
 PointBlankShotgunFireDetour ENDP
 
 
