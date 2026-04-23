@@ -564,6 +564,8 @@ struct CrimsonConfig {
 		float fpsCap = 120.0f;
 		bool fpsUnlocked = true;
 
+		bool disableMenuTransitions = false;
+
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
@@ -572,7 +574,8 @@ struct CrimsonConfig {
 				std::make_pair("xinputSlots", &System::xinputSlots),
 				std::make_pair("flipModelPresentation", &System::flipModelPresentation),
 				std::make_pair("fpsCap", &System::fpsCap),
-				std::make_pair("fpsUnlocked", &System::fpsUnlocked)
+				std::make_pair("fpsUnlocked", &System::fpsUnlocked),
+				std::make_pair("disableMenuTransitions", &System::disableMenuTransitions)
 			);
 		}
 	} System;

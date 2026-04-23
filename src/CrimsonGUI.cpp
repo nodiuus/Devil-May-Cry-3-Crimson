@@ -10023,6 +10023,13 @@ void SystemSection(size_t defaultFontSize) {
 
 			ImGui::TableNextColumn();
 
+	
+			GUI_Checkbox2("Disable Menu Transitions", activeCrimsonConfig.System.disableMenuTransitions, queuedCrimsonConfig.System.disableMenuTransitions);
+			
+
+			ImGui::TableNextColumn();
+
+
 			if (GUI_Checkbox2("Force Focus", activeConfig.forceWindowFocus, queuedConfig.forceWindowFocus)) {
 				ToggleForceWindowFocus(activeConfig.forceWindowFocus);
 			}
@@ -15239,6 +15246,18 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 #pragma endregion
 
+static constexpr uintptr_t INPUTSUPDATE_OFFSET() { return 0x32CFE0; }
+
+using InputsUpdate_t = int16(__fastcall*)(uintptr_t inputAddr, int playerIndex, unsigned int a3);
+
+static int16 InputsUpdate_sub_14032CFE0(uintptr_t inputAddr, int playerIndex, unsigned int a3) {
+	InputsUpdate_t InputsUpdateFunc = reinterpret_cast<InputsUpdate_t>(appBaseAddr + INPUTSUPDATE_OFFSET());
+	if (!InputsUpdateFunc) {
+		return NULL;
+	}
+
+	return InputsUpdateFunc(inputAddr, playerIndex, a3);
+}
 
 void GUI_Render(IDXGISwapChain* pSwapChain) {
     if (g_scene != SCENE::GAME) {
@@ -15285,7 +15304,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	// Calling this from GUI Render is the safest way to ensure this will run on-tick properly
     // outside of In Game.
     
-  	CrimsonOnTick::FrameResponsiveGameSpeed();
+	CrimsonOnTick::FrameResponsiveGameSpeed();
 	CrimsonOnTick::LevelFullyLoadedDelay();
 
     // TIMERS

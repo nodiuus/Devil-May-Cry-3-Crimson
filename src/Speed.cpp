@@ -34,7 +34,24 @@ static float GetEffectiveGlobalSpeed() {
 }
 
 void ApplyRuntimeGlobalSpeed() {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+
     auto speeds = reinterpret_cast<float*>(appBaseAddr + 0xCF2D90);
+
+	if (activeCrimsonConfig.System.disableMenuTransitions) {
+        if (eventData.event != EVENT::MAIN) {
+            speeds[SPEED::GLOBAL] = 1.0f * 10000.0f;
+            speeds[SPEED::GLOBAL_4] = 1.0f * 1000.0f;
+        }
+		else {
+			speeds[SPEED::GLOBAL_4] = 1.0f;
+		}
+
+	}
 
 	if (g_scene == SCENE::CUTSCENE) {
 		speeds[SPEED::GLOBAL] = g_effectiveCutsceneSpeed;
@@ -42,7 +59,8 @@ void ApplyRuntimeGlobalSpeed() {
 	else {
 		speeds[SPEED::GLOBAL] = GetEffectiveGlobalSpeed();
 	}
-    
+
+ 
 }
 
 void Toggle(bool enable) {

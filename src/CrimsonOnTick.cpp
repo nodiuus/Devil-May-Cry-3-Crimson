@@ -46,6 +46,10 @@ bool inputtingFPS = false;
 CameraData* GetSafeCameraData();
 
 void FrameResponsiveGameSpeed() {
+	if (g_scene == SCENE::BOOT) {
+		return;
+	}
+
 	// Calculate Delta Time Manually
 	static double lastTime = ImGui::GetTime();
 	double currentTime = ImGui::GetTime();
@@ -89,12 +93,11 @@ void FrameResponsiveGameSpeed() {
 	// Effective runtime scaling is applied in Speed::Toggle using g_FrameRateTimeMultiplier.
 	UpdateFrameRate();
 
-	bool inSpeedManagedScene = (g_scene == SCENE::GAME || g_scene == SCENE::CUTSCENE || g_inGameCutscene);
-	if (inSpeedManagedScene) {
-		Speed::Toggle(true);
-		Speed::UpdateEffectiveSpeeds();
-		Speed::ApplyRuntimeGlobalSpeed();
-	}
+
+	Speed::Toggle(true);
+	Speed::UpdateEffectiveSpeeds();
+	Speed::ApplyRuntimeGlobalSpeed();
+	
 }
 
 void LevelFullyLoadedDelay() {

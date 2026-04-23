@@ -2280,6 +2280,8 @@ struct EventData {
     uint32 nextScreen; // 0x2C
 };
 
+using CSceneGameMain = EventData;
+
 static_assert(offsetof(EventData, room) == 0x18);
 static_assert(offsetof(EventData, position) == 0x1C);
 static_assert(offsetof(EventData, event) == 0x20);
