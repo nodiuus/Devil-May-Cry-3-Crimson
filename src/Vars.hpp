@@ -5405,6 +5405,7 @@ extern bool inRapidSlash;
 extern bool styleChanged[6];
 
 extern float g_FrameRate;
+extern "C" float g_deltaTime;
 extern "C" float g_FrameRateTimeMultiplier;
 extern "C" float g_cerbDamageValue;
 extern "C" float g_FrameRateTimeMultiplierRounded;

@@ -11,6 +11,40 @@
 
 namespace Speed {
 
+static float GetFrameResponsiveMultiplier() {
+    if (g_FrameRateTimeMultiplier > 0.0f) {
+        return g_FrameRateTimeMultiplier;
+    }
+    return 1.0f;
+}
+
+static float g_effectiveMainSpeed = 1.0f;
+static float g_effectiveTurboSpeed = 1.2f;
+static float g_effectiveCutsceneSpeed = 1.0f;
+
+void UpdateEffectiveSpeeds() {
+    float multiplier = GetFrameResponsiveMultiplier();
+    g_effectiveMainSpeed = activeConfig.Speed.mainSpeed * multiplier;
+    g_effectiveTurboSpeed = activeConfig.Speed.turbo * multiplier;
+    g_effectiveCutsceneSpeed = 1.0f * multiplier;
+}
+
+static float GetEffectiveGlobalSpeed() {
+    return IsTurbo() ? g_effectiveTurboSpeed : g_effectiveMainSpeed;
+}
+
+void ApplyRuntimeGlobalSpeed() {
+    auto speeds = reinterpret_cast<float*>(appBaseAddr + 0xCF2D90);
+
+	if (g_scene == SCENE::CUTSCENE) {
+		speeds[SPEED::GLOBAL] = g_effectiveCutsceneSpeed;
+	}
+	else {
+		speeds[SPEED::GLOBAL] = GetEffectiveGlobalSpeed();
+	}
+    
+}
+
 void Toggle(bool enable) {
     //LogFunction();
 
@@ -31,7 +65,7 @@ void Toggle(bool enable) {
         }
 
         if (enable) {
-            Write<float>((addr + 2), activeConfig.Speed.mainSpeed);
+            Write<float>((addr + 2), g_effectiveMainSpeed);
         } else {
             backupHelper.Restore(addr);
         }
@@ -51,7 +85,7 @@ void Toggle(bool enable) {
         }
 
         if (enable) {
-            Write((addr + 6), activeConfig.Speed.mainSpeed);
+            Write<float>((addr + 6), g_effectiveCutsceneSpeed);
         } else {
             backupHelper.Restore(addr);
         }
@@ -78,7 +112,7 @@ void Toggle(bool enable) {
             backupHelper.Save(addr, size);
             func = old_CreateFunction(0, jumpAddr, false, true, sizeof(sect0));
             CopyMemory(func.sect0, sect0, sizeof(sect0));
-            *reinterpret_cast<float**>(func.sect0 + 2) = &activeConfig.Speed.turbo;
+            *reinterpret_cast<float**>(func.sect0 + 2) = &g_effectiveTurboSpeed;
         }
 
         if (enable) {
@@ -142,14 +176,6 @@ void Toggle(bool enable) {
             backupHelper.Restore(addr);
         }
     }
-
-
-    if (g_scene == SCENE::GAME) {
-        auto speeds = reinterpret_cast<float*>(appBaseAddr + 0xCF2D90);
-
-        speeds[SPEED::GLOBAL] = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-    }
-
 
     run = true;
 }

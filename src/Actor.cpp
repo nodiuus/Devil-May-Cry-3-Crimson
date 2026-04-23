@@ -8217,13 +8217,18 @@ void UpdateActorSpeed(byte8* baseAddr) {
         return;
     }
     auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_12857[3]);
+
+    float frameResponsiveMultiplier = 1.0f;
+	if (g_FrameRateTimeMultiplier > 0.0f) {
+		frameResponsiveMultiplier = g_FrameRateTimeMultiplier;
+	}
     
     // Chained Balls Speed - Making it consistent across framerates (unnecessary because it already is, but reference is nice)
     // The OnHit Speed fix is present at CrimsonDetours::ToggleFixBallsHangHitSpeed
 	if (*reinterpret_cast<uintptr_t*>(baseAddr) == (uintptr_t)appBaseAddr + 0x4E61B0) {
 		auto& actorData = *reinterpret_cast<ActorDataBase*>(baseAddr);
         auto value = (IsTurbo()) ? 1.2f : 1.0f;
-        actorData.speed = value * g_FrameRateTimeMultiplier;
+        actorData.speed = value * frameResponsiveMultiplier;
         return;
 	}
 
@@ -8541,7 +8546,9 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
             Return:;
                 if (!crimsonPlayer[playerIndex].sprint.canSprint) {
-                    actorData.speed = value;
+                    actorData.speed = value * frameResponsiveMultiplier;
+                } else {
+                    actorData.speed *= frameResponsiveMultiplier;
                 }
 
 
@@ -8556,7 +8563,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
                     }
                     auto& weaponData = *weaponDataAddr;
 
-                    weaponData.speed = value;
+                    weaponData.speed = value * frameResponsiveMultiplier;
                 }
 
                 return;

@@ -428,7 +428,7 @@ void CameraSensController() {
 	default: sensitivityValue = 0.0523599f * g_frameRateMultiplier; sensitivityEnum = 2;
 	}
 
-	if (toggle.cameraSensitivity == sensitivityEnum && lastFrameRate == activeConfig.frameRate) {
+	if (toggle.cameraSensitivity == sensitivityEnum && lastFrameRate == g_FrameRate) {
 		return;
 	}
 	
@@ -438,7 +438,7 @@ void CameraSensController() {
 	patchWithFloat(appBaseAddr + 0x4C6430, "", 0, sensitivityValue);
 
 	toggle.cameraSensitivity = sensitivityEnum;
-	lastFrameRate = activeConfig.frameRate;
+	lastFrameRate = g_FrameRate;
 }
 
 
@@ -446,6 +446,8 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 	auto pool_166 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
 	if (!pool_166 || !pool_166[3]) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
+
+	const float frameScale = (g_FrameRateTimeMultiplier > 0.0f) ? g_FrameRateTimeMultiplier : 1.0f;
 
 	if (cameraMetadata.fixedCameraAddr != 0) {
 		return; // Disable adjustment when a fixed camera is active
@@ -492,19 +494,19 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 		};
 
 	if (activeConfig.Actor.playerCount > 1) {
-		cameraData.cameraLag = 1000.0f * (activeConfig.frameRate / 60);
+     cameraData.cameraLag = 1000.0f / frameScale;
 	}
 	else {
 		if (cameraMetadata.fixedCameraAddr == 0) {
 			switch (activeCrimsonConfig.Camera.followUpSpd) {
 			case 0: // Low (Vanilla Default)
-				cameraData.cameraLag = 1000.0f * (activeConfig.frameRate / 60);
+             cameraData.cameraLag = 1000.0f / frameScale;
 				break;
 			case 1: // Medium
-				dynamicCameraLag(500.0f * (activeConfig.frameRate / 60), 2000.0f * (activeConfig.frameRate / 60), 0.5f); // Apply lockOn behavior for medium follow-up speed
+                dynamicCameraLag(500.0f / frameScale, 2000.0f / frameScale, 0.5f); // Apply lockOn behavior for medium follow-up speed
 				break;
 			case 2: // High
-				dynamicCameraLag(330.0f * (activeConfig.frameRate / 60), 3000.0f * (activeConfig.frameRate / 60), 0.5f); // Apply lockOn behavior for high follow-up speed
+              dynamicCameraLag(330.0f / frameScale, 3000.0f / frameScale, 0.5f); // Apply lockOn behavior for high follow-up speed
 				break;
 			default:
 				break;

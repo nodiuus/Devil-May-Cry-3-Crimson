@@ -2216,10 +2216,7 @@ void WeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 	auto& playerScreenPosition = crimsonPlayer[playerIndex].playerScreenPosition;
 	auto distanceClamped = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
 
-	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	auto inMultiplayer = activeCrimsonConfig.WeaponWheel.force1PMultiplayerPosScale || activeConfig.Actor.playerCount > 1;
 	auto& scale = activeCrimsonConfig.WeaponWheel.scale;
@@ -2241,7 +2238,7 @@ void WeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 	if (WeaponWheelController(actorData, pSwapChain, meleeWeaponWheel[0], "MeleeWheel1P",
 		!inMultiplayer,
 		inMultiplayer ? multiplayerPosMelee : normalPos, inMultiplayer ? multiplayerSize : normalSize,
-		alwaysShow, true, true, stateMelee, deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+		alwaysShow, true, true, stateMelee, deltaTimeMs, deltaTimeMs)) {
 
 		initialized = true;
 	}
@@ -2249,7 +2246,7 @@ void WeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 	WeaponWheelController(actorData, pSwapChain, rangedWeaponWheel[0], "RangedWheel1P",
 		!inMultiplayer,
 		inMultiplayer ? multiplayerPosRanged : normalPos, inMultiplayer ? multiplayerSize : normalSize,
-		alwaysShow, true, false, stateRanged, deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+		alwaysShow, true, false, stateRanged, deltaTimeMs, deltaTimeMs);
 }
 
 void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
@@ -8745,6 +8742,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("cameraLag: %g", cameraData.cameraLag);
 			ImGui::Text("fixedCamAddr: %x", cameraControlMetadata.fixedCameraAddr);
 			ImGui::Text("in JustFrame JDC:  %u", crimsonPlayer[0].jCut.inJustFrameJDC);
 			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
@@ -9965,7 +9963,7 @@ void SystemSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.9f);
-			if (GUI_InputDefault2<float>("Frame Rate", activeConfig.frameRate, queuedConfig.frameRate, defaultConfig.frameRate, 1, "%.2f",
+			if (GUI_InputDefault2<float>("Frame Rate", activeCrimsonConfig.System.fpsCap, queuedCrimsonConfig.System.fpsCap, defaultCrimsonConfig.System.fpsCap, 1, "%.2f",
 				ImGuiInputTextFlags_EnterReturnsTrue)) {
 				Speed::Toggle(true);
 				CrimsonOnTick::inputtingFPS = true;
@@ -9973,23 +9971,27 @@ void SystemSection(size_t defaultFontSize) {
 				CrimsonOnTick::inputtingFPS = false;
 			}
 			if (GUI_Button("60 FPS")) {
-				activeConfig.frameRate = 60.0f;
-				queuedConfig.frameRate = 60.0f;
+				activeCrimsonConfig.System.fpsCap = 60.0f;
+				queuedCrimsonConfig.System.fpsCap = 60.0f;
 			}
 			ImGui::SameLine();
 			if (GUI_Button("80 FPS")) {
-				activeConfig.frameRate = 80.0f;
-				queuedConfig.frameRate = 80.0f;
+				activeCrimsonConfig.System.fpsCap = 80.0f;
+				queuedCrimsonConfig.System.fpsCap = 80.0f;
 			}
 			ImGui::SameLine();
 			if (GUI_Button("120 FPS")) {
-				activeConfig.frameRate = 120.0f;
-				queuedConfig.frameRate = 120.0f;
+				activeCrimsonConfig.System.fpsCap = 120.0f;
+				queuedCrimsonConfig.System.fpsCap = 120.0f;
 			}
 
 			ImGui::PopItemWidth();
 
             ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Unlock FPS", activeCrimsonConfig.System.fpsUnlocked, queuedCrimsonConfig.System.fpsUnlocked);
+
+			ImGui::TableNextColumn();
 
 			GUI_Checkbox2("Disable Motion Blur / Blending Effects", activeConfig.disableBlendingEffects, queuedConfig.disableBlendingEffects);
 			ImGui::SameLine();
@@ -10057,24 +10059,6 @@ void SystemSection(size_t defaultFontSize) {
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Frame Rate-Responsive Game Speed", activeConfig.framerateResponsiveGameSpeed, queuedConfig.framerateResponsiveGameSpeed)) {
-				activeConfig.Speed.turbo = 1.2 / (activeConfig.frameRate / 60);
-				queuedConfig.Speed.turbo = 1.2 / (activeConfig.frameRate / 60);
-
-				activeConfig.Speed.mainSpeed = 1.0 / (activeConfig.frameRate / 60);
-				queuedConfig.Speed.mainSpeed = 1.0 / (activeConfig.frameRate / 60);
-			}
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Adjusts Game Speed based on the Frame Rate setting \n"
-				"to ensure gameplay stays consistent across different frame rates.\n"
-				"We recommend leaving this option on, unless you want to customize the Global Game Speed.\n\n"
-				"WARNING: Playing at higher frame rates will greatly reduce input lag, but \n"
-				"various gameplay issues may be introduced, such as enemy projectiles being too fast. \n"
-				"Help us fix those issues by reporting them individually on our GitHub's issue tracker \n"
-				"using the 'high frame issue' label: https://github.com/berthrage/Devil-May-Cry-3-Crimson/issues");
-
-			ImGui::TableNextColumn();
-
 			GUI_PushDisable(IsTurbo());
 			ImGui::PushItemWidth(itemWidth * 0.8f);
 			GUI_InputDefault2SpeedCalc("Default Speed", activeConfig.Speed.mainSpeed, queuedConfig.Speed.mainSpeed, defaultConfig.Speed.mainSpeed, 0.1f,
@@ -10082,7 +10066,7 @@ void SystemSection(size_t defaultFontSize) {
 			ImGui::PopItemWidth();
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Changes Default Game Speed, changing this to be other than default\n" 
-				"(without Frame Rate-Responsive Game Speed on) will tag you at the Mission End screen.");
+				"will tag you at the Mission End screen.");
 			GUI_PopDisable(IsTurbo());
 
 			ImGui::TableNextColumn();
@@ -10094,7 +10078,7 @@ void SystemSection(size_t defaultFontSize) {
 			ImGui::PopItemWidth();
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Changes Turbo Game Speed, changing this to be other than default\n"
-				"(without Frame Rate-Responsive Game Speed on) will tag you at the Mission End screen.");
+				"will tag you at the Mission End screen.");
 			GUI_PopDisable(!IsTurbo());
 
 			ImGui::TableNextColumn();

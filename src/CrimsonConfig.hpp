@@ -561,13 +561,18 @@ struct CrimsonConfig {
 
 		bool flipModelPresentation = true;
 
+		float fpsCap = 120.0f;
+		bool fpsUnlocked = true;
+
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("ButtonConfig", &System::ButtonConfig),
 				std::make_pair("KeyboardConfig", &System::KeyboardConfig),
 				std::make_pair("xinputSlots", &System::xinputSlots),
-				std::make_pair("flipModelPresentation", &System::flipModelPresentation)
+				std::make_pair("flipModelPresentation", &System::flipModelPresentation),
+				std::make_pair("fpsCap", &System::fpsCap),
+				std::make_pair("fpsUnlocked", &System::fpsUnlocked)
 			);
 		}
 	} System;

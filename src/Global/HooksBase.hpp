@@ -29,6 +29,9 @@ enum {
 };
 };
 
+void FPSLimiter_Init(double fps);
+void FPSLimiter_Apply();
+
 void UpdateMousePositionMultiplier();
 
 typedef void (*UpdateKeyboard_func_t)(DI8::DIKEYBOARDSTATE* stateAddr);
@@ -218,7 +221,7 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
     UpdateMouse();
     UpdateGamepad();
 
-    XI::UpdateGamepad();
+    //XI::UpdateGamepad();
 
 
     if constexpr (api == API::D3D10) {
@@ -323,22 +326,21 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
         int originalPriority = GetThreadPriority(currentThread);
         SetThreadPriority(currentThread, THREAD_PRIORITY_TIME_CRITICAL);
 
-        // Wait up to 1 second. (Don't use 16ms, as that breaks if framerate dips below 60fps)
-        DWORD waitResult = WaitForSingleObjectEx(g_frameLatencyWaitableObject, 1000, TRUE); 
-        if (waitResult == WAIT_OBJECT_0) {
-            // GPU is ready. The next line of game engine code executed will be input polling!
-			 // GPU is ready - proceed with minimal latency
-			// Force immediate command buffer flush for D3D11
-			if constexpr (api == API::D3D11) {
-				::D3D11::deviceContext->Flush(); // Ensure all GPU commands are submitted immediately
-			}
-        } else if (waitResult == WAIT_TIMEOUT) {
-            Log("Frame latency wait timeout - GPU may be overloaded or crashed");
-        }
-
+        DWORD waitResult = WaitForSingleObjectEx(g_frameLatencyWaitableObject, 1000, TRUE);
         // Restore original thread priority
         SetThreadPriority(currentThread, originalPriority);
     }
+
+	double newCap = activeCrimsonConfig.System.fpsCap;
+    static double g_currentCap = -1.0;
+
+	if (g_currentCap != newCap) {
+		g_currentCap = newCap;
+		FPSLimiter_Init(g_currentCap);
+	}
+
+    if (!activeCrimsonConfig.System.fpsUnlocked)
+        FPSLimiter_Apply();
 
     return presentResult;
 }

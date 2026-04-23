@@ -261,6 +261,56 @@ void UpdateGamepad() {
 
 #pragma region Windows
 
+static double g_targetFrameTime = 0.0; // seconds (0 = uncapped)
+static LARGE_INTEGER g_qpcFreq = {};
+static LARGE_INTEGER g_lastPresentTime = {};
+static bool g_fpsLimiterInitialized = false;
+
+void FPSLimiter_Init(double fps) {
+	if (fps <= 0.0) {
+		g_targetFrameTime = 0.0;
+		g_fpsLimiterInitialized = false;
+		return;
+	}
+
+	QueryPerformanceFrequency(&g_qpcFreq);
+	QueryPerformanceCounter(&g_lastPresentTime);
+
+	g_targetFrameTime = 1.0 / fps;
+	g_fpsLimiterInitialized = true;
+}
+
+
+void FPSLimiter_Apply() {
+	if (!g_fpsLimiterInitialized || g_targetFrameTime <= 0.0)
+		return;
+
+	LARGE_INTEGER now;
+	QueryPerformanceCounter(&now);
+
+	double elapsed = double(now.QuadPart - g_lastPresentTime.QuadPart) / double(g_qpcFreq.QuadPart);
+	double remaining = g_targetFrameTime - elapsed;
+
+	if (remaining > 0.0) {
+		// Coarse sleep (RTSS-like)
+		if (remaining > 0.002) { // > 2ms
+			DWORD sleepMs = (DWORD)((remaining - 0.001) * 1000.0);
+			if (sleepMs > 0)
+				Sleep(sleepMs);
+		}
+
+		// Fine spin wait
+		do {
+			QueryPerformanceCounter(&now);
+			elapsed = double(now.QuadPart - g_lastPresentTime.QuadPart) / double(g_qpcFreq.QuadPart);
+		} while (elapsed < g_targetFrameTime);
+	}
+
+	g_lastPresentTime = now;
+}
+
+
+
 namespace Base::Windows {
 ::Windows::WindowProc_t WindowProc             = 0;
 ::Windows::RegisterClassExW_t RegisterClassExW = 0;
@@ -1086,6 +1136,8 @@ HRESULT D3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Dr
     CreateKeyboard();
     CreateMouse();
     CreateGamepad();
+
+    FPSLimiter_Init(activeCrimsonConfig.System.fpsCap);
 
 
     SetLastError(error);

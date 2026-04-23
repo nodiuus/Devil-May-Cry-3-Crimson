@@ -50,11 +50,31 @@ void FrameResponsiveGameSpeed() {
 	static double lastTime = ImGui::GetTime();
 	double currentTime = ImGui::GetTime();
 	float deltaTime = static_cast<float>(currentTime - lastTime);
+
+	if (deltaTime <= 0.0f) {
+		lastTime = currentTime;
+		return;
+	}
+
+	// Ignore hitch/pause frames before updating frame-rate responsive multipliers.
+	// This prevents stalled delta from contaminating speed math after resume.
+	float hitchThreshold = 0.06f;
+	if (deltaTime > hitchThreshold) {
+		lastTime = currentTime;
+		return;
+	}
+
 	lastTime = currentTime;
 
-	// Compute frame rate and multiplier
-	g_FrameRate = 1.0f / deltaTime;
-	g_FrameRateTimeMultiplier = 60.0f / g_FrameRate;
+	g_deltaTime = deltaTime;
+
+  // Compute frame rate and multiplier.
+	// Use measured tick delta for speed math (authoritative for simulation pacing),
+	// while keeping ImGui framerate for UI/debug display.
+	float measuredFrameRate = 1.0f / deltaTime;
+	float imguiFrameRate = ImGui::GetIO().Framerate;
+	g_FrameRate = (imguiFrameRate > 1.0f) ? imguiFrameRate : measuredFrameRate;
+	g_FrameRateTimeMultiplier = 60.0f / measuredFrameRate;
 
 	// Exponential smoothing for the rounded multiplier stability
 	static float smoothedMultiplier = g_FrameRateTimeMultiplier;
@@ -65,48 +85,15 @@ void FrameResponsiveGameSpeed() {
 	float step = 0.05f;
 	g_FrameRateTimeMultiplierRounded = std::round(smoothedMultiplier / step) * step;
 
-	// Ignore deltaTime spikes that result from alt-tabbing, loading screens, etc.
-	float freezeThreshold = 1.0f / 50.0f; // Skips <50 FPS frames
-	if (deltaTime > freezeThreshold) {
-		return;
-	}
+	// Frame responsive speed is always applied; global speed values are treated as user-facing base speeds.
+	// Effective runtime scaling is applied in Speed::Toggle using g_FrameRateTimeMultiplier.
+	UpdateFrameRate();
 
-	const float gameSpeedBase = g_scene != SCENE::CUTSCENE ? IsTurbo() ? 1.2f : 1.0f : 1.0f;
-	auto& activeValue = IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	auto& queuedValue = IsTurbo() ? queuedConfig.Speed.turbo : queuedConfig.Speed.mainSpeed;
-
-
-	if (activeConfig.framerateResponsiveGameSpeed) {
-		// Cutscene audio is so timing sensitive that we can't truly sync the FPS to the game speed while in them.
-		// This would be properly solved if we had some method of audio stretching. Maybe: SDL_SetAudioStreamFrequencyRatio?
-		const float adjustedSpeed = g_scene != SCENE::CUTSCENE ? gameSpeedBase * g_FrameRateTimeMultiplier :
-			gameSpeedBase * g_FrameRateTimeMultiplierRounded;
-		if (g_scene == SCENE::CUTSCENE) Speed::Toggle(true);
-
-		activeConfig.Speed.turbo = adjustedSpeed;
-		activeConfig.Speed.mainSpeed = adjustedSpeed;
-		queuedConfig.Speed.turbo = adjustedSpeed;
-		queuedConfig.Speed.mainSpeed = adjustedSpeed;
-
-		UpdateFrameRate();
-
-		// === Throttled Speed::Toggle(true) ===
-		static double lastToggleTime = 0.0;
-		constexpr double toggleInterval = 0.25; // seconds 
-
-		if (currentTime - lastToggleTime >= toggleInterval) {
-			Speed::Toggle(true);
-			lastToggleTime = currentTime;
-		}
-
-		// === One-time enable/disable logic ===
-		static bool speedWasEnabled = false;
-		if (g_scene == SCENE::GAME && !speedWasEnabled) {
-			Speed::Toggle(true);
-			speedWasEnabled = true;
-		} else if (g_inGameCutscene && speedWasEnabled) {
-			speedWasEnabled = false;
-		}
+	bool inSpeedManagedScene = (g_scene == SCENE::GAME || g_scene == SCENE::CUTSCENE || g_inGameCutscene);
+	if (inSpeedManagedScene) {
+		Speed::Toggle(true);
+		Speed::UpdateEffectiveSpeeds();
+		Speed::ApplyRuntimeGlobalSpeed();
 	}
 }
 

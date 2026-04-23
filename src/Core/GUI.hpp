@@ -234,8 +234,7 @@ bool GUI_InputDefault2(
 template <typename T>
 bool GUI_InputDefault2SpeedCalc(
 	const char* label, T& var, T& var2, T& defaultVar, const T step = 1, const char* format = 0, ImGuiInputTextFlags flags = 0) {
-	auto defaultVarCalculated = defaultVar * g_frameRateMultiplier;
-	auto update = GUI_InputDefault2(label, var, var2, defaultVarCalculated, step, format, flags);
+	auto update = GUI_InputDefault2(label, var, var2, defaultVar, step, format, flags);
 
 	if (update) {
 		Speed::Toggle(true);
