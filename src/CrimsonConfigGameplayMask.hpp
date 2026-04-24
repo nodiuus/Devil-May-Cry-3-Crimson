@@ -229,6 +229,8 @@ struct CrimsonConfigGameplayMask {
 		} Damage;
 
 		struct Speed {
+			bool defaultGame = true;
+			bool turboGame = true;
 			bool enemy = true;
 			bool human = true;
 			bool dTDante = true;
@@ -238,6 +240,8 @@ struct CrimsonConfigGameplayMask {
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
+					std::make_pair("defaultGame", &Speed::defaultGame),
+					std::make_pair("turboGame", &Speed::turboGame),
 					std::make_pair("enemy", &Speed::enemy),
 					std::make_pair("human", &Speed::human),
 					std::make_pair("dTDante", &Speed::dTDante),

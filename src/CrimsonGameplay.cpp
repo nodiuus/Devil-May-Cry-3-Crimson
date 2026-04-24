@@ -4260,7 +4260,7 @@ void SprintAbility(byte8* actorBaseAddr) {
             sprintData.runTimer  = false;
         }
 
-        auto gameSpeedValue = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+		auto gameSpeedValue = GetCurrentGameSpeed();
 
         if (sprintData.canSprint) {
 

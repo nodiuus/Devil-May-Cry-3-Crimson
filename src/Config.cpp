@@ -453,14 +453,6 @@ void CreateMembers(Config& config_) {
         }
     }
 
-    {
-        auto& member = Create<struct_t>(crimsonConfigRoot, "Speed");
-        auto& config = config_.Speed;
-
-        Create<float>(member, "mainSpeed", config.mainSpeed);
-        Create<float>(member, "turbo", config.turbo);
-    }
-
 
     auto& member = crimsonConfigRoot;
     auto& config = config_;
@@ -476,7 +468,6 @@ void CreateMembers(Config& config_) {
     Create<bool>(member, "skipIntro", config.skipIntro);
     Create<bool>(member, "skipCutscenes", config.skipCutscenes);
     Create<bool>(member, "enableFileMods", config.enableFileMods);
-    Create<float>(member, "frameRate", config.frameRate);
     Create<uint8>(member, "vSync", config.vSync);
     Create<bool>(member, "hideMouseCursor", config.hideMouseCursor);
     Create<int32>(member, "windowPosX", config.windowPosX);
@@ -837,14 +828,6 @@ void ToJSON(Config& config_) {
         }
     }
 
-    {
-        auto& member = crimsonConfigRoot["Speed"];
-        auto& config = config_.Speed;
-
-        Set<float>(member["mainSpeed"], config.mainSpeed);
-        Set<float>(member["turbo"], config.turbo);
-    }
-
     auto& member = crimsonConfigRoot;
     auto& config = config_;
 
@@ -859,7 +842,6 @@ void ToJSON(Config& config_) {
     Set<bool>(member["skipIntro"], config.skipIntro);
     Set<bool>(member["skipCutscenes"], config.skipCutscenes);
     Set<bool>(member["enableFileMods"], config.enableFileMods);
-    Set<float>(member["frameRate"], config.frameRate);
     Set<uint8>(member["vSync"], config.vSync);
     Set<bool>(member["hideMouseCursor"], config.hideMouseCursor);
     Set<int32>(member["windowPosX"], config.windowPosX);
@@ -1177,14 +1159,6 @@ void ToConfig(Config& config_) {
         }
     }
 
-    {
-        auto& config = config_.Speed;
-        auto& member = crimsonConfigRoot["Speed"];
-
-        config.mainSpeed              = Get<float>(member["mainSpeed"]);
-        config.turbo                  = Get<float>(member["turbo"]);
-    }
-
     auto& config = config_;
     auto& member = crimsonConfigRoot;
 
@@ -1199,7 +1173,6 @@ void ToConfig(Config& config_) {
     config.skipIntro                   = Get<bool>(member["skipIntro"]);
     config.skipCutscenes               = Get<bool>(member["skipCutscenes"]);
     config.enableFileMods            = Get<bool>(member["enableFileMods"]);
-    config.frameRate                   = Get<float>(member["frameRate"]);
     config.vSync                       = Get<uint8>(member["vSync"]);
     config.hideMouseCursor             = Get<bool>(member["hideMouseCursor"]);
     config.windowPosX                  = Get<int32>(member["windowPosX"]);

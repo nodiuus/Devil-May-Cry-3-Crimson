@@ -58,7 +58,7 @@ void CloseShop() {
 
     g_showShop = false;
 
-    g_shopTimer = (activeConfig.frameRate * (g_shopTimeout / 1000));
+    g_shopTimer = (g_FrameRate * (g_shopTimeout / 1000));
 }
 
 

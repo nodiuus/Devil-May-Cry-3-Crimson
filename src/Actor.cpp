@@ -8403,7 +8403,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
                 relativeTiltController = (actorData.cameraDirection - (gamepad.leftStickPosition));
 
-                auto value = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+                auto value = GetCurrentGameSpeed();
 
 
                 if (mainActorData.styleData.rank >= STYLE_RANK::SWEET) {

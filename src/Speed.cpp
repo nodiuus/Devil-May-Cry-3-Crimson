@@ -24,8 +24,8 @@ static float g_effectiveCutsceneSpeed = 1.0f;
 
 void UpdateEffectiveSpeeds() {
     float multiplier = GetFrameResponsiveMultiplier();
-    g_effectiveMainSpeed = activeConfig.Speed.mainSpeed * multiplier;
-    g_effectiveTurboSpeed = activeConfig.Speed.turbo * multiplier;
+    g_effectiveMainSpeed = activeCrimsonGameplay.Cheats.Speed.defaultGame * multiplier;
+    g_effectiveTurboSpeed = activeCrimsonGameplay.Cheats.Speed.turboGame * multiplier;
     g_effectiveCutsceneSpeed = 1.0f * multiplier;
 }
 

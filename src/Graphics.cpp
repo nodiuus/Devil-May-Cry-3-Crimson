@@ -339,8 +339,8 @@ void UpdateFrameRate() {
 	g_frameRateMultiplier = (60.0f / runtimeFrameRate);
 
 	// Keep frequency neutral
-    *frequencyAddr = (defaultFrequency * static_cast<double>(60 / activeConfig.frameRate));
-    //*frequencyAddr = defaultFrequency;
+    //*frequencyAddr = (defaultFrequency * static_cast<double>(60 / activeCrimsonConfig.System.fpsCap));
+    *frequencyAddr = defaultFrequency;
 
 	// Update mission frame counter rate
 	*frameRateAddr = static_cast<int32>(runtimeFrameRate + 0.5f);

@@ -1986,7 +1986,7 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	auto& charIndex = actorData.newCharacterIndex;
 	auto& weaponIndex = isMelee ? characterData.meleeWeaponIndex : characterData.rangedWeaponIndex;
 	auto& weaponCount = isMelee ? playerData.characterData[charIndex][ENTITY::MAIN].meleeWeaponCount : playerData.characterData[charIndex][ENTITY::MAIN].rangedWeaponCount;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+	auto activeGameSpeed = GetCurrentGameSpeed();
 
 	auto weapons = isMelee ? playerData.characterData[charIndex][ENTITY::MAIN].meleeWeapons : playerData.characterData[charIndex][ENTITY::MAIN].rangedWeapons;
 
@@ -2257,9 +2257,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 	static bool initializedRanged[PLAYER_COUNT] = { false };
 
 	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	if (!activeCrimsonConfig.MultiplayerBars2D.show) return;
 
@@ -2275,7 +2273,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 
 		auto& playerScreenPosition = crimsonPlayer[playerIndex].playerScreenPosition;
 		auto distanceClamped = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
-		auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+		auto activeGameSpeed = GetCurrentGameSpeed();
 
 		ImVec2 normalSize = ImVec2(g_renderSize.y * 0.45f, g_renderSize.y * 0.45f);
 
@@ -2306,7 +2304,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 		if (WeaponWheelController(actorData, pSwapChain, meleeWheel, meleeWheelName.c_str(),
 			false,
 			multiplayerPosMelee, multiplayerSize,
-			alwaysShow, true, true, stateMelee[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+			alwaysShow, true, true, stateMelee[playerIndex], deltaTimeMs, deltaTimeMs)) {
 
 			initializedMelee[playerIndex] = true;
 		}
@@ -2314,7 +2312,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 		WeaponWheelController(actorData, pSwapChain, rangedWheel, rangedWheelName.c_str(),
 			false,
 			multiplayerPosRanged, multiplayerSize,
-			alwaysShow, true, false, stateRanged[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+			alwaysShow, true, false, stateRanged[playerIndex], deltaTimeMs, deltaTimeMs);
 	}
 
 	multiplayerWheelsLoaded = true; 
@@ -2331,10 +2329,7 @@ void WorldSpaceWeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 		(activeCrimsonConfig.WeaponWheel.worldSpaceWheels == HUDELEMENTSHOWSTATE::ONLY_IN_MP
 			&& activeConfig.Actor.playerCount <= 1)) return;
 
-	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	auto pool_1431 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
 	if (!pool_1431 || !pool_1431[3]) {
@@ -2374,7 +2369,7 @@ void WorldSpaceWeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 		false,
 		meleeWheelPos, multiplayerSize,
 		alwaysShow, false, true,
-		stateMelee, deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+		stateMelee, deltaTimeMs, deltaTimeMs)) {
 		initialized = true;
 	}
 
@@ -2382,7 +2377,7 @@ void WorldSpaceWeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 		false,
 		rangedWheelPos, multiplayerSize,
 		alwaysShow, false, false,
-		stateRanged, deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+		stateRanged, deltaTimeMs, deltaTimeMs);
 
 }
 
@@ -2398,11 +2393,7 @@ void WorldSpaceWeaponWheelsController(IDXGISwapChain* pSwapChain) {
 		(activeCrimsonConfig.WeaponWheel.worldSpaceWheels == HUDELEMENTSHOWSTATE::ONLY_IN_MP
 			&& activeConfig.Actor.playerCount <= 1)) return;
 
-	// Measure delta time using chrono
-	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	for (int playerIndex = 1; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {
 		auto& playerData = GetPlayerData((uint8)playerIndex);
@@ -2446,7 +2437,7 @@ void WorldSpaceWeaponWheelsController(IDXGISwapChain* pSwapChain) {
 			false,
 			meleeWheelPos, multiplayerSize,
 			alwaysShow, false, true,
-			stateMelee[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+			stateMelee[playerIndex], deltaTimeMs, deltaTimeMs)) {
 			initializedMelee[playerIndex] = true;
 		}
 	
@@ -2454,7 +2445,7 @@ void WorldSpaceWeaponWheelsController(IDXGISwapChain* pSwapChain) {
 			false,
 			rangedWheelPos, multiplayerSize,
 			alwaysShow, false, false,
-			stateRanged[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+			stateRanged[playerIndex], deltaTimeMs, deltaTimeMs);
 	}
 }
 
@@ -9151,7 +9142,7 @@ void MissionOverlayWindow(size_t defaultFontSize) {
         auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
 
 
-        auto timeData = TimeData(static_cast<float>(missionData.frameCount), activeConfig.frameRate
+        auto timeData = TimeData(static_cast<float>(missionData.frameCount), g_FrameRate
             // 60.0f // @Update
         );
 
@@ -9340,8 +9331,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			if (GUI_Checkbox2("Pause When Opened", activeCrimsonConfig.GUI.pauseWhenOpened, queuedCrimsonConfig.GUI.pauseWhenOpened)) {
 				if (g_inGameDelayed) {
-					activeConfig.Speed.mainSpeed = queuedConfig.Speed.mainSpeed; // This resumes the game speed
-					activeConfig.Speed.turbo = queuedConfig.Speed.turbo;
+					activeCrimsonGameplay.Cheats.Speed.defaultGame = queuedCrimsonGameplay.Cheats.Speed.defaultGame; // This resumes the game speed
+					activeCrimsonGameplay.Cheats.Speed.turboGame = queuedCrimsonGameplay.Cheats.Speed.turboGame;
 					Speed::Toggle(true); // Toggle Speed on and off to set the new speed
 					Speed::Toggle(false);
 				}
@@ -9847,6 +9838,46 @@ void CustomSpeedSection() {
 		ImGui::TableNextRow(0, rowHeight);
 		ImGui::TableNextColumn();
 		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+		ImGui::Text("DEFAULT GAME");
+		ImGui::PopFont();
+		ImGui::TableNextColumn();
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+		ImGui::Text("TURBO GAME"); ImGui::SameLine();
+		ImGui::PopFont();
+
+		ImGui::TableNextRow(0, rowHeight);
+
+		ImGui::TableNextColumn();
+		GUI_PushDisable(IsTurbo());
+		ImGui::PushItemWidth(itemWidth * 1.0f);
+
+		GUI_InputDefault2SpeedCalc("", activeCrimsonGameplay.Cheats.Speed.defaultGame, queuedCrimsonGameplay.Cheats.Speed.defaultGame, 
+			defaultCrimsonGameplay.Cheats.Speed.defaultGame, 0.1f,
+				"%g", ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::PopItemWidth();
+		GUI_PopDisable(IsTurbo());
+
+		ImGui::TableNextColumn();
+
+		GUI_PushDisable(!IsTurbo());
+
+		ImGui::PushItemWidth(itemWidth * 1.0f);
+		GUI_InputDefault2SpeedCalc("", activeCrimsonGameplay.Cheats.Speed.turboGame, queuedCrimsonGameplay.Cheats.Speed.turboGame,
+			defaultCrimsonGameplay.Cheats.Speed.turboGame, 0.1f,
+			"%g", ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::PopItemWidth();
+
+		GUI_PopDisable(!IsTurbo());
+		ImGui::EndTable();
+	}
+
+	// --- Main Speed Table ---
+	if (ImGui::BeginTable("SpeedTable2", 2)) {
+		ImGui::TableSetupColumn("Left", 0, columnWidth * 3.5f);
+		ImGui::TableSetupColumn("Right", 0, columnWidth * 3.5f);
+		ImGui::TableNextRow(0, rowHeight);
+		ImGui::TableNextColumn();
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 		ImGui::Text("ENEMY CHARACTER");
 		ImGui::PopFont();
 		ImGui::TableNextColumn();
@@ -10043,61 +10074,6 @@ void SystemSection(size_t defaultFontSize) {
 		}
 	}
 
-	ImGui::Text("");
-
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
-
-
-	ImGui::Text("GAME SPEED");
-
-	ImGui::PopFont();
-
-	UI::SeparatorEx(defaultFontSize * 23.35f);
-
-	ImGui::Text("");
-
-	{
-		const float columnWidth = 0.5f * queuedConfig.globalScale;
-		const float rowWidth = 40.0f * queuedConfig.globalScale;
-
-		if (ImGui::BeginTable("GameSpeedOptionsTable", 3)) {
-
-			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableNextRow(0, rowWidth);
-			ImGui::TableNextColumn();
-
-			GUI_PushDisable(IsTurbo());
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_InputDefault2SpeedCalc("Default Speed", activeConfig.Speed.mainSpeed, queuedConfig.Speed.mainSpeed, defaultConfig.Speed.mainSpeed, 0.1f,
-				"%g", ImGuiInputTextFlags_EnterReturnsTrue);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Changes Default Game Speed, changing this to be other than default\n" 
-				"will tag you at the Mission End screen.");
-			GUI_PopDisable(IsTurbo());
-
-			ImGui::TableNextColumn();
-
-			GUI_PushDisable(!IsTurbo());
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_InputDefault2SpeedCalc("Turbo Speed", activeConfig.Speed.turbo, queuedConfig.Speed.turbo, defaultConfig.Speed.turbo, 0.1f, "%g",
-				ImGuiInputTextFlags_EnterReturnsTrue);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Changes Turbo Game Speed, changing this to be other than default\n"
-				"will tag you at the Mission End screen.");
-			GUI_PopDisable(!IsTurbo());
-
-			ImGui::TableNextColumn();
-
-			bool* turboSetting = reinterpret_cast<bool*>(appBaseAddr + 0xD6CEA9);
-
-			GUI_Checkbox("Turbo Mode", *turboSetting);
-
-			ImGui::EndTable();
-		}
-	}
-
 
 	ImGui::Text("");
 
@@ -10134,6 +10110,12 @@ void SystemSection(size_t defaultFontSize) {
 				ToggleSkipCutscenes(activeConfig.skipCutscenes);
 			}
 
+			ImGui::TableNextColumn();
+
+			bool* turboSetting = reinterpret_cast<bool*>(appBaseAddr + 0xD6CEA9);
+
+			GUI_Checkbox("Turbo Mode", *turboSetting);
+
 			// Enable File Mods will be a json file only option for now, don't see much need for it in the GUI. - Mia
 // 			ImGui::TableNextRow(0, rowWidth);
 // 			ImGui::TableNextColumn();
@@ -10143,7 +10125,6 @@ void SystemSection(size_t defaultFontSize) {
 // 			TooltipHelper("(?)", "WARNING: Necessary for any and all file mods you may have, \n"
 // 				"disabling this will disable any file replacement mod, including custom HUDs and Models.");
 
-		
 			ImGui::EndTable();
 		}
 	}
@@ -15302,8 +15283,11 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     BossVergilActionsOverlayWindow();
     
 	// Calling this from GUI Render is the safest way to ensure this will run on-tick properly
-    // outside of In Game.
-    
+    // outside of In Game.32CFE0
+	for (uint8 playerIndex; playerIndex < 4; playerIndex++) {
+		InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
+	}
+
 	CrimsonOnTick::FrameResponsiveGameSpeed();
 	CrimsonOnTick::LevelFullyLoadedDelay();
 
@@ -15344,7 +15328,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
         g_shopTimer -= 1.0f;
     }
 
-    HandleSaveTimer(activeConfig.frameRate);
+    HandleSaveTimer(g_FrameRate);
     ImGui::PopStyleColor();
     // static bool enable = true;
     // ImGui::ShowDemoWindow(&enable);

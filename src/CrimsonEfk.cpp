@@ -793,8 +793,8 @@ public:
         g_efkManager->SetLayerParameter(0, layerParameter);
 
       float gameSpeed = (g_scene != SCENE::CUTSCENE)
-            ? (IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed)
-            : activeConfig.Speed.mainSpeed;
+            ? (IsTurbo() ? activeCrimsonGameplay.Cheats.Speed.turboGame : activeCrimsonGameplay.Cheats.Speed.defaultGame)
+            : activeCrimsonGameplay.Cheats.Speed.defaultGame;
         float adjustedSpeed = gameSpeed;
 
 		Effekseer::Manager::UpdateParameter updateParam;

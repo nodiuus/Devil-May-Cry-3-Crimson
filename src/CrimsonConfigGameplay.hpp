@@ -255,6 +255,8 @@ struct CrimsonConfigGameplay {
 		} Damage;
 
 		struct Speed {
+			float defaultGame = 1.0f;
+			float turboGame = 1.2f;
 			float enemy = 1.0f;
 			float human = 1.0f;
 			float dTDante[6] = {
@@ -277,6 +279,8 @@ struct CrimsonConfigGameplay {
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
+					std::make_pair("defaultGame", &Speed::defaultGame),
+					std::make_pair("turboGame", &Speed::turboGame),
 					std::make_pair("enemy", &Speed::enemy),
 					std::make_pair("human", &Speed::human),
 					std::make_pair("dTDante", &Speed::dTDante),

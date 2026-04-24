@@ -52,7 +52,7 @@ void MissionTimer() {
         g_missionTimer = 0.0f;
 	}
 
-	float gameSpeedBase = IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+    float gameSpeedBase = GetCurrentGameSpeed();
 
 	float gameSpeedMultiplier = (gameSpeedBase / g_FrameRateTimeMultiplier);
 

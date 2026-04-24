@@ -408,7 +408,7 @@ void CameraSensController() {
 	// dmc3.exe+4C642F - 3E 56                 - push rsi
 
 	// Function to patch memory with correct opcodes + float value
-	static float lastFrameRate = activeConfig.frameRate;
+	static float lastFrameRate = activeCrimsonConfig.System.fpsCap;
 	auto patchWithFloat = [](byte* address, const char* prefix, int prefixSize, float value) {
 		char patchBytes[10];
 		memcpy(patchBytes, prefix, prefixSize);

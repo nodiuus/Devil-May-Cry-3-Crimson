@@ -562,7 +562,7 @@ struct CrimsonConfig {
 		bool flipModelPresentation = true;
 
 		float fpsCap = 120.0f;
-		bool fpsUnlocked = true;
+		bool fpsUnlocked = false;
 
 		bool disableMenuTransitions = false;
 
