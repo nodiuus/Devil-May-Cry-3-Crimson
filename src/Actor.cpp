@@ -1568,10 +1568,6 @@ template <typename T> void UpdateCostumeFileData(T& actorData) {
             swordFileId = plwp_sword3;
         }
 
-        if (actorData.action == ACTION_DANTE::REBELLION_COMBO_1_PART_1) {
-            swordFileId = plwp_sword3;
-		}
-
         File_UpdateFileData(140, swordFileId);
     }
 }
@@ -4043,11 +4039,6 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     } else if (actorData.var_3F19) {
         return false;
     }
-
-    UpdateCostumeFileData(actorData);
-    UpdateModel(actorData);
-
-    //dd::sphere(dd_ctx(), actorWorldPos, dd::colors::Red, 15.0f);
 
     // NOTE(): usage example idk where to stick this properly
     //static EffekseerRefHandle particleHandle = EffekseerLoadEffect(L"Sample\\00_Version16\\Aura01.efkefc", 100.0f);
