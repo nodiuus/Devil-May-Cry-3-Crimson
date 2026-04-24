@@ -1703,6 +1703,122 @@ void ToggleTempFixHighFPSEnigmaShls(bool enable) {
 	run = enable;
 }
 
+
+void MenuScrollTapSpeedFix(bool enable) {
+
+	static float smoothedFPS = 60.0f;
+	static float lastAppliedScale = -1.0f;
+	static bool lastEnable = false;
+	static double lastUpdateTime = 0.0;
+	static int lastQuantizedFPS = 60;
+
+	if (!enable) {
+		// Restore defaults (60 FPS behavior)
+
+		_patch((char*)appBaseAddr + 0x32CE31, (char*)"\x45\x8D\x67\x05", 4);
+
+		char delayPatch1[7] = { 0xC7, 0x43, 0x08, 0x00, 0x00, 0x1E, 0x00 };
+		char delayPatch2[7] = { 0xC7, 0x40, 0x08, 0x00, 0x00, 0x1E, 0x00 };
+
+		_patch((char*)appBaseAddr + 0x32CE92, delayPatch1, 7);
+		_patch((char*)appBaseAddr + 0x32CF18, delayPatch2, 7);
+
+		lastEnable = false;
+		lastAppliedScale = -1.0f;
+		lastUpdateTime = 0.0;
+		lastQuantizedFPS = 60;
+		return;
+	}
+
+	// -------------------------
+	// FPS Smoothing
+	// -------------------------
+	const float alpha = 0.02f;
+	smoothedFPS = smoothedFPS + alpha * (g_FrameRate - smoothedFPS);
+
+	// -------------------------
+	// 30 FPS quantization
+	// -------------------------
+	int quantizedFPS;
+
+	// snap to nearest multiple of 30
+	quantizedFPS = (int)(smoothedFPS / 20.0f) * 20;
+
+	// clamp to safe bounds
+	if (quantizedFPS <= 30)
+		quantizedFPS = 30;
+
+	if (quantizedFPS > 600)
+		quantizedFPS = 600;
+
+	// avoid 0 or weird edge cases
+	if (quantizedFPS == 0)
+		quantizedFPS = 30;
+
+	float scale = quantizedFPS / 60.0f;
+
+	// -------------------------
+	// TIME GATE (100ms update window)
+	// -------------------------
+	double now = ImGui::GetTime();
+
+	if (lastEnable && (now - lastUpdateTime) < 0.1)
+		return;
+
+	// -------------------------
+	// FPS CHANGE GATE 
+	// Only update if FPS meaningfully changed
+	// -------------------------
+	if (abs(quantizedFPS - lastQuantizedFPS) < 10)
+		return;
+
+	// -------------------------
+	// Scale scroll step 
+	// -------------------------
+	int step = (int)(5.0f * scale);
+
+	if (step < 1) step = 1;
+	if (step > 127) step = 127;
+
+	char stepPatch[4] = { 0x45, 0x8D, 0x67, (char)step };
+	_patch((char*)appBaseAddr + 0x32CE31, stepPatch, 4);
+
+	// -------------------------
+	// Scale delay (1E0000 base)
+	// -------------------------
+	int delay = (int)(0x1E0000 * scale);
+
+	if (delay < 0x1000) delay = 0x1000;
+	if (delay > 0x7FFFFFFF) delay = 0x7FFFFFFF;
+
+	char delayPatch1[7] = {
+		0xC7, 0x43, 0x08,
+		(char)(delay & 0xFF),
+		(char)((delay >> 8) & 0xFF),
+		(char)((delay >> 16) & 0xFF),
+		(char)((delay >> 24) & 0xFF)
+	};
+
+	char delayPatch2[7] = {
+		0xC7, 0x40, 0x08,
+		(char)(delay & 0xFF),
+		(char)((delay >> 8) & 0xFF),
+		(char)((delay >> 16) & 0xFF),
+		(char)((delay >> 24) & 0xFF)
+	};
+
+	_patch((char*)appBaseAddr + 0x32CE92, delayPatch1, 7);
+	_patch((char*)appBaseAddr + 0x32CF18, delayPatch2, 7);
+
+	// -------------------------
+	// commit state
+	// -------------------------
+	lastAppliedScale = scale;
+	lastEnable = true;
+	lastUpdateTime = now;
+	lastQuantizedFPS = quantizedFPS;
+}
+
 #pragma endregion
 
 # pragma region Enemy

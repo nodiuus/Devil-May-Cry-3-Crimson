@@ -63,6 +63,7 @@ void AirTauntToggleController(byte8* actorBaseAddr);
 void CerberusCrashFixPart2(bool enable);
 void ToggleM6CrashFix(bool enable);
 void ToggleTempFixHighFPSEnigmaShls(bool enable);
+void MenuScrollTapSpeedFix(bool enable);
 
 #pragma endregion
 

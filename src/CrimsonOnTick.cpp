@@ -1937,6 +1937,7 @@ void TriggerOnTickFuncs() {
     CrimsonOnTick::CrimsonMissionClearSong();
 	CrimsonOnTick::DivinityStatueSong();
 	CrimsonOnTick::CameraShakeController();
+	CrimsonPatches::MenuScrollTapSpeedFix(true);
 	CrimsonSDL::CheckAndOpenControllers();
 	CrimsonSDL::UpdateJoysticks();
 	Sound::UpdateVolumeTransition();
