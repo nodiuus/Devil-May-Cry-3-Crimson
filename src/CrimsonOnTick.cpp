@@ -63,7 +63,7 @@ void FrameResponsiveGameSpeed() {
 	// Ignore hitch/pause frames before updating frame-rate responsive multipliers.
 	// This prevents stalled delta from contaminating speed math after resume.
 	float hitchThreshold = 0.06f;
-	if (deltaTime > hitchThreshold) {
+	if (deltaTime > hitchThreshold || g_inGUIPause) {
 		lastTime = currentTime;
 		return;
 	}
