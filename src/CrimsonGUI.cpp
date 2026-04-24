@@ -1831,7 +1831,14 @@ void PauseWhenGUIOpened() {
 	if (activeCrimsonConfig.GUI.pauseWhenOpened) {
 		if (g_show) {
 			CrimsonPatches::PauseGameTime(true);
-			g_inGUIPause = true;
+			auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+			if (!pool_C90E10 || !pool_C90E10[5]) {
+				return;
+			}
+			auto& cSceneGameMain = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+			if (cSceneGameMain.event == EVENT::MAIN) {
+				g_inGUIPause = true;
+			}
 		} else {
 			CrimsonPatches::PauseGameTime(false);
 			g_inGUIPause = false;
