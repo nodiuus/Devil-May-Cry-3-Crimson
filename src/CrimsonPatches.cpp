@@ -1705,7 +1705,8 @@ void ToggleTempFixHighFPSEnigmaShls(bool enable) {
 
 
 void MenuScrollTapSpeedFix(bool enable) {
-	// dmc3.exe+32CE31 - 45 8D 67 02           - lea r12d,[r15+02] { scroll speed 
+	// From ProcessMenuInput_sub_14032CDE0:
+	// dmc3.exe+32CE31 - 45 8D 67 02           - lea r12d,[r15+02] { scroll speed }
 	// dmc3.exe+32CE92 - C7 43 08 00001E00     - mov [rbx+08],001E0000 { (2035) } -- Dpad
 	// dmc3.exe+32CF18 - C7 40 08 00001E00     - mov [rax+08],001E0000 { (2035) } -- Analog
 
