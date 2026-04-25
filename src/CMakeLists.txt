@@ -11,7 +11,7 @@ set(MASM_SRC
     masm/DisableStaggerRoyalguard.asm
     masm/InterceptCollisions.asm
     masm/JudgementCutDetours.asm
-    masm/FasterTurnRate.asm
+    masm/TurnRateFix.asm
     masm/GuardBreakToNormalBlock.asm
     masm/FixBallsHangHitSpeed.asm
     masm/FixCrashArkhamPt2Doppel.asm

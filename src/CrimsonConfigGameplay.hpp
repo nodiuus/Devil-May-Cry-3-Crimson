@@ -425,9 +425,16 @@ struct CrimsonConfigGameplay {
 // - CrimsonConfigGameplay is a struct that contains all gameplay-related configurations.
 // - Mia
 
+extern CrimsonConfigGameplay activeCrimsonGameplay;
 extern CrimsonConfigGameplay defaultCrimsonGameplay;
 extern CrimsonConfigGameplay queuedCrimsonGameplay;
-extern CrimsonConfigGameplay activeCrimsonGameplay;
+
+extern "C" {
+	// Exported pointers for MASM access
+	extern bool* g_FasterTurnRateSettingAddr;
+}
+
+
 
 #pragma pack(pop)
 #pragma optimize("", on) // Re-enable optimizations

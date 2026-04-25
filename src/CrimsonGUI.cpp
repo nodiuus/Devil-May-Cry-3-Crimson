@@ -11331,12 +11331,11 @@ void GeneralGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Faster Turn Rate",
+			GUI_Checkbox2("Faster Turn Rate",
 				activeCrimsonGameplay.Gameplay.General.fasterTurnRate,
 				queuedCrimsonGameplay.Gameplay.General.fasterTurnRate,
-				activeCrimsonGameplayMask.Gameplay.General.fasterTurnRate)) {
-				CrimsonDetours::ToggleFasterTurnRate(activeCrimsonGameplay.Gameplay.General.fasterTurnRate);
-			}
+				activeCrimsonGameplayMask.Gameplay.General.fasterTurnRate);
+			
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Increases character turn speed.");
 

@@ -64,6 +64,7 @@ void CerberusCrashFixPart2(bool enable);
 void ToggleM6CrashFix(bool enable);
 void ToggleTempFixHighFPSEnigmaShls(bool enable);
 void MenuScrollTapSpeedFix(bool enable);
+void KillTurnRateTruncation(bool enable);
 
 #pragma endregion
 

@@ -82,9 +82,6 @@ void FreeformSoftLockHelperDetour();
 // DMC4/5LockOnDirection
 void DMC4LockOnDirectionDetour();
 
-// FasterTurnRate
-void FasterTurnRateDetour();
-
 // StyleRankHudNoFadeout
 void StyleRankHudNoFadeoutDetour();
 
@@ -112,7 +109,7 @@ void ToggleGuardGravityAlteration(bool enable);
 void ToggleDisableDriveHold(bool enable);
 void ToggleHideStyleRankHUD(bool enable);
 void ToggleDTInfusedRoyalguardDetours(bool enable);
-void ToggleFasterTurnRate(bool enable);
+void ToggleTurnRateFix(bool enable);
 void ToggleShootRemapDown(bool enable);
 void ToggleFreeformSoftLockHelper(bool enable);
 void ToggleDMC4LockOnDirection(bool enable);

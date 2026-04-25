@@ -239,9 +239,8 @@ void* g_DrawCollisionsCall;
 void* g_InterceptCollisionsCall;
 
 // FasterTurnRate
-std::uint64_t g_FasterTurnRate_ReturnAddr;
-std::uint64_t g_FasterTurnRateCallAddr;
-void FasterTurnRateDetour();
+std::uint64_t g_TurnRateFix_ReturnAddr;
+void TurnRateFixDetour();
 
 // FixFPSSpeedIssues
 std::uint64_t g_FixFPSSpeedIssues_ReturnAddr;
@@ -1486,23 +1485,25 @@ void ToggleDTInfusedRoyalguardDetours(bool enable) {
 //	run = enable;
 //}
 
-void ToggleFasterTurnRate(bool enable) {
+void ToggleTurnRateFix(bool enable) {
+	// Here we make Turn Rates behave consistently across all FramesPerSecond targets.
+	// This also controls the Faster Turn Rate setting. - Berthrage
 	using namespace Utility;
 	static bool run = false;
-
+	CrimsonPatches::KillTurnRateTruncation(enable);
 	if (run == enable) {
 		return;
 	}
 
-	// FasterTurnRate
-	// dmc3.exe + 1FC5D5 - E8 D6 13 13 00 - call dmc3.exe+32D9B0
-	// dmc3.exe + 1FC5DA - 44 0F B7 0F - movzx r9d,word ptr [rdi]
-	// dmc3.exe + 1FC5DE - 44 0F B7 D0 - movzx r10d, ax { value in ax (return from call) holds turn rate speed }
-	static std::unique_ptr<Utility::Detour_t> FasterTurnRateHook =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1FC5D5, &FasterTurnRateDetour, 13);
-	g_FasterTurnRate_ReturnAddr = FasterTurnRateHook->GetReturnAddress();
-	g_FasterTurnRateCallAddr = (uintptr_t)appBaseAddr + 0x32D9B0;
-	FasterTurnRateHook->Toggle(enable);
+	// Alter Turn Rate, from ControlMovementRotation_sub_1401FC5B0:
+	// dmc3.exe+1FC5C7 - 41 0F BF D9 - movsx ebx,r9w { Turn Rate }
+	// dmc3.exe+1FC5CB - 41 0F BF 08  - movsx ecx,word ptr [r8]
+
+	static std::unique_ptr<Utility::Detour_t> TurnRateFixHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1FC5C7, &TurnRateFixDetour, 8);
+	g_TurnRateFix_ReturnAddr = TurnRateFixHook->GetReturnAddress();
+	g_FasterTurnRateSettingAddr = &activeCrimsonGameplay.Gameplay.General.fasterTurnRate;
+	TurnRateFixHook->Toggle(enable);
 
 	run = enable;
 }

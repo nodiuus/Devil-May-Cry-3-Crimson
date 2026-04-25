@@ -1822,6 +1822,29 @@ void MenuScrollTapSpeedFix(bool enable) {
 	lastQuantizedFPS = quantizedFPS;
 }
 
+void KillTurnRateTruncation(bool enable) {
+	// From ControlMovementRotation_sub_1401FC5B0:
+	// dmc3.exe+1FC630 - F3 0F 2C C0 - cvttss2si eax,xmm0
+	// dmc3.exe+1FC65A - F3 0F 2C C4 - cvttss2si eax,xmm4
+
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x1FC630), 4);
+		_nop((char*)(appBaseAddr + 0x1FC65A), 4);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x1FC630), (char*)"\xF3\x0F\x2C\xC0", 4);
+		_patch((char*)(appBaseAddr + 0x1FC65A), (char*)"\xF3\x0F\x2C\xC4", 4);
+	}
+
+	run = enable;
+}
+
 #pragma endregion
 
 # pragma region Enemy
