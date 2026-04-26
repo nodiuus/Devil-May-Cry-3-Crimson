@@ -982,8 +982,24 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     auto& trickDashTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].trickDashTimer : crimsonPlayer[playerIndex].trickDashTimerClone;
 	auto& canRoyalMagnetism = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].canRoyalMagnetism : crimsonPlayer[playerIndex].canRoyalMagnetismClone;
 
-	
+	auto ResetPermissionsCancelMethod = [](auto& storedAirCounts, byte8* actorBaseAddr, auto& airCounts) {
+		if (!actorBaseAddr) {
+			return;
+		}
+		auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+		storedAirCounts.trickUp = actorData.newTrickUpCount;
+		storedAirCounts.skyStar = actorData.newSkyStarCount;
+		storedAirCounts.airHike = actorData.newAirHikeCount;
+		storedAirCounts.airStinger = actorData.newAirStingerCount;
+		storedAirCounts.airTornado = airCounts.airTornado;
 
+		actorData.permissions = 3080; // This is a softer version of Reset Permissions.
+
+		std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
+		royalcountstracker.detach();
+	};
+
+	
     // What Royalguard Cancels Completely and at any frame (Not Basic Combos mainly Crazy Combos)
     if ((actorData.style == STYLE::ROYALGUARD) && (actorData.buttons[2] & GetBinding(BINDING::STYLE_ACTION)) &&
         actorData.eventData[0].event != ACTOR_EVENT::STAGGER && actorData.eventData[0].event != ACTOR_EVENT::NEVAN_KISS &&
@@ -991,16 +1007,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
             inCancellableActionBeowulf || inCancellableActionGuns || (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_DASH) && trickDashTimer > 0.3f) &&
         !storedAirCounts.cancelTrackerRunning) // The last condition prevents cancelling recovery
     {
-        storedAirCounts.trickUp = actorData.newTrickUpCount;
-        storedAirCounts.skyStar = actorData.newSkyStarCount;
-        storedAirCounts.airHike = actorData.newAirHikeCount;
-        storedAirCounts.airStinger = actorData.newAirStingerCount;
-        storedAirCounts.airTornado = airCounts.airTornado;
-
-        actorData.permissions = 3080; // This is a softer version of Reset Permissions.
-
-		std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
-		royalcountstracker.detach();
+		ResetPermissionsCancelMethod(storedAirCounts, actorBaseAddr, airCounts);
     }
 
     // Basic Combos and Moves should only cancellable if the player can do an attack
@@ -1010,16 +1017,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
             inCancellableBasicBeowulf) && (policy == EXECUTE) &&
         !storedAirCounts.cancelTrackerRunning) // The last condition prevents cancelling recovery
     {
-        storedAirCounts.trickUp = actorData.newTrickUpCount;
-        storedAirCounts.skyStar = actorData.newSkyStarCount;
-        storedAirCounts.airHike = actorData.newAirHikeCount;
-        storedAirCounts.airStinger = actorData.newAirStingerCount;
-        storedAirCounts.airTornado = airCounts.airTornado;
-
-        actorData.permissions = 3080; // This is a softer version of Reset Permissions.
-
-        std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
-        royalcountstracker.detach();
+		ResetPermissionsCancelMethod(storedAirCounts, actorBaseAddr, airCounts);
     }
 
     // Royal Cancelling Sky Star
@@ -1027,23 +1025,14 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
         actorData.eventData[0].event == 23 && !storedAirCounts.cancelTrackerRunning) {
 
 
-		storedAirCounts.trickUp = actorData.newTrickUpCount;
-		storedAirCounts.skyStar = actorData.newSkyStarCount;
-		storedAirCounts.airHike = actorData.newAirHikeCount;
-		storedAirCounts.airStinger = actorData.newAirStingerCount;
-        storedAirCounts.airTornado = airCounts.airTornado;
-
-        actorData.permissions = 0x1C1B; // This is a hard version of Reset Permissions.
-
-		std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
-		royalcountstracker.detach();
+		ResetPermissionsCancelMethod(storedAirCounts, actorBaseAddr, airCounts);
     }
 
 
     // This is another method for Royal Cancels that involves setting the Actor's Action to a newly created Air Block one (only sets for a
     // split second). It's more reliable for cancelling certain moves (especially air ones). - Mia
 	// This enables ROYAL MAGNETISM.
-    if (actorData.style == STYLE::ROYALGUARD && (actorData.eventData[0].event == 23 || inCancellableMovesActionMethod)
+    if (actorData.style == STYLE::ROYALGUARD && (actorData.eventData[0].event == TRICKSTER_SKY_STAR || inCancellableMovesActionMethod)
 		&& actionTimer >= 0.2f && canRoyalMagnetism) {
         if (inAir) {
 
@@ -1070,6 +1059,20 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 		actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL || actorData.eventData[0].event == ACTOR_EVENT::JUMP ||
 		actorData.eventData[0].event == 3 || actorData.eventData[0].event == ACTOR_EVENT::ROYALGUARD_BLOCK) {
 		canRoyalMagnetism = true; 
+	}
+
+
+	// Cancel Aerial Sword Moves with Royal Release
+	if (actorData.style == STYLE::ROYALGUARD && (inCancellableMovesActionMethod)
+		&& actionTimer >= 0.2f) {
+		if (inAir) {
+
+			if (((lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
+				actorData.styleLevel >= 1) {
+
+				actorData.state &= ~STATE::BUSY;
+			}
+		}
 	}
 
     /*if (actorData.buttons[2] & GetBinding(BINDING::TAUNT))  // old ddmk Reset Permissions -- Deprecated.

@@ -2907,7 +2907,7 @@ void ResetMotionStateLegacy(byte8* actorBaseAddr) {
 
                 actorData.state &= ~STATE::BUSY;
 
-                DebugLog("%u %X %llX", buttonIndex, button, actorData.baseAddr);
+                //DebugLog("%u %X %llX", buttonIndex, button, actorData.baseAddr);
             }
         } else {
             execute = true;
