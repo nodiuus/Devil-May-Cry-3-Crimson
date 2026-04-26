@@ -42,6 +42,7 @@ void ApplyRuntimeGlobalSpeed() {
 
     auto speeds = reinterpret_cast<float*>(appBaseAddr + 0xCF2D90);
 
+    // Handling menu speeds
 	if (activeCrimsonConfig.System.disableMenuTransitions) {
         if (eventData.event != EVENT::MAIN) {
             speeds[SPEED::GLOBAL] = 1.0f * 10000.0f;
@@ -50,17 +51,22 @@ void ApplyRuntimeGlobalSpeed() {
 		else {
 			speeds[SPEED::GLOBAL_4] = 1.0f;
 		}
+    }
+    else {
+        if (eventData.event != EVENT::MAIN) {
+			speeds[SPEED::GLOBAL] = g_effectiveCutsceneSpeed;
+        }
+    }
 
-	}
-
+	// Handling Cutscene speeds and Main game speed
 	if (g_scene == SCENE::CUTSCENE) {
 		speeds[SPEED::GLOBAL] = g_effectiveCutsceneSpeed;
 	}
 	else {
-		speeds[SPEED::GLOBAL] = GetEffectiveGlobalSpeed();
+		if (eventData.event == EVENT::MAIN) {
+            speeds[SPEED::GLOBAL] = GetEffectiveGlobalSpeed();
+        }
 	}
-
- 
 }
 
 void Toggle(bool enable) {
