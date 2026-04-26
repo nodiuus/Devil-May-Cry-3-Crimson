@@ -756,7 +756,9 @@ void AirCancelCountsTracker(byte8* actorBaseAddr) {
 
     // This restores player counts back to what they were before the Royal Cancel
     storedAirCounts.cancelTrackerRunning = true;
-    std::this_thread::sleep_for(std::chrono::milliseconds(20));
+	const float speedScale = actorData.speed / (std::max)(0.001f, g_FrameRateTimeMultiplier);
+	const int scaledDelayMs = (std::max)(1, static_cast<int>(10.0f * speedScale));
+    std::this_thread::sleep_for(std::chrono::milliseconds(scaledDelayMs));
 
     actorData.newTrickUpCount = storedAirCounts.trickUp;
     actorData.newSkyStarCount = storedAirCounts.skyStar;
@@ -868,20 +870,13 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     using namespace ACTION_VERGIL;
     using namespace NEXT_ACTION_REQUEST_POLICY;
 
-    // This used to be Reset Permissions Controller, which we'll now use for Improved Cancels (Royalguard) - Mia.
-    /*if (
-            !activeConfig.resetPermissions ||
-            !actorBaseAddr ||
-            (actorBaseAddr == g_playerActorBaseAddrs[0]) ||
-            (actorBaseAddr == g_playerActorBaseAddrs[1]))
-
-            return;
-    }*/
+    // This used to be Reset Permissions Controller, which we'll now use for Improved Cancels (Royalguard) - Berthrage
 
     if (!actorBaseAddr) {
         return;
     }
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (actorData.character != CHARACTER::DANTE) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto& playerData = GetPlayerData(playerIndex);
 
@@ -898,6 +893,12 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
     auto& actionTimer = (actorData.newEntityIndex == 0) ? 
         crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : 
+		crimsonPlayer[playerIndex].motionTimerClone;
+	auto& eAndIShotTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].eAndIShotTimer :
+		crimsonPlayer[playerIndex].eAndIShotTimerClone;
+	auto& trickDashTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].trickDashTimer :
+		crimsonPlayer[playerIndex].trickDashTimerClone;
 	auto& actorCancels = (actorData.newEntityIndex == 0) ?
 		crimsonPlayer[playerIndex].cancels : crimsonPlayer[playerIndex].cancelsClone;
     auto& storedAirCounts = (actorData.newEntityIndex == 0) ? 
@@ -967,20 +968,55 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     bool inCancellableActionGuns =
         (actorData.action == EBONY_IVORY_WILD_STOMP || actorData.action == ARTEMIS_ACID_RAIN || actorData.action == KALINA_ANN_GRAPPLE);
 
-    // These are moves used by the Action Set Cancel Method, generally air ones.
-    bool inCancellableMovesActionMethod =
-        ((((actorData.action == REBELLION_AERIAL_RAVE_PART_1 || actorData.action == REBELLION_AERIAL_RAVE_PART_2 ||
-              actorData.action == REBELLION_AERIAL_RAVE_PART_3 || actorData.action == REBELLION_AERIAL_RAVE_PART_4) ||
-             (actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1 || actorData.action == AGNI_RUDRA_SKY_DANCE_PART_2 ||
-                 actorData.action == AGNI_RUDRA_SKY_DANCE_PART_3) ||
-             (actorData.action == NEVAN_AIR_SLASH_PART_1 || actorData.action == NEVAN_AIR_SLASH_PART_2) ||
-             (actorData.action == CERBERUS_AIR_FLICKER) || (actorData.action == BEOWULF_TORNADO)) && actionTimer >= 0.25f || (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT 
-                 && actionTimer >= 0.2f)) &&
-            actorData.eventData[0].event == 17);
+
+	// Royal Buffering 
+	bool canBufferAirSwordState =
+		((actorData.action == REBELLION_AERIAL_RAVE_PART_1 || actorData.action == REBELLION_AERIAL_RAVE_PART_2 ||
+			actorData.action == REBELLION_AERIAL_RAVE_PART_3 || actorData.action == REBELLION_AERIAL_RAVE_PART_4) && actionTimer > 0.05f && actionTimer < 0.25f) ||
+		(actorData.action == CERBERUS_AIR_FLICKER && actionTimer > 0.2f && actionTimer < 0.53f) ||
+		((actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1 || actorData.action == AGNI_RUDRA_SKY_DANCE_PART_2) && actionTimer > 0.1f && actionTimer < 0.4f) ||
+		((actorData.action == NEVAN_AIR_SLASH_PART_1 || actorData.action == NEVAN_AIR_SLASH_PART_2) && actionTimer > 0.1f && actionTimer < 0.4f) ||
+		(actorData.action == BEOWULF_TORNADO && actionTimer > 0.2f && actionTimer < 0.65f) ||
+		(actorData.action == BEOWULF_THE_HAMMER && actionTimer > 0.05f && actionTimer < 0.3f) ||
+		(actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT && eAndIShotTimer > 0.03f && eAndIShotTimer < 0.05f);
+
+	bool canExecuteAirSwordState =
+		((actorData.action == REBELLION_AERIAL_RAVE_PART_1 || actorData.action == REBELLION_AERIAL_RAVE_PART_2 ||
+			actorData.action == REBELLION_AERIAL_RAVE_PART_3 || actorData.action == REBELLION_AERIAL_RAVE_PART_4) && actionTimer >= 0.25f) ||
+		(actorData.action == CERBERUS_AIR_FLICKER && actionTimer >= 0.54f) ||
+		((actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1 || actorData.action == AGNI_RUDRA_SKY_DANCE_PART_2) && actionTimer >= 0.4f) ||
+		((actorData.action == NEVAN_AIR_SLASH_PART_1 || actorData.action == NEVAN_AIR_SLASH_PART_2) && actionTimer >= 0.4f) ||
+		(actorData.action == BEOWULF_TORNADO && actionTimer >= 0.6f) ||
+		(actorData.action == BEOWULF_THE_HAMMER && actionTimer >= 0.3f) ||
+		(actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT && eAndIShotTimer >= 0.05f);;
+
+
+	bool canResetBufferAirSwordState =
+		((actorData.action == REBELLION_AERIAL_RAVE_PART_1 || actorData.action == REBELLION_AERIAL_RAVE_PART_2 ||
+			actorData.action == REBELLION_AERIAL_RAVE_PART_3 || actorData.action == REBELLION_AERIAL_RAVE_PART_4) && actionTimer <= 0.0f) ||
+		(actorData.action == CERBERUS_AIR_FLICKER && actionTimer <= 0.0f) ||
+		((actorData.action == AGNI_RUDRA_SKY_DANCE_PART_1 || actorData.action == AGNI_RUDRA_SKY_DANCE_PART_2) && actionTimer <= 0.0f) ||
+		((actorData.action == NEVAN_AIR_SLASH_PART_1 || actorData.action == NEVAN_AIR_SLASH_PART_2) && actionTimer <= 0.0f) ||
+		(actorData.action == BEOWULF_TORNADO && actionTimer <= 0.0f) ||
+		(actorData.action == BEOWULF_THE_HAMMER && actionTimer <= 0.0f) ||
+		(actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT && eAndIShotTimer <= 0.0f);
+
+	bool canBufferTricksterDash = 
+		((actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_DASH) && trickDashTimer > 0.02f && trickDashTimer < 0.35f) ||
+		((actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_SKY_STAR) && trickDashTimer > 0.02f && trickDashTimer < 0.29f);
+
+	bool canExecuteTricksterDash = 
+		((actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_DASH) && trickDashTimer >= 0.35f) ||
+		((actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_SKY_STAR) && trickDashTimer >= 0.29f);
+
+	bool canResetTricksterDash = 
+		((actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_DASH) && trickDashTimer <= 0.01f) ||
+		((actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_SKY_STAR) && trickDashTimer <= 0.01f);
 
     auto& policy = actorData.nextActionRequestPolicy[MELEE_ATTACK];
-    auto& trickDashTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].trickDashTimer : crimsonPlayer[playerIndex].trickDashTimerClone;
 	auto& canRoyalMagnetism = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].canRoyalMagnetism : crimsonPlayer[playerIndex].canRoyalMagnetismClone;
+	auto& bufferRoyal = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].bufferRoyal 
+		: crimsonPlayer[playerIndex].bufferRoyalClone;
 
 	auto ResetPermissionsCancelMethod = [](auto& storedAirCounts, byte8* actorBaseAddr, auto& airCounts) {
 		if (!actorBaseAddr) {
@@ -1004,7 +1040,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
     if ((actorData.style == STYLE::ROYALGUARD) && (actorData.buttons[2] & GetBinding(BINDING::STYLE_ACTION)) &&
         actorData.eventData[0].event != ACTOR_EVENT::STAGGER && actorData.eventData[0].event != ACTOR_EVENT::NEVAN_KISS &&
         (inCancellableActionRebellion || inCancellableActionCerberus || inCancellableActionAgni || inCancellableActionNevan ||
-            inCancellableActionBeowulf || inCancellableActionGuns || (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_DASH) && trickDashTimer > 0.3f) &&
+            inCancellableActionBeowulf || inCancellableActionGuns) &&
         !storedAirCounts.cancelTrackerRunning) // The last condition prevents cancelling recovery
     {
 		ResetPermissionsCancelMethod(storedAirCounts, actorBaseAddr, airCounts);
@@ -1028,32 +1064,6 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 		ResetPermissionsCancelMethod(storedAirCounts, actorBaseAddr, airCounts);
     }
 
-
-    // This is another method for Royal Cancels that involves setting the Actor's Action to a newly created Air Block one (only sets for a
-    // split second). It's more reliable for cancelling certain moves (especially air ones). - Mia
-	// This enables ROYAL MAGNETISM.
-    if (actorData.style == STYLE::ROYALGUARD && (actorData.eventData[0].event == TRICKSTER_SKY_STAR || inCancellableMovesActionMethod)
-		&& actionTimer >= 0.2f && canRoyalMagnetism) {
-        if (inAir) {
-
-            if ((!(lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
-				actorData.styleLevel >= 1) {
-
-				StoreAirCounts(actorData);
-
-                actorData.action = ROYAL_AIR_BLOCK;
-				actorData.state = 65538;
-
-				//canRoyalMagnetism = false; // This prevents the player from doing ROYAL MAGNETISM multiple times in a row without touching the ground or JCing.
-
-				std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
-				royalcountstracker.detach();
-
-				
-            }
-        }
-    }
-
 	// Reset ROYAL MAGNETISM availability when touching the ground or JCing.
 	if (actorData.state == 65537 || actorData.eventData[0].event == ACTOR_EVENT::LANDING || 
 		actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL || actorData.eventData[0].event == ACTOR_EVENT::JUMP ||
@@ -1062,17 +1072,87 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 	}
 
 
-	// Cancel Aerial Sword Moves with Royal Release
-	if (actorData.style == STYLE::ROYALGUARD && (inCancellableMovesActionMethod)
-		&& actionTimer >= 0.2f) {
-		if (inAir) {
-
-			if (((lockOn && tiltDirection == TILT_DIRECTION::UP)) && gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION) &&
-				actorData.styleLevel >= 1) {
-
-				actorData.state &= ~STATE::BUSY;
+	// Royal Cancel Trickster Dash
+	if (canBufferTricksterDash) {
+		if (actorData.style == STYLE::ROYALGUARD && 
+			(actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION))) {
+			if (lockOn && tiltDirection == TILT_DIRECTION::UP) {
+				bufferRoyal = BUFFER_ROYAL::ROYAL_RELEASE;
+			}
+			else {
+				bufferRoyal = BUFFER_ROYAL::ROYAL_BLOCK;
 			}
 		}
+	}
+	else if (canExecuteTricksterDash) {
+
+		if (bufferRoyal == BUFFER_ROYAL::ROYAL_RELEASE || (lockOn && tiltDirection == TILT_DIRECTION::UP && actorData.style == STYLE::ROYALGUARD &&
+			(actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)))) {
+
+			if (inAir) {
+				actorData.action = ACTION_DANTE::ROYALGUARD_AIR_RELEASE_1;
+				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			}
+			else {
+				actorData.action = ACTION_DANTE::ROYALGUARD_RELEASE_1;
+				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+			}
+		}
+		else if (bufferRoyal > BUFFER_ROYAL::ROYAL_BLOCK ||
+			(actorData.style == STYLE::ROYALGUARD &&
+				(actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)))) {
+
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ROYALGUARD_BLOCK, 0, 0);
+		}
+	}
+	else if (canResetTricksterDash) {
+		bufferRoyal = BUFFER_ROYAL::NONE;
+	}
+
+	// AIR SWORDMASTER ROYAL CANCELLING / BUFFERING
+	if (canBufferAirSwordState) {
+		if (actorData.style == STYLE::ROYALGUARD && (actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) && actorData.styleLevel >= 1 &&
+			inAir) {
+			// BUFFER ROYAL RELEASE
+			if (lockOn && tiltDirection == TILT_DIRECTION::UP) {
+				bufferRoyal = BUFFER_ROYAL::ROYAL_AIR_RELEASE;
+			}
+			else {
+				bufferRoyal = BUFFER_ROYAL::ROYAL_AIR_BLOCK;
+			}
+		}
+	}
+	else if (canExecuteAirSwordState) {
+		// IF ROYAL RELEASE IS BUFFERED
+		if (bufferRoyal == BUFFER_ROYAL::ROYAL_AIR_RELEASE || (actorData.style == STYLE::ROYALGUARD 
+			&& (actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION) && lockOn && tiltDirection == TILT_DIRECTION::UP))) {
+			actorData.action = ROYALGUARD_AIR_RELEASE_1;
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+		}
+		else if (bufferRoyal == BUFFER_ROYAL::ROYAL_AIR_BLOCK ||
+			actorData.style == STYLE::ROYALGUARD && (actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) &&
+			actorData.eventData[0].event != ACTOR_EVENT::LANDING) {
+			if (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT && actorData.eventData[0].event != ACTOR_EVENT::ROYALGUARD_BLOCK) {
+				actorData.airGunAttackCount += 5;
+			}
+			StoreAirCounts(actorData);
+			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ROYALGUARD_BLOCK, 0, 0);
+			std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
+			actorData.permissions = 0x1C1B;
+			royalcountstracker.detach();
+		}
+	}
+	else if (canResetBufferAirSwordState) {
+		bufferRoyal = BUFFER_ROYAL::NONE;
+	}
+
+	// Bugfix for cancelling out of Ebony & Ivory's Air Normal Shot with Royalguard when landing.
+	if (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT && !inAir) {
+		StoreAirCounts(actorData);
+		actorData.action = ROYAL_AIR_BLOCK; // old "SetActionTo0" Cancel Method
+		std::thread royalcountstracker(AirCancelCountsTracker, actorBaseAddr);
+		actorData.permissions = 0x1C1B;
+		royalcountstracker.detach();
 	}
 
     /*if (actorData.buttons[2] & GetBinding(BINDING::TAUNT))  // old ddmk Reset Permissions -- Deprecated.
@@ -1091,6 +1171,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     }
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (!IsActiveCharacterActor(actorData)) return;
+	if (actorData.character != CHARACTER::DANTE) return;
     auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
     auto tiltDirection = GetRelativeTiltDirection(actorData);
     auto playerIndex = actorData.newPlayerIndex;
@@ -1238,6 +1319,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     auto& policy = actorData.nextActionRequestPolicy[MELEE_ATTACK];
     auto& policyTrick = actorData.nextActionRequestPolicy[TRICKSTER_DARK_SLAYER];
 	auto& policyJump = actorData.nextActionRequestPolicy[JUMP_ROLL];
+	auto inAir = (actorData.state & STATE::IN_AIR);
 
     if (actorData.character == CHARACTER::DANTE) {
 
@@ -1404,6 +1486,7 @@ void DarkslayerCancelsVergilController(byte8* actorBaseAddr) {
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (!IsActiveCharacterActor(actorData)) return;
+	if (actorData.character != CHARACTER::VERGIL) return;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 

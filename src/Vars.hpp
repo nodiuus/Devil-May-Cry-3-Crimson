@@ -5691,6 +5691,16 @@ extern float rainstormPull;
 extern float storedHP;
 extern float storedDT;
 
+namespace BUFFER_ROYAL {
+	enum {
+		NONE,
+        ROYAL_BLOCK,
+        ROYAL_RELEASE,
+		ROYAL_AIR_BLOCK,
+        ROYAL_AIR_RELEASE
+	};
+}
+
 
 struct CrimsonPlayerData {
     uintptr_t playerPtr;
@@ -5724,6 +5734,7 @@ struct CrimsonPlayerData {
     float motionTimer   = 0;
     float eventTimer = 0;
     float trickDashTimer = 0;
+    float eAndIShotTimer = 0;
     uint32 currentEvent = 0;
     bool active;
     bool inNewDrive   = false;
@@ -5790,6 +5801,7 @@ struct CrimsonPlayerData {
     DanteStingerInput stingerInput;
 	VergilRisingStarInput risingStarInput;
     BulletMagnetism bulletMagnetism;
+    uint8 bufferRoyal = 0;
 
     uintptr_t clonePtr;
     uint8 actionClone     = 0;
@@ -5809,6 +5821,7 @@ struct CrimsonPlayerData {
     float motionTimerClone   = 0;
     float eventTimerClone = 0;
     float trickDashTimerClone = 0;
+    float eAndIShotTimerClone = 0;
     uint32 currentEventClone = 0;
     std::vector<uint32> lastEventsClone{0};
     int lastLastEventClone = 0;
@@ -5864,6 +5877,7 @@ struct CrimsonPlayerData {
     DanteStingerInput stingerInputClone;
 	VergilRisingStarInput risingStarInputClone;
     BulletMagnetism bulletMagnetismClone;
+	uint8 bufferRoyalClone = 0;
 };
 
 extern CrimsonPlayerData crimsonPlayer[20];

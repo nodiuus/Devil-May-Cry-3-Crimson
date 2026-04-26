@@ -234,6 +234,40 @@ void TrickDashTimers () {
 	}
 }
 
+void EbonyAndIvoryTimers() {
+    using namespace ACTION_DANTE;
+	static uint32 currentEvent[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+
+	old_for_all(uint8, playerIndex, PLAYER_COUNT) {
+		old_for_all(uint8, entityIndex, ENTITY_COUNT) {
+			auto& playerData = GetPlayerData(playerIndex);
+
+			auto& newActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+
+			auto actorBaseAddr = newActorData.baseAddr;
+
+			if (!actorBaseAddr) {
+				continue;
+			}
+			auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+			if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) continue;
+
+			auto& actorEvent = actorData.eventData[0].event;
+			auto& eAndIShotTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].eAndIShotTimer : crimsonPlayer[playerIndex].eAndIShotTimerClone;
+
+
+			// Reset Timer by Event ID or Style button press
+			if (actorData.action == EBONY_IVORY_AIR_NORMAL_SHOT) {
+				eAndIShotTimer += g_deltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+
+				if (actorData.buttons[0] & GetBinding(BINDING::SHOOT)) {
+					eAndIShotTimer = 0;
+				}
+			}
+		}
+	}
+}
+
 std::chrono::steady_clock::time_point guardflyStartTime;
 
 void ResetGuardflyTimer(float timer) {
@@ -547,6 +581,7 @@ void CallAllTimers() {
 	AnimTimers();
     EventTimers();
     TrickDashTimers();
+    EbonyAndIvoryTimers();
     GuardflyTimers();
 	SiyTimerFunc();
 	SprintTimer();
