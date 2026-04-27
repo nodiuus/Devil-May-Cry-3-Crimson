@@ -1104,7 +1104,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ROYALGUARD_BLOCK, 0, 0);
 
-			actorData.recoverState[0] = 1;
+			actorData.recoverState[0] = 1; // Prevents rebuffering bug into RG Ultimate
 		}
 	}
 	else if (canResetTricksterDash) {
@@ -3571,17 +3571,17 @@ void InertiaController(byte8* actorBaseAddr) {
 	auto& lastLastState =
 		(actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastLastState : crimsonPlayer[playerIndex].lastLastStateClone;
 
+	bool inAttack = event == ACTOR_EVENT::ATTACK;
+
     bool inAerialRave = (action == REBELLION_AERIAL_RAVE_PART_1 || action == REBELLION_AERIAL_RAVE_PART_2 ||
-                         action == REBELLION_AERIAL_RAVE_PART_3 || action == REBELLION_AERIAL_RAVE_PART_4);
+                         action == REBELLION_AERIAL_RAVE_PART_3 || action == REBELLION_AERIAL_RAVE_PART_4) &&
+						inAttack;
 
     bool inSkyDance =
         (action == AGNI_RUDRA_SKY_DANCE_PART_1 || action == AGNI_RUDRA_SKY_DANCE_PART_2 || action == AGNI_RUDRA_SKY_DANCE_PART_3);
     auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     auto& guarflyTimer = i->guardflyTimer;
 	auto gamepad = GetGamepad(playerIndex);
-
-    //CrimsonPatches::InertiaFixes();
-
 
     if (actorData.character == CHARACTER::DANTE) {
 
@@ -3593,7 +3593,8 @@ void InertiaController(byte8* actorBaseAddr) {
         }
 
         // This mimic's DMC4's Air Trick Inertia Boost behaviour, uses LastEventStateQueue
-        if (event == ACTOR_EVENT::AIR_TRICK_END && lastLastEvent == ATTACK && lastLastState & STATE::IN_AIR) {
+        if (event == ACTOR_EVENT::AIR_TRICK_END && (motion == 15) && 
+			lastLastEvent == ATTACK && lastLastState & STATE::IN_AIR) {
             actorData.horizontalPull = 7.5f;
         }
 		
