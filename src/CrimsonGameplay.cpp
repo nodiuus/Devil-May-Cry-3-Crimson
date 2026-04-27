@@ -1103,6 +1103,8 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 				(actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)))) {
 
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ROYALGUARD_BLOCK, 0, 0);
+
+			actorData.recoverState[0] = 1;
 		}
 	}
 	else if (canResetTricksterDash) {
