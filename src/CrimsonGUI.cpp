@@ -15290,8 +15290,10 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     
 	// Calling this from GUI Render is the safest way to ensure this will run on-tick properly
     // outside of In Game.32CFE0
-	for (uint8 playerIndex = 0; playerIndex < 4; playerIndex++) {
-		InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
+	if (g_scene != SCENE::BOOT) {
+		for (uint8 playerIndex = 0; playerIndex < 4; playerIndex++) {
+			InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
+		}
 	}
 
 	CrimsonOnTick::FrameResponsiveGameSpeed();
