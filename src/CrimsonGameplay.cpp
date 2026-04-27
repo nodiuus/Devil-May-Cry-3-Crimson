@@ -756,9 +756,7 @@ void AirCancelCountsTracker(byte8* actorBaseAddr) {
 
     // This restores player counts back to what they were before the Royal Cancel
     storedAirCounts.cancelTrackerRunning = true;
-	const float speedScale = actorData.speed / (std::max)(0.001f, g_FrameRateTimeMultiplier);
-	const int scaledDelayMs = (std::max)(1, static_cast<int>(10.0f * speedScale));
-    std::this_thread::sleep_for(std::chrono::milliseconds(scaledDelayMs));
+    std::this_thread::sleep_for(std::chrono::milliseconds(20));
 
     actorData.newTrickUpCount = storedAirCounts.trickUp;
     actorData.newSkyStarCount = storedAirCounts.skyStar;
