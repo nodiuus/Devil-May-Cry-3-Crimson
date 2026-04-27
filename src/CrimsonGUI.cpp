@@ -15307,7 +15307,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     
 	// Calling this from GUI Render is the safest way to ensure this will run on-tick properly
 	// outside of In Game.32CFE0
-	ExperimentalInputUpdate();
+	//ExperimentalInputUpdate();
 
 	CrimsonOnTick::FrameResponsiveGameSpeed();
 	CrimsonOnTick::LevelFullyLoadedDelay();
