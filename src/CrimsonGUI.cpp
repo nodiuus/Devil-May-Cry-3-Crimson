@@ -15246,6 +15246,23 @@ static int16 InputsUpdate_sub_14032CFE0(uintptr_t inputAddr, int playerIndex, un
 	return InputsUpdateFunc(inputAddr, playerIndex, a3);
 }
 
+void ExperimentalInputUpdate() {
+	static bool hasEnteredMainScene = false;
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+	if (eventData.event == EVENT::MAIN) {
+		hasEnteredMainScene = true;
+	}
+	if (hasEnteredMainScene) {
+		for (uint8 playerIndex = 0; playerIndex < 4; playerIndex++) {
+			InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
+		}
+	}
+}
+
 void GUI_Render(IDXGISwapChain* pSwapChain) {
     if (g_scene != SCENE::GAME) {
         devilTriggerReadyPlayed = !activeConfig.playDTReadySFXAtMissionStart;
@@ -15290,15 +15307,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     
 	// Calling this from GUI Render is the safest way to ensure this will run on-tick properly
 	// outside of In Game.32CFE0
-	static bool hasEnteredMainScene = false;
-	if (g_scene == SCENE::MAIN) {
-		hasEnteredMainScene = true;
-	}
-	if (hasEnteredMainScene) {
-		for (uint8 playerIndex = 0; playerIndex < 4; playerIndex++) {
-			InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
-		}
-	}
+	ExperimentalInputUpdate();
 
 	CrimsonOnTick::FrameResponsiveGameSpeed();
 	CrimsonOnTick::LevelFullyLoadedDelay();
