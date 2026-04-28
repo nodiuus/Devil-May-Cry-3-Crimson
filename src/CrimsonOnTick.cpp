@@ -283,24 +283,33 @@ void FixWeaponUnlocksDante() {
 
 	// If we saw the boss before and now they're gone, unlock the weapon
 	if (cerberusExists && !cerberusAlive && cerberusMissionContext) {
-		missionData.itemCounts[ITEM::CERBERUS] = 1;
-		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::CERBERUS, -1);
+		if (missionData.itemCounts[ITEM::CERBERUS] < 1) {
+			Log("Unlocking Cerberus for Dante in CCS.");
+			missionData.itemCounts[ITEM::CERBERUS] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::CERBERUS, -1);
+		}
 		cerberusExists = false;
 	} else if (!cerberusMissionContext) {
 		cerberusExists = false; 
 	}
 
 	if (agniRudraExists && !agniRudraAlive && agniRudraMissionContext) {
-		missionData.itemCounts[ITEM::AGNI_RUDRA] = 1;
-		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::AGNI_RUDRA, -1);
+		if (missionData.itemCounts[ITEM::AGNI_RUDRA] < 1) {
+			Log("Unlocking Agni & Rudra for Dante in CCS.");
+			missionData.itemCounts[ITEM::AGNI_RUDRA] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::AGNI_RUDRA, -1);
+		}d
 		agniRudraExists = false; 
 	} else if (!agniRudraMissionContext) {
 		agniRudraExists = false;
 	}
 
 	if (nevanExists && !nevanAlive && nevanMissionContext) {
-		missionData.itemCounts[ITEM::NEVAN] = 1;
-		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::NEVAN, -1);
+		if (missionData.itemCounts[ITEM::NEVAN] < 1) {
+			Log("Unlocking Nevan for Dante in CCS.");d
+			missionData.itemCounts[ITEM::NEVAN] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::NEVAN, -1);
+		}
 		nevanExists = false;
 	} else if (!nevanMissionContext) {
 		nevanExists = false;
@@ -314,8 +323,11 @@ void FixWeaponUnlocksDante() {
 	}
 
 	if (ladyExists && !ladyAlive && ladyMissionContext) {
-		missionData.itemCounts[ITEM::KALINA_ANN] = 1;
-		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::KALINA_ANN, -1);
+		if (missionData.itemCounts[ITEM::KALINA_ANN] < 1) {
+			Log("Unlocking Kalina Ann for Dante in CCS.");
+			missionData.itemCounts[ITEM::KALINA_ANN] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::KALINA_ANN, -1);
+		}
 		ladyExists = false;
 	} else if (!ladyMissionContext) {
 		ladyExists = false;
@@ -326,8 +338,11 @@ void FixWeaponUnlocksDante() {
 		sessionData.mission == 14 &&
 		eventData.room == ROOM::LAIR_OF_JUDGEMENT_RUINS &&
 		missionData.itemCounts[ITEM::BEOWULF] != 1) {
-		missionData.itemCounts[ITEM::BEOWULF] = 1;
-		RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::BEOWULF, -1);
+		if (missionData.itemCounts[ITEM::BEOWULF] < 1) {
+			Log("Unlocking Beowulf for Dante in Vergil's Campaign in CCS.");
+			missionData.itemCounts[ITEM::BEOWULF] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::BEOWULF, -1);
+		}
 	}
 
 	if (doppelExists && !doppelAlive && doppelMissionContext) {
