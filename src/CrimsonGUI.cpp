@@ -8412,6 +8412,11 @@ void MiscCheatsSection() {
 			auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
 			ImGui::PushItemWidth(200);
 			GUI_Input<uint32>("Red Orbs", missionData.redOrbs, 1000, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Gold Orbs", missionData.itemCounts[ITEM::GOLD_ORB], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Vital Stars Small", missionData.itemCounts[ITEM::VITAL_STAR_SMALL], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Vital Stars Large", missionData.itemCounts[ITEM::VITAL_STAR_LARGE], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Devil Stars", missionData.itemCounts[ITEM::DEVIL_STAR], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Holy Waters", missionData.itemCounts[ITEM::HOLY_WATER], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::PopItemWidth();
 		}
 
@@ -10388,11 +10393,11 @@ void TrainingSection() {
 			bool condition = (!InGame() || activeConfig.Actor.playerCount == 1);
 			GUI_PushDisable(condition);
 			for_each(players, 1, activeConfig.Actor.playerCount) {
-				bool isDead = CrimsonGameplay::isPlayerDead(players);
+				bool isDead = CrimsonGameplay::CanBeRevived(players);
 				GUI_PushDisable(!isDead);
 				std::string inputLabel = "Revive Player " + std::to_string(players+1) + "##playerReviveLabel";
 				if (GUI_Button(inputLabel.c_str())){
-					CrimsonGameplay::RevivePlayer(players);
+					CrimsonGameplay::RevivePlayer(players,false);
 				}
 
 				GUI_PopDisable(!isDead);

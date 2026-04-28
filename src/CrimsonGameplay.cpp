@@ -5390,9 +5390,16 @@ static void CallRevivePlayer(PlayerActorData& actorData, uint8 isGorb) {
 	revivePlayer(&actorData, isGorb);
 }
 
-bool isPlayerDead(uint8 playerIndex) {
+bool CanBeRevived(uint8 playerIndex) {
 	if (!InGame())
 		return false;
+
+	auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_6975) {
+		return false;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
+
 	auto& playerData = GetPlayerData(playerIndex);
 	auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
 
@@ -5400,10 +5407,22 @@ bool isPlayerDead(uint8 playerIndex) {
 		return false;
 	}
 	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+
+	//Can't revive cuz no gorb.
+	if (!(missionData.itemCounts[ITEM::GOLD_ORB] > 0))
+		return false;
+
 	return activeActorData.dead;
 }
 
-void RevivePlayer(uint8 playerIndex) {
+void RevivePlayer(uint8 playerIndex, bool ignoreGorbCost) {
+
+	auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_6975) {
+		return;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
+
 	Log("Calling Revive Player");
 	if (!InGame())
 		return;
@@ -5412,6 +5431,7 @@ void RevivePlayer(uint8 playerIndex) {
 		return;
 	}
 	auto& playerData = GetPlayerData(playerIndex);
+	auto& mainNewActorData = GetNewActorData(0, 0, ENTITY::MAIN);
 	auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
 	if (!activeNewActorData.baseAddr) {
 		Log("Invalid actor base address");
@@ -5419,8 +5439,19 @@ void RevivePlayer(uint8 playerIndex) {
 	}
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
-	Log("Calling revive function!");
-	CrimsonGameplay::CallRevivePlayer(actorData, 1);
+
+	if (missionData.itemCounts[ITEM::GOLD_ORB] > 0 || ignoreGorbCost) {
+		Log("Calling revive function!");
+		CrimsonGameplay::CallRevivePlayer(actorData, 1);
+
+		//subtract gorb if not ignoring
+		if (missionData.itemCounts[ITEM::GOLD_ORB] > 0 && !ignoreGorbCost)
+			missionData.itemCounts[ITEM::GOLD_ORB] = missionData.itemCounts[ITEM::GOLD_ORB] - 1;
+	}
+	else {
+		Log("Not enough gorb");
+	}
+
 }
 
 static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
