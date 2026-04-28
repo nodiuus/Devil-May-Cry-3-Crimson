@@ -298,7 +298,7 @@ void FixWeaponUnlocksDante() {
 			Log("Unlocking Agni & Rudra for Dante in CCS.");
 			missionData.itemCounts[ITEM::AGNI_RUDRA] = 1;
 			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::AGNI_RUDRA, -1);
-		}d
+		}
 		agniRudraExists = false; 
 	} else if (!agniRudraMissionContext) {
 		agniRudraExists = false;
@@ -306,7 +306,7 @@ void FixWeaponUnlocksDante() {
 
 	if (nevanExists && !nevanAlive && nevanMissionContext) {
 		if (missionData.itemCounts[ITEM::NEVAN] < 1) {
-			Log("Unlocking Nevan for Dante in CCS.");d
+			Log("Unlocking Nevan for Dante in CCS.");
 			missionData.itemCounts[ITEM::NEVAN] = 1;
 			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::NEVAN, -1);
 		}
