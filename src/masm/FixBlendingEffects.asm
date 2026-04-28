@@ -1,6 +1,7 @@
 INCLUDE CommonMacros.inc
 .DATA
 EXTERN g_FrameRateTimeMultiplier:DWORD
+EXTERN g_FrameRateTimeMultiplierRounded:DWORD
 
 EXTERN g_FixBlendingEffects_Mist_ReturnAddr1:QWORD
 EXTERN g_FixBlendingEffects_Mist_ReturnAddr2:QWORD
@@ -20,7 +21,7 @@ FixBlendingEffect_Mist_Detour1 PROC
 
 ApplyNewMistSpeed:
     movss xmm1, dword ptr [rax]
-    mulss xmm1, dword ptr [g_FrameRateTimeMultiplier] 
+    mulss xmm1, dword ptr [g_FrameRateTimeMultiplierRounded] 
 
     pop rax
 
@@ -38,7 +39,7 @@ FixBlendingEffect_Mist_Detour2 PROC
 
 ApplyNewMistSpeed:
     mulss xmm0, dword ptr [rax]
-    mulss xmm0, dword ptr [g_FrameRateTimeMultiplier] 
+    mulss xmm0, dword ptr [g_FrameRateTimeMultiplierRounded] 
 
     pop rax
 
@@ -56,7 +57,7 @@ FixBlendingEffect_Mist_Detour3 PROC
 
 ApplyNewMistSpeed:
     mulss xmm6, dword ptr [rax]
-    mulss xmm6, dword ptr [g_FrameRateTimeMultiplier] 
+    mulss xmm6, dword ptr [g_FrameRateTimeMultiplierRounded] 
 
     pop rax
 
