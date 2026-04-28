@@ -4406,7 +4406,23 @@ void RenderMultiplayerBar(
 		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[18.0f]);
 		ImGui::Text("  ");
 		ImGui::SameLine();
+		//grabbing mission data real quick
+		auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+		if (!name_6975) {
+			return;
+		}
+		auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
 		//ImGui::SameLine();
+		if (actorData.dead && missionData.itemCounts[ITEM::GOLD_ORB] > 0) {
+			ImGui::Text("Hold start to revive");
+			ImGui::Text("  ");
+			ImGui::SameLine();
+			ImGui::Text("Gold orbs left: %u", missionData.itemCounts[ITEM::GOLD_ORB]);
+		}else
+		if (actorData.dead) {
+			ImGui::Text("Gold orbs left: %u", missionData.itemCounts[ITEM::GOLD_ORB]);
+		}
+		else
 		if (actorData.character == CHARACTER::DANTE || actorData.character == CHARACTER::VERGIL) {
 
 			if (actorData.character == CHARACTER::DANTE) {

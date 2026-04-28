@@ -5454,6 +5454,28 @@ void RevivePlayer(uint8 playerIndex, bool ignoreGorbCost) {
 
 }
 
+void UpdateRevivePlayer(byte8* actorBaseAddr) {
+	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& characterData = playerData.characterData[playerData.activeCharacterIndex];
+
+	auto& gamepad = GetGamepad(playerIndex);
+	bool startDown = (gamepad.buttons[0] & GAMEPAD::START) != 0;
+
+	if (startDown && entityIndex == 0) {
+		if (CanBeRevived(playerIndex)) {
+			RevivePlayer(playerIndex,false);
+		}
+		Log("Player %u start down", playerIndex);
+	}
+}
+
 static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
 
 using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
