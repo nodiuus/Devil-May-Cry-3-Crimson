@@ -5377,6 +5377,52 @@ static void CallShotgunShlFire(PlayerActorData& actorData, vec4& pos, vec4& pos2
 }
 
 
+static constexpr uintptr_t REVIVE_PLAYER_OFFSET() { return 0x1E1510; }
+
+using RevivePlayer_t = void(__fastcall*)(PlayerActorData* actorData, uint8 gorb);
+
+static void CallRevivePlayer(PlayerActorData& actorData, uint8 isGorb) {
+	// Fire Mode 8 is Charged Shot, Fire Mode is 0 is normal shot
+	auto revivePlayer = reinterpret_cast<RevivePlayer_t>(appBaseAddr + REVIVE_PLAYER_OFFSET());
+	if (!revivePlayer) {
+		return;
+	}
+	revivePlayer(&actorData, isGorb);
+}
+
+bool isPlayerDead(uint8 playerIndex) {
+	if (!InGame())
+		return false;
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+
+	if (!activeNewActorData.baseAddr) {
+		return false;
+	}
+	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+	return activeActorData.dead;
+}
+
+void RevivePlayer(uint8 playerIndex) {
+	Log("Calling Revive Player");
+	if (!InGame())
+		return;
+	if (!(activeConfig.Actor.playerCount > playerIndex)) {
+		DebugLog("%s playercount %u is lower than targeted player %u", FUNC_NAME, activeConfig.Actor.playerCount, playerIndex);
+		return;
+	}
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+	if (!activeNewActorData.baseAddr) {
+		Log("Invalid actor base address");
+		return;
+	}
+
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+	Log("Calling revive function!");
+	CrimsonGameplay::CallRevivePlayer(actorData, 1);
+}
+
 static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
 
 using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
