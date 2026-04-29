@@ -4208,6 +4208,7 @@ void CharacterSwitchController() {
     // static float hitPoints  [PLAYER_COUNT] = {};
     // static float magicPoints[PLAYER_COUNT] = {};
 
+    //candidate 1
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         auto& gamepad = GetGamepad(playerIndex);
 
@@ -4470,7 +4471,7 @@ void CharacterSwitchController() {
             }
         }
     }
-
+    //candidate 2
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount){old_for_all(uint8, characterIndex, CHARACTER_COUNT){
         old_for_all(uint8, entityIndex, ENTITY_COUNT){auto& playerData = GetPlayerData(playerIndex);
 
@@ -4667,6 +4668,7 @@ void CharacterSwitchController() {
         return;
     }
 
+    //Candidate 3
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
             old_for_all(uint8, entityIndex, ENTITY_COUNT) {
@@ -6609,7 +6611,7 @@ bool BelongsToPlayer(byte8* baseAddr) {
     if (!baseAddr) {
         return false;
     }
-
+    //candidate 4
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
             old_for_all(uint8, entityIndex, ENTITY_COUNT) {
@@ -6690,12 +6692,13 @@ dmc3.exe+1BADA0 - 48 8B D9 - mov rbx,rcx
 // @Research: Maybe prefer ModelData position.
 
 bool SetLockOnTargetPosition(byte8* dest) {
+    //candidate 5
     if (!dest || !activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return false;
     }
 
     auto baseAddr = (dest - offsetof(PlayerActorData, lockOnData.targetPosition));
-
+    //candidate 6
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
             old_for_all(uint8, entityIndex, ENTITY_COUNT) {
@@ -6768,6 +6771,7 @@ bool SetLockOnTargetPosition(byte8* dest) {
 }
 
 bool SetLockOnTargetPositionGUI(byte8* dest) {
+    //candidate 7
     if (!dest || !activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return false;
     }
@@ -6806,7 +6810,7 @@ uint32 GetHitPoints(uint32 value) {
     // {
     // 	return value;
     // }
-
+    //candidate 8
     if (!activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return value;
     }
@@ -6824,7 +6828,7 @@ uint32 GetHitPoints(uint32 value) {
 }
 
 uint32 GetMaxHitPoints(uint32 value) {
-
+    //candidate 9
     if (!activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return value;
     }
@@ -8198,7 +8202,26 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
     // Sky Launch needs to be called from here for maximum on tick speed so that its position is properly
     // applied in real-time. - Mia
-	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
+	//candidate 10 CONFIRM
+
+    auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+    auto pool_328 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+    if (!pool_328 || !pool_328[8]) {
+        return;
+    }
+    auto& eventData = *reinterpret_cast<EventData*>(pool_328[8]);
+    auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+    if (!pool_19337 || !pool_19337[1]) {
+        return;
+    }
+    auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+
+    uint8 playercount =
+        (activeConfig.Actor.playerCount == 1 &&
+            sessionData.mission == 19 &&
+            eventFlags[20] == 2) ? 2 : activeConfig.Actor.playerCount;
+
+    for (uint8 playerIndex = 0; playercount; ++playerIndex) {
 		auto& playerData = GetPlayerData(playerIndex);
 		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
@@ -9666,7 +9689,7 @@ void UpdateLockOns(byte8* dataAddr) {
                     return;
             }
     }*/
-
+    //candidate 11
     if (mainActorData.doppelganger || (activeConfig.Actor.playerCount > 1 || 
 		(activeConfig.Actor.playerCount == 1 &&
 			sessionData.mission == 19 &&
