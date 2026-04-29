@@ -7522,6 +7522,22 @@ void DebugSection() {
 
 		GUI_Checkbox2("Show Hitboxes", activeCrimsonGameplay.Debug.showHitboxes, queuedCrimsonGameplay.Debug.showHitboxes);
 
+		bool condition = (!InGame() || activeConfig.Actor.playerCount == 1);
+		GUI_PushDisable(condition);
+		for_each(players, 1, activeConfig.Actor.playerCount) {
+			bool isDead = CrimsonGameplay::CanBeRevived(players);
+			//GUI_PushDisable(!isDead);
+			std::string inputLabel = "Revive Player " + std::to_string(players + 1) + "##playerReviveLabel";
+			if (GUI_Button(inputLabel.c_str())) {
+				CrimsonGameplay::RevivePlayer(players);
+			}
+
+			//GUI_PopDisable(!isDead);
+		}
+
+
+
+		GUI_PopDisable(condition);
 		if (ImGui::Button("heheh")) {
 			CrimsonDetours::SampleModDetour1();
 		}
@@ -10406,22 +10422,6 @@ void TrainingSection() {
 			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
-			bool condition = (!InGame() || activeConfig.Actor.playerCount == 1);
-			GUI_PushDisable(condition);
-			for_each(players, 1, activeConfig.Actor.playerCount) {
-				bool isDead = CrimsonGameplay::CanBeRevived(players);
-				GUI_PushDisable(!isDead);
-				std::string inputLabel = "Revive Player " + std::to_string(players+1) + "##playerReviveLabel";
-				if (GUI_Button(inputLabel.c_str())){
-					CrimsonGameplay::RevivePlayer(players,false);
-				}
-
-				GUI_PopDisable(!isDead);
-			}
-
-
-
-			GUI_PopDisable(condition);
 			if (GUI_Checkbox2("Infinite Hit Points", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
 				ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
 			}
