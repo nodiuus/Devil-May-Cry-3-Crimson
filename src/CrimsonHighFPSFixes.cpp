@@ -15,6 +15,7 @@
 #include "CrimsonPatches.hpp"
 #include "CrimsonLDK.hpp"
 #include "Actor.hpp"
+#include "CrimsonHighFPSFixes.hpp"
 
 namespace CrimsonHighFPSFixes {
 
@@ -29,17 +30,19 @@ extern "C" {
 	std::uint64_t g_FixBlendingEffects_Mist_ReturnAddr1;
 	std::uint64_t g_FixBlendingEffects_Mist_ReturnAddr2;
 	std::uint64_t g_FixBlendingEffects_Mist_ReturnAddr3;
-	std::uint64_t g_FixBlendingEffects_Warp_ReturnAddr1;
-	std::uint64_t g_FixBlendingEffects_Warp_ReturnAddr2;
+	std::uint64_t g_MistBlendingEffect_SpdAddr1;
+	std::uint64_t g_MistBlendingEffect_SpdAddr2;
 	void FixBlendingEffect_Mist_Detour1();
 	void FixBlendingEffect_Mist_Detour2();
 	void FixBlendingEffect_Mist_Detour3();
+
+	std::uint64_t g_FixBlendingEffects_Warp_ReturnAddr1;
+	std::uint64_t g_FixBlendingEffects_Warp_ReturnAddr2;
 	void FixBlendingEffect_Warp_Detour1();
 	void FixBlendingEffect_Warp_Detour2();
 }
 
-
-void ToggleAllFixes(bool enable) {
+void BlendingEffectsSpeedFixes(bool enable) {
 	using namespace Utility;
 
 	static bool run = false;
@@ -52,19 +55,21 @@ void ToggleAllFixes(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> FixMistHook1 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x31AF16, &FixBlendingEffect_Mist_Detour1, 8);
 	g_FixBlendingEffects_Mist_ReturnAddr1 = FixMistHook1->GetReturnAddress();
-	FixMistHook1->Toggle(false);
+	g_MistBlendingEffect_SpdAddr1 = (uintptr_t)appBaseAddr + 0x507CA8;
+	FixMistHook1->Toggle(enable);
 
 	// dmc3.exe+31AF0E - F3 0F 59 05 96 CD 1E 00   - mulss xmm0,[dmc3.exe+507CAC] { (0.00) }
 	static std::unique_ptr<Utility::Detour_t> FixMistHook2 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x31AF0E, &FixBlendingEffect_Mist_Detour2, 8);
 	g_FixBlendingEffects_Mist_ReturnAddr2 = FixMistHook2->GetReturnAddress();
-	FixMistHook2->Toggle(false);
+	g_MistBlendingEffect_SpdAddr2 = (uintptr_t)appBaseAddr + 0x507CAC;
+	FixMistHook2->Toggle(enable);
 
 	// dmc3.exe+31AF1E - F3 0F 59 35 86 CD 1E 00   - mulss xmm6,[dmc3.exe+507CAC] { (0.00) }
 	static std::unique_ptr<Utility::Detour_t> FixMistHook3 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x31AF1E, &FixBlendingEffect_Mist_Detour3, 8);
 	g_FixBlendingEffects_Mist_ReturnAddr3 = FixMistHook3->GetReturnAddress();
-	FixMistHook3->Toggle(false);
+	FixMistHook3->Toggle(enable);
 
 	// From UpdateBlendEffect_Warp_sub_14031A830:
 	// dmc3.exe+31A85A - 8B 46 20              - mov eax,[rsi+20]
@@ -72,8 +77,7 @@ void ToggleAllFixes(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> FixWarpHook1 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x31A85A, &FixBlendingEffect_Warp_Detour1, 5);
 	g_FixBlendingEffects_Warp_ReturnAddr1 = FixWarpHook1->GetReturnAddress();
-	FixWarpHook1->Toggle(false);
-
+	FixWarpHook1->Toggle(enable);
 
 	// From UpdateBlendEffect_Warp_sub_14031A830:
 	// dmc3.exe+31A862 - 8B 46 24              - mov eax,[rsi+24]
@@ -81,9 +85,15 @@ void ToggleAllFixes(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> FixWarpHook2 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x31A862, &FixBlendingEffect_Warp_Detour2, 6);
 	g_FixBlendingEffects_Warp_ReturnAddr2 = FixWarpHook2->GetReturnAddress();
-	FixWarpHook2->Toggle(false);
+	FixWarpHook2->Toggle(enable);
 
 	run = enable;
 }
+
+
+void ToggleAllFixes(bool enable) {
+	BlendingEffectsSpeedFixes(enable);
+}
+
 
 }

@@ -5,7 +5,6 @@
 
 namespace CrimsonHighFPSFixes {
 
-void EnemyAIMultiplayerTargettingDetours(bool enable);
-uintptr_t EnemyTargetPlayerSelection(const glm::vec3& enemyPosition, bool hasValidEnemyPosition, uintptr_t defaultPlayerAddr);
 
+	void ToggleAllFixes(bool enable);
 }

@@ -40,6 +40,7 @@
 #include "CrimsonFileHandling.hpp"
 #include "CrimsonGameModes.hpp"
 #include "UI/WeaponWheel.hpp"
+#include "CrimsonHighFPSFixes.hpp"
 
 
 
@@ -185,6 +186,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         ToggleDamage(true);
 
         UpdateCrazyComboLevelMultiplier();
+        CrimsonHighFPSFixes::ToggleAllFixes(true);
 
         ToggleAirHikeCoreAbility(activeCrimsonGameplay.Gameplay.Dante.airHikeCoreAbility);
         CrimsonPatches::ToggleRoyalguardForceJustFrameRelease(activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease);
