@@ -14,6 +14,7 @@ set(MASM_SRC
     masm/TurnRateFix.asm
     masm/GuardBreakToNormalBlock.asm
     masm/FixBallsHangHitSpeed.asm
+    masm/FixBlendingEffects.asm
     masm/FixCrashArkhamPt2Doppel.asm
     masm/FixCrashArkhamPt2Grab.asm
     masm/FixCrashCerberus.asm
@@ -156,6 +157,8 @@ file(GLOB MAIN_SRC
     CrimsonGameplay.hpp
     CrimsonGUI.cpp
     CrimsonGUI.hpp
+    CrimsonHighFPSFixes.cpp
+    CrimsonHighFPSFixes.hpp
     CrimsonHUD.cpp
     CrimsonHUD.hpp
     CrimsonLDK.cpp
