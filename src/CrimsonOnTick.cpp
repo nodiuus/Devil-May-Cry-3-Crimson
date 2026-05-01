@@ -29,6 +29,7 @@
 #include "DMC3Input.hpp"
 #include "CrimsonGameModes.hpp"
 #include "CrimsonCameraController.hpp"
+#include "CrimsonHighFPSFixes.hpp"
 
 
 namespace CrimsonOnTick {
@@ -1936,6 +1937,7 @@ void TriggerOnTickFuncs() {
 	// These functions run OnTick globally (in game and in menus) through Game Thread
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
+	CrimsonHighFPSFixes::ClothPhysicsFixesController();
 	CrimsonOnTick::InCreditsDetection();
 	CrimsonOnTick::WeaponProgressionTracking();
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();

@@ -14,6 +14,13 @@ EXTERN g_FixClothPhysics_ReturnAddr8:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr9:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr10:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr11:QWORD
+EXTERN g_FixClothPhysics_ReturnAddr12:QWORD
+EXTERN g_FixClothPhysics_ReturnAddr13:QWORD
+EXTERN g_FixClothPhysics_ReturnAddr14:QWORD
+
+newRelaxation dd 1.0f
+velocityThresholdSq dd 3.0f    ; squared velocity threshold (0.01^2) - only apply relaxation when cloth is moving faster than this
+applyRelaxation dd 1              ; flag: 1 = apply relaxation, 0 = skip (computed by Detour11, read by Detour12/13/14)
 
 .CODE
 FixClothPhysicsDetour1 PROC
@@ -92,7 +99,7 @@ FixClothPhysicsDetour5 ENDP
 
 .CODE
 FixClothPhysicsDetour6 PROC
-
+    
 ApplyFPSMultiplier:
     mulss xmm1, dword ptr [g_FrameRateTimeMultiplier]
 
@@ -178,9 +185,78 @@ OriginalCode:
 ApplyFPSMultiplier:
     mulss xmm9, dword ptr [g_FrameRateTimeMultiplier]
 
+    ; Compute velocity magnitude check here (once per cloth update)
+    ; xmm10/xmm11/xmm12 = velocity (from [rsi+250h]/[rsi+254h]/[rsi+258h])
+    movaps xmm0, xmm10
+    mulss  xmm0, xmm10
+    movaps xmm1, xmm11
+    mulss  xmm1, xmm11
+    addss  xmm0, xmm1
+    movaps xmm1, xmm12
+    mulss  xmm1, xmm12
+    addss  xmm0, xmm1
+    comiss xmm0, dword ptr [velocityThresholdSq]
+    jbe    SetSkipFlag11
+    mov dword ptr [applyRelaxation], 1
+    jmp Done11
+SetSkipFlag11:
+    mov dword ptr [applyRelaxation], 0
+Done11:
+
     jmp qword ptr [g_FixClothPhysics_ReturnAddr11]
 
 FixClothPhysicsDetour11 ENDP
+
+.CODE
+FixClothPhysicsDetour12 PROC
+
+    cmp dword ptr [applyRelaxation], 0
+    je   SkipRelaxation12
+
+ApplyNewRelaxationMultiplier:
+    mulss xmm10, dword ptr [newRelaxation]
+
+SkipRelaxation12:
+OriginalCode:
+    addss xmm6,xmm10
+    jmp qword ptr [g_FixClothPhysics_ReturnAddr12]
+
+FixClothPhysicsDetour12 ENDP
+
+
+.CODE
+FixClothPhysicsDetour13 PROC
+
+    cmp dword ptr [applyRelaxation], 0
+    je   SkipRelaxation
+
+ApplyNewRelaxationMultiplier:
+    mulss xmm11, dword ptr [newRelaxation]
+
+SkipRelaxation:
+OriginalCode:
+    addss xmm7,xmm11
+    jmp qword ptr [g_FixClothPhysics_ReturnAddr13]
+
+FixClothPhysicsDetour13 ENDP
+
+
+.CODE
+FixClothPhysicsDetour14 PROC
+
+    cmp dword ptr [applyRelaxation], 0
+    je   SkipRelaxation
+
+ApplyNewRelaxationMultiplier:
+    mulss xmm12, dword ptr [newRelaxation]
+
+SkipRelaxation:
+OriginalCode:
+    addss xmm8,xmm12
+    jmp qword ptr [g_FixClothPhysics_ReturnAddr14]
+
+
+FixClothPhysicsDetour14 ENDP
 
 
 END

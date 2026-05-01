@@ -54,6 +54,9 @@ extern "C" {
 	void FixClothPhysicsDetour9();
 	void FixClothPhysicsDetour10();
 	void FixClothPhysicsDetour11();
+	void FixClothPhysicsDetour12();
+	void FixClothPhysicsDetour13();
+	void FixClothPhysicsDetour14();
 	
 	std::uint64_t g_FixClothPhysics_ReturnAddr1;
 	std::uint64_t g_FixClothPhysics_ReturnAddr2;
@@ -66,6 +69,9 @@ extern "C" {
 	std::uint64_t g_FixClothPhysics_ReturnAddr9;
 	std::uint64_t g_FixClothPhysics_ReturnAddr10;
 	std::uint64_t g_FixClothPhysics_ReturnAddr11;
+	std::uint64_t g_FixClothPhysics_ReturnAddr12;
+	std::uint64_t g_FixClothPhysics_ReturnAddr13;
+	std::uint64_t g_FixClothPhysics_ReturnAddr14;
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -132,7 +138,7 @@ void ClothPhysicsFixes(bool enable) {
 	g_FixClothPhysics_ReturnAddr1 = ClothPhysicsHook1->GetReturnAddress();
 	ClothPhysicsHook1->Toggle(enable);
 
-	// dmc3.exe+2C9572 - F3 0F 59 96 58 02 00 00   - mulss xmm2,[rsi+00000258] -- try7 - 8
+	// dmc3.exe+2C9572 - F3 0F 59 96 58 02 00 00   - mulss xmm2,[rsi+00000258] { wind simulation } -- try7 - 8
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook2 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2C9572, &FixClothPhysicsDetour2, 8);
 	g_FixClothPhysics_ReturnAddr2 = ClothPhysicsHook2->GetReturnAddress();
@@ -193,14 +199,39 @@ void ClothPhysicsFixes(bool enable) {
 	g_FixClothPhysics_ReturnAddr11 = ClothPhysicsHook11->GetReturnAddress();
 	ClothPhysicsHook11->Toggle(enable);
 
+	// dmc3.exe+2C9ADA - F3 41 0F 58 F2         - addss xmm6,xmm10 { Cloth relaxation 1 } -- try7 - 35
+	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook12 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2C9ADA, &FixClothPhysicsDetour12, 5);
+	g_FixClothPhysics_ReturnAddr12 = ClothPhysicsHook12->GetReturnAddress();
+	ClothPhysicsHook12->Toggle(enable);
+
+	// dmc3.exe+2C9AE5 - F3 41 0F 58 FB         - addss xmm7,xmm11 { cloth relaxation 2 } -- try7 - 36
+	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook13 =
+		std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x2C9AE5, &FixClothPhysicsDetour13, 5);
+	g_FixClothPhysics_ReturnAddr13 = ClothPhysicsHook13->GetReturnAddress();
+	ClothPhysicsHook13->Toggle(enable);
+
+	// dmc3.exe+2C9AF9 - F3 45 0F 58 C4         - addss xmm8,xmm12 { cloth relaxation 3 } -- try7 - 37
+	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook14 =
+		std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x2C9AF9, &FixClothPhysicsDetour14, 5);
+	g_FixClothPhysics_ReturnAddr14 = ClothPhysicsHook14->GetReturnAddress();
+	ClothPhysicsHook14->Toggle(enable);
 
 	run = enable;
+}
+
+void ClothPhysicsFixesController() {
+	if (g_FrameRate >= 58.0f && g_FrameRate <= 62.0f) {
+		ClothPhysicsFixes(false);
+	}
+	else {
+		ClothPhysicsFixes(true);
+	}
 }
 
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
-	ClothPhysicsFixes(enable);
 }
 
 

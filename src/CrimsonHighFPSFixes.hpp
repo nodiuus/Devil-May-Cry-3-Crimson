@@ -5,6 +5,6 @@
 
 namespace CrimsonHighFPSFixes {
 
-
+	void ClothPhysicsFixesController();
 	void ToggleAllFixes(bool enable);
 }
