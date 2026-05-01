@@ -15,6 +15,7 @@ set(MASM_SRC
     masm/GuardBreakToNormalBlock.asm
     masm/FixBallsHangHitSpeed.asm
     masm/FixBlendingEffects.asm
+    masm/FixClothPhysics.asm
     masm/FixCrashArkhamPt2Doppel.asm
     masm/FixCrashArkhamPt2Grab.asm
     masm/FixCrashCerberus.asm

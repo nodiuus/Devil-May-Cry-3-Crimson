@@ -2925,7 +2925,7 @@ struct ModelData {
         _(244);
         bool init; // 0x690
         _(35);
-        float timer[2]; // 0x6B4
+		float timer[2]; // 0x6B4 //upperBodyFrame and lowerBodyFrame are here
     } Motion;           // 0x500
     _(196);
 };
