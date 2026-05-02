@@ -2559,7 +2559,13 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
 
 	auto& selectedCharacter = characterData.character;
 	if (arkham2Actor) {
-		selectedCharacter = (uint8)CHARACTER::VERGIL;
+        if (arkhamFightData.dantePartner) {
+            selectedCharacter = (uint8)CHARACTER::DANTE;
+        }
+        else {
+            selectedCharacter = (uint8)CHARACTER::VERGIL;
+        }
+		
 	}
 
     //auto actorBaseAddr = CreatePlayerCharFunc(selectedCharacter, 0, false);
@@ -2725,7 +2731,16 @@ byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex, bo
     Log("character %u", characterData.character);
 
     if (arkham2Actor) {
-        actorBaseAddr = CreatePlayerActor<PlayerActorDataVergil>(playerIndex, characterIndex, entityIndex, true);
+        if (arkhamFightData.dantePartner) {
+            actorBaseAddr = CreatePlayerActor<PlayerActorDataDante>(playerIndex, characterIndex, entityIndex, true);
+
+        }
+        else {
+            actorBaseAddr = CreatePlayerActor<PlayerActorDataVergil>(playerIndex, characterIndex, entityIndex, true);
+
+        }
+        
+        
     } else {
 		switch (characterData.character) {
 		case CHARACTER::DANTE:
@@ -2894,8 +2909,7 @@ void SpawnActors() {
 
     // CCS Arkham 2 Actor
     if (activeConfig.Actor.playerCount == 1 &&
-        sessionData.mission == 19 &&
-        eventFlags[20] == 2) {
+        arkhamFightData.fightActive) {
         auto actorBaseAddr = SpawnActor(1, 0, ENTITY::MAIN, true);
 		if (!actorBaseAddr) {
 			Log("SpawnActor failed.");
@@ -2904,15 +2918,15 @@ void SpawnActors() {
 		}
         auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
         actorData.cloneActorBaseAddr = SpawnActor(1, 0, ENTITY::CLONE);
-		activeConfig.Actor.playerCount = 2;
+		//activeConfig.Actor.playerCount = 2;
     }
 
     // Set playerCount to 1 back
-    if (activeConfig.Actor.playerCount == 2 &&
-        queuedConfig.Actor.playerCount == 1 &&
-		eventData.room != ROOM::UNSACRED_HELLGATE_2) {
-        activeConfig.Actor.playerCount = 1;
-    }
+   // if (activeConfig.Actor.playerCount == 2 &&
+   //     queuedConfig.Actor.playerCount == 1 &&
+	//	eventData.room != ROOM::UNSACRED_HELLGATE_2) {
+    //    activeConfig.Actor.playerCount = 1;
+    //}
 
 }
 
@@ -8305,8 +8319,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
     uint8 playercount =
         (activeConfig.Actor.playerCount == 1 &&
-            sessionData.mission == 19 &&
-            eventFlags[20] == 2) ? 2 : activeConfig.Actor.playerCount;
+            arkhamFightData.fightActive) ? 2 : activeConfig.Actor.playerCount;
 
     for (uint8 playerIndex = 0; playerIndex < playercount; ++playerIndex) {
 		auto& playerData = GetPlayerData(playerIndex);

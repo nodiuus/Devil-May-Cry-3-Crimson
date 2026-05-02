@@ -513,7 +513,13 @@ namespace CrimsonBetterArkham2 {
 				arkhamFightData.nextFightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
 				arkhamFightData.fightEnding = false;
 				//spawn our own arkham
-
+				auto& characterData = GetActiveCharacterData(0, 0, 0);
+				if (activeConfig.Actor.playerCount == 1 && characterData.character == CHARACTER::VERGIL) {
+					arkhamFightData.dantePartner = true;
+				}
+				else {
+					arkhamFightData.dantePartner = false;
+				}
 				//configure actors here
 				//suprise dante/vergil time
 				//if (queuedConfig.Actor.playerCount == 1) {
