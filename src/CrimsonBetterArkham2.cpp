@@ -184,7 +184,7 @@ namespace CrimsonBetterArkham2 {
 			//this decrements arkham's health so his HP bar goes down throughout the boss rush 
 			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham > arkhamHealthCheckpoints[fightPhase])
 				enemyData.hitPointsArkham = arkhamHealthCheckpoints[fightPhase];
-				enemyData.healthGateHitPointsArkham = arkhamHealthCheckpoints[fightPhase];
+				enemyData.healthGateHitPointsArkham = arkhamHealthGates[fightPhase];
 
 			//whenever arkham dives and sends out the dolphins, we don't fight them and advance to boss rush phase.
 			//don't do this if phase 7 tho or the fight just ends
@@ -195,8 +195,17 @@ namespace CrimsonBetterArkham2 {
 			//			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham < arkhamHealthGates[fightPhase] && fightActive)
 			//			return true;
 			//new code utilizing the arkham health gate mechanic
-			if (enemyData.enemy == ENEMY::ARKHAM && (enemyData.healthGateHitPointsArkham - enemyData.hitPointsArkham > 3000.0f || enemyData.hitPointsArkham< 1.0f)   && fightActive)
-				return true;
+			if (enemyData.enemy == ENEMY::ARKHAM
+				&& fightActive) 
+			{
+				//if arkham's health is 3k less than the dolphin summoning phase, manually advance phase. Don't do this in the vanilla fight
+				if ((enemyData.healthGateHitPointsArkham - enemyData.hitPointsArkham > 3000.0f) && fightPhase != PHASE_VANILLA)
+					return true;
+				//if his HP hits 0, always advance the phase
+				if (enemyData.hitPointsArkham < 1.0f)
+					return true;
+			}
+
 
 		};
 		return false;
