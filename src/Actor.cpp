@@ -8308,7 +8308,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
             sessionData.mission == 19 &&
             eventFlags[20] == 2) ? 2 : activeConfig.Actor.playerCount;
 
-    for (uint8 playerIndex = 0; playercount; ++playerIndex) {
+    for (uint8 playerIndex = 0; playerIndex < playercount; ++playerIndex) {
 		auto& playerData = GetPlayerData(playerIndex);
 		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
