@@ -17,10 +17,13 @@ EXTERN g_FixClothPhysics_ReturnAddr11:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr12:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr13:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr14:QWORD
+EXTERN g_FixClothPhysics_ReturnAddr15:QWORD
+EXTERN g_FixClothPhysics_RigidnessDanteCoatCall:QWORD
 
-newRelaxation dd 1.0f
-velocityThresholdSq dd 3.0f    ; squared velocity threshold (0.01^2) - only apply relaxation when cloth is moving faster than this
-applyRelaxation dd 1              ; flag: 1 = apply relaxation, 0 = skip (computed by Detour11, read by Detour12/13/14)
+newRelaxation dd 0.58f
+velocityThresholdSq dd 3.2f    ; squared velocity threshold - only apply relaxation when cloth is moving faster than this
+constOne dd 1.0f               ; constant 1.0 for identity multiplier
+EXTERN g_ClothPhysicsEnhancementEnabled:DWORD
 
 .CODE
 FixClothPhysicsDetour1 PROC
@@ -185,8 +188,13 @@ OriginalCode:
 ApplyFPSMultiplier:
     mulss xmm9, dword ptr [g_FrameRateTimeMultiplier]
 
-    ; Compute velocity magnitude check here (once per cloth update)
+    ; Only compute per-cloth relaxation multiplier when enhancement is enabled
+    cmp dword ptr [g_ClothPhysicsEnhancementEnabled], 0
+    je   Done11
+
+    ; Compute per-cloth relaxation multiplier based on velocity magnitude
     ; xmm10/xmm11/xmm12 = velocity (from [rsi+250h]/[rsi+254h]/[rsi+258h])
+    ; Store result at [rsi+25Ch] for Detour12/13/14
     movaps xmm0, xmm10
     mulss  xmm0, xmm10
     movaps xmm1, xmm11
@@ -196,11 +204,13 @@ ApplyFPSMultiplier:
     mulss  xmm1, xmm12
     addss  xmm0, xmm1
     comiss xmm0, dword ptr [velocityThresholdSq]
-    jbe    SetSkipFlag11
-    mov dword ptr [applyRelaxation], 1
-    jmp Done11
-SetSkipFlag11:
-    mov dword ptr [applyRelaxation], 0
+    jbe    SetOne11
+    movss  xmm0, dword ptr [newRelaxation]
+    movss  dword ptr [rsi+25Ch], xmm0
+    jmp    Done11
+SetOne11:
+    movss  xmm0, dword ptr [constOne]
+    movss  dword ptr [rsi+25Ch], xmm0
 Done11:
 
     jmp qword ptr [g_FixClothPhysics_ReturnAddr11]
@@ -210,13 +220,8 @@ FixClothPhysicsDetour11 ENDP
 .CODE
 FixClothPhysicsDetour12 PROC
 
-    cmp dword ptr [applyRelaxation], 0
-    je   SkipRelaxation12
+    mulss xmm10, dword ptr [rsi+25Ch]
 
-ApplyNewRelaxationMultiplier:
-    mulss xmm10, dword ptr [newRelaxation]
-
-SkipRelaxation12:
 OriginalCode:
     addss xmm6,xmm10
     jmp qword ptr [g_FixClothPhysics_ReturnAddr12]
@@ -227,13 +232,8 @@ FixClothPhysicsDetour12 ENDP
 .CODE
 FixClothPhysicsDetour13 PROC
 
-    cmp dword ptr [applyRelaxation], 0
-    je   SkipRelaxation
+    mulss xmm11, dword ptr [rsi+25Ch]
 
-ApplyNewRelaxationMultiplier:
-    mulss xmm11, dword ptr [newRelaxation]
-
-SkipRelaxation:
 OriginalCode:
     addss xmm7,xmm11
     jmp qword ptr [g_FixClothPhysics_ReturnAddr13]
@@ -244,19 +244,34 @@ FixClothPhysicsDetour13 ENDP
 .CODE
 FixClothPhysicsDetour14 PROC
 
-    cmp dword ptr [applyRelaxation], 0
-    je   SkipRelaxation
+    mulss xmm12, dword ptr [rsi+25Ch]
 
-ApplyNewRelaxationMultiplier:
-    mulss xmm12, dword ptr [newRelaxation]
-
-SkipRelaxation:
 OriginalCode:
     addss xmm8,xmm12
     jmp qword ptr [g_FixClothPhysics_ReturnAddr14]
 
 
 FixClothPhysicsDetour14 ENDP
+
+
+.CODE
+FixClothPhysicsDetour15 PROC
+    cmp rsi, 1000h
+    jna OriginalCode
+    push rax
+    mov rax, [rsi+03E00h] ; playeractor event
+    cmp al, 3 ; is player walking?
+    pop rax
+    je OriginalCode
+    ; Skip the rigidness call
+    jmp qword ptr [g_FixClothPhysics_ReturnAddr15]
+
+OriginalCode:
+    call qword ptr [g_FixClothPhysics_RigidnessDanteCoatCall] 
+    jmp qword ptr [g_FixClothPhysics_ReturnAddr15]
+
+
+FixClothPhysicsDetour15 ENDP
 
 
 END

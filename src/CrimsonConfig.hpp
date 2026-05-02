@@ -400,6 +400,16 @@ struct CrimsonConfig {
 		}
 	} SFX;
 
+	struct Visual {
+		bool clothPhysicsEnhancement = true;
+
+		static constexpr auto Metadata() {
+			return std::make_tuple(
+				std::make_pair("clothPhysicsEnhancement", &Visual::clothPhysicsEnhancement)
+			);
+		}
+	} Visual;
+
 	struct Sound {
 		uint8 channelVolumes[CHANNEL::MAX] = {
 			100,
@@ -695,6 +705,7 @@ struct CrimsonConfig {
             std::make_pair("StyleSwitchFX", &CrimsonConfig::StyleSwitchFX),
 			std::make_pair("VFX", &CrimsonConfig::VFX),
             std::make_pair("SFX", &CrimsonConfig::SFX),
+			std::make_pair("Visual", &CrimsonConfig::Visual),
 			std::make_pair("Sound", &CrimsonConfig::Sound),
 			std::make_pair("PlayerProperties", &CrimsonConfig::PlayerProperties),
 			std::make_pair("System", &CrimsonConfig::System),

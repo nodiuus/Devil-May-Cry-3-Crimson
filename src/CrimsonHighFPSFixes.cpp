@@ -57,6 +57,7 @@ extern "C" {
 	void FixClothPhysicsDetour12();
 	void FixClothPhysicsDetour13();
 	void FixClothPhysicsDetour14();
+	void FixClothPhysicsDetour15();
 	
 	std::uint64_t g_FixClothPhysics_ReturnAddr1;
 	std::uint64_t g_FixClothPhysics_ReturnAddr2;
@@ -72,6 +73,12 @@ extern "C" {
 	std::uint64_t g_FixClothPhysics_ReturnAddr12;
 	std::uint64_t g_FixClothPhysics_ReturnAddr13;
 	std::uint64_t g_FixClothPhysics_ReturnAddr14;
+	std::uint64_t g_FixClothPhysics_ReturnAddr15;
+
+	std::uint64_t g_FixClothPhysics_RigidnessDanteCoatCall;
+
+	// Flag read by Detour11 to conditionally skip velocity computation
+	uint32_t g_ClothPhysicsEnhancementEnabled = 1;
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -199,6 +206,17 @@ void ClothPhysicsFixes(bool enable) {
 	g_FixClothPhysics_ReturnAddr11 = ClothPhysicsHook11->GetReturnAddress();
 	ClothPhysicsHook11->Toggle(enable);
 
+	run = enable;
+}
+
+void ClothPhysicsEnhancementFixes(bool enable) {
+	using namespace Utility;
+
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
 	// dmc3.exe+2C9ADA - F3 41 0F 58 F2         - addss xmm6,xmm10 { Cloth relaxation 1 } -- try7 - 35
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook12 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2C9ADA, &FixClothPhysicsDetour12, 5);
@@ -217,16 +235,31 @@ void ClothPhysicsFixes(bool enable) {
 	g_FixClothPhysics_ReturnAddr14 = ClothPhysicsHook14->GetReturnAddress();
 	ClothPhysicsHook14->Toggle(enable);
 
+	// From UpdateCPlDanteCoat_sub_140212070:
+	// dmc3.exe+2120BF - E8 FC 7C 0B 00           - call dmc3.RigidnessCPlPlayerCoat_sub_1402C9DC0
+	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook15 =
+		std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x2120BF, &FixClothPhysicsDetour15, 5);
+	g_FixClothPhysics_ReturnAddr15 = ClothPhysicsHook15->GetReturnAddress();
+	g_FixClothPhysics_RigidnessDanteCoatCall = (uintptr_t)appBaseAddr + 0x2C9DC0;
+	ClothPhysicsHook15->Toggle(enable);
+
 	run = enable;
 }
 
 void ClothPhysicsFixesController() {
-	if (g_FrameRate >= 58.0f && g_FrameRate <= 62.0f) {
-		ClothPhysicsFixes(false);
-	}
-	else {
+	// Always enable base cloth physics FPS fixes (detours 1-11) when above the 60 FPS range
+	if (g_FrameRate >= 65) {
 		ClothPhysicsFixes(true);
 	}
+	else {
+		ClothPhysicsFixes(false); // We disable it below the range because it makes cloth physics stiffen at lower frame rates.
+	}
+
+	// Set the flag for Detour11's velocity computation
+	g_ClothPhysicsEnhancementEnabled = activeCrimsonConfig.Visual.clothPhysicsEnhancement ? 1 : 0;
+
+	// Toggle per-particle relaxation detours (12-14) based on config setting
+	ClothPhysicsEnhancementFixes(activeCrimsonConfig.Visual.clothPhysicsEnhancement);
 }
 
 

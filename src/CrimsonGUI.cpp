@@ -11058,6 +11058,16 @@ void VisualSection(size_t defaultFontSize) {
 			}
 			ImGui::PopItemWidth();
 
+			ImGui::TableNextColumn();
+
+			ImGui::PushItemWidth(itemWidth * smallerComboMult);
+			GUI_Checkbox2("Refined Cloth Physics", activeCrimsonConfig.Visual.clothPhysicsEnhancement, queuedCrimsonConfig.Visual.clothPhysicsEnhancement);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Relaxes cloth physics slightly, giving them smoother and more natural movement,\n"
+					"also reduces Dante's coat weight. Can cause more clipping.");
+			}
+			ImGui::PopItemWidth();
+
             ImGui::TableNextRow(0, rowWidth * 0.1f);
             ImGui::TableNextColumn();
             
