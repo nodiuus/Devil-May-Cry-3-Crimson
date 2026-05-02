@@ -1,20 +1,20 @@
 #include "CrimsonBetterArkham2.hpp"
 #include "Sound.hpp"
 #include "CrimsonSDL.hpp"
-
+using namespace ARKHAM_MOD_FIGHT_PHASE;
 namespace CrimsonBetterArkham2 {
-	static bool fightActive{ false };
-	static bool fightEnding{ false };
-	enum {
-		PHASE_1, //arkham lobby 1
-		PHASE_2, //cerberus
-		PHASE_3,//arkham lobby 2
-		PHASE_4, //agni rudra
-		PHASE_5, //arkham lobby 3
-		PHASE_6, //beowulf
-		PHASE_7, //arkham lobby final
-		PHASE_VANILLA,
-	};
+	//static bool fightActive{ false };
+	//static bool fightEnding{ false };
+	//enum {
+	//	PHASE_1, //arkham lobby 1
+	//	PHASE_2, //cerberus
+	//	PHASE_3,//arkham lobby 2
+	//	PHASE_4, //agni rudra
+	//	PHASE_5, //arkham lobby 3
+	//	PHASE_6, //beowulf
+	//	PHASE_7, //arkham lobby final
+	//	PHASE_VANILLA,
+	//};
 	//when arkham drops below this point in a phase, he should move to next phase
 	float arkhamHealthGates[] = {7500.0f,0.0f,5000.0f,0.0f,2500,0.0f,1.0f,1.0f};
 
@@ -22,10 +22,10 @@ namespace CrimsonBetterArkham2 {
 	float arkhamHealthCheckpoints[] = { 9000.0f,0.0f,6000.0f,0.0f,3500.0f,0.0f,1000.0f,9000.0f};
 
 	//current phase of the fight
-	static int fightPhase{ CrimsonBetterArkham2::PHASE_1 };
+	//static int fightPhase{ CrimsonBetterArkham2::PHASE_1 };
 	//the queued next phase of the fight.
 	//due to the flow logic being done on tic, we need this variable to make sure we don't accidentally skip phases.
-	static int nextFightPhase{ CrimsonBetterArkham2::PHASE_1 };
+	//static int nextFightPhase{ CrimsonBetterArkham2::PHASE_1 };
 
 	vec4 spawnPosition{
 		.x = 0.0f,
@@ -86,8 +86,8 @@ namespace CrimsonBetterArkham2 {
 	/// </summary>
 	void Continue()
 	{
-		fightActive = false;
-		fightEnding = false;
+		arkhamFightData.fightActive = false;
+		arkhamFightData.fightEnding = false;
 		CrimsonPatches::DisableDoorsInstancing(false);
 		CrimsonDetours::ToggleHideAndMutePortals(false);
 		return;
@@ -130,7 +130,7 @@ namespace CrimsonBetterArkham2 {
 		//the logic here is weird, we check if fightActive is true even though we want to mute the music after the fight
 		//because this call happens before that variable updates. So if it's true it's about to be false. Get it?
 		if ((sessionData.mission == 19) 
-			&& (eventFlags[20] == 1) && (fightActive == true) &&
+			&& (eventFlags[20] == 1) && (arkhamFightData.fightActive == true) &&
 			(strcmp(filename, bossHelpers[BOSS::ARKHAM_PART_2].track) == 0)) {
 			return false;
 		}
@@ -162,8 +162,8 @@ namespace CrimsonBetterArkham2 {
 
 			CrimsonPatches::DisableDoorsInstancing(false);
 			CrimsonDetours::ToggleHideAndMutePortals(false);
-			fightActive = false;
-			fightEnding = false;
+			arkhamFightData.fightActive = false;
+			arkhamFightData.fightEnding = false;
 		return;
 	}
 
@@ -182,13 +182,13 @@ namespace CrimsonBetterArkham2 {
 			if (!enemyData.baseAddr) continue;
 
 			//this decrements arkham's health so his HP bar goes down throughout the boss rush 
-			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham > arkhamHealthCheckpoints[fightPhase])
-				enemyData.hitPointsArkham = arkhamHealthCheckpoints[fightPhase];
-				enemyData.healthGateHitPointsArkham = arkhamHealthGates[fightPhase];
+			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham > arkhamHealthCheckpoints[arkhamFightData.fightPhase])
+				enemyData.hitPointsArkham = arkhamHealthCheckpoints[arkhamFightData.fightPhase];
+				enemyData.healthGateHitPointsArkham = arkhamHealthGates[arkhamFightData.fightPhase];
 
 			//whenever arkham dives and sends out the dolphins, we don't fight them and advance to boss rush phase.
 			//don't do this if phase 7 tho or the fight just ends
-			if (enemyData.enemy == ENEMY::ARKHAM_LEECHES && fightActive && !(fightPhase == PHASE_7 || fightPhase == PHASE_VANILLA))
+			if (enemyData.enemy == ENEMY::ARKHAM_LEECHES && arkhamFightData.fightActive && !(arkhamFightData.fightPhase == PHASE_7 || arkhamFightData.fightPhase == PHASE_VANILLA))
 				return true;
 
 			//this health gate stops people from skipping phases 
@@ -196,10 +196,10 @@ namespace CrimsonBetterArkham2 {
 			//			return true;
 			//new code utilizing the arkham health gate mechanic
 			if (enemyData.enemy == ENEMY::ARKHAM
-				&& fightActive) 
+				&& arkhamFightData.fightActive)
 			{
 				//if arkham's health is 3k less than the dolphin summoning phase, manually advance phase. Don't do this in the vanilla fight
-				if ((enemyData.healthGateHitPointsArkham - enemyData.hitPointsArkham > 3000.0f) && fightPhase != PHASE_VANILLA)
+				if ((enemyData.healthGateHitPointsArkham - enemyData.hitPointsArkham > 3000.0f) && arkhamFightData.fightPhase != PHASE_VANILLA)
 					return true;
 				//if his HP hits 0, always advance the phase
 				if (enemyData.hitPointsArkham < 1.0f)
@@ -227,7 +227,7 @@ namespace CrimsonBetterArkham2 {
 			if (!enemyData.baseAddr) continue;
 
 			//advance to phase2:
-			if (enemyData.enemy == ENEMY::CERBERUS && enemyData.hitPointsCerberusTotal < 1.0f && fightActive)
+			if (enemyData.enemy == ENEMY::CERBERUS && enemyData.hitPointsCerberusTotal < 1.0f && arkhamFightData.fightActive)
 				return true;
 		};
 		return false;
@@ -247,7 +247,7 @@ namespace CrimsonBetterArkham2 {
 			if (!enemyData.baseAddr) continue;
 
 			//advance to phase2:
-			if (enemyData.enemy == ENEMY::BEOWULF && enemyData.hitPointsBeowulf < 1.0f && fightActive)
+			if (enemyData.enemy == ENEMY::BEOWULF && enemyData.hitPointsBeowulf < 1.0f && arkhamFightData.fightActive)
 				return true;
 		};
 		return false;
@@ -325,61 +325,61 @@ namespace CrimsonBetterArkham2 {
 				&& eventData.room == 421
 				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
 				&& eventFlags[20] == 2
-				&& CrimsonBetterArkham2::fightEnding) {
+				&& arkhamFightData.fightEnding) {
 				nextEventData.room = 421;
 				eventData.event = EVENT::TELEPORT;
 			}
 
 			//this ensures we don't accidentally get stuck in a teleport loop where we keep trying to exit a phase over and over
-			if (fightPhase != nextFightPhase)
+			if (arkhamFightData.fightPhase != arkhamFightData.nextFightPhase)
 				return;
-			if (!fightActive)
+			if (!arkhamFightData.fightActive)
 				return;
 			//move through phases.
-			switch (fightPhase) {
+			switch (arkhamFightData.fightPhase) {
 				//Fight begins, dante & vergil vs arkham
 			case PHASE_1:
 				if (isEndArkhamLobby(enemyVectorData))
-					nextFightPhase = PHASE_2;
+					arkhamFightData.nextFightPhase = PHASE_2;
 				break;
 				//cerberus arena, dante & vergil vs cerberus
 			case PHASE_2:
 				if (isEndCerberusPhase(enemyVectorData))
-					nextFightPhase = PHASE_3;
+					arkhamFightData.nextFightPhase = PHASE_3;
 				break;
 				//arkham lobby 2
 			case PHASE_3:
 				if (isEndArkhamLobby(enemyVectorData))
-					nextFightPhase = PHASE_4;
+					arkhamFightData.nextFightPhase = PHASE_4;
 				break;
 				//agni rudra fight
 			case PHASE_4:
 				if (isEndAgniRudraPhase(enemyVectorData))
-					nextFightPhase = PHASE_5;
+					arkhamFightData.nextFightPhase = PHASE_5;
 				break;
 				//arkham lobby 3
 			case PHASE_5:
 				if (isEndArkhamLobby(enemyVectorData))
-					nextFightPhase = PHASE_6;
+					arkhamFightData.nextFightPhase = PHASE_6;
 				break;
 				//beowulf fight
 			case PHASE_6:
 				if (isEndBeowulfPhase(enemyVectorData))
-					nextFightPhase = PHASE_7;
+					arkhamFightData.nextFightPhase = PHASE_7;
 				break;
 				//final arkham fight
 			case PHASE_7:
 				if (isEndArkhamLobby(enemyVectorData))
-					CrimsonBetterArkham2::fightEnding = true;
+					arkhamFightData.fightEnding = true;
 				break;
 			case PHASE_VANILLA:
 				if (isEndArkhamLobby(enemyVectorData))
-					CrimsonBetterArkham2::fightEnding = true;
+					arkhamFightData.fightEnding = true;
 				break;
 			}
 
-			if (fightPhase != nextFightPhase) {
-				switch (nextFightPhase) {
+			if (arkhamFightData.fightPhase != arkhamFightData.nextFightPhase) {
+				switch (arkhamFightData.nextFightPhase) {
 					//arkham phases
 				case PHASE_3:
 				case PHASE_5:
@@ -414,7 +414,7 @@ namespace CrimsonBetterArkham2 {
 				&& eventData.room == 421
 				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
 				&& eventFlags[20] == 2
-				&& CrimsonBetterArkham2::fightEnding) {
+				&& arkhamFightData.fightEnding) {
 				nextEventData.room = 421;
 				eventData.event = EVENT::TELEPORT;
 			}
@@ -425,7 +425,7 @@ namespace CrimsonBetterArkham2 {
 				auto& enemyData = *reinterpret_cast<EnemyActorData*>(enemy.baseAddr);
 				if (!enemyData.baseAddr) continue;
 
-				if (enemyData.enemy == 53 && enemyData.hitPointsArkham <= 1.0f && CrimsonBetterArkham2::fightEnding) {
+				if (enemyData.enemy == 53 && enemyData.hitPointsArkham <= 1.0f && arkhamFightData.fightEnding) {
 					CrimsonSDL::FadeOutMusic(100);
 				}
 			}
@@ -434,7 +434,7 @@ namespace CrimsonBetterArkham2 {
 				&& eventData.room == 421
 				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
 				&& eventFlags[20] == 2
-				&& CrimsonBetterArkham2::fightEnding) {
+				&& arkhamFightData.fightEnding) {
 				nextEventData.room = 421;
 				eventData.event = EVENT::TELEPORT;
 			}
@@ -464,7 +464,7 @@ namespace CrimsonBetterArkham2 {
 
 	void DebugGui() {
 		GUI_Checkbox("Debug fight ending",
-			CrimsonBetterArkham2::fightEnding);
+			arkhamFightData.fightEnding);
 	}
 
 	/// <summary>
@@ -501,14 +501,17 @@ namespace CrimsonBetterArkham2 {
 		DebugLog("event flag address %u", &eventFlags[20])
 		DebugLog("flags         %X", eventFlags[20]);
 
+		//get main character
+
+		
 		//Let's say we didn't fight arkham 2 and pretend we did. -Hitch 2025
 		if ((sessionData.mission == 19) && (nextEventData.room == 421)) {
 			if (eventFlags[20] == 1) {
 				eventFlags[20] = 2;
-				fightActive = true;
-				fightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
-				nextFightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
-				fightEnding = false;
+				arkhamFightData.fightActive = true;
+				arkhamFightData.fightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
+				arkhamFightData.nextFightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
+				arkhamFightData.fightEnding = false;
 				//spawn our own arkham
 
 				//configure actors here
@@ -535,10 +538,10 @@ namespace CrimsonBetterArkham2 {
 
 			//eventFlags[20] == 2 means the fight is still active, and fightEnding means we just beat arkham so do the sped up BoBfight now.
 			//when fightEnding isn't called, we need to skip this as we're doing boss rush stuff
-			else if (eventFlags[20] == 2 && fightEnding) {
+			else if (eventFlags[20] == 2 && arkhamFightData.fightEnding) {
 				eventFlags[20] = 1;
-				fightActive = false;
-				fightEnding = false;
+				arkhamFightData.fightActive = false;
+				arkhamFightData.fightEnding = false;
 				CrimsonPatches::EndBossFight(true);
 				CrimsonPatches::DisableDoorsInstancing(false);
 				CrimsonDetours::ToggleHideAndMutePortals(false);
@@ -579,41 +582,41 @@ namespace CrimsonBetterArkham2 {
 		//Spawn Enemies for the phases.
 
 		//Arkham
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && nextFightPhase == PHASE_1) {
-			fightPhase = PHASE_1;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_1) {
+			arkhamFightData.fightPhase = PHASE_1;
 			CreateEnemyActor(arkham2Data, 0);
 		}
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && nextFightPhase == PHASE_3) {
-			fightPhase = PHASE_3;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_3) {
+			arkhamFightData.fightPhase = PHASE_3;
 			CreateEnemyActor(arkham2Data, 0);
 		}
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && nextFightPhase == PHASE_5) {
-			fightPhase = PHASE_5;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_5) {
+			arkhamFightData.fightPhase = PHASE_5;
 			CreateEnemyActor(arkham2Data, 0);
 		}
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && nextFightPhase == PHASE_7) {
-			fightPhase = PHASE_7;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_7) {
+			arkhamFightData.fightPhase = PHASE_7;
 			CreateEnemyActor(arkham2Data, 0);
 		}
 
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && nextFightPhase == PHASE_VANILLA) {
-			fightPhase = PHASE_VANILLA;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_VANILLA) {
+			arkhamFightData.fightPhase = PHASE_VANILLA;
 			CreateEnemyActor(arkham2Data, 0);
 		}
 
 		//Cerb
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::ICE_GUARDIAN_REBORN) && eventFlags[20] == 2 && nextFightPhase == PHASE_2) {
-			fightPhase = PHASE_2;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::ICE_GUARDIAN_REBORN) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_2) {
+			arkhamFightData.fightPhase = PHASE_2;
 			CreateEnemyActor(cerbData, 0);
 		}
 		//Agni Rudra
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FIRESTORM_REBORN) && eventFlags[20] == 2 && nextFightPhase == PHASE_4) {
-			fightPhase = PHASE_4;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FIRESTORM_REBORN) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_4) {
+			arkhamFightData.fightPhase = PHASE_4;
 			CreateEnemyActor(agniRudraData, 0);
 		}
 		//Cerb
-		if (sessionData.mission == 19 && (nextEventData.room == ROOM::LIGHTBEAST_REBORN) && eventFlags[20] == 2 && nextFightPhase == PHASE_6) {
-			fightPhase = PHASE_6;
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::LIGHTBEAST_REBORN) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_6) {
+			arkhamFightData.fightPhase = PHASE_6;
 			CreateEnemyActor(beowulfData, 0);
 		}
 	}

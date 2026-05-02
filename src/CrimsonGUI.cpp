@@ -8640,7 +8640,14 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
             ImGui::Text("");
         }
-
+		if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2) {
+			[&]() {
+				ImGui::Text("Fight Phase        %u", arkhamFightData.fightPhase);
+				ImGui::Text("Next Fight Phase	%u", arkhamFightData.nextFightPhase);
+				ImGui::Text("Fight Active		%u", arkhamFightData.fightActive);
+				ImGui::Text("Fight Ending		%u", arkhamFightData.fightEnding);
+				}();
+		}
         if (activeConfig.debugOverlayData.showPosition) {
             [&]() {
                 auto pool_10213 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
