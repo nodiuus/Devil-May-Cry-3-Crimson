@@ -2543,7 +2543,7 @@ template <typename T> void UpdateWeapons(T& actorData) {
     UpdateRangedWeapon(actorData);
 }
 
-template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
+template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex, bool arkham2Actor = false) {
 
     auto& playerData    = GetPlayerData(playerIndex);
     auto& characterData = GetCharacterData(playerIndex, characterIndex, entityIndex);
@@ -2557,13 +2557,19 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
     auto& queuedMissionActorData = *reinterpret_cast<QueuedMissionActorData*>(name_3850 + 0xC0);
     auto& activeMissionActorData = *reinterpret_cast<ActiveMissionActorData*>(name_3850 + 0x16C);
 
+	auto& selectedCharacter = characterData.character;
+	if (arkham2Actor) {
+		selectedCharacter = (uint8)CHARACTER::VERGIL;
+	}
 
-    auto actorBaseAddr = CreatePlayerCharFunc_1DE820(characterData.character, 0, false);
+    //auto actorBaseAddr = CreatePlayerCharFunc(selectedCharacter, 0, false);
+    auto actorBaseAddr = CreatePlayerCharFunc_1DE820(selectedCharacter, 0, false);
     if (!actorBaseAddr) {
         return 0;
     }
     auto& actorData = *reinterpret_cast<T*>(actorBaseAddr);
 
+ 
 
     UpdateFileData(actorData);
 
@@ -2573,7 +2579,7 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
     actorData.lastShadow = 1;
     auto selectedCostume = (characterData.ignoreCostume) ? sessionData.costume : characterData.costume;
 
-    if (characterData.character == CHARACTER::DANTE &&
+    if (selectedCharacter == CHARACTER::DANTE &&
         (activeConfig.costumeRespectsProgression == 1 || activeConfig.costumeRespectsProgression == 2) && selectedCostume == 0) {
 
         if (sessionData.mission == 1) {
@@ -2583,7 +2589,7 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
         } else if (sessionData.mission >= 8) {
             actorData.costume = 2;
         }
-    } else if (characterData.character == CHARACTER::VERGIL && (activeConfig.costumeRespectsProgression == 2) && selectedCostume == 0) {
+    } else if (selectedCharacter == CHARACTER::VERGIL && (activeConfig.costumeRespectsProgression == 2) && selectedCostume == 0) {
 
         if (sessionData.mission == 1) {
             actorData.costume = 1;
@@ -2598,7 +2604,7 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
     // Necessary when for example character is Vergil and session character is Dante.
     // Since Dante has more costumes, the index could go out of range.
     {
-        auto character = characterData.character;
+        auto character = selectedCharacter;
         if (character >= CHARACTER::MAX) {
             character = 0;
         }
@@ -2651,7 +2657,7 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
     actorData.newForceFiles          = characterData.forceFiles;
     actorData.newForceFilesCharacter = characterData.forceFilesCharacter;
     actorData.newForceFilesCostume   = characterData.forceFilesCostume;
-    actorData.newGamepad             = playerIndex;
+    actorData.newGamepad             = arkham2Actor? 0 : playerIndex;
 
     if constexpr (TypeMatch<T, PlayerActorDataDante>::value) {
         UpdateActorDante(actorData);
@@ -2681,10 +2687,10 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
     UpdateStyle(actorData);
 
     if ((playerIndex == 0) && (characterIndex == playerData.activeCharacterIndex) && (entityIndex == ENTITY::MAIN)) {
-        HUD_UpdateStyleIcon(actorData.style, characterData.character);
-        HUD_UpdateDevilTriggerGauge(characterData.character);
-        HUD_UpdateDevilTriggerLightning(characterData.character);
-        HUD_UpdateDevilTriggerExplosion(characterData.character);
+        HUD_UpdateStyleIcon(actorData.style, selectedCharacter);
+        HUD_UpdateDevilTriggerGauge(selectedCharacter);
+        HUD_UpdateDevilTriggerLightning(selectedCharacter);
+        HUD_UpdateDevilTriggerExplosion(selectedCharacter);
     }
 
     InitWeapons(actorData);
@@ -2707,7 +2713,7 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
     return actorBaseAddr;
 }
 
-byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
+byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex, bool arkham2Actor = false) {
     byte8* actorBaseAddr = 0;
 
     auto& characterData = GetCharacterData(playerIndex, characterIndex, entityIndex);
@@ -2718,69 +2724,80 @@ byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
     Log("SpawnActor %u %u %u", playerIndex, characterIndex, entityIndex);
     Log("character %u", characterData.character);
 
-    switch (characterData.character) {
-    case CHARACTER::DANTE: {
-        actorBaseAddr = CreatePlayerActor<PlayerActorDataDante>(playerIndex, characterIndex, entityIndex);
+    if (arkham2Actor) {
+        actorBaseAddr = CreatePlayerActor<PlayerActorDataVergil>(playerIndex, characterIndex, entityIndex, true);
+    } else {
+		switch (characterData.character) {
+		case CHARACTER::DANTE:
+		{
+			actorBaseAddr = CreatePlayerActor<PlayerActorDataDante>(playerIndex, characterIndex, entityIndex);
 
-        break;
+			break;
+		}
+		case CHARACTER::BOB:
+		{
+			actorBaseAddr = CreatePlayerActor<PlayerActorDataBob>(playerIndex, characterIndex, entityIndex);
+
+			break;
+		}
+		case CHARACTER::LADY:
+		{
+			actorBaseAddr = CreatePlayerActor<PlayerActorDataLady>(playerIndex, characterIndex, entityIndex);
+
+			break;
+		}
+		case CHARACTER::VERGIL:
+		{
+			actorBaseAddr = CreatePlayerActor<PlayerActorDataVergil>(playerIndex, characterIndex, entityIndex);
+
+			break;
+		}
+		case CHARACTER::BOSS_LADY:
+		{
+			[&]() {
+				auto pool_4034 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+				if (!pool_4034 || !pool_4034[3]) {
+					return;
+				}
+				auto mainActorBaseAddr = pool_4034[3];
+				auto& mainActorData = *reinterpret_cast<PlayerActorData*>(mainActorBaseAddr);
+
+				CreateEnemyActorData data = {};
+
+				data.enemy = ENEMY::LADY;
+				data.position = mainActorData.position;
+				data.rotation = mainActorData.rotation;
+
+				actorBaseAddr = CreateEnemyActor(data, CreateEnemyActorFlags_Reset);
+				}();
+
+			break;
+		}
+		case CHARACTER::BOSS_VERGIL:
+		{
+			[&]() {
+				auto pool_4051 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+				if (!pool_4051 || !pool_4051[3]) {
+					return;
+				}
+				auto mainActorBaseAddr = pool_4051[3];
+				auto& mainActorData = *reinterpret_cast<PlayerActorData*>(mainActorBaseAddr);
+
+				CreateEnemyActorData data = {};
+
+				data.enemy = ENEMY::VERGIL;
+				data.variant = 2;
+				data.position = mainActorData.position;
+				data.rotation = mainActorData.rotation;
+
+				actorBaseAddr = CreateEnemyActor(data, CreateEnemyActorFlags_Reset);
+				}();
+
+			break;
+		}
+		}
     }
-    case CHARACTER::BOB: {
-        actorBaseAddr = CreatePlayerActor<PlayerActorDataBob>(playerIndex, characterIndex, entityIndex);
-
-        break;
-    }
-    case CHARACTER::LADY: {
-        actorBaseAddr = CreatePlayerActor<PlayerActorDataLady>(playerIndex, characterIndex, entityIndex);
-
-        break;
-    }
-    case CHARACTER::VERGIL: {
-        actorBaseAddr = CreatePlayerActor<PlayerActorDataVergil>(playerIndex, characterIndex, entityIndex);
-
-        break;
-    }
-    case CHARACTER::BOSS_LADY: {
-        [&]() {
-            auto pool_4034 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
-            if (!pool_4034 || !pool_4034[3]) {
-                return;
-            }
-            auto mainActorBaseAddr = pool_4034[3];
-            auto& mainActorData    = *reinterpret_cast<PlayerActorData*>(mainActorBaseAddr);
-
-            CreateEnemyActorData data = {};
-
-            data.enemy    = ENEMY::LADY;
-            data.position = mainActorData.position;
-            data.rotation = mainActorData.rotation;
-
-            actorBaseAddr = CreateEnemyActor(data, CreateEnemyActorFlags_Reset);
-        }();
-
-        break;
-    }
-    case CHARACTER::BOSS_VERGIL: {
-        [&]() {
-            auto pool_4051 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
-            if (!pool_4051 || !pool_4051[3]) {
-                return;
-            }
-            auto mainActorBaseAddr = pool_4051[3];
-            auto& mainActorData    = *reinterpret_cast<PlayerActorData*>(mainActorBaseAddr);
-
-            CreateEnemyActorData data = {};
-
-            data.enemy    = ENEMY::VERGIL;
-            data.variant  = 2;
-            data.position = mainActorData.position;
-            data.rotation = mainActorData.rotation;
-
-            actorBaseAddr = CreateEnemyActor(data, CreateEnemyActorFlags_Reset);
-        }();
-
-        break;
-    }
-    }
+    
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     newActorData.baseAddr = actorBaseAddr;
     auto newPlayerIndex = actorData.newPlayerIndex;
@@ -2828,6 +2845,18 @@ byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
 
 void SpawnActors() {
     LogFunction();
+    auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	auto pool_328 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_328 || !pool_328[8]) {
+        return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_328[8]);
+	auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+	if (!pool_19337 || !pool_19337[1]) {
+		return;
+	}
+    auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+    
 
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         auto& playerData = GetPlayerData(playerIndex);
@@ -2862,6 +2891,29 @@ void SpawnActors() {
             actorData.cloneActorBaseAddr = SpawnActor(playerIndex, characterIndex, ENTITY::CLONE);
         }
     }
+
+    // CCS Arkham 2 Actor
+    if (activeConfig.Actor.playerCount == 1 &&
+        sessionData.mission == 19 &&
+        eventFlags[20] == 2) {
+        auto actorBaseAddr = SpawnActor(1, 0, ENTITY::MAIN, true);
+		if (!actorBaseAddr) {
+			Log("SpawnActor failed.");
+
+			return;
+		}
+        auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+        actorData.cloneActorBaseAddr = SpawnActor(1, 0, ENTITY::CLONE);
+		activeConfig.Actor.playerCount = 2;
+    }
+
+    // Set playerCount to 1 back
+    if (activeConfig.Actor.playerCount == 2 &&
+        queuedConfig.Actor.playerCount == 1 &&
+		eventData.room != ROOM::UNSACRED_HELLGATE_2) {
+        activeConfig.Actor.playerCount = 1;
+    }
+
 }
 
 #pragma endregion
@@ -4236,6 +4288,7 @@ void CharacterSwitchController() {
     // static float hitPoints  [PLAYER_COUNT] = {};
     // static float magicPoints[PLAYER_COUNT] = {};
 
+    //candidate 1
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         auto& gamepad = GetGamepad(playerIndex);
 
@@ -4515,7 +4568,7 @@ void CharacterSwitchController() {
             }
         }
     }
-
+    //candidate 2
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount){old_for_all(uint8, characterIndex, CHARACTER_COUNT){
         old_for_all(uint8, entityIndex, ENTITY_COUNT){auto& playerData = GetPlayerData(playerIndex);
 
@@ -4724,6 +4777,7 @@ void CharacterSwitchController() {
         return;
     }
 
+    //Candidate 3
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
             old_for_all(uint8, entityIndex, ENTITY_COUNT) {
@@ -6666,7 +6720,7 @@ bool BelongsToPlayer(byte8* baseAddr) {
     if (!baseAddr) {
         return false;
     }
-
+    //candidate 4
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
             old_for_all(uint8, entityIndex, ENTITY_COUNT) {
@@ -6747,12 +6801,13 @@ dmc3.exe+1BADA0 - 48 8B D9 - mov rbx,rcx
 // @Research: Maybe prefer ModelData position.
 
 bool SetLockOnTargetPosition(byte8* dest) {
+    //candidate 5
     if (!dest || !activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return false;
     }
 
     auto baseAddr = (dest - offsetof(PlayerActorData, lockOnData.targetPosition));
-
+    //candidate 6
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
             old_for_all(uint8, entityIndex, ENTITY_COUNT) {
@@ -6825,6 +6880,7 @@ bool SetLockOnTargetPosition(byte8* dest) {
 }
 
 bool SetLockOnTargetPositionGUI(byte8* dest) {
+    //candidate 7
     if (!dest || !activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return false;
     }
@@ -6863,7 +6919,7 @@ uint32 GetHitPoints(uint32 value) {
     // {
     // 	return value;
     // }
-
+    //candidate 8
     if (!activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return value;
     }
@@ -6881,7 +6937,7 @@ uint32 GetHitPoints(uint32 value) {
 }
 
 uint32 GetMaxHitPoints(uint32 value) {
-
+    //candidate 9
     if (!activeConfig.enablePVPFixes || (activeConfig.Actor.playerCount < 2)) {
         return value;
     }
@@ -8233,7 +8289,26 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
     // Sky Launch needs to be called from here for maximum on tick speed so that its position is properly
     // applied in real-time. - Mia
-	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
+	//candidate 10 CONFIRM
+
+    auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+    auto pool_328 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+    if (!pool_328 || !pool_328[8]) {
+        return;
+    }
+    auto& eventData = *reinterpret_cast<EventData*>(pool_328[8]);
+    auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+    if (!pool_19337 || !pool_19337[1]) {
+        return;
+    }
+    auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+
+    uint8 playercount =
+        (activeConfig.Actor.playerCount == 1 &&
+            sessionData.mission == 19 &&
+            eventFlags[20] == 2) ? 2 : activeConfig.Actor.playerCount;
+
+    for (uint8 playerIndex = 0; playercount; ++playerIndex) {
 		auto& playerData = GetPlayerData(playerIndex);
 		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
@@ -9726,6 +9801,17 @@ void UpdateLockOns(byte8* dataAddr) {
     }
     auto mainActorBaseAddr = pool_14299[3];
     auto& mainActorData    = *reinterpret_cast<PlayerActorData*>(mainActorBaseAddr);
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	auto pool_328 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_328 || !pool_328[8]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_328[8]);
+	auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+	if (!pool_19337 || !pool_19337[1]) {
+		return;
+	}
+	auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
 
     /*
 
@@ -9758,8 +9844,11 @@ void UpdateLockOns(byte8* dataAddr) {
                     return;
             }
     }*/
-
-    if (mainActorData.doppelganger || activeConfig.Actor.playerCount > 1) {
+    //candidate 11
+    if (mainActorData.doppelganger || (activeConfig.Actor.playerCount > 1 || 
+		(activeConfig.Actor.playerCount == 1 &&
+			sessionData.mission == 19 &&
+			eventFlags[20] == 2))) {
         for_all(actorIndex, g_playerActorBaseAddrs.count) {
             auto actorBaseAddr = g_playerActorBaseAddrs[actorIndex];
             if (!actorBaseAddr) {
@@ -13793,23 +13882,6 @@ void SceneGame() {
 
     LogFunction();
 
-    DebugLog("room          %u", eventData.room);
-    DebugLog("position      %u", eventData.position);
-    DebugLog("next room     %u", nextEventData.room);
-    DebugLog("next position %u", nextEventData.position);
-    DebugLog("event flag address %u", &eventFlags[20])
-    DebugLog("flags         %X", eventFlags[20]);
-
-    //Let's say we didn't fight arkham 2 and pretend we did. -Hitch 2025
-    //tied to hold to shoot bc im too lazy to setup a proper toggle right now
-    //if ((sessionData.mission == 19) && (nextEventData.room == 421) && (eventFlags[20] == 1) && activeCrimsonGameplay.Gameplay.General.holdToShoot)
-    //    eventFlags[20] = 2;
-    if ((sessionData.mission == 19) && (nextEventData.room == 421) && (eventFlags[20] == 1) && activeConfig.BossRush.enable && activeConfig.BossRush.Mission19.skipArkhamPart2) {
-        CrimsonPatches::EndBossFight(true);
-    }
-    else {
-        CrimsonPatches::EndBossFight(false);
-    }
 
     // This determines that the Actor System gets temporarily deactivated at certain points 
     // where it would crash the game otherwise (mission 19 Battle of Brothers, as an example). - Mia

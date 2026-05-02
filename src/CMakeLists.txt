@@ -27,6 +27,7 @@ set(MASM_SRC
     masm/HideStyleRankHUD.asm
     masm/HudHPSeparation.asm
     masm/HudStyleBarPosAsm.asm
+    masm/PortalsHideAndMute.asm
     masm/PlaytimeOnTick.asm
     masm/DisableDriveHoldAsm.asm
     masm/CustomCameraPositioning.asm
@@ -142,6 +143,8 @@ file(GLOB MAIN_SRC
     CrimsonConfigGameplay.hpp
     CrimsonConfigGameplayMask.hpp
     CrimsonConfigHandling.h
+    CrimsonBetterArkham2.cpp
+    CrimsonBetterArkham2.hpp
     CrimsonCameraController.cpp
     CrimsonCameraController.hpp
     CrimsonDetours.cpp

@@ -73,6 +73,7 @@
 #include "UI\Texture2DD3D11.hpp"
 #include "UI\EmbeddedImages.hpp"
 #include "CrimsonCameraController.hpp"
+#include "CrimsonBetterArkham2.hpp"
 
 #include "DebugDrawDX11.hpp"
 
@@ -12297,7 +12298,13 @@ void ExtraDifficultyGameplayOptions() {
 		"No Enemy DT will make it so enemy DT never occurs, even on DMD.");
 
 		ImGui::TableNextColumn();
-
+		GUI_Checkbox2("Better Arkham 2",
+			activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2,
+			queuedCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2);
+		ImGui::TableNextColumn();
+		CrimsonBetterArkham2::DebugGui();
+		
+		ImGui::TableNextColumn();
 		ImGui::PushItemWidth(itemWidth * 0.93f);
 		UI::ComboMapValue2("Force Difficulty",
 			forceDifficultyNames,
@@ -15321,7 +15328,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 
 	CrimsonOnTick::FrameResponsiveGameSpeed();
 	CrimsonOnTick::LevelFullyLoadedDelay();
-
+	CrimsonBetterArkham2::OnTick();
     // TIMERS
     CrimsonTimers::CallAllTimers();
 
@@ -15332,6 +15339,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	WorldSpaceWeaponWheels1PController(pSwapChain);
 	WorldSpaceWeaponWheelsController(pSwapChain);
 	CrimsonHUD::RedOrbCounterWindow();
+	CrimsonBetterArkham2::BlackoutArkham2OriginalScene();
 	CrimsonHUD::CheatsHUDIndicatorWindow();
 	CrimsonHUD::CheatHotkeysPopUpWindow();
 	CrimsonHUD::StyleMeterWindows();
@@ -15350,6 +15358,15 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
 	RenderMissionResultGameModeStats();
 	RenderMissionResultCheatsUsed();
+	CrimsonGameModes::TrackGameMode();
+	CrimsonGameModes::TrackCheats();
+	CrimsonGameModes::TrackMissionResultGameMode();
+	CrimsonOnTick::CrimsonMissionClearSong();
+	CrimsonOnTick::DivinityStatueSong();
+	CrimsonSDL::ReduceMusicVolumeInPause();
+
+	CrimsonSDL::CheckAndOpenControllers();
+	CrimsonSDL::UpdateJoysticks();
 
 
     HandleKeyBindings(keyBindings.data(), keyBindings.size());

@@ -61,6 +61,9 @@ bool DriveStartIsPlaying(int playerIndex, int entityIndex);
 void PlayNewMissionClearSong();
 void PlayDivinityStatueSong();
 void FadeOutMusic(int delayMs = 500);
+void PlayBattleOfBrothersSong();
+void FadeOutMusic(float fadeoutTime = 500);
+void ReduceMusicVolumeInPause();
 int IsMusicPlaying();
 
 }
