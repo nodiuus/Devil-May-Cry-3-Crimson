@@ -227,7 +227,7 @@ void ClothPhysicsEnhancementFixes(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook13 =
 		std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x2C9AE5, &FixClothPhysicsDetour13, 5);
 	g_FixClothPhysics_ReturnAddr13 = ClothPhysicsHook13->GetReturnAddress();
-	ClothPhysicsHook13->Toggle(enable);
+	ClothPhysicsHook13->Toggle(false);
 
 	// dmc3.exe+2C9AF9 - F3 45 0F 58 C4         - addss xmm8,xmm12 { cloth relaxation 3 } -- try7 - 37
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook14 =
