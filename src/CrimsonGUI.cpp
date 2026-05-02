@@ -15359,15 +15359,15 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
 	RenderMissionResultGameModeStats();
 	RenderMissionResultCheatsUsed();
-	CrimsonGameModes::TrackGameMode();
-	CrimsonGameModes::TrackCheats();
-	CrimsonGameModes::TrackMissionResultGameMode();
-	CrimsonOnTick::CrimsonMissionClearSong();
-	CrimsonOnTick::DivinityStatueSong();
-	CrimsonSDL::ReduceMusicVolumeInPause();
+	//CrimsonGameModes::TrackGameMode();
+	//CrimsonGameModes::TrackCheats();
+	//CrimsonGameModes::TrackMissionResultGameMode();
+	//CrimsonOnTick::CrimsonMissionClearSong();
+	//CrimsonOnTick::DivinityStatueSong();
+	//CrimsonSDL::ReduceMusicVolumeInPause();
 
-	CrimsonSDL::CheckAndOpenControllers();
-	CrimsonSDL::UpdateJoysticks();
+	//CrimsonSDL::CheckAndOpenControllers();
+	//CrimsonSDL::UpdateJoysticks();
 
 
     HandleKeyBindings(keyBindings.data(), keyBindings.size());
