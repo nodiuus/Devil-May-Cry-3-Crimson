@@ -3307,7 +3307,8 @@ void CharacterSection(size_t defaultFontSize) {
 					queuedConfig.enablePVPFixes = false;
 				}
 			}
-
+			ImGui::PopItemWidth();
+			ImGui::PopFont();
 			ImGui::TableNextColumn();
 
 			ImGui::Text("");
@@ -3428,8 +3429,8 @@ void CharacterSection(size_t defaultFontSize) {
 
 	GUI_PopDisable(actorCondition);
 	ImGui::PopStyleColor();
-	ImGui::PopItemWidth();
-	ImGui::PopFont();
+	//ImGui::PopItemWidth();
+	//ImGui::PopFont();
 }
 
 #pragma endregion
