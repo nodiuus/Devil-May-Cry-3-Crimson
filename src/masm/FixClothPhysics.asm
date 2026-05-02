@@ -20,8 +20,8 @@ EXTERN g_FixClothPhysics_ReturnAddr14:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr15:QWORD
 EXTERN g_FixClothPhysics_RigidnessDanteCoatCall:QWORD
 
-newRelaxation dd 0.58f
-velocityThresholdSq dd 3.2f    ; squared velocity threshold - only apply relaxation when cloth is moving faster than this
+newRelaxation dd 0.98f
+velocityThresholdSq dd 3.0f    ; squared velocity threshold - only apply relaxation when cloth is moving faster than this
 constOne dd 1.0f               ; constant 1.0 for identity multiplier
 EXTERN g_ClothPhysicsEnhancementEnabled:DWORD
 
