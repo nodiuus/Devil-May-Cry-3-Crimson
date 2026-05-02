@@ -261,12 +261,21 @@ FixClothPhysicsDetour15 PROC
     push rax
     mov rax, [rsi+03E00h] ; playeractor event
     cmp al, 3 ; is player walking?
-    pop rax
-    je OriginalCode
+    je OriginalCodeWPop
+    mov rax, [rcx+050h] ; cloth type
+    cmp al, 6 ; is it Dante's coat? We do this to prevent the rigidness call from being skipped for other cloth types like pendant
+    jne OriginalCodeWPop
+    
     ; Skip the rigidness call
+    pop rax
     jmp qword ptr [g_FixClothPhysics_ReturnAddr15]
 
 OriginalCode:
+    call qword ptr [g_FixClothPhysics_RigidnessDanteCoatCall] 
+    jmp qword ptr [g_FixClothPhysics_ReturnAddr15]
+
+OriginalCodeWPop:
+    pop rax
     call qword ptr [g_FixClothPhysics_RigidnessDanteCoatCall] 
     jmp qword ptr [g_FixClothPhysics_ReturnAddr15]
 
