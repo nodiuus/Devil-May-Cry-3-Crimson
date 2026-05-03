@@ -5565,12 +5565,11 @@ void TeleportToMainPlayer(byte8* actorBaseAddr) {
 	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::DANTE) {
 		TeleportToLeftOfMain();
 		//actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_GROUND_TRICK; // set g. trick flag for the detour
-		newActorData.visibility = 2; // hide dante's model
+		//newActorData.visibility = 2; // hide dante's model
 	}
 
-	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::VERGIL) {
+	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::VERGIL) {
 		TeleportToLeftOfMain();
-		actorData.position.y -= 50.0f; 
 		//actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_GROUND_TRICK; // set g. trick flag for the detour
 		//newActorData.visibility = 2; // hide dante's model
 	}
