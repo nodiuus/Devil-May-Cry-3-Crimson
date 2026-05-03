@@ -1111,6 +1111,9 @@ bool IsMeleeWeaponReady(PlayerActorData& actorData, uint8 weapon) {
             if ((weapon == WEAPON::BEOWULF_DANTE) && activeConfig.hideBeowulfDante) {
                 return false;
             }
+            if ((weapon == WEAPON::BEOWULF_DANTE) && activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && arkhamFightData.dantePartner) {
+                return false;
+            }
         }
 
         if (IsWeaponActive(actorData, weapon)) {
@@ -1163,6 +1166,9 @@ bool IsMeleeWeaponReady(PlayerActorData& actorData, uint8 weapon) {
 
             if ((weapon == WEAPON::BEOWULF_VERGIL) && (activeConfig.hideBeowulfVergil || 
                 inRepurposedRisingSun[playerIndex][entityIndex])) {
+                return false;
+            }
+            if ((weapon == WEAPON::BEOWULF_VERGIL) && activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && !arkhamFightData.dantePartner) {
                 return false;
             }
         }
@@ -1942,12 +1948,14 @@ void UpdateModelPartitions(PlayerActorData& actorData) {
     switch (actorData.character) {
     case CHARACTER::DANTE: {
         beowulf = IsMeleeWeaponReady(actorData, WEAPON::BEOWULF_DANTE);
-
+        if (arkhamFightData.fightActive && activeConfig.Actor.playerCount == 1 && arkhamFightData.dantePartner)
+            beowulf = false;
         break;
     }
     case CHARACTER::VERGIL: {
         beowulf = IsMeleeWeaponReady(actorData, WEAPON::BEOWULF_VERGIL);
-
+        if (arkhamFightData.fightActive && activeConfig.Actor.playerCount == 1 && !arkhamFightData.dantePartner)
+            beowulf = false;
         break;
     }
     }
