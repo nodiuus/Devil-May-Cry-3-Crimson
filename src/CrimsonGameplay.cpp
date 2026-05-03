@@ -5551,7 +5551,7 @@ void TeleportToMainPlayer(byte8* actorBaseAddr) {
 
 	//if (actorData.character != CHARACTER::DANTE) return;
 
-	// teleport actorData to the left of mainActorData
+	// teleport actorData to the right of mainActorData
 	// DMC3 uses uint16 rotation (0...65535 is equivalent to 0...2pi radians). So we convert:
 	//   Forward vector == ( sin(angle),  cos(angle) )
 	//   Left vector    == (-cos(angle),  sin(angle) )
