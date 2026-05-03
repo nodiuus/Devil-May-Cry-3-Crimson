@@ -19,6 +19,7 @@ EXTERN g_FixClothPhysics_ReturnAddr13:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr14:QWORD
 EXTERN g_FixClothPhysics_ReturnAddr15:QWORD
 EXTERN g_FixClothPhysics_RigidnessDanteCoatCall:QWORD
+EXTERN g_FixClothPhysics_Detour11_FloatConstAddr:QWORD
 
 newRelaxation dd 0.98f
 velocityThresholdSq dd 3.0f    ; squared velocity threshold - only apply relaxation when cloth is moving faster than this
@@ -177,7 +178,7 @@ FixClothPhysicsDetour11 PROC
     movdqu [rsp+10h], xmm0 
 
 OriginalCode:
-    mov rax, 1404C5F40h
+    mov rax, g_FixClothPhysics_Detour11_FloatConstAddr
     movss xmm0, dword ptr [rax]
     mulss xmm9, xmm0
 
