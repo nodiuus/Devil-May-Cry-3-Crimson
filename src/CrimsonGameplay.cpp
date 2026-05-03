@@ -2915,7 +2915,7 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto radius = gamepad.leftStickRadius;
 	uint16 relativeTilt = 0;
