@@ -40,7 +40,12 @@ void DisableLockOnCamera(bool enable);
 
 #pragma region GraphicsStuff
 
-void DisableBlendingEffects(bool enable);
+void DisableGhostingEffect(bool enable);
+void DisableColorFilterEffect(bool enable);
+void DisableBloomEffect(bool enable);
+void DisableFogMistEffect(bool enable);
+void DisableWarpingEffect(bool enable);
+void DisableAllBlendingEffects(bool enable);
 
 #pragma endregion
 

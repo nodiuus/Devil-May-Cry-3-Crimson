@@ -311,9 +311,6 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         CrimsonDetours::ToggleStyleLevellingCCSFix(true);
 		CrimsonEnemyAITarget::EnemyAIMultiplayerTargettingDetours(true);
         
-
-        CrimsonPatches::DisableBlendingEffects(false);
-        CrimsonPatches::DisableBlendingEffects(activeConfig.disableBlendingEffects);
         CrimsonDetours::ToggleGreenOrbsMPRegen(true);
 
         // Load Weapon Wheel's Sprites Up Front

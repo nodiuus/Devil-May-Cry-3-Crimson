@@ -10006,7 +10006,7 @@ void SystemSection(size_t defaultFontSize) {
 		if (ImGui::BeginTable("GraphicsWindowOptionsTable", 3)) {
 
 			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableNextRow(0, rowWidth * 0.5f);
+			//ImGui::TableNextRow(0, rowWidth * 0.5f);
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.9f);
@@ -10036,33 +10036,33 @@ void SystemSection(size_t defaultFontSize) {
 
             ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Unlock FPS", activeCrimsonConfig.System.fpsUnlocked, queuedCrimsonConfig.System.fpsUnlocked);
+			GUI_Checkbox2("Unlocked FPS", activeCrimsonConfig.System.fpsUnlocked, queuedCrimsonConfig.System.fpsUnlocked);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("This neat experimental feature completely eliminates input lag and greatly boosts game responsiveness.\n"
+					"We're actively polishing it, some bugs may still occur.\n"
+					"If you find any, please report them on our GitHub issue tracker or Discord server.");
+			}
 
 			ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Disable Motion Blur / Blending Effects", activeConfig.disableBlendingEffects, queuedConfig.disableBlendingEffects);
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Makes DMC3 look smoother/snappier, but lacking certain PS2 post process effects."
-				"\nDisables itself during cutscenes and screen transitions."
-				"\nPersonally, this is essential for a smoother, lag-free gameplay feel. -Berthrage");
-
-			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.8f);
 			UI::Combo2("V-Sync", Graphics_vSyncNames, activeConfig.vSync, queuedConfig.vSync);
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Synchronizes Monitor Refresh Rate with Frame Rate to eliminate Screen Tearing.\n"
-				"WARNING: if On, will introduce a considerable amount of input lag. Keep this on 'Force Off' for lower latency.");
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Synchronizes Monitor Refresh Rate with Frame Rate to eliminate Screen Tearing.\n"
+					"WARNING: if On, will introduce a considerable amount of input lag. Keep this on 'Force Off' for lower latency.");
+			}
 
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextColumn();
 
 			GUI_Checkbox("DXGI Flip Model Presentation", queuedCrimsonConfig.System.flipModelPresentation);
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Alters how Exclusive Fullscreen works by forcing usage of Flip Model Presentation.\n"
-				"This setting may improve alt-tab issues, latency, enables quicker toggling between fullscreen/windowed with Alt + Enter,"
-				"\nand adds support for HDR and VRR/GSync.");
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Alters how Exclusive Fullscreen works by forcing usage of Flip Model Presentation.\n"
+					"This setting may improve alt-tab issues, latency, enables quicker toggling between fullscreen/windowed with Alt + Enter,"
+					"\nand adds support for HDR and VRR/GSync.");
+			}
 
 			if (queuedCrimsonConfig.System.flipModelPresentation != activeCrimsonConfig.System.flipModelPresentation) {
 				ImGui::TextColored(CrimsonUtil::HexToImVec4(0x1DD6FFFF), "Requires Game Restart.");
@@ -10111,7 +10111,6 @@ void SystemSection(size_t defaultFontSize) {
 		if (ImGui::BeginTable("MiscOptionsTable", 2)) {
 
 			ImGui::TableSetupColumn("b1", 0, columnWidth);
-			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.8f);
@@ -10143,101 +10142,95 @@ void SystemSection(size_t defaultFontSize) {
 
 			ImGui::EndTable();
 		}
+
+		ImGui::Text("");
+
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
+
+
+		ImGui::Text("BLENDING EFFECTS");
+
+		ImGui::PopFont();
+
+		UI::SeparatorEx(defaultFontSize * 23.35f);
+
+		ImGui::Text("");
+
+		{
+			const float columnWidth = 0.5f * queuedConfig.globalScale;
+			const float rowWidth = 40.0f * queuedConfig.globalScale;
+
+			if (ImGui::BeginTable("BlendingEffectsOptionsTable", 2)) {
+
+				ImGui::TableSetupColumn("b1", 0, columnWidth);
+				ImGui::TableNextColumn();
+
+				GUI_PushDisable(activeCrimsonConfig.System.BlendingEffects.disableAll);
+
+				GUI_Checkbox2("Ghosting", activeCrimsonConfig.System.BlendingEffects.ghosting,
+					queuedCrimsonConfig.System.BlendingEffects.ghosting);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("PS2-like Ghosting Blur present in some scenes, making the game feel kind of ethereal in movement.\n"
+						"This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.\n"
+						"WARNING: Keeping this disabled is recommended for a smoother, lag-free gameplay feel. -Berthrage.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Color Filter", activeCrimsonConfig.System.BlendingEffects.colorFilter,
+					queuedCrimsonConfig.System.BlendingEffects.colorFilter);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Color filter applied in some scenes.\n" 
+						"This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Bloom", activeCrimsonConfig.System.BlendingEffects.bloom,
+					queuedCrimsonConfig.System.BlendingEffects.bloom);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Fog / Mist", activeCrimsonConfig.System.BlendingEffects.fogMist,
+					queuedCrimsonConfig.System.BlendingEffects.fogMist);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Warping", activeCrimsonConfig.System.BlendingEffects.warp,
+					queuedCrimsonConfig.System.BlendingEffects.warp);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_PopDisable(activeCrimsonConfig.System.BlendingEffects.disableAll);
+
+				GUI_Checkbox2("Disable All Blending Effects", activeCrimsonConfig.System.BlendingEffects.disableAll,
+					queuedCrimsonConfig.System.BlendingEffects.disableAll);
+				ImGui::SameLine();
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Disables all post processing effects. Can be useful to gain some slight performance."
+						"\nThis toggle won't apply to screen transitions or cutscenes. Doesn't need room reload to apply.");
+				}
+
+				ImGui::EndTable();
+			}
+		}
+
+		
 	}
-
-
-
-// 
-// 	GUI_SectionStart("Input");
-// 
-// 	
-// 
-// 
-// 	ImGui::PushItemWidth(300);
-// 
-// 	if (ImGui::InputText(
-// 		"Gamepad Name", queuedConfig.gamepadName, sizeof(queuedConfig.gamepadName), ImGuiInputTextFlags_EnterReturnsTrue)) {
-// 		::GUI::save = true;
-// 	}
-// 
-// 	GUI_Input2<byte8>(
-// 		"Gamepad Button", activeConfig.gamepadButton, queuedConfig.gamepadButton, 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
-// 	ImGui::SameLine();
-// 	TooltipHelper("(?)", "Toggle Show Main");
-// 
-// 	ImGui::PopItemWidth();
 
 	
 
 	ImGui::PopFont();
 	ImGui::PopStyleColor();
-
-// 	if (GUI_ResetButton()) {
-// 		CopyMemory(&queuedConfig.skipIntro, &defaultConfig.skipIntro, sizeof(queuedConfig.skipIntro));
-// 		CopyMemory(&activeConfig.skipIntro, &queuedConfig.skipIntro, sizeof(activeConfig.skipIntro));
-// 
-// 		CopyMemory(&queuedConfig.skipCutscenes, &defaultConfig.skipCutscenes, sizeof(queuedConfig.skipCutscenes));
-// 		CopyMemory(&activeConfig.skipCutscenes, &queuedConfig.skipCutscenes, sizeof(activeConfig.skipCutscenes));
-// 
-// 		ToggleSkipIntro(activeConfig.skipIntro);
-// 		ToggleSkipCutscenes(activeConfig.skipCutscenes);
-// 
-// 		CopyMemory(&queuedConfig.enableFileMods, &defaultConfig.enableFileMods, sizeof(queuedConfig.enableFileMods));
-// 		CopyMemory(&activeConfig.enableFileMods, &queuedConfig.enableFileMods, sizeof(activeConfig.enableFileMods));
-// 
-// 
-// 		CopyMemory(&queuedConfig.frameRate, &defaultConfig.frameRate, sizeof(queuedConfig.frameRate));
-// 		CopyMemory(&activeConfig.frameRate, &queuedConfig.frameRate, sizeof(activeConfig.frameRate));
-// 
-// 		CopyMemory(&queuedConfig.vSync, &defaultConfig.vSync, sizeof(queuedConfig.vSync));
-// 		CopyMemory(&activeConfig.vSync, &queuedConfig.vSync, sizeof(activeConfig.vSync));
-// 
-// 		UpdateFrameRate();
-// 
-// 		CopyMemory(&queuedConfig.hideMainHUD, &defaultConfig.hideMainHUD, sizeof(queuedConfig.hideMainHUD));
-// 		CopyMemory(&activeConfig.hideMainHUD, &queuedConfig.hideMainHUD, sizeof(activeConfig.hideMainHUD));
-// 
-// 		ToggleHideMainHUD(activeConfig.hideMainHUD);
-// 
-// 		CopyMemory(&queuedConfig.hideLockOn, &defaultConfig.hideLockOn, sizeof(queuedConfig.hideLockOn));
-// 		CopyMemory(&activeConfig.hideLockOn, &queuedConfig.hideLockOn, sizeof(activeConfig.hideLockOn));
-// 
-// 		ToggleHideLockOn(activeConfig.hideLockOn);
-// 
-// 		CopyMemory(&queuedConfig.hideBossHUD, &defaultConfig.hideBossHUD, sizeof(queuedConfig.hideBossHUD));
-// 		CopyMemory(&activeConfig.hideBossHUD, &queuedConfig.hideBossHUD, sizeof(activeConfig.hideBossHUD));
-// 
-// 		ToggleHideBossHUD(activeConfig.hideBossHUD);
-// 
-// 		CopyMemory(&queuedConfig.hideMouseCursor, &defaultConfig.hideMouseCursor, sizeof(queuedConfig.hideMouseCursor));
-// 		CopyMemory(&activeConfig.hideMouseCursor, &queuedConfig.hideMouseCursor, sizeof(activeConfig.hideMouseCursor));
-// 
-// 		CopyMemory(&queuedConfig.gamepadName, &defaultConfig.gamepadName, sizeof(queuedConfig.gamepadName));
-// 		CopyMemory(&activeConfig.gamepadName, &queuedConfig.gamepadName, sizeof(activeConfig.gamepadName));
-// 
-// 		CopyMemory(&queuedConfig.gamepadButton, &defaultConfig.gamepadButton, sizeof(queuedConfig.gamepadButton));
-// 		CopyMemory(&activeConfig.gamepadButton, &queuedConfig.gamepadButton, sizeof(activeConfig.gamepadButton));
-// 
-// 
-// 		CopyMemory(&queuedConfig.channelVolumes, &defaultConfig.channelVolumes, sizeof(queuedConfig.channelVolumes));
-// 		CopyMemory(&activeConfig.channelVolumes, &queuedConfig.channelVolumes, sizeof(activeConfig.channelVolumes));
-// 
-// 		UpdateVolumes();
-// 		CopyMemory(&queuedConfig.soundIgnoreEnemyData, &defaultConfig.soundIgnoreEnemyData, sizeof(queuedConfig.soundIgnoreEnemyData));
-// 		CopyMemory(&activeConfig.soundIgnoreEnemyData, &queuedConfig.soundIgnoreEnemyData, sizeof(activeConfig.soundIgnoreEnemyData));
-// 
-// 
-// 		CopyMemory(&queuedConfig.windowPosX, &defaultConfig.windowPosX, sizeof(queuedConfig.windowPosX));
-// 		CopyMemory(&activeConfig.windowPosX, &queuedConfig.windowPosX, sizeof(activeConfig.windowPosX));
-// 
-// 		CopyMemory(&queuedConfig.windowPosY, &defaultConfig.windowPosY, sizeof(queuedConfig.windowPosY));
-// 		CopyMemory(&activeConfig.windowPosY, &queuedConfig.windowPosY, sizeof(activeConfig.windowPosY));
-// 
-// 		CopyMemory(&queuedConfig.forceWindowFocus, &defaultConfig.forceWindowFocus, sizeof(queuedConfig.forceWindowFocus));
-// 		CopyMemory(&activeConfig.forceWindowFocus, &queuedConfig.forceWindowFocus, sizeof(activeConfig.forceWindowFocus));
-// 
-// 		ToggleForceWindowFocus(activeConfig.forceWindowFocus);
-// 	}
     
 }
 

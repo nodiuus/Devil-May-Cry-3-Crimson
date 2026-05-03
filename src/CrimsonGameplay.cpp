@@ -2911,6 +2911,7 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
 	auto playerIndex = actorData.newPlayerIndex;
 
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
@@ -2936,11 +2937,11 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	bool lastInAir = (actorData.lastState & STATE::IN_AIR);
 	static uint8 currentMovePlayer[PLAYER_COUNT] = { 0 };
 	static uint8 currentMoveClone[PLAYER_COUNT] = { 0 };
-	static uint8& currentMove = (actorData.newEntityIndex == 0) ? currentMovePlayer[playerIndex] : currentMoveClone[playerIndex];
+	uint8& currentMove = (actorData.newEntityIndex == 0) ? currentMovePlayer[playerIndex] : currentMoveClone[playerIndex];
 
 	static uint16 cachedRotationPlayer[PLAYER_COUNT] = { 0 };
 	static uint16 cachedRotationClone[PLAYER_COUNT] = { 0 };
-	static uint16& cachedRotation = (actorData.newEntityIndex == 0) ? cachedRotationPlayer[playerIndex] : cachedRotationClone[playerIndex];
+	uint16& cachedRotation = (actorData.newEntityIndex == 0) ? cachedRotationPlayer[playerIndex] : cachedRotationClone[playerIndex];
 
 	auto& actionTimer =
 		(actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].actionTimerClone : crimsonPlayer[playerIndex].actionTimer;

@@ -75,6 +75,7 @@ extern "C" {
 	std::uint64_t g_FixClothPhysics_ReturnAddr14;
 	std::uint64_t g_FixClothPhysics_ReturnAddr15;
 
+	std::uint64_t g_FixClothPhysics_Detour11_FloatConstAddr;
 	std::uint64_t g_FixClothPhysics_RigidnessDanteCoatCall;
 
 	// Flag read by Detour11 to conditionally skip velocity computation
@@ -204,6 +205,7 @@ void ClothPhysicsFixes(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook11 =
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2C9A52, &FixClothPhysicsDetour11, 9);
 	g_FixClothPhysics_ReturnAddr11 = ClothPhysicsHook11->GetReturnAddress();
+	g_FixClothPhysics_Detour11_FloatConstAddr = (uintptr_t)appBaseAddr + 0x4C5F40;
 	ClothPhysicsHook11->Toggle(enable);
 
 	run = enable;
@@ -227,7 +229,7 @@ void ClothPhysicsEnhancementFixes(bool enable) {
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook13 =
 		std::make_unique<Utility::Detour_t>((uintptr_t)appBaseAddr + 0x2C9AE5, &FixClothPhysicsDetour13, 5);
 	g_FixClothPhysics_ReturnAddr13 = ClothPhysicsHook13->GetReturnAddress();
-	ClothPhysicsHook13->Toggle(enable);
+	ClothPhysicsHook13->Toggle(false);
 
 	// dmc3.exe+2C9AF9 - F3 45 0F 58 C4         - addss xmm8,xmm12 { cloth relaxation 3 } -- try7 - 37
 	static std::unique_ptr<Utility::Detour_t> ClothPhysicsHook14 =

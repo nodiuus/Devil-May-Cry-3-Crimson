@@ -241,9 +241,6 @@ struct Config {
 
     bool absoluteUnit = false;
 
-    char gamepadName[128] = "Wireless Controller";
-    byte8 gamepadButton   = 13;
-
     bool disablePlayerActorIdleTimer = false;
 
     bool rebellionInfiniteShredder = false;
@@ -255,8 +252,6 @@ struct Config {
     
     std::string selectedHUD = "Crimson HUD";
 
-    bool disableBlendingEffects = false;
-    bool framerateResponsiveGameSpeed = true;
     bool playDTReadySFXAtMissionStart = true;
 };
 
