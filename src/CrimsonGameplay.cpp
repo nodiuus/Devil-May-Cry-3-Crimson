@@ -5560,22 +5560,25 @@ void TeleportToMainPlayer(byte8* actorBaseAddr) {
 	auto TeleportToLeftOfMain = [&](float offsetDist = 150.0f) {
 		float mainAngle = mainActorData.rotation * (3.14159265f / 32768.0f);
 		actorData.position.x = mainActorData.position.x + (-std::cos(mainAngle) * offsetDist);
-		actorData.position.y = mainActorData.position.y;
+		actorData.position.y = mainActorData.position.y+50.0f;
 		actorData.position.z = mainActorData.position.z + (std::sin(mainAngle) * offsetDist);
 	};
 
 	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::DANTE) {
 		TeleportToLeftOfMain();
-		//actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_GROUND_TRICK; // set g. trick flag for the detour
-		//newActorData.visibility = 2; // hide dante's model
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x3 && actorData.character == CHARACTER::DANTE) {
+		actorData.position.y = mainActorData.position.y;
 	}
 
 	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::VERGIL) {
 		TeleportToLeftOfMain();
-		//actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_GROUND_TRICK; // set g. trick flag for the detour
-		//newActorData.visibility = 2; // hide dante's model
 	}
 
+	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x3 && actorData.character == CHARACTER::VERGIL) {
+		actorData.position.y = mainActorData.position.y;
+	}
 	//if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_GROUND_TRICK) { // guarantee attack buffer will come through
 	//	auto& policyMelee = actorData.nextActionRequestPolicy[NEXT_ACTION_REQUEST_POLICY::MELEE_ATTACK];
 	//	auto& policySword = actorData.nextActionRequestPolicy[NEXT_ACTION_REQUEST_POLICY::SWORDMASTER_GUNSLINGER];
