@@ -576,6 +576,26 @@ struct CrimsonConfig {
 
 		bool disableMenuTransitions = false;
 
+		struct BlendingEffects {
+			bool ghosting = false;
+			bool colorFilter = true;
+			bool bloom = true;
+			bool fogMist = true;
+			bool warp = true;
+			bool disableAll = false;
+
+			static constexpr auto Metadata() {
+				return std::make_tuple(
+					std::make_pair("ghosting", &BlendingEffects::ghosting),
+					std::make_pair("colorFilter", &BlendingEffects::colorFilter),
+					std::make_pair("bloom", &BlendingEffects::bloom),
+					std::make_pair("fogMist", &BlendingEffects::fogMist),
+					std::make_pair("warp", &BlendingEffects::warp),
+					std::make_pair("disableAll", &BlendingEffects::disableAll)
+				);
+			}
+		} BlendingEffects;
+
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
@@ -585,7 +605,8 @@ struct CrimsonConfig {
 				std::make_pair("flipModelPresentation", &System::flipModelPresentation),
 				std::make_pair("fpsCap", &System::fpsCap),
 				std::make_pair("fpsUnlocked", &System::fpsUnlocked),
-				std::make_pair("disableMenuTransitions", &System::disableMenuTransitions)
+				std::make_pair("disableMenuTransitions", &System::disableMenuTransitions),
+				std::make_pair("BlendingEffects", &System::BlendingEffects)
 			);
 		}
 	} System;

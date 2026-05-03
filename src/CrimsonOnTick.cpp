@@ -567,28 +567,34 @@ void DivinityStatueSong() {
 }
 
 void DisableBlendingEffectsController() {
-	// Disables PS2 Motion Blur among other PostProcessFX.
+	// Disables PS2 Ghosting among other PostProcessFX.
 
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
-	auto pool_10371 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10371 || !pool_10371[8]) {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
 		return;
 	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10371[8]);
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
 	if (g_scene != SCENE::GAME) {
 		return;
 	}
 
-	if (activeConfig.disableBlendingEffects) {
-		if (eventData.event == EVENT::MAIN || eventData.event == EVENT::PAUSE) {
-			CrimsonPatches::DisableBlendingEffects(true);
-		} else {
-			CrimsonPatches::DisableBlendingEffects(false);
-		}
-
-	} else {
-		CrimsonPatches::DisableBlendingEffects(false);
+	if (eventData.event == EVENT::INIT || eventData.event == EVENT::MAIN || eventData.event == EVENT::PAUSE) {
+		CrimsonPatches::DisableGhostingEffect(!activeCrimsonConfig.System.BlendingEffects.ghosting);
+		CrimsonPatches::DisableColorFilterEffect(!activeCrimsonConfig.System.BlendingEffects.colorFilter);
+		CrimsonPatches::DisableBloomEffect(!activeCrimsonConfig.System.BlendingEffects.bloom);
+		CrimsonPatches::DisableFogMistEffect(!activeCrimsonConfig.System.BlendingEffects.fogMist);
+		CrimsonPatches::DisableWarpingEffect(!activeCrimsonConfig.System.BlendingEffects.warp);
+		CrimsonPatches::DisableAllBlendingEffects(activeCrimsonConfig.System.BlendingEffects.disableAll);
+	}
+	else {
+		CrimsonPatches::DisableGhostingEffect(false);
+		CrimsonPatches::DisableColorFilterEffect(false);
+		CrimsonPatches::DisableBloomEffect(false);
+		CrimsonPatches::DisableFogMistEffect(false);
+		CrimsonPatches::DisableWarpingEffect(false);
+		CrimsonPatches::DisableAllBlendingEffects(false);
 	}
 }
 

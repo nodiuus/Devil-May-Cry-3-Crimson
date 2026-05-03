@@ -177,12 +177,6 @@ BOOL CreateGamepad_EnumFunction(LPCDIDEVICEINSTANCEA deviceInstanceAddr, LPVOID 
 
     // Log<false>("");
 
-    if (strcmp(deviceInstance.tszInstanceName, activeConfig.gamepadName) != 0) {
-        // Log("No Match $%s$ $%s$", deviceInstance.tszInstanceName, activeConfig.gamepadName);
-        // Log<false>("");
-
-        return DIENUM_CONTINUE;
-    }
 
     CopyMemory(&gamepad.deviceInstance, &deviceInstance, sizeof(gamepad.deviceInstance));
 
@@ -211,23 +205,6 @@ void UpdateGamepad() {
     gamepad.Update();
 
     auto& state = gamepad.state;
-
-    auto button = activeConfig.gamepadButton;
-    if (button > countof(state.rgbButtons)) {
-        button = 0;
-    }
-
-    static bool execute = false;
-
-    if (state.rgbButtons[button]) {
-        if (execute) {
-            execute = false;
-
-            ToggleCrimsonGUI();
-        }
-    } else {
-        execute = true;
-    }
 
     [&]() {
         auto func = UpdateGamepad_func;
