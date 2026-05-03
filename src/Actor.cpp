@@ -2732,10 +2732,26 @@ byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex, bo
 
     if (arkham2Actor) {
         if (arkhamFightData.dantePartner) {
+            characterData.rangedWeaponCount = 3;
+            characterData.meleeWeaponCount = 3;
+            
+            characterData.rangedWeapons[0] = WEAPON::EBONY_IVORY;
+            characterData.rangedWeapons[1] = WEAPON::SHOTGUN;
+            characterData.rangedWeapons[2] = WEAPON::KALINA_ANN;
+            
+            characterData.meleeWeapons[0] = WEAPON::REBELLION;
+            characterData.meleeWeapons[1] = WEAPON::BEOWULF_DANTE;
+            characterData.meleeWeapons[2] = WEAPON::AGNI_RUDRA;
+
             actorBaseAddr = CreatePlayerActor<PlayerActorDataDante>(playerIndex, characterIndex, entityIndex, true);
 
         }
         else {
+            characterData.rangedWeaponCount = 0;
+            characterData.meleeWeaponCount = 2;
+
+            characterData.meleeWeapons[0] = WEAPON::YAMATO_VERGIL;
+            characterData.meleeWeapons[1] = WEAPON::BEOWULF_VERGIL;
             actorBaseAddr = CreatePlayerActor<PlayerActorDataVergil>(playerIndex, characterIndex, entityIndex, true);
 
         }
