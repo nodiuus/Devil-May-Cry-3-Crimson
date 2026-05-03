@@ -7036,6 +7036,9 @@ uint32 Dash(PlayerActorData& actorData, uint8 action) {
     static uint8 dashCount1[2] = {2, 2};
 
     uint8* dashCount = (actorData.styleLevel == 0) ? dashCount0 : (actorData.styleLevel == 1) ? dashCount1 : activeCrimsonGameplay.Cheats.Mobility.dashCount;
+    if (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && arkhamFightData.dantePartner) {
+        return MobilityFunction<ACTOR_EVENT::TRICKSTER_AIR_TRICK>(actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.danteAirTrickCount);
+    }
 
     return MobilityFunction<ACTOR_EVENT::TRICKSTER_DASH>(actorData, action, actorData.newDashCount, dashCount);
 }
@@ -7044,7 +7047,9 @@ uint32 SkyStar(PlayerActorData& actorData, uint8 action) {
     if (actorData.styleLevel < 1) {
         return 0;
     }
-
+    if (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && arkhamFightData.dantePartner) {
+        return MobilityFunction<ACTOR_EVENT::TRICKSTER_AIR_TRICK>(actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.danteAirTrickCount);
+    }
     return MobilityFunction<ACTOR_EVENT::TRICKSTER_SKY_STAR>(actorData, action, actorData.newSkyStarCount, activeCrimsonGameplay.Cheats.Mobility.skyStarCount);
 }
 
@@ -7060,6 +7065,11 @@ uint32 AirTrickDante(PlayerActorData& actorData, uint8 action) {
 }
 
 uint32 AirTrickVergil(PlayerActorData& actorData, uint8 action) {
+
+    if (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && !arkhamFightData.dantePartner) {
+        return MobilityFunction<ACTOR_EVENT::DARK_SLAYER_AIR_TRICK>(
+            actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.vergilAirTrickCount);
+    }
     if (activeCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn && !actorData.lockOn && actorData.styleLevel > 1) {
 		return MobilityFunction<ACTOR_EVENT::DARK_SLAYER_TRICK_UP>(
 			actorData, action, actorData.newTrickUpCount, activeCrimsonGameplay.Cheats.Mobility.trickUpCount);
@@ -7070,6 +7080,10 @@ uint32 AirTrickVergil(PlayerActorData& actorData, uint8 action) {
 }
 
 uint32 TrickUp(PlayerActorData& actorData, uint8 action) {
+    if (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && !arkhamFightData.dantePartner) {
+        return MobilityFunction<ACTOR_EVENT::DARK_SLAYER_AIR_TRICK>(
+            actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.vergilAirTrickCount);
+    }
     if (actorData.styleLevel < 1) {
         return 0;
     }
@@ -7078,6 +7092,10 @@ uint32 TrickUp(PlayerActorData& actorData, uint8 action) {
 }
 
 uint32 TrickDown(PlayerActorData& actorData, uint8 action) {
+    if (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && !arkhamFightData.dantePartner) {
+        return MobilityFunction<ACTOR_EVENT::DARK_SLAYER_AIR_TRICK>(
+            actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.vergilAirTrickCount);
+    }
     if (actorData.styleLevel < 2) {
         return 0;
     }
