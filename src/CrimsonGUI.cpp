@@ -1983,7 +1983,7 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	auto playerData = GetPlayerData(playerIndex);
 	auto& characterData = GetCharacterData(actorData);
 
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	if (InCutscene() || InCredits() || !activeConfig.Actor.enable || g_inGameCutscene ||
 		!((characterData.character == CHARACTER::DANTE) || (characterData.character == CHARACTER::VERGIL))) {
@@ -5790,7 +5790,7 @@ void ShopWindow() {
 		
 
 		// 		for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		// 			auto& gamepad = GetGamepad(playerIndex);
+		// 			auto& gamepad = GetGamepad(actorData.newGamepad);
 		// 
 		// 			if ((gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))) {
 		// 				CloseShop();

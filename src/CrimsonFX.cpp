@@ -227,7 +227,7 @@ void DTExplosionFXController(byte8* actorBaseAddr) {
     auto& releaseVolumeMult = crimsonPlayer[playerIndex].dTESFX.releaseVolumeMult;
     auto& vfxStarted = crimsonPlayer[playerIndex].dTEVFX.started;
     auto& vfxFinished = crimsonPlayer[playerIndex].dTEVFX.finished;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& distance = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
 	static bool pausedSFX = false;
 
@@ -455,7 +455,7 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto weapon = GetMeleeWeapon(actorData);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto inAttack = (actorData.eventData[0].event == 17);
 	auto inRebellionCombo1 = (actorData.action == REBELLION_COMBO_1_PART_1 && motionIndex == 3 && inAttack);
 	auto inRebellionCombo2 = (actorData.action == REBELLION_COMBO_2_PART_2 && motionIndex == 6 && inAttack);
@@ -723,7 +723,7 @@ void StyleSwitchFlux(byte8* actorBaseAddr) {
     auto* style = &actorData.style;
 	auto* canStart = &crimsonPlayer[playerIndex].fluxCanStart;
 	auto* canEnd = &crimsonPlayer[playerIndex].fluxCanEnd;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     
     if (*fluxtime > 0) {
 		
