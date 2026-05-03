@@ -41,7 +41,9 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
 
         // Log("baseAddr %llX", baseAddr);
 
-        old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
+        uint8 playerCount = (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive) ? 2 : activeConfig.Actor.playerCount;
+
+        old_for_all(uint8, playerIndex, playerCount) {
             old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
                 old_for_all(uint8, entityIndex, ENTITY_COUNT) {
                     auto& playerData = GetPlayerData(playerIndex);
@@ -101,11 +103,11 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
                         {
                             auto& helperIndex = g_helperIndices[CHANNEL::COMMON];
 
-                            switch (characterData.character) {
+                            switch (actorData.character) {
                             case CHARACTER::DANTE: {
                                 helperIndex = HELPER_COMMON_DANTE_DEFAULT;
 
-                                switch (characterData.costume) {
+                                switch (actorData.costume) {
                                 case COSTUME::DANTE_DEFAULT_NO_COAT:
                                 case COSTUME::DANTE_DMC1_NO_COAT: {
                                     helperIndex = HELPER_COMMON_DANTE_NO_COAT;
@@ -119,7 +121,7 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
                             case CHARACTER::VERGIL: {
                                 helperIndex = HELPER_COMMON_VERGIL_DEFAULT;
 
-                                switch (characterData.costume) {
+                                switch (actorData.costume) {
                                 case COSTUME::VERGIL_NERO_ANGELO:
                                 case COSTUME::VERGIL_NERO_ANGELO_INFINITE_MAGIC_POINTS: {
                                     helperIndex = HELPER_COMMON_VERGIL_NERO_ANGELO;
@@ -137,7 +139,7 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
                         {
                             auto& helperIndex = g_helperIndices[CHANNEL::STYLE_WEAPON];
 
-                            switch (characterData.character) {
+                            switch (actorData.character) {
                             case CHARACTER::DANTE: {
                                 helperIndex = HELPER_STYLE_WEAPON_DANTE;
 
@@ -146,7 +148,7 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
                             case CHARACTER::VERGIL: {
                                 helperIndex = HELPER_STYLE_WEAPON_VERGIL_DEFAULT;
 
-                                switch (characterData.costume) {
+                                switch (actorData.costume) {
                                 case COSTUME::VERGIL_NERO_ANGELO:
                                 case COSTUME::VERGIL_NERO_ANGELO_INFINITE_MAGIC_POINTS: {
                                     helperIndex = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
