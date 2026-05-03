@@ -277,7 +277,7 @@ void CopyState(CharacterData& activeCharacterData, NewActorData& activeNewActorD
 template <typename T> uint8 GetNextMeleeAction(T& activeActorData, T& actorData) {
     uint8 action = 0;
 
-    auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -496,7 +496,7 @@ void SetNextMeleeAction(
 template <typename T> uint8 GetNextStyleAction(T& activeActorData, T& actorData) {
     uint8 action = 0;
 
-    auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -2962,7 +2962,7 @@ void ResetMotionStateLegacy(byte8* actorBaseAddr) {
 
     auto& playerData = GetPlayerData(playerIndex);
 
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 
     static bool executes[PLAYER_COUNT][CHARACTER_COUNT][ENTITY_COUNT][4] = {};
 
@@ -3785,7 +3785,7 @@ template <typename T> void LinearRangedWeaponSwitchController(T& actorData) {
 template <typename T> void AnalogMeleeWeaponSwitchController(T& actorData) {
     auto& characterData = GetCharacterData(actorData);
 
-    auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 
     auto leftStick = (characterData.meleeWeaponSwitchStick == LEFT_STICK);
 	auto playerIndex = actorData.newPlayerIndex;
@@ -3954,7 +3954,7 @@ template <typename T> void AnalogMeleeWeaponSwitchController(T& actorData) {
 template <typename T> void AnalogRangedWeaponSwitchController(T& actorData) {
     auto& characterData = GetCharacterData(actorData);
 
-    auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto playerIndex = actorData.newPlayerIndex;
 
     auto leftStick = (characterData.rangedWeaponSwitchStick == LEFT_STICK);
@@ -4305,7 +4305,7 @@ void CharacterSwitchController() {
 
     //candidate 1
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
-        auto& gamepad = GetGamepad(playerIndex);
+
 
         {
             auto& playerData = GetPlayerData(playerIndex);
@@ -4317,7 +4317,7 @@ void CharacterSwitchController() {
 
         auto IsDoppelgangerActive = [&]() -> bool {
             auto& playerData = GetPlayerData(playerIndex);
-
+            
             auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
             auto& newActorData  = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 
@@ -4355,7 +4355,12 @@ void CharacterSwitchController() {
             auto& playerData = GetPlayerData(playerIndex);
 
 			static bool condition = false;
-
+            auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+            if (!newActorData.baseAddr) {
+                continue;
+            }
+            auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+            auto& gamepad = GetGamepad(actorData.newGamepad);
 			if (!activeCrimsonConfig.GUI.disableGamepadShortcut) {
 				// Shortcut is enabled
 				condition = (gamepad.buttons[0] & playerData.switchButton) &&
@@ -4409,7 +4414,7 @@ void CharacterSwitchController() {
         if (!activeNewActorData.baseAddr || !newActorData.baseAddr) {
             continue;
         }
-
+        auto& gamepad = GetGamepad(leadActorData.newGamepad);
         if (playerData.lastCharacterIndex != playerData.characterIndex) {
             playerData.lastCharacterIndex = playerData.characterIndex;
 
@@ -4605,7 +4610,7 @@ void CharacterSwitchController() {
     }
     auto& leadActorData = *reinterpret_cast<PlayerActorData*>(leadNewActorData.baseAddr);
 
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(leadActorData.newGamepad);
 
     vec4* activePositionAddr = 0;
     vec4* positionAddr       = 0;
@@ -4866,7 +4871,7 @@ void BossLadyController() {
 
     static bool executes[8] = {};
 
-    auto& gamepad = GetGamepad(0);
+    auto& gamepad = GetGamepad(leadActorData.newGamepad);
 
     auto tiltDirection = GetRelativeTiltDirection(leadActorData);
 
@@ -5069,7 +5074,7 @@ void BossVergilController() {
 
     static bool executes[8] = {};
 
-    auto& gamepad = GetGamepad(0);
+    auto& gamepad = GetGamepad(leadActorData.newGamepad);
 
     auto tiltDirection = GetRelativeTiltDirection(leadActorData);
 
@@ -8437,7 +8442,7 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
                 auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
                 auto tiltDirection = GetRelativeTiltDirection(actorData);
-                auto& gamepad = GetGamepad(0);
+                auto& gamepad = GetGamepad(actorData.newGamepad);
                 auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
                     crimsonPlayer[playerIndex].actionTimerClone;
                 auto& inRisingStar = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
@@ -9454,7 +9459,7 @@ void SetAction(byte8* actorBaseAddr) {
         (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
     auto& b2F = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].b2F : crimsonPlayer[playerIndex].b2FClone;
 	auto& airCounts = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].airCounts : crimsonPlayer[playerIndex].airCountsClone;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& action = actorData.action;
     auto& lastAction = actorData.lastAction;
     auto& lastActionTime = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastActionTime :

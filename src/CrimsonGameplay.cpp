@@ -57,7 +57,7 @@ bool IsActiveCharacterActor(byte8* actorBaseAddr) {
 template <typename T> uint8 GetNextMeleeAction(T& activeActorData, T& actorData) {
 	uint8 action = 0;
 
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -292,7 +292,7 @@ void SetNextMeleeAction(
 template <typename T> uint8 GetNextStyleAction(T& activeActorData, T& actorData) {
 	uint8 action = 0;
 
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -665,7 +665,7 @@ void UpdateCrimsonPlayerData() {
         auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
        
 
-		auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+		auto& gamepad = GetGamepad(actorData.newGamepad);
 		auto tiltDirection = GetRelativeTiltDirection(actorData);
 		auto inAir = (actorData.state & STATE::IN_AIR);
 		auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
@@ -775,7 +775,7 @@ void FixAirStingerCancelTime(byte8* actorBaseAddr) {
 	if (!actorBaseAddr) return;
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
    if (!IsActiveCharacterActor(actorData)) return;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto inAir = (actorData.state & STATE::IN_AIR);
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
@@ -832,7 +832,7 @@ void DanteStingerInputCrazyCombo(byte8* actorBaseAddr) {
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	// if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
 	auto actionTimer =
@@ -882,7 +882,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 		return;
 	}
 
-    auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -1244,7 +1244,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     if (entityIndex >= ENTITY_COUNT) entityIndex = 0;
 
     auto& playerData = GetPlayerData(playerIndex);
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& skyLaunch = crimsonPlayer[playerIndex].skyLaunch;
 
     // --- Button press detection arrays ---
@@ -1500,7 +1500,7 @@ void DarkslayerCancelsVergilController(byte8* actorBaseAddr) {
 
 
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : 
         crimsonPlayer[playerIndex].actionTimerClone;
 
@@ -1647,7 +1647,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& characterData = GetCharacterData(actorData);
 	auto meleeWeaponEquipped = characterData.meleeWeapons[characterData.meleeWeaponIndex];
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
@@ -1810,7 +1810,7 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer :
@@ -2175,7 +2175,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	if (characterData[ENTITY::MAIN].character != CHARACTER::VERGIL) {
 		return; // Ensure the character is currently using Vergil
 	}
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& actionTimerNotTrickChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotTrickChange :
@@ -2519,7 +2519,7 @@ void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
     auto playerIndex = actorData.newPlayerIndex;
     auto entityIndex = actorData.newEntityIndex;
     auto& playerData = GetPlayerData(playerIndex);
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
         crimsonPlayer[playerIndex].actionTimerClone;
     auto& inAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun :
@@ -2562,7 +2562,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& inAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun :
@@ -2602,7 +2602,7 @@ void VergilAdjustAirMovesPos(byte8* actorBaseAddr) {
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (actorData.character != CHARACTER::VERGIL) return;
     auto playerIndex = actorData.newPlayerIndex;
-    auto& gamepad    = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad    = GetGamepad(actorData.newGamepad);
 
     auto* v     = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves : &crimsonPlayer[playerIndex].vergilMovesClone;
 	auto action = actorData.action;
@@ -2716,7 +2716,7 @@ void VergilDownertia(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* v = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves : &crimsonPlayer[playerIndex].vergilMovesClone;
 	auto action = actorData.action;
@@ -3059,7 +3059,7 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto radius = gamepad.leftStickRadius;
 	auto& actionTimer = (entityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
@@ -3330,7 +3330,7 @@ void BulletMagnetism(byte8* actorBaseAddr) {
 	if (!activeCrimsonGameplay.Gameplay.General.inertia) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& bulletMagnetism = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].bulletMagnetism : 
 		crimsonPlayer[playerIndex].bulletMagnetismClone;
 	
@@ -3580,7 +3580,7 @@ void InertiaController(byte8* actorBaseAddr) {
         (action == AGNI_RUDRA_SKY_DANCE_PART_1 || action == AGNI_RUDRA_SKY_DANCE_PART_2 || action == AGNI_RUDRA_SKY_DANCE_PART_3);
     auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     auto& guarflyTimer = i->guardflyTimer;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
     if (actorData.character == CHARACTER::DANTE) {
 
@@ -3887,7 +3887,7 @@ void AirFlickerGravityTweaks(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? &crimsonPlayer[playerIndex].airFlickerTweak : 
         &crimsonPlayer[playerIndex].airFlickerTweakClone;
@@ -3948,7 +3948,7 @@ void SkyDanceGravityTweaks(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? &crimsonPlayer[playerIndex].skyDanceTweak :
 		&crimsonPlayer[playerIndex].skyDanceTweakClone;
@@ -3997,7 +3997,7 @@ void EbonyAndIvoryAerialTweaks(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? &crimsonPlayer[playerIndex].ebonyIvoryTweak :
 		&crimsonPlayer[playerIndex].ebonyIvoryTweakClone;
@@ -4046,7 +4046,7 @@ void DanteDownertia(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto& airFlickerTweak = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].airFlickerTweak :
 		crimsonPlayer[playerIndex].airFlickerTweakClone;
@@ -4229,7 +4229,7 @@ void BackToForwardInputs(byte8* actorBaseAddr) {
     auto lockOn        = actorData.lockOn;
     auto tiltDirection = GetRelativeTiltDirection(actorData);
     auto playerIndex   = actorData.newPlayerIndex;
-    auto& gamepad      = GetGamepad(playerIndex);
+    auto& gamepad      = GetGamepad(actorData.newGamepad);
     auto radius        = gamepad.leftStickRadius;
     auto pos           = gamepad.leftStickPosition;
     uint8 deadzone = 100;
@@ -5127,6 +5127,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (!IsActiveCharacterActor(actorData)) return;
+	
     CrimsonDetours::ToggleDisableDriveHold(activeCrimsonGameplay.Gameplay.Dante.driveRework);
 	CrimsonPatches::DriveProjectileThroughWalls(activeCrimsonGameplay.Gameplay.Dante.driveRework);
     if (!activeCrimsonGameplay.Gameplay.Dante.driveRework || actorData.character != CHARACTER::DANTE) return;
@@ -5143,7 +5144,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     uintptr_t drivePhysicalDamageAddr   = (uintptr_t)appBaseAddr + 0x5C6D2C;
     uintptr_t driveProjectileDamageAddr = (uintptr_t)appBaseAddr + 0x5CB1EC;
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
 	static constexpr const wchar_t* driveChargeParticlePath = L"Crimson\\vfx\\drive_charge.efkefc";
 	static EffekseerRefHandle driveChargeParticleRef = CrimsonEfk::LoadEffect(driveChargeParticlePath, 1.0f);
@@ -5409,7 +5410,7 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	auto entityIndex = actorData.newEntityIndex;
 	bool inAir = (actorData.state & STATE::IN_AIR);
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto& characterData = GetCharacterData(actorData);
 	auto rangedWeaponEquipped = characterData.rangedWeapons[characterData.rangedWeaponIndex];

@@ -364,7 +364,7 @@ bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
     auto inputException = !(actorData.lockOn && (tiltDirection == TILT_DIRECTION::UP || tiltDirection == TILT_DIRECTION::DOWN));
 
     auto inputExceptionNevanJamSession = !(tiltDirection == TILT_DIRECTION::LEFT);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
     // if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
 	auto actionTimer =
@@ -581,7 +581,7 @@ void AddingToPlayersMirageGauge(PlayerActorData& actorData, std::uint64_t amount
 
 bool CheckForceRoyalReleaseForSkyLaunch(PlayerActorData& actorData) {
     auto playerIndex = actorData.newPlayerIndex;
-    auto gamepad = GetGamepad(playerIndex);
+    auto gamepad = GetGamepad(actorData.newGamepad);
 
     if ((actorData.state & STATE::IN_AIR && gamepad.buttons[0] & GetBinding(BINDING::TAUNT))
             || activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease) {
@@ -593,7 +593,7 @@ bool CheckForceRoyalReleaseForSkyLaunch(PlayerActorData& actorData) {
 
 bool DetectIfInSkyLaunch(PlayerActorData& actorData) {
 	auto playerIndex = actorData.newPlayerIndex;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
     if (activeCrimsonGameplay.Cheats.Training.infiniteHP) {
         return true;
@@ -1288,7 +1288,7 @@ bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
 	uint8 entityIndex = actorData.newEntityIndex;
 	auto& jCut = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
 	// Here we can block certain actions from being performed.
