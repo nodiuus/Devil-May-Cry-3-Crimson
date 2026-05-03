@@ -4142,6 +4142,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonGameplay::DTInfusedRoyalguardController(actorBaseAddr);
     CrimsonGameplay::DetectCloseToEnemy(actorBaseAddr);
     CrimsonGameplay::GroundTrickFlagSet(actorBaseAddr);
+    CrimsonGameplay::TeleportToMainPlayer(actorBaseAddr);
     CrimsonFX::StyleRankHudFadeoutController();
     CrimsonFX::DelayedComboFXController(actorBaseAddr);
     CrimsonGameplay::DanteDriveRework(actorBaseAddr);
