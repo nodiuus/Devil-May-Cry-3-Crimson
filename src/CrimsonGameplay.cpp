@@ -3365,10 +3365,10 @@ void BulletMagnetism(byte8* actorBaseAddr) {
 		int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
 
 		// Now we detect if player is going backwards relative to their inertia direction, 
-		// which would be indicated by a rotation delta greater than 90° (0x4000 in uint16-space).
+		// which would be indicated by a rotation delta greater than 90ï¿½ (0x4000 in uint16-space).
 
 		if (rotationDeltaAbs > 0x4000) {
-			// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
+			// 0x8000 is half-turn in uint16-space (180ï¿½ = pi radians), so this inverts inertia direction.
 			actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
 		}
 	}
@@ -5551,14 +5551,26 @@ void TeleportToMainPlayer(byte8* actorBaseAddr) {
 
 	//if (actorData.character != CHARACTER::DANTE) return;
 
+	// teleport actorData to the left of mainActorData
+	// DMC3 uses uint16 rotation (0...65535 is equivalent to 0...2pi radians). So we convert:
+	//   Forward vector == ( sin(angle),  cos(angle) )
+	//   Left vector    == (-cos(angle),  sin(angle) )
+	auto TeleportToLeftOfMain = [&](float offsetDist = 150.0f) {
+		float mainAngle = mainActorData.rotation * (3.14159265f / 32768.0f);
+		actorData.position.x = mainActorData.position.x + (-std::cos(mainAngle) * offsetDist);
+		actorData.position.y = mainActorData.position.y;
+		actorData.position.z = mainActorData.position.z + (std::sin(mainAngle) * offsetDist);
+	};
+
 	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::DANTE) {
-		actorData.position = mainActorData.position;
+		TeleportToLeftOfMain();
 		//actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_GROUND_TRICK; // set g. trick flag for the detour
 		newActorData.visibility = 2; // hide dante's model
 	}
 
 	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::VERGIL) {
-		actorData.position = mainActorData.position;
+		TeleportToLeftOfMain();
+		actorData.position.y -= 50.0f; 
 		//actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_GROUND_TRICK; // set g. trick flag for the detour
 		//newActorData.visibility = 2; // hide dante's model
 	}
