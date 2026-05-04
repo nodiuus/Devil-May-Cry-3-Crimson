@@ -1,6 +1,7 @@
 #include "CrimsonBetterArkham2.hpp"
 #include "Sound.hpp"
 #include "CrimsonSDL.hpp"
+#include "DMC3Input.hpp"
 using namespace ARKHAM_MOD_FIGHT_PHASE;
 namespace CrimsonBetterArkham2 {
 	//static bool fightActive{ false };
@@ -319,7 +320,6 @@ namespace CrimsonBetterArkham2 {
 		auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
 
 		if (InGame()) {
-
 			//Teleport when fight ends to go to real arkham2 fight (this was put here for ez gui testing)
 			if (sessionData.mission == 19
 				&& eventData.room == 421
@@ -335,6 +335,31 @@ namespace CrimsonBetterArkham2 {
 				return;
 			if (!arkhamFightData.fightActive)
 				return;
+
+			//if singleplayer
+			if (activeConfig.Actor.playerCount == 1) {
+				auto& gamepad = GetGamepad(1);
+				bool startDown = (gamepad.buttons[0] & GAMEPAD::START) != 0;
+
+				if (startDown) {
+
+					auto& partnerNewActorData = GetNewActorData(1, 0, 0);
+					if (!partnerNewActorData.baseAddr) return;
+					if (arkhamFightData.dantePartner) {
+						auto& partnerActorData = *reinterpret_cast<PlayerActorDataDante*>(partnerNewActorData.baseAddr);
+						partnerActorData.newGamepad = 1;
+					}
+					else {
+						auto& partnerActorData = *reinterpret_cast<PlayerActorDataVergil*>(partnerNewActorData.baseAddr);
+						partnerActorData.newGamepad = 1;
+					}
+					activeConfig.Actor.playerCount = 2;
+					arkhamFightData.dantePartner = false;
+					//Log("Player %u start down", playerIndex);
+				}
+
+			}
+
 			//move through phases.
 			switch (arkhamFightData.fightPhase) {
 				//Fight begins, dante & vergil vs arkham
