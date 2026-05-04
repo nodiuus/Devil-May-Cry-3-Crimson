@@ -2755,7 +2755,8 @@ byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex, bo
 
         }
         else {
-            characterData.rangedWeaponCount = 0;
+            characterData.rangedWeaponCount = 1;
+            characterData.rangedWeapons[0] = WEAPON::REBELLION;
             characterData.meleeWeaponCount = 2;
 
             characterData.meleeWeapons[0] = WEAPON::YAMATO_VERGIL;
