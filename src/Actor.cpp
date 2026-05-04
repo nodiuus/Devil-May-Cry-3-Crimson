@@ -3560,6 +3560,8 @@ void StyleSwitchController(byte8* actorBaseAddr) {
 		// MIRAGE TRIGGER - ACTIVATES DOPPELGANGER WITH ONE BUTTON PRESS FOR VERGIL -- consumes Mirage Gauge
 		auto& vergilDopp = crimsonPlayer[playerIndex].vergilDoppelganger;
 		if (activeCrimsonGameplay.Gameplay.Vergil.mirageTrigger &&
+            //disable for bob fight
+            !(activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && !arkhamFightData.dantePartner) &&
 			(actorData.buttons[2] & GetBinding(BINDING::MAP_SCREEN) || actorData.buttons[2] & GetBinding(BINDING::FILE_SCREEN))
 			&& actorData.style != 5 && !actorData.newIsClone && vergilDopp.cooldownTime <= 0) {
 
