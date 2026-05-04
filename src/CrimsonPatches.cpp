@@ -776,7 +776,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	const float screenMarginForZoomIn = 380.0f * scaleFactorX;  // Safe margin for zooming in
 	const float screenMarginForZoomOut = 300.0f * scaleFactorX;
 
-	float maxDistance = 2800.0f; // Maximum allowed camera distance
+	float maxDistance = 2200.0f; // Maximum allowed camera distance
 
 	// Check if all players are within multiplayer camera range
 	bool allPlayersWithinMPCam = true;
@@ -784,7 +784,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	for (int i = 0; i < activeConfig.Actor.playerCount * 2; i++) {
 		float distanceTo1P = g_plEntityTo1PDistances[i];
 		float cameraDistanceMP = ((eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) || eventData.room == ROOM::DAMNED_CHESS_BOARD ||
-			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 1900.0f;
+			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 2200.0f;
 		if (distanceTo1P >= cameraDistanceMP) {
 			allPlayersWithinMPCam = false;
 			break;

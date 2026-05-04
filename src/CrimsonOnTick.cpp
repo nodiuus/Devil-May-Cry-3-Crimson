@@ -931,7 +931,7 @@ void MultiplayerCameraPositioningController() {
 	}
 	//end of crash fix
 
-	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 1900.0f;
+	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 2200.0f;
 	float cameraDistanceMPEnable = cameraDistanceMP * (2.0f / 3.0f);
 	float cameraDistanceThreshold = g_isMPCamActive ? cameraDistanceMP : cameraDistanceMPEnable;
 
