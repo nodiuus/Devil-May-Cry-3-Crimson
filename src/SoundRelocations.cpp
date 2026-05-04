@@ -1,5 +1,6 @@
 // UNSTUPIFY(Disclaimer: by 5%)... POOOF
 #include "SoundRelocations.hpp"
+#include "Actor.hpp"
 #include "Core/Core.hpp"
 #include "Config.hpp"
 #include "Global.hpp"
@@ -29,7 +30,7 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
     */
 
 
-    // NewActorData
+    // NewActorData — iterate all spawned actors (Arkham2, future extra/assist actors included)
 
     old_for_all(uint8, index, countof(motionArchivesOffs)) {
         auto& off = motionArchivesOffs[index];
@@ -41,133 +42,121 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
 
         // Log("baseAddr %llX", baseAddr);
 
-        uint8 playerCount = (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive) ? 2 : activeConfig.Actor.playerCount;
+        bool matched = false;
 
-        old_for_all(uint8, playerIndex, playerCount) {
-            old_for_all(uint8, characterIndex, CHARACTER_COUNT) {
-                old_for_all(uint8, entityIndex, ENTITY_COUNT) {
-                    auto& playerData = GetPlayerData(playerIndex);
+        ForEachSpawnedPlayerActor([&](PlayerActorData& actorData, NewActorData& newActorData,
+                                 uint8 playerIndex, uint8 entityIndex) {
+            if (matched) return;  // already found a match earlier, skip
+            if (baseAddr != newActorData.baseAddr) return;
 
-                    auto& characterData = GetCharacterData(playerIndex, characterIndex, entityIndex);
-                    auto& newActorData  = GetNewActorData(playerIndex, characterIndex, entityIndex);
+            matched = true;
 
-                    auto& activeCharacterData = GetCharacterData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
-                    auto& activeNewActorData  = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+            auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado
+                                                    : crimsonPlayer[playerIndex].inAirTornadoClone;
+            auto& skyLaunch = (entityIndex == 0) ? crimsonPlayer[playerIndex].skyLaunch
+                                                 : crimsonPlayer[playerIndex].skyLaunchClone;
 
-                    auto& leadCharacterData = GetCharacterData(playerIndex, 0, ENTITY::MAIN);
-                    auto& leadNewActorData  = GetNewActorData(playerIndex, 0, ENTITY::MAIN);
+            // Get characterData for the BOSS checks below (bosses go through
+            // CreateEnemyActor, not CreatePlayerActor, so characterData.character
+            // is the only reliable source for them).
+            auto& characterData = GetCharacterData(playerIndex,
+                                                    actorData.newCharacterIndex,
+                                                    entityIndex);
 
-                    auto& mainCharacterData = GetCharacterData(playerIndex, characterIndex, ENTITY::MAIN);
-                    auto& mainNewActorData  = GetNewActorData(playerIndex, characterIndex, ENTITY::MAIN);
+            if (actorData.character == CHARACTER::DANTE) {
+                if (actorData.eventData[0].event == 1) {
+                    // Mute the Style Switching Animations with Taunts for Dante.
+                    g_helperIndices[CHANNEL::COMMON]      = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+                    g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+                    return;
+                }
 
+                if (inAirTornado && actorData.motionData[0].index == 5) {
+                    // Mute YOU'RE GROUNDED from Dante's Air Tornado.
+                    g_helperIndices[CHANNEL::COMMON]      = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+                    g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+                    return;
+                }
 
-                    if (baseAddr != newActorData.baseAddr) {
-                        continue;
-                    }
-                    auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado : 
-                        crimsonPlayer[playerIndex].inAirTornadoClone;
-                    auto& skyLaunch = (entityIndex == 0) ? crimsonPlayer[playerIndex].skyLaunch : 
-						crimsonPlayer[playerIndex].skyLaunchClone;
-
-                    auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
-                    if (actorData.character == CHARACTER::DANTE) {
-                        if (actorData.eventData[0].event == 1) {
-                            // Mute the Style Switching Animations with Taunts for Dante.
-                            g_helperIndices[CHANNEL::COMMON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-                            g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-                            continue;
-                        }
-
-                        if (inAirTornado && actorData.motionData[0].index == 5) {
-                            // Mute YOU'RE GROUNDED from Dante's Air Tornado.
-							g_helperIndices[CHANNEL::COMMON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-                            g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-                            continue;
-                        }
-
-                        if (skyLaunch.executing) {
-							// Mute the Sky Launch's Royal Release SFX.
-							g_helperIndices[CHANNEL::COMMON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-							g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-							continue;
-                        }
-                    }
-
-
-                    if (characterData.character == CHARACTER::BOSS_LADY) {
-                        g_helperIndices[CHANNEL::ENEMY] = HELPER_ENEMY_LADY;
-                    } else if (characterData.character == CHARACTER::BOSS_VERGIL) {
-                        g_helperIndices[CHANNEL::ENEMY] = HELPER_ENEMY_VERGIL;
-                    } else {
-                        // Common
-                        {
-                            auto& helperIndex = g_helperIndices[CHANNEL::COMMON];
-
-                            switch (actorData.character) {
-                            case CHARACTER::DANTE: {
-                                helperIndex = HELPER_COMMON_DANTE_DEFAULT;
-
-                                switch (actorData.costume) {
-                                case COSTUME::DANTE_DEFAULT_NO_COAT:
-                                case COSTUME::DANTE_DMC1_NO_COAT: {
-                                    helperIndex = HELPER_COMMON_DANTE_NO_COAT;
-
-                                    break;
-                                }
-                                }
-
-                                break;
-                            }
-                            case CHARACTER::VERGIL: {
-                                helperIndex = HELPER_COMMON_VERGIL_DEFAULT;
-
-                                switch (actorData.costume) {
-                                case COSTUME::VERGIL_NERO_ANGELO:
-                                case COSTUME::VERGIL_NERO_ANGELO_INFINITE_MAGIC_POINTS: {
-                                    helperIndex = HELPER_COMMON_VERGIL_NERO_ANGELO;
-
-                                    break;
-                                }
-                                }
-
-                                break;
-                            }
-                            }
-                        }
-
-                        // Style Weapon
-                        {
-                            auto& helperIndex = g_helperIndices[CHANNEL::STYLE_WEAPON];
-
-                            switch (actorData.character) {
-                            case CHARACTER::DANTE: {
-                                helperIndex = HELPER_STYLE_WEAPON_DANTE;
-
-                                break;
-                            }
-                            case CHARACTER::VERGIL: {
-                                helperIndex = HELPER_STYLE_WEAPON_VERGIL_DEFAULT;
-
-                                switch (actorData.costume) {
-                                case COSTUME::VERGIL_NERO_ANGELO:
-                                case COSTUME::VERGIL_NERO_ANGELO_INFINITE_MAGIC_POINTS: {
-                                    helperIndex = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
-
-                                    break;
-                                }
-                                }
-
-                                break;
-                            }
-                            }
-                        }
-                    }
-
-
+                if (skyLaunch.executing) {
+                    // Mute the Sky Launch's Royal Release SFX.
+                    g_helperIndices[CHANNEL::COMMON]      = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+                    g_helperIndices[CHANNEL::STYLE_WEAPON] = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
                     return;
                 }
             }
-        }
+
+            if (characterData.character == CHARACTER::BOSS_LADY) {
+                g_helperIndices[CHANNEL::ENEMY] = HELPER_ENEMY_LADY;
+            } else if (characterData.character == CHARACTER::BOSS_VERGIL) {
+                g_helperIndices[CHANNEL::ENEMY] = HELPER_ENEMY_VERGIL;
+            } else {
+                // Common
+                {
+                    auto& helperIndex = g_helperIndices[CHANNEL::COMMON];
+
+                    switch (actorData.character) {
+                    case CHARACTER::DANTE: {
+                        helperIndex = HELPER_COMMON_DANTE_DEFAULT;
+
+                        switch (actorData.costume) {
+                        case COSTUME::DANTE_DEFAULT_NO_COAT:
+                        case COSTUME::DANTE_DMC1_NO_COAT: {
+                            helperIndex = HELPER_COMMON_DANTE_NO_COAT;
+
+                            break;
+                        }
+                        }
+
+                        break;
+                    }
+                    case CHARACTER::VERGIL: {
+                        helperIndex = HELPER_COMMON_VERGIL_DEFAULT;
+
+                        switch (actorData.costume) {
+                        case COSTUME::VERGIL_NERO_ANGELO:
+                        case COSTUME::VERGIL_NERO_ANGELO_INFINITE_MAGIC_POINTS: {
+                            helperIndex = HELPER_COMMON_VERGIL_NERO_ANGELO;
+
+                            break;
+                        }
+                        }
+
+                        break;
+                    }
+                    }
+                }
+
+                // Style Weapon
+                {
+                    auto& helperIndex = g_helperIndices[CHANNEL::STYLE_WEAPON];
+
+                    switch (actorData.character) {
+                    case CHARACTER::DANTE: {
+                        helperIndex = HELPER_STYLE_WEAPON_DANTE;
+
+                        break;
+                    }
+                    case CHARACTER::VERGIL: {
+                        helperIndex = HELPER_STYLE_WEAPON_VERGIL_DEFAULT;
+
+                        switch (actorData.costume) {
+                        case COSTUME::VERGIL_NERO_ANGELO:
+                        case COSTUME::VERGIL_NERO_ANGELO_INFINITE_MAGIC_POINTS: {
+                            helperIndex = HELPER_STYLE_WEAPON_VERGIL_NERO_ANGELO;
+
+                            break;
+                        }
+                        }
+
+                        break;
+                    }
+                    }
+                }
+            }
+        });
+
+        if (matched) continue;  // found a player actor — skip enemy search for this motionArchivesOffs
     }
 
 
