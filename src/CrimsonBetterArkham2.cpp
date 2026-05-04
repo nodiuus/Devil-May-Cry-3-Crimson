@@ -183,9 +183,11 @@ namespace CrimsonBetterArkham2 {
 			if (!enemyData.baseAddr) continue;
 
 			//this decrements arkham's health so his HP bar goes down throughout the boss rush 
-			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham > arkhamHealthCheckpoints[arkhamFightData.fightPhase])
-				enemyData.hitPointsArkham = arkhamHealthCheckpoints[arkhamFightData.fightPhase];
-				enemyData.healthGateHitPointsArkham = arkhamHealthGates[arkhamFightData.fightPhase];
+// 			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham > arkhamHealthCheckpoints[arkhamFightData.fightPhase])
+// 				enemyData.hitPointsArkham = arkhamHealthCheckpoints[arkhamFightData.fightPhase];
+// 				enemyData.healthGateHitPointsArkham = arkhamHealthGates[arkhamFightData.fightPhase];
+
+			// skipping Leeches without the teleportation to Boss Rush is causing a crash at 14002D80E from sub_14002CD60 -- Berth
 
 			//whenever arkham dives and sends out the dolphins, we don't fight them and advance to boss rush phase.
 			//don't do this if phase 7 tho or the fight just ends
