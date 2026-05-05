@@ -434,6 +434,7 @@ extern CrimsonConfigGameplay queuedCrimsonGameplay;
 extern "C" {
 	// Exported pointers for MASM access
 	extern bool* g_FasterTurnRateSettingAddr;
+	extern float* g_ActiveFOVMultSettingAddr;
 }
 
 
