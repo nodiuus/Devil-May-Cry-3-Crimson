@@ -87,4 +87,20 @@ JmpOut:
     jmp qword ptr [g_FixCrashArkhamPt2Grab_ReturnAddr5]
 
 FixCrashArkhamPt2GrabDetour5 ENDP
+
+; Detour6
+.DATA
+extern g_FixCrashArkhamPt2Grab_ReturnAddr6:QWORD
+.CODE
+FixCrashArkhamPt2GrabDetour6 PROC 
+    cmp rcx, 1000h
+    jb JmpOut
+
+ActualCode:
+    movaps xmm0, [rcx+080h]
+
+JmpOut:
+    jmp qword ptr [g_FixCrashArkhamPt2Grab_ReturnAddr6]
+
+FixCrashArkhamPt2GrabDetour6 ENDP
 END

@@ -135,6 +135,8 @@ std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr4;
 void FixCrashArkhamPt2GrabDetour4();
 std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr5;
 void FixCrashArkhamPt2GrabDetour5();
+std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr6;
+void FixCrashArkhamPt2GrabDetour6();
 
 // FixCrashArkhamPt2Doppel
 std::uint64_t g_FixCrashArkhamPt2Doppel_ReturnAddr1;
@@ -2254,6 +2256,15 @@ void ToggleArkhamPt2GrabCrashFix(bool enable) {
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1675B3, &FixCrashArkhamPt2GrabDetour5, 7);
 	g_FixCrashArkhamPt2Grab_ReturnAddr5 = FixCrashArkhamPt2GrabHook5->GetReturnAddress();
 	FixCrashArkhamPt2GrabHook5->Toggle(enable);
+
+	
+	// Detour 6
+	// From sub_1400510E0 (related to CSceneMgr vftable):
+	// dmc3.exe+510FA - 0F 28 81 80 00 00 00      - movaps xmm0,[rcx+00000080] { playerPos }
+	static std::unique_ptr<Utility::Detour_t> FixCrashArkhamPt2GrabHook6 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x510FA, &FixCrashArkhamPt2GrabDetour6, 7);
+	g_FixCrashArkhamPt2Grab_ReturnAddr6 = FixCrashArkhamPt2GrabHook6->GetReturnAddress();
+	FixCrashArkhamPt2GrabHook6->Toggle(enable);
 
 	run = enable;
 }
