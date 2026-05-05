@@ -37,10 +37,13 @@ EXTERN g_FrameRateTimeMultiplier:DWORD
 EXTERN g_FrameRateTimeMultiplierRounded:DWORD
 EXTERN g_BossCamFOV_ConstAddr:QWORD
 EXTERN g_ActiveFOVMultSettingAddr:QWORD
+EXTERN g_isMPCamActiveAddr:QWORD
+EXTERN g_CustomCameraPos_NewPosAddr:QWORD
 
 EXTERN g_FixBossCamLookAt_ReturnAddr:QWORD
 EXTERN g_FixBossCamRefocus_ReturnAddr1:QWORD
 EXTERN g_BossCamFOV_ReturnAddr:QWORD
+EXTERN g_BossCamCustomPositioning_ReturnAddr:QWORD
 
 
 .CODE
@@ -100,6 +103,40 @@ ApplyFOVMultiplierSetting:
     jmp qword ptr [g_BossCamFOV_ReturnAddr]
 
 BossCamFOVDetour ENDP
+
+
+.CODE
+BossCamCustomPositioningDetour PROC
+
+DetermineIfCustomPosIsUsed:
+    push rax
+    mov rax, g_isMPCamActiveAddr
+    cmp byte ptr [rax], 0
+    pop rax
+    je OriginalCode
+    jmp ModifyPos
+
+OriginalCode:
+    movaps [rdi+0190h], xmm0 ; rdi is CCCameraBoss ptr
+    jmp qword ptr [g_BossCamCustomPositioning_ReturnAddr]
+
+ModifyPos:
+    push rax
+    sub rsp, 20h 
+    movdqu [rsp+10h], xmm1
+    mov rax, g_CustomCameraPos_NewPosAddr       ; load ptr to new custom position (ptr to vec4)
+    movaps xmm1, dword ptr [rax]                 
+    movaps [rdi+0190h], xmm1                    ; apply the new pos
+
+    movdqu xmm1, [rsp+10h]
+    add rsp, 20h
+    pop rax
+
+    jmp qword ptr [g_BossCamCustomPositioning_ReturnAddr]
+
+BossCamCustomPositioningDetour ENDP
+
+
 
 
 END
