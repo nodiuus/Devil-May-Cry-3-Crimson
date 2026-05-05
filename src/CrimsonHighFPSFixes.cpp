@@ -92,6 +92,14 @@ extern "C" {
 	std::uint64_t g_BossCamFOV_ReturnAddr;
 	std::uint64_t g_BossCamFOV_ConstAddr;
 
+	void BossCamCustomPositioningDetour();
+	std::uint64_t g_BossCamCustomPositioning_ReturnAddr;
+	bool* g_isMPCamActiveAddr = nullptr;
+
+	// FixStaggerGravityInertia
+	void FixStaggerGravityDetour();
+	std::uint64_t g_FixStaggerGravity_ReturnAddr;
+
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -306,18 +314,39 @@ void BossCamFixes(bool enable) {
 	g_ActiveFOVMultSettingAddr = &activeCrimsonConfig.Camera.fovMultiplier;
 	BossCamFOVHook->Toggle(enable);
 
+	// From sub_140051A70:
+	// dmc3.exe+51ADD - 0F 29 87 90 01 00 00      - movaps [rdi+00000190],xmm0 { DetermineBossCamPos }
+	// g_CustomCameraPos_NewPosAddr
+	static std::unique_ptr<Utility::Detour_t> BossCamCustomPositioningHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x51ADD, &BossCamCustomPositioningDetour, 7);
+	g_BossCamCustomPositioning_ReturnAddr = BossCamCustomPositioningHook->GetReturnAddress();
+	BossCamCustomPositioningHook->Toggle(enable);
+	g_isMPCamActiveAddr = &g_isMPCamActive;
 
 	run = enable;
 }
 
-void BossCamFOVControl() {
+void StaggerGravityInertiaFix(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// From CPlayerStaggeGravity_sub_1401FBE20:
+	// dmc3.exe+1FBEB9 - F3 0F 10 87 A4 00 00 00   - movss xmm0,[rdi+000000A4] // rdi == player, +0xA4 == verticalInertiaMultiplier
+	static std::unique_ptr<Utility::Detour_t> StaggerGravityHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1FBEB9, &FixStaggerGravityDetour, 8);
+	g_FixStaggerGravity_ReturnAddr = StaggerGravityHook->GetReturnAddress();
+	StaggerGravityHook->Toggle(enable);
 
+	run = enable;
 }
 
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
+	StaggerGravityInertiaFix(enable);
 }
 
 
