@@ -80,6 +80,13 @@ extern "C" {
 
 	// Flag read by Detour11 to conditionally skip velocity computation
 	uint32_t g_ClothPhysicsEnhancementEnabled = 1;
+
+	// FixBossCamLookAt
+	void FixBossCamLookAtDetour();
+	std::uint64_t g_FixBossCamLookAt_ReturnAddr;
+	
+
+
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -264,9 +271,27 @@ void ClothPhysicsFixesController() {
 	ClothPhysicsEnhancementFixes(activeCrimsonConfig.Visual.clothPhysicsEnhancement);
 }
 
+void BossCamFixes(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CCameraBossLookAtTarget_sub_1402C8B80:
+	// dmc3.exe+E7DDE - 48 89 44 24 40        - mov [rsp+40],rax
+	static std::unique_ptr<Utility::Detour_t> BossCamLookAtHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0xE7DDE, &FixBossCamLookAtDetour, 5);
+	g_FixBossCamLookAt_ReturnAddr = BossCamLookAtHook->GetReturnAddress();
+	BossCamLookAtHook->Toggle(enable);
+
+	run = enable;
+}
+
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
+	BossCamFixes(enable);
 }
 
 
