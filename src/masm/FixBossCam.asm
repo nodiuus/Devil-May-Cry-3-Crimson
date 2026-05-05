@@ -35,8 +35,13 @@ ENDM
 .DATA
 EXTERN g_FrameRateTimeMultiplier:DWORD
 EXTERN g_FrameRateTimeMultiplierRounded:DWORD
+EXTERN g_BossCamFOV_ConstAddr:QWORD
+EXTERN g_ActiveFOVMultSettingAddr:QWORD
 
 EXTERN g_FixBossCamLookAt_ReturnAddr:QWORD
+EXTERN g_FixBossCamRefocus_ReturnAddr1:QWORD
+EXTERN g_BossCamFOV_ReturnAddr:QWORD
+
 
 .CODE
 FixBossCamLookAtDetour PROC
@@ -52,14 +57,49 @@ ApplyFPSMultiplier:
     ; At this point xmm2/xmm3 hold the raw blend weights.
     ; xmm6-xmm10 are dead — the function loads them from parameters
     ; right after the replaced instruction.
-    sub     rsp, 16                                 ; scratch space
+    sub rsp, 10h                                 ; scratch space
     POWF_XMM xmm2                                    ; xmm2 = powf(xmm2, mult)
     POWF_XMM xmm3                                    ; xmm3 = powf(xmm3, mult)
-    add     rsp, 16
+    add rsp, 10h
 
     jmp qword ptr [g_FixBossCamLookAt_ReturnAddr]
 
 FixBossCamLookAtDetour ENDP
+
+
+.CODE
+FixBossCamRefocusDetour1 PROC
+
+ApplyFPSMultiplier:
+    subss xmm0, dword ptr [g_FrameRateTimeMultiplier]
+
+    jmp qword ptr [g_FixBossCamRefocus_ReturnAddr1]
+
+FixBossCamRefocusDetour1 ENDP
+
+
+.CODE
+BossCamFOVDetour PROC
+
+OriginalCode:
+    push rax
+    sub rsp, 20h 
+    movdqu [rsp+10h], xmm1
+    mov rax, g_BossCamFOV_ConstAddr
+    movss xmm1, dword ptr [rax] ; 6.283185
+    mulss xmm0, xmm1 
+
+ApplyFOVMultiplierSetting:
+    mov rax, g_ActiveFOVMultSettingAddr       ; load ptr to fovMultiplier (float*)
+    mulss xmm0, dword ptr [rax]               ; multiply by the actual float value
+
+    movdqu xmm1, [rsp+10h]
+    add rsp, 20h
+    pop rax
+
+    jmp qword ptr [g_BossCamFOV_ReturnAddr]
+
+BossCamFOVDetour ENDP
 
 
 END

@@ -81,11 +81,16 @@ extern "C" {
 	// Flag read by Detour11 to conditionally skip velocity computation
 	uint32_t g_ClothPhysicsEnhancementEnabled = 1;
 
-	// FixBossCamLookAt
-	void FixBossCamLookAtDetour();
+	// FixBossCam
+	void FixBossCamLookAtDetour(); // Fixes BossCam FollowUp Speed
 	std::uint64_t g_FixBossCamLookAt_ReturnAddr;
-	
 
+	void FixBossCamRefocusDetour1(); 
+	std::uint64_t g_FixBossCamRefocus_ReturnAddr1;
+
+	void BossCamFOVDetour();
+	std::uint64_t g_BossCamFOV_ReturnAddr;
+	std::uint64_t g_BossCamFOV_ConstAddr;
 
 }
 
@@ -285,7 +290,28 @@ void BossCamFixes(bool enable) {
 	g_FixBossCamLookAt_ReturnAddr = BossCamLookAtHook->GetReturnAddress();
 	BossCamLookAtHook->Toggle(enable);
 
+	// From CCameraBossVergilFightMovement_sub_140054490:
+	// dmc3.exe + 544CD - F3 0F 5C 05 97 90 30 00 - subss xmm0, [dmc3.exe + 35D56C] { (1.00) }
+	static std::unique_ptr<Utility::Detour_t> BossCamRefocusHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x544CD, &FixBossCamRefocusDetour1, 8);
+	g_FixBossCamRefocus_ReturnAddr1 = BossCamRefocusHook1->GetReturnAddress();
+	BossCamRefocusHook1->Toggle(enable);
+
+	// From sub_140050D70:
+	// dmc3.exe+50D9F - F3 0F 59 05 79 0B 32 00   - mulss xmm0,[dmc3.exe + 371920] { fov Control }
+	static std::unique_ptr<Utility::Detour_t> BossCamFOVHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x50D9F, &BossCamFOVDetour, 8);
+	g_BossCamFOV_ReturnAddr = BossCamFOVHook->GetReturnAddress();
+	g_BossCamFOV_ConstAddr = (uintptr_t)appBaseAddr + 0x371920;
+	g_ActiveFOVMultSettingAddr = &activeCrimsonConfig.Camera.fovMultiplier;
+	BossCamFOVHook->Toggle(enable);
+
+
 	run = enable;
+}
+
+void BossCamFOVControl() {
+
 }
 
 

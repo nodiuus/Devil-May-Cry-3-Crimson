@@ -6,3 +6,4 @@ CrimsonConfigGameplay queuedCrimsonGameplay;
 CrimsonConfigGameplay activeCrimsonGameplay;
 
 bool* g_FasterTurnRateSettingAddr = nullptr;
+float* g_ActiveFOVMultSettingAddr = nullptr;
