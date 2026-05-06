@@ -73,6 +73,7 @@
 #include "UI\Texture2DD3D11.hpp"
 #include "UI\EmbeddedImages.hpp"
 #include "CrimsonCameraController.hpp"
+#include "CrimsonBetterArkham2.hpp"
 
 #include "DebugDrawDX11.hpp"
 
@@ -8639,7 +8640,14 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
             ImGui::Text("");
         }
-
+		if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2) {
+			[&]() {
+				ImGui::Text("Fight Phase        %u", arkhamFightData.fightPhase);
+				ImGui::Text("Next Fight Phase	%u", arkhamFightData.nextFightPhase);
+				ImGui::Text("Fight Active		%u", arkhamFightData.fightActive);
+				ImGui::Text("Fight Ending		%u", arkhamFightData.fightEnding);
+				}();
+		}
         if (activeConfig.debugOverlayData.showPosition) {
             [&]() {
                 auto pool_10213 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
@@ -12291,7 +12299,13 @@ void ExtraDifficultyGameplayOptions() {
 		"No Enemy DT will make it so enemy DT never occurs, even on DMD.");
 
 		ImGui::TableNextColumn();
-
+		GUI_Checkbox2("Better Arkham 2",
+			activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2,
+			queuedCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2);
+		ImGui::TableNextColumn();
+		CrimsonBetterArkham2::DebugGui();
+		
+		ImGui::TableNextColumn();
 		ImGui::PushItemWidth(itemWidth * 0.93f);
 		UI::ComboMapValue2("Force Difficulty",
 			forceDifficultyNames,
@@ -15315,7 +15329,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 
 	CrimsonOnTick::FrameResponsiveGameSpeed();
 	CrimsonOnTick::LevelFullyLoadedDelay();
-
+	CrimsonBetterArkham2::OnTick();
     // TIMERS
     CrimsonTimers::CallAllTimers();
 
@@ -15326,6 +15340,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	WorldSpaceWeaponWheels1PController(pSwapChain);
 	WorldSpaceWeaponWheelsController(pSwapChain);
 	CrimsonHUD::RedOrbCounterWindow();
+	CrimsonBetterArkham2::BlackoutArkham2OriginalScene();
 	CrimsonHUD::CheatsHUDIndicatorWindow();
 	CrimsonHUD::CheatHotkeysPopUpWindow();
 	CrimsonHUD::StyleMeterWindows();
@@ -15344,6 +15359,15 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
 	RenderMissionResultGameModeStats();
 	RenderMissionResultCheatsUsed();
+	//CrimsonGameModes::TrackGameMode();
+	//CrimsonGameModes::TrackCheats();
+	//CrimsonGameModes::TrackMissionResultGameMode();
+	//CrimsonOnTick::CrimsonMissionClearSong();
+	//CrimsonOnTick::DivinityStatueSong();
+	//CrimsonSDL::ReduceMusicVolumeInPause();
+
+	//CrimsonSDL::CheckAndOpenControllers();
+	//CrimsonSDL::UpdateJoysticks();
 
 
     HandleKeyBindings(keyBindings.data(), keyBindings.size());

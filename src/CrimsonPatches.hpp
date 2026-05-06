@@ -82,6 +82,12 @@ void DisableRegularEnemyAttacks(bool enable);
 
 #pragma endregion
 
+# pragma region Level
+
+void DisableDoorsInstancing(bool enable);
+
+#pragma endregion
+
 #pragma region Damage
 
 void StopDamageToCerberus(bool enable);

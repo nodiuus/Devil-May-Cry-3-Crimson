@@ -4493,7 +4493,8 @@ struct EnemyActorData : ActorDataBase {
 	float hitPointsArkham; // 0x26A8
 	_(220);
 	float maxHitPointsArkham; // 0x2788
-	_(1696);
+    float healthGateHitPointsArkham; // 0x278C
+	_(1692);
 	float maxHitPointsHells; // 0x2E2C
 	_(44);
 	float hitPointsHells; // 0x2E5C
@@ -4585,6 +4586,8 @@ static_assert(offsetof(EnemyActorData, hitPointsSoulEater) == 0x1A18);
 static_assert(offsetof(EnemyActorData, hitPointsDullahan) == 0x2478);
 static_assert(offsetof(EnemyActorData, hitPointsArkham) == 0x26A8);
 static_assert(offsetof(EnemyActorData, maxHitPointsArkham) == 0x2788);
+static_assert(offsetof(EnemyActorData, healthGateHitPointsArkham) == 0x278C);
+//const bool x = (offsetof(EnemyActorData, maxHitPointsHells) == 0x2E2C);
 static_assert(offsetof(EnemyActorData, maxHitPointsHells) == 0x2E2C);
 static_assert(offsetof(EnemyActorData, stunDisplacementDataAddr) == 0x3318); 
 static_assert(offsetof(EnemyActorData, hitPointsHells) == 0x2E5C);
@@ -5894,6 +5897,30 @@ struct HeldStyleExpData {
 extern HeldStyleExpData heldStyleExpDataDante;
 extern HeldStyleExpData heldStyleExpDataVergil;
 
+namespace ARKHAM_MOD_FIGHT_PHASE {
+    enum {
+        PHASE_1, //arkham lobby 1
+        PHASE_2, //cerberus
+        PHASE_3,//arkham lobby 2
+        PHASE_4, //agni rudra
+        PHASE_5, //arkham lobby 3
+        PHASE_6, //beowulf
+        PHASE_7, //arkham lobby final
+        PHASE_VANILLA,
+    };
+}
+
+struct ArkhamFightData {
+    bool fightActive{ false };
+    bool fightEnding{ false };
+    bool dantePartner { false };
+    //current phase of the fight
+    int fightPhase = ARKHAM_MOD_FIGHT_PHASE::PHASE_1;
+    //the queued next phase of the fight.
+    //due to the flow logic being done on tic, we need this variable to make sure we don't accidentally skip phases.
+    int nextFightPhase = ARKHAM_MOD_FIGHT_PHASE::PHASE_1;
+};
+extern ArkhamFightData arkhamFightData;
 extern bool devilTriggerReadyPlayed;
 
 extern bool missionClearSongPlayed;

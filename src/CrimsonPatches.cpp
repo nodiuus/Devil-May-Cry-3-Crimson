@@ -776,7 +776,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	const float screenMarginForZoomIn = 380.0f * scaleFactorX;  // Safe margin for zooming in
 	const float screenMarginForZoomOut = 300.0f * scaleFactorX;
 
-	float maxDistance = 2800.0f; // Maximum allowed camera distance
+	float maxDistance = 2200.0f; // Maximum allowed camera distance
 
 	// Check if all players are within multiplayer camera range
 	bool allPlayersWithinMPCam = true;
@@ -784,7 +784,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	for (int i = 0; i < activeConfig.Actor.playerCount * 2; i++) {
 		float distanceTo1P = g_plEntityTo1PDistances[i];
 		float cameraDistanceMP = ((eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) || eventData.room == ROOM::DAMNED_CHESS_BOARD ||
-			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 1900.0f;
+			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 2200.0f;
 		if (distanceTo1P >= cameraDistanceMP) {
 			allPlayersWithinMPCam = false;
 			break;
@@ -2038,6 +2038,28 @@ void DisableRegularEnemyAttacks(bool enable) {
 		_patch((char*)(appBaseAddr + 0x1C998A), (char*)"\x7E\x15", 2); 
 	}
 
+	run = enable;
+}
+
+#pragma endregion
+
+# pragma region Level
+
+void DisableDoorsInstancing(bool enable) {
+	// This disables the instancing of doors in levels. Useful for Void and Better Arkham Pt.2
+
+	static bool run = false;
+	// If the function has already run in the current state, return early
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1A9B90 - E8 2B 02 00 00           - call dmc3.exe+1A9DC0
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x1A9B90), 5); 
+	} else {
+		_patch((char*)(appBaseAddr + 0x1A9B90), (char*)"\xE8\x2B\x02\x00\x00", 5); 
+	}
 	run = enable;
 }
 

@@ -3366,10 +3366,10 @@ void BulletMagnetism(byte8* actorBaseAddr) {
 		int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
 
 		// Now we detect if player is going backwards relative to their inertia direction, 
-		// which would be indicated by a rotation delta greater than 90° (0x4000 in uint16-space).
+		// which would be indicated by a rotation delta greater than 90ï¿½ (0x4000 in uint16-space).
 
 		if (rotationDeltaAbs > 0x4000) {
-			// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
+			// 0x8000 is half-turn in uint16-space (180ï¿½ = pi radians), so this inverts inertia direction.
 			actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
 		}
 	}
@@ -5524,6 +5524,93 @@ void GroundTrickFlagSet(byte8* actorBaseAddr) {
         && newActorData.visibility == 2) {
         newActorData.visibility = 0; // unhide
     }
+}
+
+void TeleportToMainPlayer(byte8* actorBaseAddr) {
+	// Works in tandem with DanteTrickAlterations Detour in CrimsonDetours (requirement)
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	//if not the active character return
+	if (!IsActiveCharacterActor(actorData)) return;
+	//if not in arkham bob fight in singleplayer, return
+	if (!(activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive)) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	//if not the partner character, return
+	if (playerIndex != 1) return;
+	
+	auto& playerData = GetPlayerData(playerIndex);
+	//get mainPlayerData
+	auto& mainPlayerData = GetPlayerData(0);
+	auto entityIndex = actorData.newEntityIndex;
+	auto& mainNewActorData = GetNewActorData(0, mainPlayerData.activeCharacterIndex, 0);
+	if (!mainNewActorData.baseAddr) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(mainNewActorData.baseAddr);
+	auto& newActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+
+	//if (actorData.character != CHARACTER::DANTE) return;
+
+	// teleport actorData to the right of mainActorData
+	// DMC3 uses uint16 rotation (0...65535 is equivalent to 0...2pi radians). So we convert:
+	//   Forward vector == ( sin(angle),  cos(angle) )
+	//   Left vector    == (-cos(angle),  sin(angle) )
+	auto TeleportToLeftOfMain = [&](float offsetDist = 150.0f) {
+		float mainAngle = mainActorData.rotation * (3.14159265f / 32768.0f);
+		actorData.position.x = mainActorData.position.x + (-std::cos(mainAngle) * offsetDist);
+		actorData.position.y = mainActorData.position.y+50.0f;
+		actorData.position.z = mainActorData.position.z + (std::sin(mainAngle) * offsetDist);
+	};
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::DANTE) {
+		TeleportToLeftOfMain();
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x3 && actorData.character == CHARACTER::DANTE) {
+		actorData.position.y = mainActorData.position.y;
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::VERGIL) {
+		TeleportToLeftOfMain();
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x3 && actorData.character == CHARACTER::VERGIL) {
+		actorData.position.y = mainActorData.position.y;
+	}
+	//if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_GROUND_TRICK) { // guarantee attack buffer will come through
+	//	auto& policyMelee = actorData.nextActionRequestPolicy[NEXT_ACTION_REQUEST_POLICY::MELEE_ATTACK];
+	//	auto& policySword = actorData.nextActionRequestPolicy[NEXT_ACTION_REQUEST_POLICY::SWORDMASTER_GUNSLINGER];
+	//	policyMelee = NEXT_ACTION_REQUEST_POLICY::BUFFER;
+	//	policySword = NEXT_ACTION_REQUEST_POLICY::BUFFER;
+	//	//actorData.state &= ~STATE::BUSY;
+	//}
+
+	//if (actorData.eventData[0].event == ACTOR_EVENT::LANDING) {
+	//	actorData.verticalPull = -150.0f;
+	//	auto& policyMelee = actorData.nextActionRequestPolicy[NEXT_ACTION_REQUEST_POLICY::MELEE_ATTACK];
+	//	auto& policySword = actorData.nextActionRequestPolicy[NEXT_ACTION_REQUEST_POLICY::SWORDMASTER_GUNSLINGER];
+	//	policyMelee = NEXT_ACTION_REQUEST_POLICY::BUFFER;
+	//	policySword = NEXT_ACTION_REQUEST_POLICY::BUFFER;
+
+	//	if (actorData.state & STATE::ON_FLOOR) {
+	//		policyMelee = NEXT_ACTION_REQUEST_POLICY::EXECUTE;
+	//		policySword = NEXT_ACTION_REQUEST_POLICY::EXECUTE;
+	//		actorData.permissions = 3080; // This is a softer version of Reset Permissions.
+	//		actorData.state &= ~STATE::BUSY;
+	//	}
+	//}
+
+
+
+	//if (actorData.newEntityIndex == 1 && !actorData.doppelganger) return; // visibility set with doppel fix
+
+	if ((actorData.eventData[0].event == ACTOR_EVENT::LANDING || actorData.eventData[0].event == ACTOR_EVENT::STAGGER ||
+		actorData.eventData[0].event == ACTOR_EVENT::ATTACK)
+		&& newActorData.visibility == 2) {
+		newActorData.visibility = 0; // unhide
+	}
 }
 
 }

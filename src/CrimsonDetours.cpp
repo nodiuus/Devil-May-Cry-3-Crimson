@@ -135,6 +135,8 @@ std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr4;
 void FixCrashArkhamPt2GrabDetour4();
 std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr5;
 void FixCrashArkhamPt2GrabDetour5();
+std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr6;
+void FixCrashArkhamPt2GrabDetour6();
 
 // FixCrashArkhamPt2Doppel
 std::uint64_t g_FixCrashArkhamPt2Doppel_ReturnAddr1;
@@ -283,6 +285,13 @@ void GreenOrbsMPRegenDetour();
 std::uint64_t g_GreenOrbsMPRegen_ReturnAddr;
 void* g_GreenOrbsMPRegen_Call;
 
+// PortalsHide
+void PortalsHideDetour();
+std::uint64_t g_PortalsHide_ReturnAddr;
+
+// PortalsMute
+void PortalsMuteDetour();
+std::uint64_t g_PortalsMute_ReturnAddr;
 // StyleLevellingCCSFix
 void StyleLevellingCCSFixDetour1();
 std::uint64_t g_StyleLevellingCCSFix_ReturnAddr1;
@@ -1873,6 +1882,31 @@ void ToggleStyleRankHudNoFadeout(bool enable) {
     }
 }
 
+void ToggleHideAndMutePortals(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// HidePortals
+	// dmc3.exe + 270B85 - 66 89 44 24 28        - mov [rsp+28],ax
+	static std::unique_ptr<Utility::Detour_t> HidePortalsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x270B85, &PortalsHideDetour, 5);
+	g_PortalsHide_ReturnAddr = HidePortalsHook->GetReturnAddress();
+	HidePortalsHook->Toggle(enable);
+
+	// MutePortals
+	// dmc3.exe + 26D07E - 89 03                 - mov [rbx],eax
+	// dmc3.exe + 26D080 - 48 8D 5B 04           - lea rbx,[rbx+04]
+	static std::unique_ptr<Utility::Detour_t> MutePortalsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x26D07E, &PortalsMuteDetour, 6);
+	g_PortalsMute_ReturnAddr = MutePortalsHook->GetReturnAddress();
+	MutePortalsHook->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleFPSSpeedIssues(bool enable) {
 	using namespace Utility;
 	static bool run = false;
@@ -2222,6 +2256,15 @@ void ToggleArkhamPt2GrabCrashFix(bool enable) {
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1675B3, &FixCrashArkhamPt2GrabDetour5, 7);
 	g_FixCrashArkhamPt2Grab_ReturnAddr5 = FixCrashArkhamPt2GrabHook5->GetReturnAddress();
 	FixCrashArkhamPt2GrabHook5->Toggle(enable);
+
+	
+	// Detour 6
+	// From sub_1400510E0 (related to CSceneMgr vftable):
+	// dmc3.exe+510FA - 0F 28 81 80 00 00 00      - movaps xmm0,[rcx+00000080] { playerPos }
+	static std::unique_ptr<Utility::Detour_t> FixCrashArkhamPt2GrabHook6 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x510FA, &FixCrashArkhamPt2GrabDetour6, 7);
+	g_FixCrashArkhamPt2Grab_ReturnAddr6 = FixCrashArkhamPt2GrabHook6->GetReturnAddress();
+	FixCrashArkhamPt2GrabHook6->Toggle(enable);
 
 	run = enable;
 }

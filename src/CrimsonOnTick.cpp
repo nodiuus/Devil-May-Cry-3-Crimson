@@ -931,7 +931,7 @@ void MultiplayerCameraPositioningController() {
 	}
 	//end of crash fix
 
-	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 1900.0f;
+	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 2200.0f;
 	float cameraDistanceMPEnable = cameraDistanceMP * (2.0f / 3.0f);
 	float cameraDistanceThreshold = g_isMPCamActive ? cameraDistanceMP : cameraDistanceMPEnable;
 
@@ -975,8 +975,8 @@ void MultiplayerCameraPositioningController() {
 	auto mpCamNow = std::chrono::steady_clock::now();
 	bool canSwitchMPCam = std::chrono::duration<float>(mpCamNow - lastMPCamSwitchTime).count() >= 1.0f;
 
-	// Camera behavior based on player count and trigger status
-	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1) {
+	// Camera behavior based on player count, doppelganger, or Arkham2 fight
+	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1 || arkhamFightData.fightActive) {
 		// MULTIPLAYER
 		if (triggerMPCam != g_isMPCamActive && canSwitchMPCam) {
 			g_isMPCamActive = triggerMPCam;

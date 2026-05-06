@@ -173,6 +173,7 @@ struct CrimsonConfigGameplay {
 			uint8 ldkMode = 0;
 			uint32 mustStyleMode = STYLE_RANK::NONE;
 			uint8 enemyDTMode = ENEMYDTMODE::DEFAULT;
+			bool betterArkham2 = false;
 			uint32 forceDifficultyMode = DIFFICULTY_MODE::FORCE_DIFFICULTY_OFF;
 
 			static constexpr auto Metadata() {
@@ -180,6 +181,7 @@ struct CrimsonConfigGameplay {
 					std::make_pair("ldkMode", &ExtraDifficulty::ldkMode),
 					std::make_pair("mustStyleMode", &ExtraDifficulty::mustStyleMode),
 					std::make_pair("enemyDTMode", &ExtraDifficulty::enemyDTMode),
+					std::make_pair("betterArkham2",&ExtraDifficulty::betterArkham2),
 					std::make_pair("forceDifficultyMode", &ExtraDifficulty::forceDifficultyMode)
 				);
 			}
