@@ -226,6 +226,8 @@ file(GLOB MAIN_SRC
     StyleSwitchFX.hpp
     CrimsonEfk.hpp
     CrimsonEfk.cpp
+    CrimsonEfkPreload.cpp
+    CrimsonEfkPreload.hpp
 )
 
 file(GLOB CORE_SRC 

@@ -42,6 +42,7 @@
 #include "CrimsonTimers.hpp"
 #include "CrimsonUtil.hpp"
 #include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
 
 namespace CrimsonGameplay {
 
@@ -1665,10 +1666,6 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	static bool closeToEnemy[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	auto& closeEnemy = closeToEnemy[playerIndex][entityIndex];
-	static constexpr const wchar_t* weaponParticlePath = L"Crimson\\vfx\\yamato_sword.efkefc";
-	static EffekseerRefHandle weaponParticleRef = CrimsonEfk::LoadEffect(weaponParticlePath, 1.0f);
-	static constexpr const wchar_t* risingStarParticlePath = L"Crimson\\vfx\\risingstar.efkefc";
-	static EffekseerRefHandle risingStarParticleRef = CrimsonEfk::LoadEffect(risingStarParticlePath, 1.0f);
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
 	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
@@ -1742,8 +1739,8 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
 
-		risingStarParticleRef = CrimsonEfk::ReloadEffect(risingStarParticleRef, risingStarParticlePath, 40.0f);
-		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(risingStarParticleRef, boneMatrix->matrix3, &actorData);
+		CrimsonEfkPreload::risingStar_PoseHit_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::risingStar_PoseHit_Handle, CrimsonEfkPreload::risingStar_PoseHit_Path, 40.0f);
+		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix3, &actorData);
 		uint32_t vergilColor = CrimsonUtil::HexToAABBGGRR(0x522BFFFF);
 		//CrimsonEfk::SetAllColor(risingStarParticleHandle[playerIndex][entityIndex], vergilColor);
         
@@ -2201,10 +2198,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool pendingJustFrameJDC[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
-	static constexpr const wchar_t* jdcChargeParticlePath = L"Crimson\\vfx\\jdc_charge.efkefc";
-	static EffekseerRefHandle chargeParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 1.0f);
-	static EffekseerRefHandle chargeDTParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge_dt.efkefc", 1.0f);
-
 	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	CharSettings2& charSettings2 = **reinterpret_cast<CharSettings2**>(actorBaseAddr + 0x3DF8); 
 	DamageData& jdcDmgData = *reinterpret_cast<DamageData*>(appBaseAddr + 0x5CDF40);
@@ -2318,8 +2311,10 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
 				Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
-				chargeParticleRef = CrimsonEfk::ReloadEffect(chargeParticleRef, jdcChargeParticlePath, 1.0f);
-				chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
+				CrimsonEfkPreload::jdcCharge_Handle = 
+					CrimsonEfk::ReloadEffect(CrimsonEfkPreload::jdcCharge_Handle, CrimsonEfkPreload::jdcCharge_Path, 1.0f);
+				chargeParticle[playerIndex][entityIndex] = 
+					CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::jdcCharge_Handle, swordMatrix[0].matrix2, actorData); // using katana bone 2
 				
 				
 				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
@@ -5146,16 +5141,6 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 	auto gamepad = GetGamepad(actorData.newGamepad);
 
-	static constexpr const wchar_t* driveChargeParticlePath = L"Crimson\\vfx\\drive_charge.efkefc";
-	static EffekseerRefHandle driveChargeParticleRef = CrimsonEfk::LoadEffect(driveChargeParticlePath, 1.0f);
-	static constexpr const wchar_t* quickDriveChargeParticlePath = L"Crimson\\vfx\\quickdrive_charge.efkefc";
-	static EffekseerRefHandle quickDriveChargeParticleRef = CrimsonEfk::LoadEffect(quickDriveChargeParticlePath, 1.0f);
-	static constexpr const wchar_t* driveLevel1ParticlePath = L"Crimson\\vfx\\drive_level1.efkefc";
-	static EffekseerRefHandle driveLevel1ParticleRef = CrimsonEfk::LoadEffect(driveLevel1ParticlePath, 1.0f);
-	static constexpr const wchar_t* driveLevel2ParticlePath = L"Crimson\\vfx\\drive_level2.efkefc";
-	static EffekseerRefHandle driveLevel2ParticleRef = CrimsonEfk::LoadEffect(driveLevel2ParticlePath, 1.0f);
-	static constexpr const wchar_t* driveLevel3ParticlePath = L"Crimson\\vfx\\drive_level3.efkefc";
-	static EffekseerRefHandle driveLevel3ParticleRef = CrimsonEfk::LoadEffect(driveLevel3ParticlePath, 1.0f);
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
 
 	auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
@@ -5279,8 +5264,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
 		if (!drive.quickDriveEffectPlayed) {
 			
-			quickDriveChargeParticleRef = CrimsonEfk::ReloadEffect(quickDriveChargeParticleRef, quickDriveChargeParticlePath, 1.0f);
-			drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(quickDriveChargeParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+			CrimsonEfkPreload::drive_QuickCharge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_QuickCharge_Handle, CrimsonEfkPreload::drive_QuickCharge_Path, 1.0f);
+			drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_QuickCharge_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 
 			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 
@@ -5299,8 +5284,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 			drive.effectInterruptTime = 1.1f;
 			drive.sfxLooped = false;
 
-			driveChargeParticleRef = CrimsonEfk::ReloadEffect(driveChargeParticleRef, driveChargeParticlePath, 1.0f);
-			drive.chargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveChargeParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+			CrimsonEfkPreload::drive_Charge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Charge_Handle, CrimsonEfkPreload::drive_Charge_Path, 1.0f);
+			drive.chargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Charge_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 			
 			CrimsonSDL::PlayDriveStart(playerIndex, entityIndex); // Charge sound
 
@@ -5340,8 +5325,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
             if (!drive.level2EffectPlayed) {
 
                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
-				driveLevel2ParticleRef = CrimsonEfk::ReloadEffect(driveLevel2ParticleRef, driveLevel2ParticlePath, 1.0f);
-				drive.level2EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel2ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+				CrimsonEfkPreload::drive_Level2_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level2_Handle, CrimsonEfkPreload::drive_Level2_Path, 1.0f);
+				drive.level2EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level2_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex);
                 drive.level2EffectPlayed = true;
             }
@@ -5354,8 +5339,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
             if (!drive.level3EffectPlayed) {
 
                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
-				driveLevel3ParticleRef = CrimsonEfk::ReloadEffect(driveLevel3ParticleRef, driveLevel3ParticlePath, 1.0f);
-				drive.level3EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel3ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+				CrimsonEfkPreload::drive_Level3_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level3_Handle, CrimsonEfkPreload::drive_Level3_Path, 1.0f);
+				drive.level3EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level3_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex);
 
                 drive.level3EffectPlayed = true;

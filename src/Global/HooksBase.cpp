@@ -12,6 +12,7 @@
 #include "../Core/DebugSwitch.hpp"
 #include "../StyleSwitchFX.hpp"
 #include "../CrimsonEfk.hpp"
+#include "../CrimsonEfkPreload.hpp"
 #include "../CrimsonHUD.hpp"
 #include <dxgi1_3.h>
 
@@ -1030,6 +1031,11 @@ HRESULT D3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Dr
 
 	bool efk = CrimsonEfk::EffekInit(::D3D11::device, ::D3D11::deviceContext, modifiedSwapChainDesc.BufferDesc.Width, modifiedSwapChainDesc.BufferDesc.Height);
     assert(efk);
+
+    // Preload ALL Effekseer effects now so the game never stutters on first use.
+    if (efk) {
+        CrimsonEfkPreload::PreloadAll();
+    }
 
     [&]() {
         auto func = D3D11CreateDeviceAndSwapChain_func;

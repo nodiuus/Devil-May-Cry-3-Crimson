@@ -25,6 +25,7 @@
 #include "Actor.hpp"
 #include "CrimsonOnTick.hpp"
 #include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
 #include "Internal.hpp"
 #include "CrimsonDetours.hpp"
 
@@ -739,10 +740,7 @@ uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 		return shlActorData.CGeneratorPtr;
 	}
 
-	static constexpr const wchar_t* justFrameVFXPath = L"Crimson\\vfx\\judgementcut\\justframejdc.efkefc";
-	EffekseerRefHandle justFrameVFXRef = CrimsonEfk::LoadEffect(justFrameVFXPath, 40.0f);
-
-	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(justFrameVFXRef, shlActorData.matrix, NULL);
+	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::justFrameJDC_Handle, shlActorData.matrix, NULL);
 
 	// Spawn Default JDC VFX for the JDCs CGenerator not to be NULL
 	// Default JDC VFX is group 2 index 456
@@ -1041,16 +1039,6 @@ namespace DriveCol {
 		if (!activeCrimsonGameplay.Gameplay.Dante.driveRework) {
 			return;
 		}
-       // Keep effect loading lazy (first use) so initialization order remains identical to pre-refactor behavior.
-		static constexpr const wchar_t* driveParticlePath = L"Crimson\\vfx\\drive.efkefc";
-		static EffekseerRefHandle driveParticleRef = CrimsonEfk::LoadEffect(driveParticlePath, 40.0f);
-
-		static constexpr const wchar_t* drive2ParticlePath = L"Crimson\\vfx\\drive2.efkefc";
-		static EffekseerRefHandle drive2ParticleRef = CrimsonEfk::LoadEffect(drive2ParticlePath, 40.0f);
-
-		static constexpr const wchar_t* drive3ParticlePath = L"Crimson\\vfx\\drive3.efkefc";
-		static EffekseerRefHandle drive3ParticleRef = CrimsonEfk::LoadEffect(drive3ParticlePath, 40.0f);
-
 		const bool isDriveCollision =
 			reinterpret_cast<uintptr_t>(collisionMeta->dmgDataAddr) == reinterpret_cast<uintptr_t>(appBaseAddr + 0x5CB1E0);
 
@@ -1069,13 +1057,13 @@ namespace DriveCol {
 
 				EffekseerHandle handle{};
 				if (desiredPhase == DriveFxPhase::Part3) {
-                 handle = CrimsonEfk::PlayEffectAtMatrix(drive3ParticleRef, collisionMeta->matrix1, NULL);
+                 handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part3_Handle, collisionMeta->matrix1, NULL);
 				}
 				else if (desiredPhase == DriveFxPhase::Part2) {
-                 handle = CrimsonEfk::PlayEffectAtMatrix(drive2ParticleRef, collisionMeta->matrix1, NULL);
+                 handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part2_Handle, collisionMeta->matrix1, NULL);
 				}
 				else {
-                  handle = CrimsonEfk::PlayEffectAtMatrix(driveParticleRef, collisionMeta->matrix1, NULL);
+                  handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part1_Handle, collisionMeta->matrix1, NULL);
 				}
 
 				DriveInstanceState instanceState{};
