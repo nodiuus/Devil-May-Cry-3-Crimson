@@ -8640,12 +8640,12 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
             ImGui::Text("");
         }
-		if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2) {
+		if (activeConfig.Actor.enable) {
 			[&]() {
-				ImGui::Text("Fight Phase        %u", arkhamFightData.fightPhase);
-				ImGui::Text("Next Fight Phase	%u", arkhamFightData.nextFightPhase);
-				ImGui::Text("Fight Active		%u", arkhamFightData.fightActive);
-				ImGui::Text("Fight Ending		%u", arkhamFightData.fightEnding);
+				ImGui::Text("Arkham CCS Fight Phase			%u", arkhamFightData.fightPhase);
+				ImGui::Text("Arkham CCS Next Fight Phase	%u", arkhamFightData.nextFightPhase);
+				ImGui::Text("Arkham CCS Fight Active		%u", arkhamFightData.fightActive);
+				ImGui::Text("Arkham CCS Fight Ending		%u", arkhamFightData.fightEnding);
 				}();
 		}
         if (activeConfig.debugOverlayData.showPosition) {
@@ -12298,12 +12298,12 @@ void ExtraDifficultyGameplayOptions() {
 			"Instant Enemy DT will apply Enemy DT instantly when they spawn on DMD.\n"
 		"No Enemy DT will make it so enemy DT never occurs, even on DMD.");
 
-		ImGui::TableNextColumn();
-		GUI_Checkbox2("Better Arkham 2",
-			activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2,
-			queuedCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2);
-		ImGui::TableNextColumn();
-		CrimsonBetterArkham2::DebugGui();
+		//ImGui::TableNextColumn();
+		//GUI_Checkbox2("Better Arkham 2",
+		//	activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2,
+		//	queuedCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2);
+		//ImGui::TableNextColumn();
+		//CrimsonBetterArkham2::DebugGui();
 		
 		ImGui::TableNextColumn();
 		ImGui::PushItemWidth(itemWidth * 0.93f);

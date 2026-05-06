@@ -100,7 +100,7 @@ namespace CrimsonBetterArkham2 {
 	/// <param name="filename"></param>
 	/// <returns>false if we need to skip the arkham music</returns>
 	bool SetTrack(const char* filename) {
-		if (!activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2) {
+		if (!activeConfig.Actor.enable) {
 			return true;
 		}
 
@@ -277,7 +277,7 @@ namespace CrimsonBetterArkham2 {
 	void OnTick()
 	{
 		//we're doing a lot here, let's not do it unless we need to.
-		if (!activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2)
+		if (!activeConfig.Actor.enable)
 			return;
 
 		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
@@ -325,7 +325,7 @@ namespace CrimsonBetterArkham2 {
 			//Teleport when fight ends to go to real arkham2 fight (this was put here for ez gui testing)
 			if (sessionData.mission == 19
 				&& eventData.room == 421
-				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
+				&& activeConfig.Actor.enable
 				&& eventFlags[20] == 2
 				&& arkhamFightData.fightEnding) {
 				nextEventData.room = 421;
@@ -439,7 +439,7 @@ namespace CrimsonBetterArkham2 {
 			//Teleport when fight ends to go to real arkham2 fight
 			if (sessionData.mission == 19
 				&& eventData.room == 421
-				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
+				&& activeConfig.Actor.enable
 				&& eventFlags[20] == 2
 				&& arkhamFightData.fightEnding) {
 				nextEventData.room = 421;
@@ -459,7 +459,7 @@ namespace CrimsonBetterArkham2 {
 
 			if (sessionData.mission == 19
 				&& eventData.room == 421
-				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
+				&& activeConfig.Actor.enable
 				&& eventFlags[20] == 2
 				&& arkhamFightData.fightEnding) {
 				nextEventData.room = 421;
@@ -468,7 +468,7 @@ namespace CrimsonBetterArkham2 {
 
 			// Muting the cutscene while we're in the fight
 			if (sessionData.mission == 19
-				&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
+				&& activeConfig.Actor.enable
 				&& eventFlags[20] == 2) {
 
 				SetVolume(CHANNEL::DEMO, 0);
@@ -477,7 +477,7 @@ namespace CrimsonBetterArkham2 {
 		}
 
 		if (sessionData.mission == 19
-			&& activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2
+			&& activeConfig.Actor.enable
 			&& eventFlags[20] == 2) {
 
 			if (g_scene == SCENE::GAME) {
@@ -498,7 +498,7 @@ namespace CrimsonBetterArkham2 {
 	/// Logic for entering and exiting better arkham 2 fight
 	/// </summary>
 	void SceneGame() {
-		if (!activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2)
+		if (!activeConfig.Actor.enable)
 			return;
 		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
@@ -536,8 +536,15 @@ namespace CrimsonBetterArkham2 {
 			if (eventFlags[20] == 1) {
 				eventFlags[20] = 2;
 				arkhamFightData.fightActive = true;
-				arkhamFightData.fightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
-				arkhamFightData.nextFightPhase = PHASE_VANILLA; //normally phase 1 but disabled for now
+				//if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2) {
+					//arkhamFightData.fightPhase = PHASE_1; 
+					//arkhamFightData.nextFightPhase = PHASE_1; 
+				//}
+				//else {
+					arkhamFightData.fightPhase = PHASE_VANILLA; 
+					arkhamFightData.nextFightPhase = PHASE_VANILLA;
+				//}
+
 				arkhamFightData.fightEnding = false;
 				//spawn our own arkham
 				auto& characterData = GetActiveCharacterData(0, 0, 0);
@@ -589,7 +596,7 @@ namespace CrimsonBetterArkham2 {
 	/// </summary>
 	void EventMain()
 	{
-		if (!activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2)
+		if (!activeConfig.Actor.enable)
 			return;
 		//spawn arkham 2 in
 		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
@@ -675,7 +682,7 @@ namespace CrimsonBetterArkham2 {
 		}
 		auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
 
-		if ((sessionData.mission == 19) && activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2 
+		if ((sessionData.mission == 19) && activeConfig.Actor.enable
 			&& g_scene == SCENE::GAME) {
 			if (eventFlags[20] == 1) {
 				ImGuiViewport* viewport = ImGui::GetMainViewport();
