@@ -15,6 +15,8 @@
 #include "../CrimsonEfkPreload.hpp"
 #include "../CrimsonHUD.hpp"
 #include <dxgi1_3.h>
+#include <timeapi.h>
+#pragma comment(lib, "winmm.lib")
 
 void UpdateMousePositionMultiplier() {
     using namespace CoreImGui::DI8;
@@ -248,6 +250,7 @@ void FPSLimiter_Init(double fps) {
 	if (fps <= 0.0) {
 		g_targetFrameTime = 0.0;
 		g_fpsLimiterInitialized = false;
+		timeEndPeriod(1);
 		return;
 	}
 
@@ -256,6 +259,8 @@ void FPSLimiter_Init(double fps) {
 
 	g_targetFrameTime = 1.0 / fps;
 	g_fpsLimiterInitialized = true;
+
+	timeBeginPeriod(1);
 }
 
 
@@ -267,18 +272,31 @@ void FPSLimiter_Apply() {
 	QueryPerformanceCounter(&now);
 
 	double elapsed = double(now.QuadPart - g_lastPresentTime.QuadPart) / double(g_qpcFreq.QuadPart);
+
+	// Clamp elapsed: if we've been away (alt-tab, pause, etc.), reset the baseline
+	// instead of letting a huge elapsed time burst through uncapped frames.
+	if (elapsed > g_targetFrameTime * 2.0) {
+		g_lastPresentTime = now;
+		g_lastPresentTime.QuadPart -= (LONGLONG)(g_targetFrameTime * g_qpcFreq.QuadPart);
+		return;
+	}
+
 	double remaining = g_targetFrameTime - elapsed;
 
 	if (remaining > 0.0) {
-		// Coarse sleep (RTSS-like)
-		if (remaining > 0.002) { // > 2ms
-			DWORD sleepMs = (DWORD)((remaining - 0.001) * 1000.0);
+		// Coarse sleep — only for large gaps to yield CPU, with generous margin
+		// to prevent oversleep from causing frame jitter.
+		if (remaining > 0.005) { // > 5ms
+			// Sleep only half the remaining time to guarantee we wake early
+			DWORD sleepMs = (DWORD)((remaining * 0.5) * 1000.0);
 			if (sleepMs > 0)
 				Sleep(sleepMs);
 		}
 
-		// Fine spin wait
+		// Fine spin wait — _mm_pause() yields the CPU hint that we're in a
+		// spin-loop, reducing power/thermal impact vs a pure busy-wait.
 		do {
+			_mm_pause();
 			QueryPerformanceCounter(&now);
 			elapsed = double(now.QuadPart - g_lastPresentTime.QuadPart) / double(g_qpcFreq.QuadPart);
 		} while (elapsed < g_targetFrameTime);
