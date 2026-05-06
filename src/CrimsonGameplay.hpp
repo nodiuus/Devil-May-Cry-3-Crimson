@@ -55,6 +55,7 @@ void ToggleRebellionHoldDrive(bool enable);
 void DanteDriveRework(byte8* actorBaseAddr);
 void DanteShotgunBackslide(byte8* actorBaseAddr);
 void GroundTrickFlagSet(byte8* actorBaseAddr);
-void TeleportToMainPlayer(byte8* actorBaseAddr);
+void TeleportToPartyLeader(byte8* actorBaseAddr);
+void BoBPartnerTeleport(byte8* actorBaseAddr);
 
 }

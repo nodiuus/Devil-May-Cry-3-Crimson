@@ -4169,7 +4169,8 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     CrimsonGameplay::DTInfusedRoyalguardController(actorBaseAddr);
     CrimsonGameplay::DetectCloseToEnemy(actorBaseAddr);
     CrimsonGameplay::GroundTrickFlagSet(actorBaseAddr);
-    CrimsonGameplay::TeleportToMainPlayer(actorBaseAddr);
+    CrimsonGameplay::BoBPartnerTeleport(actorBaseAddr);
+    CrimsonGameplay::TeleportToPartyLeader(actorBaseAddr);
     CrimsonFX::StyleRankHudFadeoutController();
     CrimsonFX::DelayedComboFXController(actorBaseAddr);
     CrimsonGameplay::DanteDriveRework(actorBaseAddr);
@@ -7070,6 +7071,12 @@ uint32 Dash(PlayerActorData& actorData, uint8 action) {
     uint8* dashCount = (actorData.styleLevel == 0) ? dashCount0 : (actorData.styleLevel == 1) ? dashCount1 : activeCrimsonGameplay.Cheats.Mobility.dashCount;
     if (activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive && arkhamFightData.dantePartner) {
         return MobilityFunction<ACTOR_EVENT::TRICKSTER_AIR_TRICK>(actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.danteAirTrickCount);
+    }
+
+    if (activeConfig.Actor.playerCount > 1 ) {
+        auto& gamepad = GetGamepad(actorData.newGamepad);
+        if(actorData.newPlayerIndex >= 1 && ((gamepad.buttons[0] & GAMEPAD::START) != 0))
+            return MobilityFunction<ACTOR_EVENT::TRICKSTER_AIR_TRICK>(actorData, action, actorData.newAirTrickCount, activeCrimsonGameplay.Cheats.Mobility.danteAirTrickCount);
     }
 
     return MobilityFunction<ACTOR_EVENT::TRICKSTER_DASH>(actorData, action, actorData.newDashCount, dashCount);
