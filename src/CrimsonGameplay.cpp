@@ -5573,7 +5573,10 @@ void TeleportToPartyLeader(byte8* actorBaseAddr) {
 			//newActorData.visibility = 2; // hide dante's model
 		}
 
-		if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && (gamepad.buttons[0] & GAMEPAD::START) != 0) {
+		uint8 vergilNeutralTrickEvent = activeCrimsonGameplay.Gameplay.Vergil.trickUpNoLockOn ? 
+			ACTOR_EVENT::DARK_SLAYER_TRICK_UP : ACTOR_EVENT::DARK_SLAYER_AIR_TRICK;
+
+		if (actorData.eventData[0].event == vergilNeutralTrickEvent && (gamepad.buttons[0] & GAMEPAD::START) != 0) {
 			TeleportToPlayer(actorData, mainActorData);
 			//newActorData.visibility = 2; // hide dante's model
 		}

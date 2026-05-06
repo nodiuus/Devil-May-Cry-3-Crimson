@@ -26,7 +26,7 @@ extern "C" {
 // 	std::uint64_t g_FixSecretMissionTimerFPS_ReturnAddr2;
 // 	void FixSecretMissionTimerFPSDetour2();
 
-	// FixBlendingEffects
+	// FixBlendingEffects -- Fixes the Speed which some Blending Effects play out.
 	std::uint64_t g_FixBlendingEffects_Mist_ReturnAddr1;
 	std::uint64_t g_FixBlendingEffects_Mist_ReturnAddr2;
 	std::uint64_t g_FixBlendingEffects_Mist_ReturnAddr3;
@@ -42,7 +42,7 @@ extern "C" {
 	void FixBlendingEffect_Warp_Detour2();
 
 
-	// FixClothPhysics
+	// FixClothPhysics -- Fixes Cloth Physics stiffening up at higher fps.
 	void FixClothPhysicsDetour1();
 	void FixClothPhysicsDetour2();
 	void FixClothPhysicsDetour3();
@@ -82,7 +82,7 @@ extern "C" {
 	uint32_t g_ClothPhysicsEnhancementEnabled = 1;
 
 	// FixBossCam
-	void FixBossCamLookAtDetour(); // Fixes BossCam FollowUp Speed
+	void FixBossCamLookAtDetour(); // Fixes BossCam FollowUp Speed.
 	std::uint64_t g_FixBossCamLookAt_ReturnAddr;
 
 	void FixBossCamRefocusDetour1(); 
@@ -96,9 +96,19 @@ extern "C" {
 	std::uint64_t g_BossCamCustomPositioning_ReturnAddr;
 	bool* g_isMPCamActiveAddr = nullptr;
 
-	// FixStaggerGravityInertia
+	// FixStaggerGravityInertia -- Fixes Y inertia behaving weirdly when you get Staggered.
 	void FixStaggerGravityDetour();
 	std::uint64_t g_FixStaggerGravity_ReturnAddr;
+
+	// FixCStageSetGateSpawn -- Fixes Mirror Gates taking way too long to fade in.
+	void FixCStageSetGateSpawnDetour1();
+	void FixCStageSetGateSpawnDetour2();
+	void FixCStageSetGateSpawnDetour3();
+	void FixCStageSetGateSpawnDetour4();
+	std::uint64_t g_FixCStageSetGateSpawn_ReturnAddr1;
+	std::uint64_t g_FixCStageSetGateSpawn_ReturnAddr2;
+	std::uint64_t g_FixCStageSetGateSpawn_ReturnAddr3;
+	std::uint64_t g_FixCStageSetGateSpawn_ReturnAddr4;
 
 }
 
@@ -342,11 +352,48 @@ void StaggerGravityInertiaFix(bool enable) {
 	run = enable;
 }
 
+void CStageSetGateSpawnFix(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// From SpawnCStageSetGate_sub_1402561B0
+	// These are all different occurrences of the Gate Portal Fading in:
+	
+	// dmc3.exe+2564B8 - F3 0F 10 4F 14         - movss xmm1,[rdi+14]
+	static std::unique_ptr<Utility::Detour_t> CStageSetGateSpawnHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2564B8, &FixCStageSetGateSpawnDetour1, 5);
+	g_FixCStageSetGateSpawn_ReturnAddr1 = CStageSetGateSpawnHook1->GetReturnAddress();
+	CStageSetGateSpawnHook1->Toggle(enable);
+
+	// dmc3.exe+256298 - F3 0F10 47 14         - movss xmm0,[rdi+14]
+	static std::unique_ptr<Utility::Detour_t> CStageSetGateSpawnHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x256298, &FixCStageSetGateSpawnDetour2, 5);
+	g_FixCStageSetGateSpawn_ReturnAddr2 = CStageSetGateSpawnHook2->GetReturnAddress();
+	CStageSetGateSpawnHook2->Toggle(enable);
+
+	// dmc3.exe+25636D - F3 0F10 47 14         - movss xmm0,[rdi+14]
+	static std::unique_ptr<Detour_t> CStageSetGateSpawnHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x25636D, &FixCStageSetGateSpawnDetour3, 5);
+	g_FixCStageSetGateSpawn_ReturnAddr3 = CStageSetGateSpawnHook3->GetReturnAddress();
+	CStageSetGateSpawnHook3->Toggle(enable);
+
+	// dmc3.exe+2563B1 - F3 0F10 4F 14         - movss xmm1,[rdi+14]
+	static std::unique_ptr<Utility::Detour_t> CStageSetGateSpawnHook4 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2563B1, &FixCStageSetGateSpawnDetour4, 5);
+	g_FixCStageSetGateSpawn_ReturnAddr4 = CStageSetGateSpawnHook4->GetReturnAddress();
+	CStageSetGateSpawnHook4->Toggle(enable);
+
+	run = enable;
+}
+
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
 	StaggerGravityInertiaFix(enable);
+	CStageSetGateSpawnFix(enable);
 }
 
 

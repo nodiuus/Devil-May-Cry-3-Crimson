@@ -820,7 +820,7 @@ public:
                 static constexpr int fakeParticleBank = 3;
                 static constexpr int fakeParticleId = 4;
                 static constexpr float fakeParticleTime = 0.12f;
-                CrimsonDetours::CreateEffectDetour(mainActorData, fakeParticleBank, fakeParticleId, 1, 1, 0, fakeParticleTime);
+                //CrimsonDetours::CreateEffectDetour(mainActorData, fakeParticleBank, fakeParticleId, 1, 1, 0, fakeParticleTime);
             }
 
             g_nextFakeParticlePulse = now + std::chrono::milliseconds(500);

@@ -23,6 +23,7 @@ set(MASM_SRC
     masm/CerbDamageFix.asm
     masm/FixCrashM5.asm
     masm/FixCrashVergilM3.asm
+    masm/FixCStageSetGateSpawn.asm
     masm/FixSecretMissionTimerFPS.asm
     masm/FixStaggerGravity.asm
     masm/EnsureAirRisingDragonLaunch.asm
