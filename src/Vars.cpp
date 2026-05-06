@@ -838,7 +838,7 @@ WeaponProgressionData weaponProgression;
 GameModeData gameModeData;
 
 CrimsonPlayerData crimsonPlayer[20];
-
+ArkhamFightData arkhamFightData;
 HeldStyleExpData heldStyleExpDataDante;
 HeldStyleExpData heldStyleExpDataVergil;
 

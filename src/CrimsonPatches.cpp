@@ -776,7 +776,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	const float screenMarginForZoomIn = 380.0f * scaleFactorX;  // Safe margin for zooming in
 	const float screenMarginForZoomOut = 300.0f * scaleFactorX;
 
-	float maxDistance = 2800.0f; // Maximum allowed camera distance
+	float maxDistance = 2200.0f; // Maximum allowed camera distance
 
 	// Check if all players are within multiplayer camera range
 	bool allPlayersWithinMPCam = true;
@@ -784,7 +784,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	for (int i = 0; i < activeConfig.Actor.playerCount * 2; i++) {
 		float distanceTo1P = g_plEntityTo1PDistances[i];
 		float cameraDistanceMP = ((eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) || eventData.room == ROOM::DAMNED_CHESS_BOARD ||
-			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 1900.0f;
+			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 2200.0f;
 		if (distanceTo1P >= cameraDistanceMP) {
 			allPlayersWithinMPCam = false;
 			break;
@@ -1241,10 +1241,123 @@ void DisableLockOnCamera(bool enable) {
 
 #pragma region GraphicsStuff
 
-void DisableBlendingEffects(bool enable) {
+void DisableGhostingEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+	// From sub_140317470:
+	// This function builds a render command buffer with 5 commands:
+	//   Type 0x63 - Init ghost buffer
+	//   Type 0x64 - Color filter top-left position
+	//   Type 0x64 - Color filter bottom-right position
+	//   Type 0x64 - Color filter intensity/fade value
+	//   Type 0x65 - Ghost/motion blur enable
+	//
+	// Patching ret at the function entry kills ALL ghosting blending effects cleanly.
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x317470), (char*)"\xC3", 1); // ret
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x317470), (char*)"\x48\x89\x5C\x24\x08", 5); // mov [rsp+08], rbx
+	}
+
+	run = enable;
+}
+
+void DisableColorFilterEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+315566 - E8 65 25 00 00           - call dmc3.sub_140317AD0 { Scene Color Filter }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x315566), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x315566), (char*)"\xE8\x65\x25\x00\x00", 5);
+	}
+
+	run = enable;
+}
+
+void DisableBloomEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+315583 - E8 C8 4D 00 00           - call dmc3.sub_14031A350 { Bloom 1 }
+	// dmc3.exe+315590 - E8 BB 20 00 00           - call dmc3.sub_140317650 { Bloom 2 }
+	// dmc3.exe+31559D - E8 EE 22 00 00           - call dmc3.sub_140317890 { Bloom 3 }
+
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x315583), 5);
+		_nop((char*)(appBaseAddr + 0x315590), 5);
+		_nop((char*)(appBaseAddr + 0x31559D), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x315583), (char*)"\xE8\xC8\x4D\x00\x00", 5);
+		_patch((char*)(appBaseAddr + 0x315590), (char*)"\xE8\xBB\x20\x00\x00", 5);
+		_patch((char*)(appBaseAddr + 0x31559D), (char*)"\xE8\xEE\x22\x00\x00", 5);
+	}
+
+	run = enable;
+}
+
+
+void DisableFogMistEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+3155D1 - E8 CA400000           - call dmc3.sub_1403196A0 { Fog / Mist }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x3155D1), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x3155D1), (char*)"\xE8\xCA\x40\x00\x00", 5);
+	}
+}
+
+void DisableWarpingEffect(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+3155B7 - E8 04 39 00 00           - call dmc3.sub_140318EC0 { Warp }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x3155B7), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x3155B7), (char*)"\xE8\x04\x39\x00\x00", 5);
+	}
+
+	run = enable;
+}
+
+void DisableAllBlendingEffects(bool enable) {
 	static bool run = false;
 
 	// If the function has already run in the current state, return early
+
+	// From RenderBlendingEffects_sub_140315820:
+	// dmc3.exe+315BA4 - 75 07                 - jne dmc3.exe+315BAD
+	
 	if (run == enable) {
 		return;
 	}
@@ -1925,6 +2038,28 @@ void DisableRegularEnemyAttacks(bool enable) {
 		_patch((char*)(appBaseAddr + 0x1C998A), (char*)"\x7E\x15", 2); 
 	}
 
+	run = enable;
+}
+
+#pragma endregion
+
+# pragma region Level
+
+void DisableDoorsInstancing(bool enable) {
+	// This disables the instancing of doors in levels. Useful for Void and Better Arkham Pt.2
+
+	static bool run = false;
+	// If the function has already run in the current state, return early
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1A9B90 - E8 2B 02 00 00           - call dmc3.exe+1A9DC0
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x1A9B90), 5); 
+	} else {
+		_patch((char*)(appBaseAddr + 0x1A9B90), (char*)"\xE8\x2B\x02\x00\x00", 5); 
+	}
 	run = enable;
 }
 

@@ -16,6 +16,7 @@
 #include <iostream>
 #include <unordered_set>
 #include <deque>
+#include "Global.hpp"
 
 namespace CrimsonSDL {
 
@@ -82,6 +83,7 @@ Mix_Chunk* driveLevelUp;
 Mix_Chunk* snap;
 Mix_Music* missionClearSong;
 Mix_Music* divinityStatueSong;
+Mix_Music* battleOfBrothersSong;
 
 // Mix Channels used
 namespace CHANNEL {
@@ -147,6 +149,7 @@ SDL_FUNCTION_DECLRATION(Mix_HaltChannel)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeOutChannel)				  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeInChannel)                = NULL;
 SDL_FUNCTION_DECLRATION(Mix_VolumeMusic)                  = NULL;
+SDL_FUNCTION_DECLRATION(Mix_GetMusicVolume)               = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeInMusic)                  = NULL;
 SDL_FUNCTION_DECLRATION(Mix_FadeOutMusic)                 = NULL;
 SDL_FUNCTION_DECLRATION(Mix_PlayingMusic)                 = NULL;
@@ -218,6 +221,7 @@ void LoadAllSFX() {
 
 		missionClearSong = fn_Mix_LoadMUS(((std::string)Paths::sounds + "\\music\\missionclear.mp3").c_str());
         divinityStatueSong = fn_Mix_LoadMUS(((std::string)Paths::sounds + "\\music\\divinitystatue.mp3").c_str());
+		battleOfBrothersSong = fn_Mix_LoadMUS(((std::string)Paths::sounds + "\\music\\battleofbrothers.mp3").c_str());
 
 
 		cacheAudioFiles = true;
@@ -303,6 +307,7 @@ void InitSDL() {
         LOAD_MIXER_FUNCTION(Mix_HaltChannel);
 		LOAD_MIXER_FUNCTION(Mix_FadeOutChannel);
         LOAD_MIXER_FUNCTION(Mix_VolumeMusic);
+        LOAD_MIXER_FUNCTION(Mix_GetMusicVolume);
         LOAD_MIXER_FUNCTION(Mix_FadeInMusic);
         LOAD_MIXER_FUNCTION(Mix_FadeOutMusic);
         LOAD_MIXER_FUNCTION(Mix_PlayingMusic);
@@ -1053,6 +1058,43 @@ void FadeOutMusic(int delayMs) {
 
 int IsMusicPlaying() {
     return fn_Mix_PlayingMusic();
+}
+
+void PlayBattleOfBrothersSong() {
+	fn_Mix_VolumeMusic(31 * (activeCrimsonConfig.Sound.channelVolumes[9] / 100.0f));
+	fn_Mix_FadeInMusic(battleOfBrothersSong, -1, 500);
+}
+
+void FadeOutMusic(float fadeoutTime) {
+    fn_Mix_FadeOutMusic(fadeoutTime);
+}
+
+void ReduceMusicVolumeInPause() {
+	auto pool_19315 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_19315 || !pool_19315[8]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_19315[8]);
+	static int previousVolume = -1; 
+
+	if (g_scene == SCENE::GAME) {
+		if (eventData.event == EVENT::PAUSE) {
+
+			// Save current volume if not already saved
+			if (previousVolume == -1) {
+				previousVolume = fn_Mix_GetMusicVolume(battleOfBrothersSong);
+			}
+			// Reduce volume to 30% of configured value
+			int reducedVolume = static_cast<int>(previousVolume * 0.5f);
+			fn_Mix_VolumeMusic(reducedVolume);
+		} else if (eventData.event == EVENT::MAIN) {
+			// Restore previous volume if it was changed
+			if (previousVolume != -1) {
+				fn_Mix_VolumeMusic(previousVolume);
+				previousVolume = -1;
+			}
+		}
+	}
 }
 
 }

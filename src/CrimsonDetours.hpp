@@ -122,6 +122,7 @@ void ToggleEnsureAirRisingDragonLaunch(bool enable);
 void ToggleConfirmSetAction(bool enable);
 void ToggleGreenOrbsMPRegen(bool enable);
 void ToggleClassicHUDPositionings(bool enable);
+void ToggleHideAndMutePortals(bool enable);
 void ToggleStyleRankHudNoFadeout(bool enable);
 void ToggleDanteTrickAlterations(bool enable);
 void ToggleShotgunShlSpawnAnglePointBlank(bool enable);

@@ -367,7 +367,81 @@ template <typename T> bool IsNeroAngelo(T& actorData) {
     return ((actorData.character == CHARACTER::VERGIL) && actorData.neroAngelo && actorData.devil);
 }
 
+template <typename T> bool IsArkham2Actor(T& actorData) {
+    return (actorData.newPlayerIndex == 1 && arkhamFightData.fightActive);
+}
+
 #pragma endregion
+
+// ---------------------------------------------------------------------------
+// ForEachSpawnedPlayerActor — iterate every Crimson-created actor registered
+// in g_playerActorBaseAddrs.  Two overloads:
+//   4-param: (PlayerActorData&, NewActorData&, playerIndex, entityIndex)
+//   3-param: (PlayerActorData&, playerIndex, entityIndex)
+// No slot‑grid dependency.  Use actorData.character / actorData.costume for
+// routing decisions — they are always authoritative unlike characterData.
+//
+// NOTE: g_playerActorBaseAddrs[0] and [1] are populated by vanilla game
+// events (EventCreateMainActor/EventCreateCloneActor).  We skip those by
+// requiring newActorData.baseAddr == actorBaseAddr — only Crimson actors
+// satisfy this (CreatePlayerActor sets both). -- Berthrage
+// ---------------------------------------------------------------------------
+template <typename F>
+void ForEachSpawnedPlayerActor(F&& callback) {
+    for (uint64 actorIndex = 0; actorIndex < g_playerActorBaseAddrs.count; ++actorIndex) {
+        auto actorBaseAddr = g_playerActorBaseAddrs[actorIndex];
+        if (!actorBaseAddr) continue;
+
+        auto& actorData      = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+        auto  playerIndex    = actorData.newPlayerIndex;
+        auto  characterIndex = actorData.newCharacterIndex;
+        auto  entityIndex    = actorData.newEntityIndex;
+
+        auto& newActorData = GetNewActorData(playerIndex, characterIndex, entityIndex);
+
+        // Skip vanilla actors (indices 0-1): their newActorData was set by
+        // CreatePlayerActor for the Crimson main actor, not themselves.
+        if (newActorData.baseAddr != actorBaseAddr) continue;
+
+        callback(actorData, newActorData, playerIndex, entityIndex);
+    }
+}
+
+// 3-param overload — delegates to a private impl, dropping newActorData.
+template <typename F,
+          typename = decltype(std::declval<F&>()(std::declval<PlayerActorData&>(), uint8{}, uint8{}))>
+void ForEachSpawnedPlayerActor(F&& callback) {
+    ForEachSpawnedPlayerActor([&](PlayerActorData& actorData, NewActorData&,
+                                   uint8 playerIndex, uint8 entityIndex) {
+        callback(actorData, playerIndex, entityIndex);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// ForEachVanillaPlayerActor — iterate the two vanilla actors (indices 0-1)
+// registered by EventCreateMainActor / EventCreateCloneActor.  These are
+// skipped by ForEachSpawnedPlayerActor.  Only provides (PlayerActorData&,
+// playerIndex, entityIndex) — NewActorData is not valid for vanilla actors. -- Berthrage
+// ---------------------------------------------------------------------------
+template <typename F>
+void ForEachVanillaPlayerActor(F&& callback) {
+    for (uint64 actorIndex = 0; actorIndex < 2 && actorIndex < g_playerActorBaseAddrs.count; ++actorIndex) {
+        auto actorBaseAddr = g_playerActorBaseAddrs[actorIndex];
+        if (!actorBaseAddr) continue;
+
+        auto& actorData      = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+        auto  playerIndex    = actorData.newPlayerIndex;
+        auto  characterIndex = actorData.newCharacterIndex;
+        auto  entityIndex    = actorData.newEntityIndex;
+
+        auto& newActorData = GetNewActorData(playerIndex, characterIndex, entityIndex);
+
+        // Only yield if this is a vanilla actor (newActorData is NOT self-consistent)
+        if (newActorData.baseAddr == actorBaseAddr) continue;
+
+        callback(actorData, playerIndex, entityIndex);
+    }
+}
 
 #pragma region Actor Management
 

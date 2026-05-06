@@ -33,6 +33,7 @@
 #include "Training.hpp"
 #include "CrimsonUtil.hpp"
 #include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
 
 namespace CrimsonFX {
 
@@ -227,7 +228,7 @@ void DTExplosionFXController(byte8* actorBaseAddr) {
     auto& releaseVolumeMult = crimsonPlayer[playerIndex].dTESFX.releaseVolumeMult;
     auto& vfxStarted = crimsonPlayer[playerIndex].dTEVFX.started;
     auto& vfxFinished = crimsonPlayer[playerIndex].dTEVFX.finished;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& distance = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
 	static bool pausedSFX = false;
 
@@ -455,7 +456,7 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto weapon = GetMeleeWeapon(actorData);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto inAttack = (actorData.eventData[0].event == 17);
 	auto inRebellionCombo1 = (actorData.action == REBELLION_COMBO_1_PART_1 && motionIndex == 3 && inAttack);
 	auto inRebellionCombo2 = (actorData.action == REBELLION_COMBO_2_PART_2 && motionIndex == 6 && inAttack);
@@ -479,15 +480,23 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 	if (!actorData.newWeaponDataAddr[weapon]) {
 		return;
 	}
-	static constexpr const wchar_t* delayedComboFXPath[6] = {
-			L"Crimson\\vfx\\delayedcombo\\rebellion.efkefc",
-			L"Crimson\\vfx\\delayedcombo\\cerberus.efkefc",
-			L"Crimson\\vfx\\delayedcombo\\agni_rudra_1.efkefc",
-			L"Crimson\\vfx\\delayedcombo\\agni_rudra_2.efkefc",
-			L"Crimson\\vfx\\delayedcombo\\beowulf_arms.efkefc",
-			L"Crimson\\vfx\\delayedcombo\\beowulf_legs.efkefc",
+	static const wchar_t* delayedComboFXPath[6] = {
+			CrimsonEfkPreload::delayedCombo_Rebellion_Path,
+			CrimsonEfkPreload::delayedCombo_Cerberus_Path,
+			CrimsonEfkPreload::delayedCombo_AgniRudra1_Path,
+			CrimsonEfkPreload::delayedCombo_AgniRudra2_Path,
+			CrimsonEfkPreload::delayedCombo_BeowulfArms_Path,
+			CrimsonEfkPreload::delayedCombo_BeowulfLegs_Path,
 	};
-	static EffekseerRefHandle delayedComboFXRef = CrimsonEfk::LoadEffect(delayedComboFXPath[weapon], 1.0f);
+
+	static EffekseerRefHandle* delayedComboRefs[6] = {
+		&CrimsonEfkPreload::delayedCombo_Rebellion_Handle,
+		&CrimsonEfkPreload::delayedCombo_Cerberus_Handle,
+		&CrimsonEfkPreload::delayedCombo_AgniRudra1_Handle,
+		&CrimsonEfkPreload::delayedCombo_AgniRudra2_Handle,
+		&CrimsonEfkPreload::delayedCombo_BeowulfArms_Handle,
+		&CrimsonEfkPreload::delayedCombo_BeowulfLegs_Handle,
+	};
 
 	cDrawReverse playerDanteCDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
 	Matrix44Ptr* playerBoneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDanteCDraw.bonesMatrixesPtr);
@@ -539,37 +548,37 @@ void DelayedComboFXController(byte8* actorBaseAddr) {
 
 
 		if (weapon == WEAPON::REBELLION && actionTimer >= delayedComboFX.duration) {
-			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix1, actorData);
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix1, actorData);
 			playedEffect = true;
 		}
 		else if (weapon == WEAPON::CERBERUS && actionTimer >= delayedComboFX.duration) {
-			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix2, actorData);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix9, actorData);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix10, actorData);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix11, actorData);
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix2, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix9, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix10, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix11, actorData);
 
 			// INCLUDE 2 (additional for extra brightness), 9 (held rod), 10 (rod 2), 11 (rod 3)
 			playedEffect = true;
 		}
 		else if (weapon == WEAPON::AGNI_RUDRA && actionTimer >= delayedComboFX.duration) {
-			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix2, actorData);
-			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon + 1], 1.0f);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, weaponBoneMatrix[0].matrix3, actorData);
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix2, actorData);
+			*delayedComboRefs[weapon + 1] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon + 1], delayedComboFXPath[weapon + 1], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon + 1], weaponBoneMatrix[0].matrix3, actorData);
 			playedEffect = true;
 		}
 		else if (weapon == WEAPON::BEOWULF_DANTE && (inBeoCombo1 || inBeoCombo2) && motionTimer >= delayedComboFX.duration) {
 			if (inBeoCombo2 && delayedComboFX.transitioningToHyperFist) {
 				return;
 			}
-			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon], 1.0f);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix10, actorData); // right hand
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix14, actorData); // left hand
-			delayedComboFXRef = CrimsonEfk::ReloadEffect(delayedComboFXRef, delayedComboFXPath[weapon + 1], 1.0f);
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix19, actorData); // right foot
-			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(delayedComboFXRef, playerBoneMatrix[0].matrix23, actorData); // left foot
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], playerBoneMatrix[0].matrix10, actorData); // right hand
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], playerBoneMatrix[0].matrix14, actorData); // left hand
+			*delayedComboRefs[weapon + 1] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon + 1], delayedComboFXPath[weapon + 1], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon + 1], playerBoneMatrix[0].matrix19, actorData); // right foot
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon + 1], playerBoneMatrix[0].matrix23, actorData); // left foot
 			playedEffect = true;
 		}
 
@@ -604,29 +613,6 @@ void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHa
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 
-	static constexpr const wchar_t* styleSwitchEffectPath[7] = {
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\swordmaster.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\gunslinger.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\trickster.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\royalguard.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quicksilver.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\doppelganger.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\darkslayer.efkefc",
-	};
-
-	static constexpr const wchar_t* styleSwitchSwooshEffectPath[7] = {
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\swordmaster_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\gunslinger_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\trickster_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\royalguard_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\quicksilver_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\doppelganger_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\crimsonvers\\darkslayer_swoosh.efkefc",
-	};
-
-	static EffekseerRefHandle styleSwitchRef = CrimsonEfk::LoadEffect(styleSwitchEffectPath[style], 40.0f);
-	static EffekseerRefHandle styleSwitchSwooshRef = CrimsonEfk::LoadEffect(styleSwitchSwooshEffectPath[style], 40.0f);
-
 	uint8 handleId = 0;
 
 	for (uint8 i = 0; i < 10; i++) {
@@ -644,11 +630,11 @@ void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHa
 	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDantecDraw.bonesMatrixesPtr); 
 
     
-	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, styleSwitchEffectPath[style], 40.0f);
-	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
+	CrimsonEfkPreload::styleSwitchCrimson_Main_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchCrimson_Main_Handle[style], CrimsonEfkPreload::styleSwitchCrimson_Main_Path[style], 40.0f);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchCrimson_Main_Handle[style], boneMatrix->matrix3, &actorData);
 
-	styleSwitchSwooshRef = CrimsonEfk::ReloadEffect(styleSwitchSwooshRef, styleSwitchSwooshEffectPath[style], 40.0f);
-	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchSwooshRef, boneMatrix->matrix3, &actorData);
+	CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Handle[style], CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Path[style], 40.0f);
+	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Handle[style], boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 	if (activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors) {
 		CrimsonEfk::SetAllColor(swooshHandles[handleId], customSwooshColor);
@@ -663,29 +649,6 @@ void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-
-	static constexpr const wchar_t* styleSwitchEffectPath[7] = {
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\swordmaster.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\gunslinger.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\trickster.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\royalguard.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quicksilver.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\doppelganger.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\darkslayer.efkefc",
-	};
-
-	static constexpr const wchar_t* styleSwitchSwooshEffectPath[7] = {
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\swordmaster_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\gunslinger_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\trickster_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\royalguard_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\quicksilver_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\doppelganger_swoosh.efkefc",
-			L"Crimson\\vfx\\styleswitch\\nswitchvers\\darkslayer_swoosh.efkefc",
-	};
-
-	static EffekseerRefHandle styleSwitchRef = CrimsonEfk::LoadEffect(styleSwitchEffectPath[style], 40.0f);
-	static EffekseerRefHandle styleSwitchSwooshRef = CrimsonEfk::LoadEffect(styleSwitchSwooshEffectPath[style], 40.0f);
 
 	uint8 handleId = 0;
 
@@ -704,11 +667,11 @@ void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles
 	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDantecDraw.bonesMatrixesPtr);
 
 
-	styleSwitchRef = CrimsonEfk::ReloadEffect(styleSwitchRef, styleSwitchEffectPath[style], 40.0f);
-	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchRef, boneMatrix->matrix3, &actorData);
+	CrimsonEfkPreload::styleSwitchNS_Main_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchNS_Main_Handle[style], CrimsonEfkPreload::styleSwitchNS_Main_Path[style], 40.0f);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchNS_Main_Handle[style], boneMatrix->matrix3, &actorData);
 
-	styleSwitchSwooshRef = CrimsonEfk::ReloadEffect(styleSwitchSwooshRef, styleSwitchSwooshEffectPath[style], 40.0f);
-	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(styleSwitchSwooshRef, boneMatrix->matrix3, &actorData);
+	CrimsonEfkPreload::styleSwitchNS_Swoosh_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchNS_Swoosh_Handle[style], CrimsonEfkPreload::styleSwitchNS_Swoosh_Path[style], 40.0f);
+	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchNS_Swoosh_Handle[style], boneMatrix->matrix3, &actorData);
 	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }
 
@@ -723,7 +686,7 @@ void StyleSwitchFlux(byte8* actorBaseAddr) {
     auto* style = &actorData.style;
 	auto* canStart = &crimsonPlayer[playerIndex].fluxCanStart;
 	auto* canEnd = &crimsonPlayer[playerIndex].fluxCanEnd;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     
     if (*fluxtime > 0) {
 		

@@ -1637,13 +1637,18 @@ void LockOnWindows() {
 
 	assert(LockOnTexture);
 	if (!LockOnTexture->IsValid()) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	if (!(InGame() && !g_inGameCutscene)) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
-	if (!pool_4449 || !pool_4449[147]) return;
+	if (!pool_4449 || !pool_4449[147]) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
+		return;
+	}
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
 
@@ -1654,10 +1659,12 @@ void LockOnWindows() {
 
 	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
 		CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn);
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
 	if (activeConfig.hideLockOn) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -1769,9 +1776,9 @@ void LockOnWindows() {
 
 		bool lockOnActive = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON)) && actorData.lockOnData.targetBaseAddr60 != 0;
 
-		float fadeSpeed = 8.0f; // Higher = faster fade
-		float targetAlpha = lockOnActive ? 1.0f : 0.0f;
-		lockOnFade[playerIndex].alpha = SmoothLerp(lockOnFade[playerIndex].alpha, targetAlpha, fadeSpeed, ImGui::GetIO().DeltaTime);
+		const float fadeInDuration = 0.25f;
+		const float fadeOutDuration = 0.25f;
+		UpdateFade(lockOnFade[playerIndex], lockOnActive, fadeInDuration, fadeOutDuration, ImGui::GetIO().DeltaTime);
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();
@@ -1818,13 +1825,16 @@ void StunDisplacementLockOnWindows() {
 
 	assert(LockOnStunTexture);
 	if (!LockOnStunTexture->IsValid()) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	if (!(InGame() && !g_inGameCutscene)) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
 	if (activeConfig.hideLockOn) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -1834,6 +1844,7 @@ void StunDisplacementLockOnWindows() {
 	const float spinSpeed = -0.12f; // slow spin
 
 	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -1936,9 +1947,9 @@ void StunDisplacementLockOnWindows() {
 
 		bool lockOnActive = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON)) && actorData.lockOnData.targetBaseAddr60 != 0;
 
-		float fadeSpeed = 8.0f; // Higher = faster fade
-		float targetAlpha = lockOnActive ? 1.0f : 0.0f;
-		lockOnFade[playerIndex].alpha = SmoothLerp(lockOnFade[playerIndex].alpha, targetAlpha, fadeSpeed, ImGui::GetIO().DeltaTime);
+		const float fadeInDuration = 0.25f;
+		const float fadeOutDuration = 0.25f;
+		UpdateFade(lockOnFade[playerIndex], lockOnActive, fadeInDuration, fadeOutDuration, ImGui::GetIO().DeltaTime);
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();
@@ -2141,9 +2152,11 @@ void ShieldLockOnWindows() {
 
 	assert(LockOnShieldTexture);
 	if (!LockOnShieldTexture->IsValid()) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	if (!(InGame() && !g_inGameCutscene)) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -2153,6 +2166,7 @@ void ShieldLockOnWindows() {
 	const float spinSpeed = -0.12f; // slow spin
 
 	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -2251,9 +2265,9 @@ void ShieldLockOnWindows() {
 
 		bool lockOnActive = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON)) && actorData.lockOnData.targetBaseAddr60 != 0;
 
-		float fadeSpeed = 8.0f; // Higher = faster fade
-		float targetAlpha = lockOnActive ? 1.0f : 0.0f;
-		lockOnFade[playerIndex].alpha = SmoothLerp(lockOnFade[playerIndex].alpha, targetAlpha, fadeSpeed, ImGui::GetIO().DeltaTime);
+		const float fadeInDuration = 0.25f;
+		const float fadeOutDuration = 0.25f;
+		UpdateFade(lockOnFade[playerIndex], lockOnActive, fadeInDuration, fadeOutDuration, ImGui::GetIO().DeltaTime);
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();

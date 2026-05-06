@@ -64,7 +64,7 @@ extern uint32 g_hdcKeybinds[NUM_KEYBINDS];
 #endif
 
 inline uint16 GetRelativeTilt(PlayerActorData& actorData) {
-    auto& gamepad       = GetGamepad(0);
+    auto& gamepad       = GetGamepad(actorData.newGamepad);
     uint16 relativeTilt = 0;
 
 
@@ -74,7 +74,7 @@ inline uint16 GetRelativeTilt(PlayerActorData& actorData) {
 }
 
 inline uint8 GetRelativeTiltDirection(PlayerActorData& actorData) {
-    auto& gamepad       = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad       = GetGamepad(actorData.newGamepad);
     uint16 relativeTilt = 0;
     using namespace ACTION_DANTE;
 

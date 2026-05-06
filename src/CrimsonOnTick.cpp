@@ -29,6 +29,7 @@
 #include "DMC3Input.hpp"
 #include "CrimsonGameModes.hpp"
 #include "CrimsonCameraController.hpp"
+#include "CrimsonHighFPSFixes.hpp"
 
 
 namespace CrimsonOnTick {
@@ -608,28 +609,34 @@ void DivinityStatueSong() {
 }
 
 void DisableBlendingEffectsController() {
-	// Disables PS2 Motion Blur among other PostProcessFX.
+	// Disables PS2 Ghosting among other PostProcessFX.
 
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
-	auto pool_10371 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10371 || !pool_10371[8]) {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
 		return;
 	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10371[8]);
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
 	if (g_scene != SCENE::GAME) {
 		return;
 	}
 
-	if (activeConfig.disableBlendingEffects) {
-		if (eventData.event == EVENT::MAIN || eventData.event == EVENT::PAUSE) {
-			CrimsonPatches::DisableBlendingEffects(true);
-		} else {
-			CrimsonPatches::DisableBlendingEffects(false);
-		}
-
-	} else {
-		CrimsonPatches::DisableBlendingEffects(false);
+	if (eventData.event == EVENT::INIT || eventData.event == EVENT::MAIN || eventData.event == EVENT::PAUSE) {
+		CrimsonPatches::DisableGhostingEffect(!activeCrimsonConfig.System.BlendingEffects.ghosting);
+		CrimsonPatches::DisableColorFilterEffect(!activeCrimsonConfig.System.BlendingEffects.colorFilter);
+		CrimsonPatches::DisableBloomEffect(!activeCrimsonConfig.System.BlendingEffects.bloom);
+		CrimsonPatches::DisableFogMistEffect(!activeCrimsonConfig.System.BlendingEffects.fogMist);
+		CrimsonPatches::DisableWarpingEffect(!activeCrimsonConfig.System.BlendingEffects.warp);
+		CrimsonPatches::DisableAllBlendingEffects(activeCrimsonConfig.System.BlendingEffects.disableAll);
+	}
+	else {
+		CrimsonPatches::DisableGhostingEffect(false);
+		CrimsonPatches::DisableColorFilterEffect(false);
+		CrimsonPatches::DisableBloomEffect(false);
+		CrimsonPatches::DisableFogMistEffect(false);
+		CrimsonPatches::DisableWarpingEffect(false);
+		CrimsonPatches::DisableAllBlendingEffects(false);
 	}
 }
 
@@ -966,7 +973,7 @@ void MultiplayerCameraPositioningController() {
 	}
 	//end of crash fix
 
-	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 1900.0f;
+	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 2200.0f;
 	float cameraDistanceMPEnable = cameraDistanceMP * (2.0f / 3.0f);
 	float cameraDistanceThreshold = g_isMPCamActive ? cameraDistanceMP : cameraDistanceMPEnable;
 
@@ -1010,8 +1017,8 @@ void MultiplayerCameraPositioningController() {
 	auto mpCamNow = std::chrono::steady_clock::now();
 	bool canSwitchMPCam = std::chrono::duration<float>(mpCamNow - lastMPCamSwitchTime).count() >= 1.0f;
 
-	// Camera behavior based on player count and trigger status
-	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1) {
+	// Camera behavior based on player count, doppelganger, or Arkham2 fight
+	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1 || arkhamFightData.fightActive) {
 		// MULTIPLAYER
 		if (triggerMPCam != g_isMPCamActive && canSwitchMPCam) {
 			g_isMPCamActive = triggerMPCam;
@@ -1978,6 +1985,7 @@ void TriggerOnTickFuncs() {
 	// These functions run OnTick globally (in game and in menus) through Game Thread
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
+	CrimsonHighFPSFixes::ClothPhysicsFixesController();
 	CrimsonOnTick::InCreditsDetection();
 	CrimsonOnTick::WeaponProgressionTracking();
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();

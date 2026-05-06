@@ -546,9 +546,6 @@ void CreateMembers(Config& config_) {
 
     CreateString(member, "selectedHUD", config.selectedHUD.c_str());
 
-	Create<bool>(member, "disableBlendingEffects", config.disableBlendingEffects);
-	Create<bool>(member, "framerateResponsiveGameSpeed", config.framerateResponsiveGameSpeed);
-
     CreateArray<uint8, 2>(member, "beowulfVergilAirRisingSunCount", config.beowulfVergilAirRisingSunCount);
 
     Create<bool>(member, "forceVisibleHUD", config.forceVisibleHUD);
@@ -584,8 +581,6 @@ void CreateMembers(Config& config_) {
 
 
     Create<bool>(member, "absoluteUnit", config.absoluteUnit);
-    CreateString(member, "gamepadName", config.gamepadName);
-    Create<byte8>(member, "gamepadButton", config.gamepadButton);
     Create<bool>(member, "disablePlayerActorIdleTimer", config.disablePlayerActorIdleTimer);
     Create<bool>(member, "rebellionInfiniteShredder", config.rebellionInfiniteShredder);
     Create<bool>(member, "rebellionHoldDrive", config.rebellionHoldDrive);
@@ -881,9 +876,6 @@ void ToJSON(Config& config_) {
 
     SetString(member["selectedHUD"], config.selectedHUD.c_str());
 
-	Set<bool>(member["disableBlendingEffects"], config.disableBlendingEffects);
-	Set<bool>(member["framerateResponsiveGameSpeed"], config.framerateResponsiveGameSpeed);
-
     SetArray<uint8, 2>(member["beowulfVergilAirRisingSunCount"], config.beowulfVergilAirRisingSunCount);
 
     Set<bool>(member["forceVisibleHUD"], config.forceVisibleHUD);
@@ -904,8 +896,6 @@ void ToJSON(Config& config_) {
 
 
     Set<bool>(member["absoluteUnit"], config.absoluteUnit);
-    SetString(member["gamepadName"], config.gamepadName);
-    Set<byte8>(member["gamepadButton"], config.gamepadButton);
     Set<bool>(member["disablePlayerActorIdleTimer"], config.disablePlayerActorIdleTimer);
     Set<bool>(member["rebellionInfiniteShredder"], config.rebellionInfiniteShredder);
     Set<bool>(member["rebellionHoldDrive"], config.rebellionHoldDrive);
@@ -1211,9 +1201,6 @@ void ToConfig(Config& config_) {
 
     config.selectedHUD = Get<std::string>(member["selectedHUD"]);
 
-	config.disableBlendingEffects = Get<bool>(member["disableBlendingEffects"]);
-	config.framerateResponsiveGameSpeed = Get<bool>(member["framerateResponsiveGameSpeed"]);
-
     GetArray<uint8, 2>(config.beowulfVergilAirRisingSunCount, member["beowulfVergilAirRisingSunCount"]);
 
     config.forceVisibleHUD = Get<bool>(member["forceVisibleHUD"]);
@@ -1236,9 +1223,6 @@ void ToConfig(Config& config_) {
 
     config.absoluteUnit = Get<bool>(member["absoluteUnit"]);
 
-    GetString(config.gamepadName, sizeof(config.gamepadName), member["gamepadName"]);
-
-    config.gamepadButton               = Get<byte8>(member["gamepadButton"]);
     config.disablePlayerActorIdleTimer = Get<bool>(member["disablePlayerActorIdleTimer"]);
     config.rebellionInfiniteShredder   = Get<bool>(member["rebellionInfiniteShredder"]);
     config.rebellionHoldDrive          = Get<bool>(member["rebellionHoldDrive"]);
@@ -1269,8 +1253,6 @@ void InitConfig() {
     DebugLog("kalinaAnnHookGrenadeTime   %llX", offsetof(Config, kalinaAnnHookGrenadeTime));
     DebugLog("kalinaAnnHookMultiplier    %llX", offsetof(Config, kalinaAnnHookMultiplier));
     DebugLog("barsData                   %llX", offsetof(Config, barsData));
-
-    DebugLog("activeConfig.gamepadName %llX", activeConfig.gamepadName);
 }
 
 // Declare template functions

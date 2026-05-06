@@ -14,6 +14,7 @@
 #include "CrimsonOnTick.hpp"
 #include "CrimsonSDL.hpp"
 #include "CrimsonGameplay.hpp"
+#include "CrimsonBetterArkham2.hpp"
 
 #include "Core/Macros.h"
 
@@ -125,7 +126,9 @@ bool SetTrack(byte8* dest, const char* filename, uint32 arg3, uint32 arg4) {
     Log("%s %llX %s %u %u", FUNC_NAME, dest, filename, arg3, arg4);
     //here you go berth
     g_gameTrackPlaying = filename;
-    return BossRush::SetTrack(filename);
+    //we want to allow for any false to make the whole thing false here I think
+    bool returnval = (BossRush::SetTrack(filename) && CrimsonBetterArkham2::SetTrack(filename));
+    return returnval;
 }
 
 
@@ -258,6 +261,7 @@ void EventHandler(EventData& eventData) {
                 Log(funcName);
 
                 Actor::EventMain();
+                CrimsonBetterArkham2::EventMain();
                 BossRush::EventMain();
                 Sound::EventMain();
 
@@ -487,6 +491,7 @@ void ContinueGoldOrb() {
 }
 
 void Continue() {
+    CrimsonBetterArkham2::Continue();
     LogFunction();
 }
 
@@ -521,7 +526,8 @@ bool MissionStartTriggerCustomizeMenu(byte8* addr) {
 
 void SetNextScreen(EventData& eventData) {
     Log("%s %u", FUNC_NAME, eventData.nextScreen);
-
+    //THIS MUST COME BEFORE ACTOR OTHERWISE THE ACTOR MODULE WILL DISABLE FOR THE WRONG PART OF THE BETTER ARKHAM 2 FIGHT
+    CrimsonBetterArkham2::SetNextScreen(eventData);
     Actor::SetNextScreen(eventData);
     SecretMission::SetNextScreen(eventData);
 }

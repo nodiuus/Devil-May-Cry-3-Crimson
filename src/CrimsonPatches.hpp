@@ -40,7 +40,12 @@ void DisableLockOnCamera(bool enable);
 
 #pragma region GraphicsStuff
 
-void DisableBlendingEffects(bool enable);
+void DisableGhostingEffect(bool enable);
+void DisableColorFilterEffect(bool enable);
+void DisableBloomEffect(bool enable);
+void DisableFogMistEffect(bool enable);
+void DisableWarpingEffect(bool enable);
+void DisableAllBlendingEffects(bool enable);
 
 #pragma endregion
 
@@ -74,6 +79,12 @@ void DisableEnemyTargetting1PPosition(bool enable);
 void ToggleDisableSoulEaterInvis(bool enable);
 void SetEnemyDTMode(uint8 mode);
 void DisableRegularEnemyAttacks(bool enable);
+
+#pragma endregion
+
+# pragma region Level
+
+void DisableDoorsInstancing(bool enable);
 
 #pragma endregion
 

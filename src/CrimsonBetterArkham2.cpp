@@ -1,0 +1,712 @@
+#include "CrimsonBetterArkham2.hpp"
+#include "Sound.hpp"
+#include "CrimsonSDL.hpp"
+#include "DMC3Input.hpp"
+using namespace ARKHAM_MOD_FIGHT_PHASE;
+namespace CrimsonBetterArkham2 {
+	//static bool fightActive{ false };
+	//static bool fightEnding{ false };
+	//enum {
+	//	PHASE_1, //arkham lobby 1
+	//	PHASE_2, //cerberus
+	//	PHASE_3,//arkham lobby 2
+	//	PHASE_4, //agni rudra
+	//	PHASE_5, //arkham lobby 3
+	//	PHASE_6, //beowulf
+	//	PHASE_7, //arkham lobby final
+	//	PHASE_VANILLA,
+	//};
+	//when arkham drops below this point in a phase, he should move to next phase
+	float arkhamHealthGates[] = {7500.0f,0.0f,5000.0f,0.0f,2500,0.0f,1.0f,1.0f};
+
+	//arkham shouldn't have more health than this in his respective phases. This simulates the boss phase damaging him.
+	float arkhamHealthCheckpoints[] = { 9000.0f,0.0f,6000.0f,0.0f,3500.0f,0.0f,1000.0f,9000.0f};
+
+	//current phase of the fight
+	//static int fightPhase{ CrimsonBetterArkham2::PHASE_1 };
+	//the queued next phase of the fight.
+	//due to the flow logic being done on tic, we need this variable to make sure we don't accidentally skip phases.
+	//static int nextFightPhase{ CrimsonBetterArkham2::PHASE_1 };
+
+	vec4 spawnPosition{
+		.x = 0.0f,
+		.y = 0.0f,
+		.z = 0.0f,
+		.a = 0.0f
+	};
+
+	vec4 beowulfSpawnPosition{
+	.x = 3000.0f,
+	.y = 54.0f,
+	.z = 2500.0f,
+	.a = 0.0f
+	};
+
+	ConfigCreateEnemyActorData arkham2Data{
+		.enemy = ENEMY::ARKHAM,
+		.variant = 1,
+		.position = spawnPosition,
+		.rotation = 0,
+		//to determine starting location
+		.useMainActorData = true,
+		.spawnMethod = 0
+	};
+
+	ConfigCreateEnemyActorData cerbData{
+		.enemy = ENEMY::CERBERUS,
+		.variant = 1,
+		.position = spawnPosition,
+		.rotation = 0,
+		//to determine starting location
+		.useMainActorData = true,
+		.spawnMethod = 0
+	};
+
+	ConfigCreateEnemyActorData agniRudraData{
+		.enemy = ENEMY::AGNI_RUDRA,
+		.variant = 1,
+		.position = spawnPosition,
+		.rotation = 0,
+		//to determine starting location
+		.useMainActorData = true,
+		.spawnMethod = 0
+	};
+
+	ConfigCreateEnemyActorData beowulfData{
+		.enemy = ENEMY::BEOWULF,
+		.variant = 1,
+		.position = beowulfSpawnPosition,
+		.rotation = 0,
+		//to determine starting location
+		.useMainActorData = false,
+		.spawnMethod = 0
+	};
+
+	/// <summary>
+	/// Sets the fight to not active when player hits continue on death screen.
+	/// </summary>
+	void Continue()
+	{
+		arkhamFightData.fightActive = false;
+		arkhamFightData.fightEnding = false;
+		CrimsonPatches::DisableDoorsInstancing(false);
+		CrimsonDetours::ToggleHideAndMutePortals(false);
+		return;
+	};
+
+	/// <summary>
+	/// Overrides the music trigger when skipping the real arkham 2 boss fight
+	/// </summary>
+	/// <param name="filename"></param>
+	/// <returns>false if we need to skip the arkham music</returns>
+	bool SetTrack(const char* filename) {
+		if (!activeConfig.Actor.enable) {
+			return true;
+		}
+
+		LogFunction();
+
+		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+
+		auto pool_328 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_328 || !pool_328[8]) {
+			return true;
+		}
+		auto& eventData = *reinterpret_cast<EventData*>(pool_328[8]);
+
+		auto pool_369 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_369 || !pool_369[12]) {
+			return true;
+		}
+		auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_369[12]);
+
+		auto pool_410 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+		if (!pool_410 || !pool_410[1]) {
+			return true;
+		}
+		auto eventFlags = reinterpret_cast<byte32*>(pool_410[1]);
+		const char* cutsceneTrack = "afs/sound/m19_b01.adx"; 
+
+		//arkham 2 audio skip
+		//the logic here is weird, we check if fightActive is true even though we want to mute the music after the fight
+		//because this call happens before that variable updates. So if it's true it's about to be false. Get it?
+		if ((sessionData.mission == 19) 
+			&& (eventFlags[20] == 1) && (arkhamFightData.fightActive == true) &&
+			(strcmp(filename, bossHelpers[BOSS::ARKHAM_PART_2].track) == 0)) {
+			return false;
+		}
+
+
+		// mute arkham 2 bob music 
+		if ((sessionData.mission == 19)
+			&& (eventFlags[20] == 1) &&
+			(strcmp(filename, bossHelpers[BOSS::ARKHAM_PART_2].track) == 0)) {
+			return false;
+		}
+
+		return true;
+	}
+
+	/// <summary>
+	/// Sets the fight to not active when the player:
+	/// restarts the mission
+	/// quits the mission
+	/// finishes the mission
+	/// game overs
+	/// </summary>
+	void SetNextScreen(EventData& eventData) {
+		if ((eventData.nextScreen == SCREEN::MISSION_CLEAR)
+			|| (eventData.nextScreen == SCREEN::GAME_OVER)
+			|| (eventData.nextScreen == SCREEN::MISSION_SELECT)
+			|| (eventData.nextScreen == SCREEN::MISSION_START)
+		)
+
+			CrimsonPatches::DisableDoorsInstancing(false);
+			CrimsonDetours::ToggleHideAndMutePortals(false);
+			arkhamFightData.fightActive = false;
+			arkhamFightData.fightEnding = false;
+		return;
+	}
+
+
+	/// <summary>
+	/// return true when conditions are met for the arkham lobby phase to end.
+	/// </summary>
+	/// <param name="enemyVectorData"></param>
+	/// <returns></returns>
+	bool isEndArkhamLobby(EnemyVectorData& enemyVectorData) {
+		//sets the modifier for boss damage to x2 of whatever the mult currently is to make the boss die quicker and not wear out its welcome
+		//activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult * 1.;
+		for (auto enemy : enemyVectorData.metadata) {
+			if (!enemy.baseAddr) continue;
+			auto& enemyData = *reinterpret_cast<EnemyActorData*>(enemy.baseAddr);
+			if (!enemyData.baseAddr) continue;
+
+			//this decrements arkham's health so his HP bar goes down throughout the boss rush 
+// 			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham > arkhamHealthCheckpoints[arkhamFightData.fightPhase])
+// 				enemyData.hitPointsArkham = arkhamHealthCheckpoints[arkhamFightData.fightPhase];
+// 				enemyData.healthGateHitPointsArkham = arkhamHealthGates[arkhamFightData.fightPhase];
+
+			// skipping Leeches without the teleportation to Boss Rush is causing a crash at 14002D80E from sub_14002CD60 -- Berth
+
+			//whenever arkham dives and sends out the dolphins, we don't fight them and advance to boss rush phase.
+			//don't do this if phase 7 tho or the fight just ends
+			if (enemyData.enemy == ENEMY::ARKHAM_LEECHES && arkhamFightData.fightActive && !(arkhamFightData.fightPhase == PHASE_7 || arkhamFightData.fightPhase == PHASE_VANILLA))
+				return true;
+
+			//this health gate stops people from skipping phases 
+			//			if (enemyData.enemy == ENEMY::ARKHAM && enemyData.hitPointsArkham < arkhamHealthGates[fightPhase] && fightActive)
+			//			return true;
+			//new code utilizing the arkham health gate mechanic
+			if (enemyData.enemy == ENEMY::ARKHAM
+				&& arkhamFightData.fightActive)
+			{
+				//if arkham's health is 3k less than the dolphin summoning phase, manually advance phase. Don't do this in the vanilla fight
+				if ((enemyData.healthGateHitPointsArkham - enemyData.hitPointsArkham > 3000.0f) && arkhamFightData.fightPhase != PHASE_VANILLA)
+					return true;
+				//if his HP hits 0, always advance the phase
+				if (enemyData.hitPointsArkham < 1.0f)
+					return true;
+			}
+
+
+		};
+		return false;
+	}
+
+	/// <summary>
+	/// Return true when the cerberus phase ends so the game knows to start transitioning 
+	/// </summary>
+	/// <param name="enemyVectorData"></param>
+	/// <returns></returns>
+	bool isEndCerberusPhase(EnemyVectorData& enemyVectorData) {
+		//sets the modifier for cerberus damage to x4 of whatever the mult currently is to make the boss die quicker and not wear out its welcome
+		g_cerbDamageValue = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult * 4;
+		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult * 4;
+
+		for (auto enemy : enemyVectorData.metadata) {
+			if (!enemy.baseAddr) continue;
+			auto& enemyData = *reinterpret_cast<EnemyActorData*>(enemy.baseAddr);
+			if (!enemyData.baseAddr) continue;
+
+			//advance to phase2:
+			if (enemyData.enemy == ENEMY::CERBERUS && enemyData.hitPointsCerberusTotal < 1.0f && arkhamFightData.fightActive)
+				return true;
+		};
+		return false;
+	}
+
+	/// <summary>
+	/// Return true when the beowulf phase ends so the game knows to start transitioning 
+	/// </summary>
+	/// <param name="enemyVectorData"></param>
+	/// <returns></returns>
+	bool isEndBeowulfPhase(EnemyVectorData& enemyVectorData) {
+		//sets the modifier for boss damage to x2 of whatever the mult currently is to make the boss die quicker and not wear out its welcome
+		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult * 2;
+		for (auto enemy : enemyVectorData.metadata) {
+			if (!enemy.baseAddr) continue;
+			auto& enemyData = *reinterpret_cast<EnemyActorData*>(enemy.baseAddr);
+			if (!enemyData.baseAddr) continue;
+
+			//advance to phase2:
+			if (enemyData.enemy == ENEMY::BEOWULF && enemyData.hitPointsBeowulf < 1.0f && arkhamFightData.fightActive)
+				return true;
+		};
+		return false;
+	}
+
+/// <summary>
+/// Return true when the beowulf phase ends so the game knows to start transitioning 
+/// </summary>
+/// <param name="enemyVectorData"></param>
+/// <returns></returns>
+	bool isEndAgniRudraPhase(EnemyVectorData& enemyVectorData) {
+		//sets the modifier for boss damage to x2 of whatever the mult currently is to make the boss die quicker and not wear out its welcome
+		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult * 2;
+		if(enemyVectorData.count == 0 )
+			return true;
+		return false;
+	}
+
+
+
+	/// <summary>
+	/// Manages the flow of the fight.
+	/// </summary>
+	void OnTick()
+	{
+		//we're doing a lot here, let's not do it unless we need to.
+		if (!activeConfig.Actor.enable)
+			return;
+
+		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+		static bool musicPlayed = false;
+		static bool volumeRestored = false;
+
+		// Properly restoring Demo Volume and fading out music when not in game scene
+		if (g_scene != SCENE::GAME) {
+			if (musicPlayed) {
+				CrimsonSDL::FadeOutMusic(100);
+				musicPlayed = false;
+			}
+
+			if (!volumeRestored) {
+				SetVolume(CHANNEL::DEMO, activeCrimsonConfig.Sound.channelVolumes[CHANNEL::DEMO] / 100.0f);
+				volumeRestored = true;
+			}
+		}
+		auto pool_19315 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19315 || !pool_19315[8]) {
+			return;
+		}
+		auto& eventData = *reinterpret_cast<EventData*>(pool_19315[8]);
+		auto pool_19326 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19326 || !pool_19326[12]) {
+			return;
+		}
+		auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_19326[12]);
+
+		auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+		if (!pool_19337 || !pool_19337[1]) {
+			return;
+		}
+
+		auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+		if (!pool_10222 || !pool_10222[3]) return;
+		auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
+
+		auto pool_2128 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+		if (!pool_2128 || !pool_2128[8]) return;
+		auto& enemyVectorData = *reinterpret_cast<EnemyVectorData*>(pool_2128[8]);
+		auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+
+		if (InGame()) {
+			//Teleport when fight ends to go to real arkham2 fight (this was put here for ez gui testing)
+			if (sessionData.mission == 19
+				&& eventData.room == 421
+				&& activeConfig.Actor.enable
+				&& eventFlags[20] == 2
+				&& arkhamFightData.fightEnding) {
+				nextEventData.room = 421;
+				eventData.event = EVENT::TELEPORT;
+			}
+
+			//this ensures we don't accidentally get stuck in a teleport loop where we keep trying to exit a phase over and over
+			if (arkhamFightData.fightPhase != arkhamFightData.nextFightPhase)
+				return;
+			if (!arkhamFightData.fightActive)
+				return;
+
+			//if singleplayer
+			if (activeConfig.Actor.playerCount == 1) {
+				auto& gamepad = GetGamepad(1);
+				bool startDown = (gamepad.buttons[0] & GAMEPAD::START) != 0;
+
+				if (startDown) {
+
+					auto& partnerNewActorData = GetNewActorData(1, 0, 0);
+					if (!partnerNewActorData.baseAddr) return;
+					if (arkhamFightData.dantePartner) {
+						auto& partnerActorData = *reinterpret_cast<PlayerActorDataDante*>(partnerNewActorData.baseAddr);
+						partnerActorData.newGamepad = 1;
+					}
+					else {
+						auto& partnerActorData = *reinterpret_cast<PlayerActorDataVergil*>(partnerNewActorData.baseAddr);
+						partnerActorData.newGamepad = 1;
+					}
+					activeConfig.Actor.playerCount = 2;
+					arkhamFightData.dantePartner = false;
+					//Log("Player %u start down", playerIndex);
+				}
+
+			}
+
+			//move through phases.
+			switch (arkhamFightData.fightPhase) {
+				//Fight begins, dante & vergil vs arkham
+			case PHASE_1:
+				if (isEndArkhamLobby(enemyVectorData))
+					arkhamFightData.nextFightPhase = PHASE_2;
+				break;
+				//cerberus arena, dante & vergil vs cerberus
+			case PHASE_2:
+				if (isEndCerberusPhase(enemyVectorData))
+					arkhamFightData.nextFightPhase = PHASE_3;
+				break;
+				//arkham lobby 2
+			case PHASE_3:
+				if (isEndArkhamLobby(enemyVectorData))
+					arkhamFightData.nextFightPhase = PHASE_4;
+				break;
+				//agni rudra fight
+			case PHASE_4:
+				if (isEndAgniRudraPhase(enemyVectorData))
+					arkhamFightData.nextFightPhase = PHASE_5;
+				break;
+				//arkham lobby 3
+			case PHASE_5:
+				if (isEndArkhamLobby(enemyVectorData))
+					arkhamFightData.nextFightPhase = PHASE_6;
+				break;
+				//beowulf fight
+			case PHASE_6:
+				if (isEndBeowulfPhase(enemyVectorData))
+					arkhamFightData.nextFightPhase = PHASE_7;
+				break;
+				//final arkham fight
+			case PHASE_7:
+				if (isEndArkhamLobby(enemyVectorData))
+					arkhamFightData.fightEnding = true;
+				break;
+			case PHASE_VANILLA:
+				if (isEndArkhamLobby(enemyVectorData))
+					arkhamFightData.fightEnding = true;
+				break;
+			}
+
+			if (arkhamFightData.fightPhase != arkhamFightData.nextFightPhase) {
+				switch (arkhamFightData.nextFightPhase) {
+					//arkham phases
+				case PHASE_3:
+				case PHASE_5:
+				case PHASE_7:
+				case PHASE_VANILLA:
+					nextEventData.room = ROOM::FORBIDDEN_NIRVANA_2;
+					eventData.event = EVENT::TELEPORT;
+					break;
+					//cerb
+				case PHASE_2:
+					nextEventData.room = ROOM::ICE_GUARDIAN_REBORN;
+					eventData.event = EVENT::TELEPORT;
+					break;
+					//agni rudra
+				case PHASE_4:
+					nextEventData.room = ROOM::FIRESTORM_REBORN;
+					eventData.event = EVENT::TELEPORT;
+					break;
+					//beowulf
+				case PHASE_6:
+					nextEventData.room = ROOM::LIGHTBEAST_REBORN;
+					eventData.event = EVENT::TELEPORT;
+					break;
+
+				default:
+					DebugLog("invalid fight phase transition!")
+						break;
+				}
+			}
+			//Teleport when fight ends to go to real arkham2 fight
+			if (sessionData.mission == 19
+				&& eventData.room == 421
+				&& activeConfig.Actor.enable
+				&& eventFlags[20] == 2
+				&& arkhamFightData.fightEnding) {
+				nextEventData.room = 421;
+				eventData.event = EVENT::TELEPORT;
+			}
+
+			// Loop through enemy data to cut the music right when akrham 2 is defeated
+			for (auto enemy : enemyVectorData.metadata) {
+				if (!enemy.baseAddr) continue;
+				auto& enemyData = *reinterpret_cast<EnemyActorData*>(enemy.baseAddr);
+				if (!enemyData.baseAddr) continue;
+
+				if (enemyData.enemy == 53 && enemyData.hitPointsArkham <= 1.0f && arkhamFightData.fightEnding) {
+					CrimsonSDL::FadeOutMusic(100);
+				}
+			}
+
+			if (sessionData.mission == 19
+				&& eventData.room == 421
+				&& activeConfig.Actor.enable
+				&& eventFlags[20] == 2
+				&& arkhamFightData.fightEnding) {
+				nextEventData.room = 421;
+				eventData.event = EVENT::TELEPORT;
+			}
+
+			// Muting the cutscene while we're in the fight
+			if (sessionData.mission == 19
+				&& activeConfig.Actor.enable
+				&& eventFlags[20] == 2) {
+
+				SetVolume(CHANNEL::DEMO, 0);
+				volumeRestored = false;
+			}
+		}
+
+		if (sessionData.mission == 19
+			&& activeConfig.Actor.enable
+			&& eventFlags[20] == 2) {
+
+			if (g_scene == SCENE::GAME) {
+				if (!musicPlayed) {
+					CrimsonSDL::PlayBattleOfBrothersSong();
+					musicPlayed = true;
+				}
+			}
+		}
+	}
+
+	void DebugGui() {
+		GUI_Checkbox("Debug fight ending",
+			arkhamFightData.fightEnding);
+	}
+
+	/// <summary>
+	/// Logic for entering and exiting better arkham 2 fight
+	/// </summary>
+	void SceneGame() {
+		if (!activeConfig.Actor.enable)
+			return;
+		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+
+		auto pool_19315 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19315 || !pool_19315[8]) {
+			return;
+		}
+		auto& eventData = *reinterpret_cast<EventData*>(pool_19315[8]);
+
+		auto pool_19326 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19326 || !pool_19326[12]) {
+			return;
+		}
+		auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_19326[12]);
+
+		auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+		if (!pool_19337 || !pool_19337[1]) {
+			return;
+		}
+		auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+
+
+		DebugLog("room          %u", eventData.room);
+		DebugLog("position      %u", eventData.position);
+		DebugLog("next room     %u", nextEventData.room);
+		DebugLog("next position %u", nextEventData.position);
+		DebugLog("event flag address %u", &eventFlags[20])
+		DebugLog("flags         %X", eventFlags[20]);
+
+		//get main character
+
+		
+		//Let's say we didn't fight arkham 2 and pretend we did. -Hitch 2025
+		if ((sessionData.mission == 19) && (nextEventData.room == 421)) {
+			if (eventFlags[20] == 1) {
+				eventFlags[20] = 2;
+				arkhamFightData.fightActive = true;
+				//if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2) {
+					//arkhamFightData.fightPhase = PHASE_1; 
+					//arkhamFightData.nextFightPhase = PHASE_1; 
+				//}
+				//else {
+					arkhamFightData.fightPhase = PHASE_VANILLA; 
+					arkhamFightData.nextFightPhase = PHASE_VANILLA;
+				//}
+
+				arkhamFightData.fightEnding = false;
+				//spawn our own arkham
+				auto& characterData = GetActiveCharacterData(0, 0, 0);
+				if (activeConfig.Actor.playerCount == 1 && characterData.character == CHARACTER::VERGIL) {
+					arkhamFightData.dantePartner = true;
+				}
+				else {
+					arkhamFightData.dantePartner = false;
+				}
+				//configure actors here
+				//suprise dante/vergil time
+				//if (queuedConfig.Actor.playerCount == 1) {
+				//	activeConfig.Actor.playerCount = 2;
+				//	auto playerdata = GetActivePlayerData(1);
+				//	playerdata.activeCharacterIndex = 0;
+				//	playerdata.characterCount = 1;
+				//	auto& activeCharacterData = GetActiveCharacterData(1, 0, 0);
+				//	activeCharacterData.meleeWeaponCount = 2;
+				//	activeCharacterData.meleeWeapons[0] = WEAPON::YAMATO_VERGIL;
+				//	activeCharacterData.meleeWeapons[0] = WEAPON::BEOWULF_VERGIL;
+				//	ApplyDefaultCharacterData(activeCharacterData, CHARACTER::VERGIL, 1, 0);
+				//}
+				
+				//this shouldn't need to be called, the skip is toggled off by default unless a scenechange needs it
+				//CrimsonPatches::EndBossFight(false);
+
+				//this is in a bunch of places right now, might be better to update on tic idk
+ 				CrimsonPatches::DisableDoorsInstancing(true);
+ 				CrimsonDetours::ToggleHideAndMutePortals(true);
+			}
+
+			//eventFlags[20] == 2 means the fight is still active, and fightEnding means we just beat arkham so do the sped up BoBfight now.
+			//when fightEnding isn't called, we need to skip this as we're doing boss rush stuff
+			else if (eventFlags[20] == 2 && arkhamFightData.fightEnding) {
+				eventFlags[20] = 1;
+				arkhamFightData.fightActive = false;
+				arkhamFightData.fightEnding = false;
+				CrimsonPatches::EndBossFight(true);
+				CrimsonPatches::DisableDoorsInstancing(false);
+				CrimsonDetours::ToggleHideAndMutePortals(false);
+			}
+		}
+		return;
+	}
+
+
+	/// <summary>
+	/// Spawns appropriate enemies based on phase of fight
+	/// </summary>
+	void EventMain()
+	{
+		if (!activeConfig.Actor.enable)
+			return;
+		//spawn arkham 2 in
+		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+
+		auto pool_19315 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19315 || !pool_19315[8]) {
+			return;
+		}
+		auto& eventData = *reinterpret_cast<EventData*>(pool_19315[8]);
+
+		auto pool_19326 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19326 || !pool_19326[12]) {
+			return;
+		}
+		auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_19326[12]);
+
+		auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+		if (!pool_19337 || !pool_19337[1]) {
+			return;
+		}
+		auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+
+		//Spawn Enemies for the phases.
+
+		//Arkham
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_1) {
+			arkhamFightData.fightPhase = PHASE_1;
+			CreateEnemyActor(arkham2Data, 0);
+		}
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_3) {
+			arkhamFightData.fightPhase = PHASE_3;
+			CreateEnemyActor(arkham2Data, 0);
+		}
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_5) {
+			arkhamFightData.fightPhase = PHASE_5;
+			CreateEnemyActor(arkham2Data, 0);
+		}
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_7) {
+			arkhamFightData.fightPhase = PHASE_7;
+			CreateEnemyActor(arkham2Data, 0);
+		}
+
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FORBIDDEN_NIRVANA_2) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_VANILLA) {
+			arkhamFightData.fightPhase = PHASE_VANILLA;
+			CreateEnemyActor(arkham2Data, 0);
+		}
+
+		//Cerb
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::ICE_GUARDIAN_REBORN) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_2) {
+			arkhamFightData.fightPhase = PHASE_2;
+			CreateEnemyActor(cerbData, 0);
+		}
+		//Agni Rudra
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::FIRESTORM_REBORN) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_4) {
+			arkhamFightData.fightPhase = PHASE_4;
+			CreateEnemyActor(agniRudraData, 0);
+		}
+		//Cerb
+		if (sessionData.mission == 19 && (nextEventData.room == ROOM::LIGHTBEAST_REBORN) && eventFlags[20] == 2 && arkhamFightData.nextFightPhase == PHASE_6) {
+			arkhamFightData.fightPhase = PHASE_6;
+			CreateEnemyActor(beowulfData, 0);
+		}
+	}
+
+	void BlackoutArkham2OriginalScene() {
+		auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+
+		auto pool_19315 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19315 || !pool_19315[8]) {
+			return;
+		}
+		auto& eventData = *reinterpret_cast<EventData*>(pool_19315[8]);
+
+		auto pool_19326 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+		if (!pool_19326 || !pool_19326[12]) {
+			return;
+		}
+		auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_19326[12]);
+
+		auto pool_19337 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E30);
+		if (!pool_19337 || !pool_19337[1]) {
+			return;
+		}
+		auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
+
+		if ((sessionData.mission == 19) && activeConfig.Actor.enable
+			&& g_scene == SCENE::GAME) {
+			if (eventFlags[20] == 1) {
+				ImGuiViewport* viewport = ImGui::GetMainViewport();
+				ImGui::SetNextWindowPos(viewport->Pos);
+				ImGui::SetNextWindowSize(viewport->Size);
+
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(0, 0));
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0.0f);
+				ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0.0f);
+
+				ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
+					ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+					ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMouseInputs;
+
+				ImGui::Begin("BlackoutArkham2Window", nullptr, windowFlags);
+
+				ImDrawList* draw_list = ImGui::GetWindowDrawList();
+				ImVec2 p0 = viewport->Pos;
+				ImVec2 p1 = ImVec2(viewport->Pos.x + viewport->Size.x, viewport->Pos.y + viewport->Size.y);
+				draw_list->AddRectFilled(p0, p1, IM_COL32(0, 0, 0, 255));
+
+				ImGui::End();
+				ImGui::PopStyleVar(3);
+			}
+		}
+	}
+};

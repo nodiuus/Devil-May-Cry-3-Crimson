@@ -42,6 +42,7 @@
 #include "CrimsonTimers.hpp"
 #include "CrimsonUtil.hpp"
 #include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
 
 namespace CrimsonGameplay {
 
@@ -57,7 +58,7 @@ bool IsActiveCharacterActor(byte8* actorBaseAddr) {
 template <typename T> uint8 GetNextMeleeAction(T& activeActorData, T& actorData) {
 	uint8 action = 0;
 
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -292,7 +293,7 @@ void SetNextMeleeAction(
 template <typename T> uint8 GetNextStyleAction(T& activeActorData, T& actorData) {
 	uint8 action = 0;
 
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -665,7 +666,7 @@ void UpdateCrimsonPlayerData() {
         auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
        
 
-		auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+		auto& gamepad = GetGamepad(actorData.newGamepad);
 		auto tiltDirection = GetRelativeTiltDirection(actorData);
 		auto inAir = (actorData.state & STATE::IN_AIR);
 		auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
@@ -775,7 +776,7 @@ void FixAirStingerCancelTime(byte8* actorBaseAddr) {
 	if (!actorBaseAddr) return;
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
    if (!IsActiveCharacterActor(actorData)) return;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto inAir = (actorData.state & STATE::IN_AIR);
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
@@ -832,7 +833,7 @@ void DanteStingerInputCrazyCombo(byte8* actorBaseAddr) {
 
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	// if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
 	auto actionTimer =
@@ -882,7 +883,7 @@ void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr) {
 		return;
 	}
 
-    auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
@@ -1244,7 +1245,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     if (entityIndex >= ENTITY_COUNT) entityIndex = 0;
 
     auto& playerData = GetPlayerData(playerIndex);
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& skyLaunch = crimsonPlayer[playerIndex].skyLaunch;
 
     // --- Button press detection arrays ---
@@ -1500,7 +1501,7 @@ void DarkslayerCancelsVergilController(byte8* actorBaseAddr) {
 
 
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : 
         crimsonPlayer[playerIndex].actionTimerClone;
 
@@ -1647,7 +1648,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& characterData = GetCharacterData(actorData);
 	auto meleeWeaponEquipped = characterData.meleeWeapons[characterData.meleeWeaponIndex];
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
@@ -1665,10 +1666,6 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	static bool closeToEnemy[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	auto& closeEnemy = closeToEnemy[playerIndex][entityIndex];
-	static constexpr const wchar_t* weaponParticlePath = L"Crimson\\vfx\\yamato_sword.efkefc";
-	static EffekseerRefHandle weaponParticleRef = CrimsonEfk::LoadEffect(weaponParticlePath, 1.0f);
-	static constexpr const wchar_t* risingStarParticlePath = L"Crimson\\vfx\\risingstar.efkefc";
-	static EffekseerRefHandle risingStarParticleRef = CrimsonEfk::LoadEffect(risingStarParticlePath, 1.0f);
 	auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
 	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
@@ -1742,8 +1739,8 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
 
-		risingStarParticleRef = CrimsonEfk::ReloadEffect(risingStarParticleRef, risingStarParticlePath, 40.0f);
-		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(risingStarParticleRef, boneMatrix->matrix3, &actorData);
+		CrimsonEfkPreload::risingStar_PoseHit_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::risingStar_PoseHit_Handle, CrimsonEfkPreload::risingStar_PoseHit_Path, 40.0f);
+		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix3, &actorData);
 		uint32_t vergilColor = CrimsonUtil::HexToAABBGGRR(0x522BFFFF);
 		//CrimsonEfk::SetAllColor(risingStarParticleHandle[playerIndex][entityIndex], vergilColor);
         
@@ -1810,7 +1807,7 @@ void VergilYamatoHighTime(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer :
@@ -2175,7 +2172,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	if (characterData[ENTITY::MAIN].character != CHARACTER::VERGIL) {
 		return; // Ensure the character is currently using Vergil
 	}
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& actionTimerNotTrickChange = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimerNotTrickChange :
@@ -2200,10 +2197,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool pendingJustFrameJDC[PLAYER_COUNT][ENTITY_COUNT] = { false };
-
-	static constexpr const wchar_t* jdcChargeParticlePath = L"Crimson\\vfx\\jdc_charge.efkefc";
-	static EffekseerRefHandle chargeParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge.efkefc", 1.0f);
-	static EffekseerRefHandle chargeDTParticleRef = CrimsonEfk::LoadEffect(L"Crimson\\vfx\\jdc_charge_dt.efkefc", 1.0f);
 
 	static EffekseerHandle chargeParticle[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
 	CharSettings2& charSettings2 = **reinterpret_cast<CharSettings2**>(actorBaseAddr + 0x3DF8); 
@@ -2318,8 +2311,10 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				auto& vergilSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
 				cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw); // first cDraw is the katana part
 				Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[0].bonesMatrixesPtr); // index 1 is the hilt
-				chargeParticleRef = CrimsonEfk::ReloadEffect(chargeParticleRef, jdcChargeParticlePath, 1.0f);
-				chargeParticle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(chargeParticleRef, swordMatrix[0].matrix2, actorData); // using katana bone 2
+				CrimsonEfkPreload::jdcCharge_Handle = 
+					CrimsonEfk::ReloadEffect(CrimsonEfkPreload::jdcCharge_Handle, CrimsonEfkPreload::jdcCharge_Path, 1.0f);
+				chargeParticle[playerIndex][entityIndex] = 
+					CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::jdcCharge_Handle, swordMatrix[0].matrix2, actorData); // using katana bone 2
 				
 				
 				CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
@@ -2519,7 +2514,7 @@ void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
     auto playerIndex = actorData.newPlayerIndex;
     auto entityIndex = actorData.newEntityIndex;
     auto& playerData = GetPlayerData(playerIndex);
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
         crimsonPlayer[playerIndex].actionTimerClone;
     auto& inAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun :
@@ -2562,7 +2557,7 @@ void VergilAirRisingSun(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto& playerData = GetPlayerData(playerIndex);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
 	auto& inAirTauntRisingSun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].inAirTauntRisingSun :
@@ -2602,7 +2597,7 @@ void VergilAdjustAirMovesPos(byte8* actorBaseAddr) {
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (actorData.character != CHARACTER::VERGIL) return;
     auto playerIndex = actorData.newPlayerIndex;
-    auto& gamepad    = GetGamepad(actorData.newPlayerIndex);
+    auto& gamepad    = GetGamepad(actorData.newGamepad);
 
     auto* v     = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves : &crimsonPlayer[playerIndex].vergilMovesClone;
 	auto action = actorData.action;
@@ -2716,7 +2711,7 @@ void VergilDownertia(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* v = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves : &crimsonPlayer[playerIndex].vergilMovesClone;
 	auto action = actorData.action;
@@ -2911,10 +2906,11 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
 	auto playerIndex = actorData.newPlayerIndex;
 
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto radius = gamepad.leftStickRadius;
 	uint16 relativeTilt = 0;
@@ -2936,11 +2932,11 @@ void FreeformSoftLockController(byte8* actorBaseAddr) {
 	bool lastInAir = (actorData.lastState & STATE::IN_AIR);
 	static uint8 currentMovePlayer[PLAYER_COUNT] = { 0 };
 	static uint8 currentMoveClone[PLAYER_COUNT] = { 0 };
-	static uint8& currentMove = (actorData.newEntityIndex == 0) ? currentMovePlayer[playerIndex] : currentMoveClone[playerIndex];
+	uint8& currentMove = (actorData.newEntityIndex == 0) ? currentMovePlayer[playerIndex] : currentMoveClone[playerIndex];
 
 	static uint16 cachedRotationPlayer[PLAYER_COUNT] = { 0 };
 	static uint16 cachedRotationClone[PLAYER_COUNT] = { 0 };
-	static uint16& cachedRotation = (actorData.newEntityIndex == 0) ? cachedRotationPlayer[playerIndex] : cachedRotationClone[playerIndex];
+	uint16& cachedRotation = (actorData.newEntityIndex == 0) ? cachedRotationPlayer[playerIndex] : cachedRotationClone[playerIndex];
 
 	auto& actionTimer =
 		(actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].actionTimerClone : crimsonPlayer[playerIndex].actionTimer;
@@ -3058,7 +3054,7 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto radius = gamepad.leftStickRadius;
 	auto& actionTimer = (entityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
@@ -3329,7 +3325,7 @@ void BulletMagnetism(byte8* actorBaseAddr) {
 	if (!activeCrimsonGameplay.Gameplay.General.inertia) return;
 	auto playerIndex = actorData.newPlayerIndex;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& bulletMagnetism = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].bulletMagnetism : 
 		crimsonPlayer[playerIndex].bulletMagnetismClone;
 	
@@ -3365,10 +3361,10 @@ void BulletMagnetism(byte8* actorBaseAddr) {
 		int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
 
 		// Now we detect if player is going backwards relative to their inertia direction, 
-		// which would be indicated by a rotation delta greater than 90° (0x4000 in uint16-space).
+		// which would be indicated by a rotation delta greater than 90ï¿½ (0x4000 in uint16-space).
 
 		if (rotationDeltaAbs > 0x4000) {
-			// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
+			// 0x8000 is half-turn in uint16-space (180ï¿½ = pi radians), so this inverts inertia direction.
 			actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
 		}
 	}
@@ -3579,7 +3575,7 @@ void InertiaController(byte8* actorBaseAddr) {
         (action == AGNI_RUDRA_SKY_DANCE_PART_1 || action == AGNI_RUDRA_SKY_DANCE_PART_2 || action == AGNI_RUDRA_SKY_DANCE_PART_3);
     auto& animTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     auto& guarflyTimer = i->guardflyTimer;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
     if (actorData.character == CHARACTER::DANTE) {
 
@@ -3886,7 +3882,7 @@ void AirFlickerGravityTweaks(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? &crimsonPlayer[playerIndex].airFlickerTweak : 
         &crimsonPlayer[playerIndex].airFlickerTweakClone;
@@ -3947,7 +3943,7 @@ void SkyDanceGravityTweaks(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? &crimsonPlayer[playerIndex].skyDanceTweak :
 		&crimsonPlayer[playerIndex].skyDanceTweakClone;
@@ -3996,7 +3992,7 @@ void EbonyAndIvoryAerialTweaks(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto* tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? &crimsonPlayer[playerIndex].ebonyIvoryTweak :
 		&crimsonPlayer[playerIndex].ebonyIvoryTweakClone;
@@ -4045,7 +4041,7 @@ void DanteDownertia(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	auto playerIndex = actorData.newPlayerIndex;
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	auto& airFlickerTweak = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].airFlickerTweak :
 		crimsonPlayer[playerIndex].airFlickerTweakClone;
@@ -4228,7 +4224,7 @@ void BackToForwardInputs(byte8* actorBaseAddr) {
     auto lockOn        = actorData.lockOn;
     auto tiltDirection = GetRelativeTiltDirection(actorData);
     auto playerIndex   = actorData.newPlayerIndex;
-    auto& gamepad      = GetGamepad(playerIndex);
+    auto& gamepad      = GetGamepad(actorData.newGamepad);
     auto radius        = gamepad.leftStickRadius;
     auto pos           = gamepad.leftStickPosition;
     uint8 deadzone = 100;
@@ -5126,6 +5122,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	if (!IsActiveCharacterActor(actorData)) return;
+	
     CrimsonDetours::ToggleDisableDriveHold(activeCrimsonGameplay.Gameplay.Dante.driveRework);
 	CrimsonPatches::DriveProjectileThroughWalls(activeCrimsonGameplay.Gameplay.Dante.driveRework);
     if (!activeCrimsonGameplay.Gameplay.Dante.driveRework || actorData.character != CHARACTER::DANTE) return;
@@ -5142,18 +5139,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     uintptr_t drivePhysicalDamageAddr   = (uintptr_t)appBaseAddr + 0x5C6D2C;
     uintptr_t driveProjectileDamageAddr = (uintptr_t)appBaseAddr + 0x5CB1EC;
 	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
-	static constexpr const wchar_t* driveChargeParticlePath = L"Crimson\\vfx\\drive_charge.efkefc";
-	static EffekseerRefHandle driveChargeParticleRef = CrimsonEfk::LoadEffect(driveChargeParticlePath, 1.0f);
-	static constexpr const wchar_t* quickDriveChargeParticlePath = L"Crimson\\vfx\\quickdrive_charge.efkefc";
-	static EffekseerRefHandle quickDriveChargeParticleRef = CrimsonEfk::LoadEffect(quickDriveChargeParticlePath, 1.0f);
-	static constexpr const wchar_t* driveLevel1ParticlePath = L"Crimson\\vfx\\drive_level1.efkefc";
-	static EffekseerRefHandle driveLevel1ParticleRef = CrimsonEfk::LoadEffect(driveLevel1ParticlePath, 1.0f);
-	static constexpr const wchar_t* driveLevel2ParticlePath = L"Crimson\\vfx\\drive_level2.efkefc";
-	static EffekseerRefHandle driveLevel2ParticleRef = CrimsonEfk::LoadEffect(driveLevel2ParticlePath, 1.0f);
-	static constexpr const wchar_t* driveLevel3ParticlePath = L"Crimson\\vfx\\drive_level3.efkefc";
-	static EffekseerRefHandle driveLevel3ParticleRef = CrimsonEfk::LoadEffect(driveLevel3ParticlePath, 1.0f);
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
 
 	auto& danteSword = *reinterpret_cast<Sword*>(actorData.nextBaseAddr);
@@ -5277,8 +5264,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
 		if (!drive.quickDriveEffectPlayed) {
 			
-			quickDriveChargeParticleRef = CrimsonEfk::ReloadEffect(quickDriveChargeParticleRef, quickDriveChargeParticlePath, 1.0f);
-			drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(quickDriveChargeParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+			CrimsonEfkPreload::drive_QuickCharge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_QuickCharge_Handle, CrimsonEfkPreload::drive_QuickCharge_Path, 1.0f);
+			drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_QuickCharge_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 
 			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
 
@@ -5297,8 +5284,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 			drive.effectInterruptTime = 1.1f;
 			drive.sfxLooped = false;
 
-			driveChargeParticleRef = CrimsonEfk::ReloadEffect(driveChargeParticleRef, driveChargeParticlePath, 1.0f);
-			drive.chargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveChargeParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+			CrimsonEfkPreload::drive_Charge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Charge_Handle, CrimsonEfkPreload::drive_Charge_Path, 1.0f);
+			drive.chargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Charge_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 			
 			CrimsonSDL::PlayDriveStart(playerIndex, entityIndex); // Charge sound
 
@@ -5338,8 +5325,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
             if (!drive.level2EffectPlayed) {
 
                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
-				driveLevel2ParticleRef = CrimsonEfk::ReloadEffect(driveLevel2ParticleRef, driveLevel2ParticlePath, 1.0f);
-				drive.level2EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel2ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+				CrimsonEfkPreload::drive_Level2_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level2_Handle, CrimsonEfkPreload::drive_Level2_Path, 1.0f);
+				drive.level2EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level2_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex);
                 drive.level2EffectPlayed = true;
             }
@@ -5352,8 +5339,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
             if (!drive.level3EffectPlayed) {
 
                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
-				driveLevel3ParticleRef = CrimsonEfk::ReloadEffect(driveLevel3ParticleRef, driveLevel3ParticlePath, 1.0f);
-				drive.level3EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel3ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
+				CrimsonEfkPreload::drive_Level3_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level3_Handle, CrimsonEfkPreload::drive_Level3_Path, 1.0f);
+				drive.level3EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level3_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex);
 
                 drive.level3EffectPlayed = true;
@@ -5507,7 +5494,7 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	auto entityIndex = actorData.newEntityIndex;
 	bool inAir = (actorData.state & STATE::IN_AIR);
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 	auto& characterData = GetCharacterData(actorData);
 	auto rangedWeaponEquipped = characterData.rangedWeapons[characterData.rangedWeaponIndex];
@@ -5621,6 +5608,118 @@ void GroundTrickFlagSet(byte8* actorBaseAddr) {
         && newActorData.visibility == 2) {
         newActorData.visibility = 0; // unhide
     }
+}
+void TeleportToPlayer(PlayerActorData& actorData, PlayerActorData& targetData) {
+	if (!actorData || !targetData) {
+		return;
+	}
+	
+	auto TeleportToLeftOfMain = [&](float offsetDist = 150.0f) {
+		float mainAngle = targetData.rotation * (3.14159265f / 32768.0f);
+		actorData.position.x = targetData.position.x + (-std::cos(mainAngle) * offsetDist);
+		actorData.position.y = targetData.position.y + 50.0f;
+		actorData.position.z = targetData.position.z + (std::sin(mainAngle) * offsetDist);
+		};
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::DANTE) {
+		TeleportToLeftOfMain();
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && actorData.recoverState[0] == 0x3 && actorData.character == CHARACTER::DANTE) {
+		actorData.position.y = targetData.position.y;
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x2 && actorData.character == CHARACTER::VERGIL) {
+		TeleportToLeftOfMain();
+	}
+
+	if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && actorData.recoverState[0] == 0x3 && actorData.character == CHARACTER::VERGIL) {
+		actorData.position.y = targetData.position.y;
+	}
+}
+
+void TeleportToPartyLeader(byte8* actorBaseAddr) {
+	// Works in tandem with DanteTrickAlterations Detour in CrimsonDetours (requirement)
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	//if not the active character return
+	if (!IsActiveCharacterActor(actorData)) return;
+	//if not in arkham bob fight in singleplayer, return
+	if (!(activeConfig.Actor.playerCount > 1)) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	//if not the partner character, return
+	if (playerIndex == 0) return;
+
+
+
+	
+	auto& playerData = GetPlayerData(playerIndex);
+	//get mainPlayerData
+	auto& mainPlayerData = GetPlayerData(0);
+	auto entityIndex = actorData.newEntityIndex;
+	auto& mainNewActorData = GetNewActorData(0, mainPlayerData.activeCharacterIndex, 0);
+	if (!mainNewActorData.baseAddr) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(mainNewActorData.baseAddr);
+	auto& newActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+
+	auto& gamepad = GetGamepad(actorData.newGamepad);
+		if (actorData.eventData[0].event == ACTOR_EVENT::TRICKSTER_AIR_TRICK && (gamepad.buttons[0] & GAMEPAD::START) !=0) {
+			TeleportToPlayer(actorData, mainActorData);
+			//newActorData.visibility = 2; // hide dante's model
+		}
+
+		if (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK && (gamepad.buttons[0] & GAMEPAD::START) != 0) {
+			TeleportToPlayer(actorData, mainActorData);
+			//newActorData.visibility = 2; // hide dante's model
+		}
+
+	//bool storeevent = false;
+	//if (actorData.eventData[0].event == ACTOR_EVENT::PARTNER_TELEPORT)
+	//{
+	//	if(actorData.character == CHARACTER::DANTE)
+	//		actorData.eventData[0].event = ACTOR_EVENT::TRICKSTER_AIR_TRICK;
+	//	if (actorData.character == CHARACTER::VERGIL)
+	//		actorData.eventData[0].event = ACTOR_EVENT::DARK_SLAYER_AIR_TRICK;
+	//	storeevent = true;
+	//}
+
+	//if (storeevent) {
+	//	
+	//	actorData.eventData[0].event = ACTOR_EVENT::PARTNER_TELEPORT;
+	//}
+		
+}
+
+void BoBPartnerTeleport(byte8* actorBaseAddr) {
+	// Works in tandem with DanteTrickAlterations Detour in CrimsonDetours (requirement)
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	//if not the active character return
+	if (!IsActiveCharacterActor(actorData)) return;
+	//if not in arkham bob fight in singleplayer, return
+	if (!(activeConfig.Actor.playerCount == 1 && arkhamFightData.fightActive)) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	//if not the partner character, return
+	if (playerIndex != 1) return;
+	
+	auto& playerData = GetPlayerData(playerIndex);
+	//get mainPlayerData
+	auto& mainPlayerData = GetPlayerData(0);
+	auto entityIndex = actorData.newEntityIndex;
+	auto& mainNewActorData = GetNewActorData(0, mainPlayerData.activeCharacterIndex, 0);
+	if (!mainNewActorData.baseAddr) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(mainNewActorData.baseAddr);
+	auto& newActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+
+	TeleportToPlayer(actorData, mainActorData);
 }
 
 }

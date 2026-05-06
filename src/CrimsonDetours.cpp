@@ -25,6 +25,7 @@
 #include "Actor.hpp"
 #include "CrimsonOnTick.hpp"
 #include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
 #include "Internal.hpp"
 #include "CrimsonDetours.hpp"
 
@@ -135,6 +136,8 @@ std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr4;
 void FixCrashArkhamPt2GrabDetour4();
 std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr5;
 void FixCrashArkhamPt2GrabDetour5();
+std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr6;
+void FixCrashArkhamPt2GrabDetour6();
 
 // FixCrashArkhamPt2Doppel
 std::uint64_t g_FixCrashArkhamPt2Doppel_ReturnAddr1;
@@ -283,6 +286,13 @@ void GreenOrbsMPRegenDetour();
 std::uint64_t g_GreenOrbsMPRegen_ReturnAddr;
 void* g_GreenOrbsMPRegen_Call;
 
+// PortalsHide
+void PortalsHideDetour();
+std::uint64_t g_PortalsHide_ReturnAddr;
+
+// PortalsMute
+void PortalsMuteDetour();
+std::uint64_t g_PortalsMute_ReturnAddr;
 // StyleLevellingCCSFix
 void StyleLevellingCCSFixDetour1();
 std::uint64_t g_StyleLevellingCCSFix_ReturnAddr1;
@@ -357,7 +367,7 @@ bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
     auto inputException = !(actorData.lockOn && (tiltDirection == TILT_DIRECTION::UP || tiltDirection == TILT_DIRECTION::DOWN));
 
     auto inputExceptionNevanJamSession = !(tiltDirection == TILT_DIRECTION::LEFT);
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
     // if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
 	auto actionTimer =
@@ -574,7 +584,7 @@ void AddingToPlayersMirageGauge(PlayerActorData& actorData, std::uint64_t amount
 
 bool CheckForceRoyalReleaseForSkyLaunch(PlayerActorData& actorData) {
     auto playerIndex = actorData.newPlayerIndex;
-    auto gamepad = GetGamepad(playerIndex);
+    auto gamepad = GetGamepad(actorData.newGamepad);
 
     if ((actorData.state & STATE::IN_AIR && gamepad.buttons[0] & GetBinding(BINDING::TAUNT))
             || activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease) {
@@ -586,7 +596,7 @@ bool CheckForceRoyalReleaseForSkyLaunch(PlayerActorData& actorData) {
 
 bool DetectIfInSkyLaunch(PlayerActorData& actorData) {
 	auto playerIndex = actorData.newPlayerIndex;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
     if (activeCrimsonGameplay.Cheats.Training.infiniteHP) {
         return true;
@@ -730,10 +740,7 @@ uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 		return shlActorData.CGeneratorPtr;
 	}
 
-	static constexpr const wchar_t* justFrameVFXPath = L"Crimson\\vfx\\judgementcut\\justframejdc.efkefc";
-	EffekseerRefHandle justFrameVFXRef = CrimsonEfk::LoadEffect(justFrameVFXPath, 40.0f);
-
-	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(justFrameVFXRef, shlActorData.matrix, NULL);
+	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::justFrameJDC_Handle, shlActorData.matrix, NULL);
 
 	// Spawn Default JDC VFX for the JDCs CGenerator not to be NULL
 	// Default JDC VFX is group 2 index 456
@@ -1032,16 +1039,6 @@ namespace DriveCol {
 		if (!activeCrimsonGameplay.Gameplay.Dante.driveRework) {
 			return;
 		}
-       // Keep effect loading lazy (first use) so initialization order remains identical to pre-refactor behavior.
-		static constexpr const wchar_t* driveParticlePath = L"Crimson\\vfx\\drive.efkefc";
-		static EffekseerRefHandle driveParticleRef = CrimsonEfk::LoadEffect(driveParticlePath, 40.0f);
-
-		static constexpr const wchar_t* drive2ParticlePath = L"Crimson\\vfx\\drive2.efkefc";
-		static EffekseerRefHandle drive2ParticleRef = CrimsonEfk::LoadEffect(drive2ParticlePath, 40.0f);
-
-		static constexpr const wchar_t* drive3ParticlePath = L"Crimson\\vfx\\drive3.efkefc";
-		static EffekseerRefHandle drive3ParticleRef = CrimsonEfk::LoadEffect(drive3ParticlePath, 40.0f);
-
 		const bool isDriveCollision =
 			reinterpret_cast<uintptr_t>(collisionMeta->dmgDataAddr) == reinterpret_cast<uintptr_t>(appBaseAddr + 0x5CB1E0);
 
@@ -1060,13 +1057,13 @@ namespace DriveCol {
 
 				EffekseerHandle handle{};
 				if (desiredPhase == DriveFxPhase::Part3) {
-                 handle = CrimsonEfk::PlayEffectAtMatrix(drive3ParticleRef, collisionMeta->matrix1, NULL);
+                 handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part3_Handle, collisionMeta->matrix1, NULL);
 				}
 				else if (desiredPhase == DriveFxPhase::Part2) {
-                 handle = CrimsonEfk::PlayEffectAtMatrix(drive2ParticleRef, collisionMeta->matrix1, NULL);
+                 handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part2_Handle, collisionMeta->matrix1, NULL);
 				}
 				else {
-                  handle = CrimsonEfk::PlayEffectAtMatrix(driveParticleRef, collisionMeta->matrix1, NULL);
+                  handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part1_Handle, collisionMeta->matrix1, NULL);
 				}
 
 				DriveInstanceState instanceState{};
@@ -1281,7 +1278,7 @@ bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
 	uint8 entityIndex = actorData.newEntityIndex;
 	auto& jCut = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
 	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
-	auto& gamepad = GetGamepad(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto tiltDirection = GetRelativeTiltDirection(actorData);
 
 	// Here we can block certain actions from being performed.
@@ -1873,6 +1870,31 @@ void ToggleStyleRankHudNoFadeout(bool enable) {
     }
 }
 
+void ToggleHideAndMutePortals(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// HidePortals
+	// dmc3.exe + 270B85 - 66 89 44 24 28        - mov [rsp+28],ax
+	static std::unique_ptr<Utility::Detour_t> HidePortalsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x270B85, &PortalsHideDetour, 5);
+	g_PortalsHide_ReturnAddr = HidePortalsHook->GetReturnAddress();
+	HidePortalsHook->Toggle(enable);
+
+	// MutePortals
+	// dmc3.exe + 26D07E - 89 03                 - mov [rbx],eax
+	// dmc3.exe + 26D080 - 48 8D 5B 04           - lea rbx,[rbx+04]
+	static std::unique_ptr<Utility::Detour_t> MutePortalsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x26D07E, &PortalsMuteDetour, 6);
+	g_PortalsMute_ReturnAddr = MutePortalsHook->GetReturnAddress();
+	MutePortalsHook->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleFPSSpeedIssues(bool enable) {
 	using namespace Utility;
 	static bool run = false;
@@ -2222,6 +2244,15 @@ void ToggleArkhamPt2GrabCrashFix(bool enable) {
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1675B3, &FixCrashArkhamPt2GrabDetour5, 7);
 	g_FixCrashArkhamPt2Grab_ReturnAddr5 = FixCrashArkhamPt2GrabHook5->GetReturnAddress();
 	FixCrashArkhamPt2GrabHook5->Toggle(enable);
+
+	
+	// Detour 6
+	// From sub_1400510E0 (related to CSceneMgr vftable):
+	// dmc3.exe+510FA - 0F 28 81 80 00 00 00      - movaps xmm0,[rcx+00000080] { playerPos }
+	static std::unique_ptr<Utility::Detour_t> FixCrashArkhamPt2GrabHook6 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x510FA, &FixCrashArkhamPt2GrabDetour6, 7);
+	g_FixCrashArkhamPt2Grab_ReturnAddr6 = FixCrashArkhamPt2GrabHook6->GetReturnAddress();
+	FixCrashArkhamPt2GrabHook6->Toggle(enable);
 
 	run = enable;
 }

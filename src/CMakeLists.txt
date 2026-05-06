@@ -15,6 +15,8 @@ set(MASM_SRC
     masm/GuardBreakToNormalBlock.asm
     masm/FixBallsHangHitSpeed.asm
     masm/FixBlendingEffects.asm
+    masm/FixBossCam.asm
+    masm/FixClothPhysics.asm
     masm/FixCrashArkhamPt2Doppel.asm
     masm/FixCrashArkhamPt2Grab.asm
     masm/FixCrashCerberus.asm
@@ -22,10 +24,12 @@ set(MASM_SRC
     masm/FixCrashM5.asm
     masm/FixCrashVergilM3.asm
     masm/FixSecretMissionTimerFPS.asm
+    masm/FixStaggerGravity.asm
     masm/EnsureAirRisingDragonLaunch.asm
     masm/HideStyleRankHUD.asm
     masm/HudHPSeparation.asm
     masm/HudStyleBarPosAsm.asm
+    masm/PortalsHideAndMute.asm
     masm/PlaytimeOnTick.asm
     masm/DisableDriveHoldAsm.asm
     masm/CustomCameraPositioning.asm
@@ -141,6 +145,8 @@ file(GLOB MAIN_SRC
     CrimsonConfigGameplay.hpp
     CrimsonConfigGameplayMask.hpp
     CrimsonConfigHandling.h
+    CrimsonBetterArkham2.cpp
+    CrimsonBetterArkham2.hpp
     CrimsonCameraController.cpp
     CrimsonCameraController.hpp
     CrimsonDetours.cpp
@@ -220,6 +226,8 @@ file(GLOB MAIN_SRC
     StyleSwitchFX.hpp
     CrimsonEfk.hpp
     CrimsonEfk.cpp
+    CrimsonEfkPreload.cpp
+    CrimsonEfkPreload.hpp
 )
 
 file(GLOB CORE_SRC 

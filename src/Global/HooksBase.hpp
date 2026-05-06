@@ -316,20 +316,16 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
         }
     }
 
-    HRESULT presentResult = ::Base::DXGI::Present(pSwapChain, SyncInterval, presentFlags);
-
-    // Low latency optimization: Wait for GPU frame completion after presenting
-    // This blocks the game from starting the next frame's logic/input until the GPU is ready.
+    // Non-blocking GPU sync: poll the frame latency waitable object before Present.
+    // If the GPU is still busy with the previous frame, WaitForSingleObject(x, 0)
+    // returns immediately without blocking. The FPS limiter's spin-wait will then
+    // naturally back-pressure the CPU until the GPU catches up, preventing the
+    // render queue from building up latency.
     if (activeCrimsonConfig.System.flipModelPresentation && g_frameLatencyWaitableObject != nullptr) {
-        // Boost thread priority for rendering thread during Wait
-        HANDLE currentThread = GetCurrentThread();
-        int originalPriority = GetThreadPriority(currentThread);
-        SetThreadPriority(currentThread, THREAD_PRIORITY_TIME_CRITICAL);
-
-        DWORD waitResult = WaitForSingleObjectEx(g_frameLatencyWaitableObject, 1000, TRUE);
-        // Restore original thread priority
-        SetThreadPriority(currentThread, originalPriority);
+        WaitForSingleObject(g_frameLatencyWaitableObject, 0);
     }
+
+    HRESULT presentResult = ::Base::DXGI::Present(pSwapChain, SyncInterval, presentFlags);
 
 	double newCap = activeCrimsonConfig.System.fpsCap;
     static double g_currentCap = -1.0;
