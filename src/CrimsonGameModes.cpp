@@ -308,6 +308,7 @@ const CrimsonConfigGameplayMask VANILLA_MASK = [] {
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;
 	mask.Gameplay.ExtraDifficulty.mustStyleMode = false;
 	mask.Gameplay.ExtraDifficulty.enemyDTMode = false;
+	mask.Gameplay.ExtraDifficulty.betterArkham2 = false;
 	mask.Gameplay.ExtraDifficulty.forceDifficultyMode = false;
 
 	mask.Gameplay.Vergil.trickUpNoLockOn = false;
@@ -381,6 +382,7 @@ const CrimsonConfigGameplayMask STYLE_SWITCHER_MASK = [] {
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;
 	mask.Gameplay.ExtraDifficulty.mustStyleMode = false;
 	mask.Gameplay.ExtraDifficulty.enemyDTMode = false;
+	mask.Gameplay.ExtraDifficulty.betterArkham2 = false;
 	mask.Gameplay.ExtraDifficulty.forceDifficultyMode = false;
 
 	mask.Cheats.Vergil.chronoSwords = false;
@@ -452,6 +454,7 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;
 	mask.Gameplay.ExtraDifficulty.mustStyleMode = false;
 	mask.Gameplay.ExtraDifficulty.enemyDTMode = false;
+	mask.Gameplay.ExtraDifficulty.betterArkham2 = false;
 	mask.Gameplay.ExtraDifficulty.forceDifficultyMode = false;
 
 	mask.Cheats.Vergil.quicksilverStyle = false;
