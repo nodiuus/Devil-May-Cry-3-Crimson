@@ -465,7 +465,7 @@ void ShowButtonConfigWindow() {
 
 	ToggleCursor();
 	BTImGuiCtx ctxControl{};
-	const auto nplayers = activeConfig.Actor.playerCount;
+	const auto nplayers = queuedConfig.Actor.playerCount;
 	bool shouldClose = false;
 
 	static std::array<int, PLAYER_COUNT> s_selectedCharacterSlotByPlayer = {};
