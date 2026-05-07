@@ -12624,59 +12624,59 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	ImGui::End();
 
-	// C•Team 'A Berthrage Project' window
-	float cTeamBerthrageFontSize = 30.0f;
-	int cTeamBerthrageAlpha = static_cast<int>(fadeProgress * 255.0f);
-	ImFont* berthrageFont = UI::g_ImGuiFont_RussoOne[cTeamBerthrageFontSize];
-	float scaledFontSize = berthrageFont->FontSize * scaleFactorY;
-	auto cTeamBerthrageText = u8"C•Team Presents • A Berthrage Project";
+	//// C•Team 'A Berthrage Project' window
+	//float cTeamBerthrageFontSize = 30.0f;
+	//int cTeamBerthrageAlpha = static_cast<int>(fadeProgress * 255.0f);
+	//ImFont* berthrageFont = UI::g_ImGuiFont_RussoOne[cTeamBerthrageFontSize];
+	//float scaledFontSize = berthrageFont->FontSize * scaleFactorY;
+	//auto cTeamBerthrageText = u8"C•Team Presents • A Berthrage Project";
 
-	// Calculate text size with scaling
-	ImVec2 cTeamBerthrageTextSize = berthrageFont->CalcTextSizeA(
-		scaledFontSize, FLT_MAX, 0.0f, (const char*)cTeamBerthrageText
-	);
+	//// Calculate text size with scaling
+	//ImVec2 cTeamBerthrageTextSize = berthrageFont->CalcTextSizeA(
+	//	scaledFontSize, FLT_MAX, 0.0f, (const char*)cTeamBerthrageText
+	//);
 
-	// Calculate centered position in screen space
-	ImVec2 berthrageTitleTextScreenPos = ImVec2(
-		(g_renderSize.x - cTeamBerthrageTextSize.x) * 0.5f,
-		logoWindowPos.y - (40.0f * scaleFactorY) // Y position as before
-	);
+	//// Calculate centered position in screen space
+	//ImVec2 berthrageTitleTextScreenPos = ImVec2(
+	//	(g_renderSize.x - cTeamBerthrageTextSize.x) * 0.5f,
+	//	logoWindowPos.y - (40.0f * scaleFactorY) // Y position as before
+	//);
 
-	// Setup window (make sure it's big enough, but position doesn't matter for AddText)
-	ImVec2 cTeamBerthrageTextWindowSize = ImVec2(
-		cTeamBerthrageTextSize.x + 20.0f * scaleFactorY,
-		cTeamBerthrageTextSize.y + 20.0f * scaleFactorY
-	);
-	ImVec2 cTeamBerthrageTextWindowPos = ImVec2(
-		berthrageTitleTextScreenPos.x - 10.0f * scaleFactorY,
-		berthrageTitleTextScreenPos.y - 10.0f * scaleFactorY
-	);
+	//// Setup window (make sure it's big enough, but position doesn't matter for AddText)
+	//ImVec2 cTeamBerthrageTextWindowSize = ImVec2(
+	//	cTeamBerthrageTextSize.x + 20.0f * scaleFactorY,
+	//	cTeamBerthrageTextSize.y + 20.0f * scaleFactorY
+	//);
+	//ImVec2 cTeamBerthrageTextWindowPos = ImVec2(
+	//	berthrageTitleTextScreenPos.x - 10.0f * scaleFactorY,
+	//	berthrageTitleTextScreenPos.y - 10.0f * scaleFactorY
+	//);
 
-	ImGui::SetNextWindowPos(cTeamBerthrageTextWindowPos);
-	ImGui::SetNextWindowSize(cTeamBerthrageTextWindowSize);
-	ImGui::Begin("CTeamBerthrageProjectWindow", nullptr, windowFlags);
+	//ImGui::SetNextWindowPos(cTeamBerthrageTextWindowPos);
+	//ImGui::SetNextWindowSize(cTeamBerthrageTextWindowSize);
+	//ImGui::Begin("CTeamBerthrageProjectWindow", nullptr, windowFlags);
 
-	// Draw shadow
-	ImVec2 berthrageTitleTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
-	ImGui::GetWindowDrawList()->AddText(
-		berthrageFont,
-		scaledFontSize,
-		berthrageTitleTextScreenPos + berthrageTitleTextShadowOffset,
-		IM_COL32(0, 0, 0, cTeamBerthrageAlpha),
-		(const char*)cTeamBerthrageText
-	);
+	//// Draw shadow
+	//ImVec2 berthrageTitleTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
+	//ImGui::GetWindowDrawList()->AddText(
+	//	berthrageFont,
+	//	scaledFontSize,
+	//	berthrageTitleTextScreenPos + berthrageTitleTextShadowOffset,
+	//	IM_COL32(0, 0, 0, cTeamBerthrageAlpha),
+	//	(const char*)cTeamBerthrageText
+	//);
 
-	// Draw normal text
-	ImGui::GetWindowDrawList()->AddText(
-		berthrageFont,
-		scaledFontSize,
-		berthrageTitleTextScreenPos,
-		IM_COL32(255, 255, 255, cTeamBerthrageAlpha),
-		(const char*)cTeamBerthrageText
-	);
+	//// Draw normal text
+	//ImGui::GetWindowDrawList()->AddText(
+	//	berthrageFont,
+	//	scaledFontSize,
+	//	berthrageTitleTextScreenPos,
+	//	IM_COL32(255, 255, 255, cTeamBerthrageAlpha),
+	//	(const char*)cTeamBerthrageText
+	//);
 
-	
-	ImGui::End();
+	//
+	//ImGui::End();
 
 	// Game Mode Text Window
 	float gameModeFontSize = 30.0f;
