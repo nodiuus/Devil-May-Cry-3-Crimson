@@ -176,6 +176,8 @@ file(GLOB MAIN_SRC
     CrimsonOnTick.hpp
     CrimsonPatches.cpp
     CrimsonPatches.hpp
+    CrimsonReversedCalls.cpp
+    CrimsonReversedCalls.hpp
     CrimsonSDL.cpp
     CrimsonSDL.hpp
     CrimsonTimers.cpp	

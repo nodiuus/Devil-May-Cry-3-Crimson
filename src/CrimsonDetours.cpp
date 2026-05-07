@@ -26,6 +26,7 @@
 #include "CrimsonOnTick.hpp"
 #include "CrimsonEfk.hpp"
 #include "CrimsonEfkPreload.hpp"
+#include "CrimsonReversedCalls.hpp"
 #include "Internal.hpp"
 #include "CrimsonDetours.hpp"
 
@@ -713,19 +714,6 @@ bool CheckIfInJustFrameJDC(uintptr_t playerAddr) {
 	return false;
 }
 
-static constexpr uintptr_t PLAYVFX_OFFSET() { return 0x2E7CA0; }
-
-using PlayVFX_t = uintptr_t(__fastcall*)(int group, uint16 index, uintptr_t matrixPtr, int a4);
-
-static uintptr_t PlayVFX_sub_1402E7CA0(int group, uint16 index, uintptr_t matrixPtr, int a4) {
-    PlayVFX_t PlayVFXFunc = reinterpret_cast<PlayVFX_t>(appBaseAddr + PLAYVFX_OFFSET());
-	if (!PlayVFXFunc) {
-		return NULL;
-	}
-
-	return PlayVFXFunc(group, index, matrixPtr, a4);
-}
-
 static std::unordered_set<uintptr_t> s_suppressJustFrameVFXForShl;
 
 uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
@@ -736,7 +724,7 @@ uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 		float fakeVFXMatrix[16] = { 0 };
 		std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
 		fakeVFXMatrix[13] -= 10000000.0f;
-		shlActorData.CGeneratorPtr = PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
+		shlActorData.CGeneratorPtr = CrimsonReversedCalls::PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
 		return shlActorData.CGeneratorPtr;
 	}
 
@@ -748,7 +736,7 @@ uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
 	float fakeVFXMatrix[16] = { 0 };
 	std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
 	if (!activeCrimsonConfig.VFX.originalJDCReference) fakeVFXMatrix[13] -= 10000000.0f;  // Make it go out of bounds
-	shlActorData.CGeneratorPtr = PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
+	shlActorData.CGeneratorPtr = CrimsonReversedCalls::PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
 	if (shlActorData.CGeneratorPtr) {
 		auto& cGenerator = *reinterpret_cast<CGenerator*>(shlActorData.CGeneratorPtr);
 		cGenerator.color = 0xFF36EDFA;
@@ -804,7 +792,7 @@ void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
 	}
 
 	auto SpawnJDCInFrontOfPlayer = [](CPl021Shl02Actor& shlActorData, PlayerActorData& actorData) {
-		constexpr float jdcForwardOffset = 800.0f;
+		constexpr float jdcForwardOffset = 500.0f;
 		constexpr float rotationToRadians = 6.28318530717958647692f / 65536.0f;
 
 		const float yaw = static_cast<float>(actorData.rotation) * rotationToRadians;
@@ -842,45 +830,6 @@ void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
 			shlActorData.position.z
 		};
 	}
-}
-
-static constexpr uintptr_t SPAWNCOLLISION_OFFSET() { return 0x5C320; }
-
-using SpawnCollision_t = uintptr_t(__fastcall*)(uintptr_t collisionDataStruct, uint8 a2);
-
-static uintptr_t SpawnCollision_sub_14005C320(uintptr_t collisionDataStruct, uint8 a2) {
-	SpawnCollision_t SpawnCollisionFunc = reinterpret_cast<SpawnCollision_t>(appBaseAddr + SPAWNCOLLISION_OFFSET());
-	if (!SpawnCollisionFunc) {
-		return NULL;
-	}
-
-	return SpawnCollisionFunc(collisionDataStruct, a2);
-}
-
-static constexpr uintptr_t SETJDCPOSITION_OFFSET() { return 0x1DC1A0; }
-
-using SetJDCPosition_t = uintptr_t(__fastcall*)(uintptr_t posPtr, uintptr_t matrixPtr, uintptr_t playerActorAddr, uint8 a4);
-
-static uintptr_t SetJDCPosition_sub_1401DC1A0(uintptr_t posPtr, uintptr_t matrixPtr, uintptr_t playerActorAddr, uint8 a4) {
-	SetJDCPosition_t SetJDCPositionFunc = reinterpret_cast<SetJDCPosition_t>(appBaseAddr + SETJDCPOSITION_OFFSET());
-	if (!SetJDCPositionFunc) {
-		return NULL;
-	}
-
-	return SetJDCPositionFunc(posPtr, matrixPtr, playerActorAddr, a4);
-}
-
-static constexpr uintptr_t SPAWNJDCSHL_OFFSET() { return 0x1DC320; }
-
-using SpawnJDCShl = uintptr_t(__fastcall*)(uintptr_t shlAddr);
-
-static uintptr_t SpawnJDCShl_sub_1401DC320(uintptr_t shlAddr) {
-	SpawnJDCShl SpawnJDCShlFunc = reinterpret_cast<SpawnJDCShl>(appBaseAddr + SPAWNJDCSHL_OFFSET());
-	if (!SpawnJDCShlFunc) {
-		return NULL;
-	}
-
-	return SpawnJDCShlFunc(shlAddr);
 }
 
 
@@ -955,7 +904,7 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
 		return;
 	}
 
-	uintptr_t newJDC = SetJDCPosition_sub_1401DC1A0((uintptr_t)&newPosition, (uintptr_t)newMatrix, shlActorData.playerActorAddr, 10);
+	uintptr_t newJDC = CrimsonReversedCalls::SetJDCPosition_sub_1401DC1A0((uintptr_t)&newPosition, (uintptr_t)newMatrix, shlActorData.playerActorAddr, 10);
 	if (newJDC) {
 		s_spawnedExtraCountBySource[sourceKey] = spawnedExtraCount + 1;
 		s_pendingSinceBySource[sourceKey] = now + extraJdcDelay;
@@ -963,21 +912,8 @@ void SpawnExtraJDCs(uintptr_t shlActorAddr) {
        s_suppressJustFrameVFXForShl.insert(newJDC);
 		s_fixedExtraPosBySource[sourceKey] = newPosition;
 		auto& newShlActorData = *reinterpret_cast<CPl021Shl02Actor*>(newJDC);
-		SpawnJDCShl_sub_1401DC320(newJDC + 0x60);
+		CrimsonReversedCalls::SpawnJDCShl_sub_1401DC320(newJDC + 0x60);
 	}
-}
-
-static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
-
-using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
-
-static void CallShotgunFire(PlayerActorData& actorData, uint8 mode = 8, uint32 unk3 = 0) {
-	auto shotgunFire = reinterpret_cast<ShotgunFire_t>(appBaseAddr + SHOTGUN_FIRE_OFFSET());
-	if (!shotgunFire) {
-		return;
-	}
-
-	shotgunFire(&actorData, mode, unk3);
 }
 
 void QueueDelayPointBlankShotgunFire(uintptr_t playerAddr, uint8 fireMode, uint8 unk3) {
