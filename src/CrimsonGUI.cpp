@@ -12685,7 +12685,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
 	ImVec2 gameModeTextSize = ImGui::CalcTextSize(gameModeText.c_str());
 	ImVec2 gameModeTextSizeWindowSize = ImVec2((gameModeTextSize.x + 20.0f) * scaleFactorY, 100.0f * scaleFactorY);
-	ImVec2 gameModeTextSizeWindowPos = ImVec2((g_renderSize.x - (gameModeTextSize.x * scaleFactorY)) * 0.5f, 675.0f * scaleFactorY);
+	ImVec2 gameModeTextSizeWindowPos = ImVec2((g_renderSize.x - (gameModeTextSize.x * scaleFactorY)) * 0.97f, 900 * scaleFactorY);
 
 	ImGui::SetNextWindowPos(gameModeTextSizeWindowPos);
 	ImGui::SetNextWindowSize(gameModeTextSizeWindowSize);
@@ -12725,7 +12725,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	// Offset the position to align the text correctly
 	ImVec2 versionTextSizeWindowPos = ImVec2(
 		centerX + (800.0f * scaleFactorY), // Center horizontally
-		100.0f * scaleFactorY // Center vertically
+		879.0f * scaleFactorY // Center vertically
 	);
 
 	// Ensure the position stays within bounds
@@ -12746,10 +12746,10 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// GUI Hotket Text Window
 	static bool guiHotkeyRun = false;
-	float guiKeyFontSize = 35.0f;
+	float guiKeyFontSize = 28.0f;
 	if (!guiHotkeyRun) keyBindings[0].UpdateBuffer(keyBindings[0].mainInfo, keyBindings[0].activeKeyData);
 	
-	float guiHotkeyFontSize = 35.0f;
+	float guiHotkeyFontSize = 28.0f;
 	int guiHotkeyAlpha = 255; // Fixed alpha
 
 	ImFont* guiHotkeyFont = UI::g_ImGuiFont_RussoOne[guiHotkeyFontSize];
@@ -12757,7 +12757,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	auto guiHotkey = keyBindings[0].mainInfo.buffer;
 	std::string guiHotkeyTextKeyboard = "Press " + (std::string)guiHotkey;
-	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + " or Left Stick + Right Stick to toggle the Overlay";
+	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + " or Left Stick + Right Stick\nto toggle the Overlay";
 	std::string guiHotkeyTextKeyboardOnly = "Press " + (std::string)keyBindings[0].mainInfo.buffer + " to toggle the Overlay";
 	ImVec2 guiTextSize = ImGui::CalcTextSize(guiHotkeyTextComplete.c_str());
 	ImVec2 guiTextSize2 = ImGui::CalcTextSize(guiHotkeyTextKeyboardOnly.c_str());
@@ -12777,8 +12777,8 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Calculate centered position in screen space
 	ImVec2 guiHotkeyTextScreenPos = ImVec2(
-		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.5f,
-		775.0f * scaleFactorY
+		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.01f,
+		879.0f * scaleFactorY
 	);
 
 	// Setup window (make sure it's big enough, but position doesn't matter for AddText)
