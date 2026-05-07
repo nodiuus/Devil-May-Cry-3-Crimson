@@ -1966,7 +1966,7 @@ void TriggerOnTickFuncs() {
 	MultiplayerDamageScaling();
 	CrimsonHighFPSFixes::ClothPhysicsFixesController();
 	bool gigapedemoment = GetGigapedeMoment();
-	CrimsonHighFPSFixes::BossCamFixes(!gigapedemoment);
+	CrimsonHighFPSFixes::LookAtBossCamFixes(!gigapedemoment);
 	CrimsonOnTick::InCreditsDetection();
 	CrimsonOnTick::WeaponProgressionTracking();
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();

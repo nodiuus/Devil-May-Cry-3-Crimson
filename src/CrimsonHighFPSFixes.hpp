@@ -7,6 +7,6 @@ namespace CrimsonHighFPSFixes {
 
 	void ClothPhysicsFixesController();
 	void ClothPhysicsEnhancementFixes(bool enable);
-	void BossCamFixes(bool enable);
+	void LookAtBossCamFixes(bool enable);
 	void ToggleAllFixes(bool enable);
 }
