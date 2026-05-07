@@ -43,6 +43,7 @@
 #include "CrimsonUtil.hpp"
 #include "CrimsonEfk.hpp"
 #include "CrimsonEfkPreload.hpp"
+#include "CrimsonReversedCalls.hpp"
 
 namespace CrimsonGameplay {
 
@@ -1964,9 +1965,9 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 		jCut.state == JDC_STATE::JUST_FRAME_AIR) {
 		return 0.42f;
 	}
-	else if (inRisingStar) {
-		return 1.5f; // Rising Star has a unique hold time
-	}
+// 	else if (inRisingStar) {
+// 		return 1.5f; // Rising Star has a unique hold time
+// 	}
 
 	return startedInAir ? MELEE_HOLD_TIME_AIR : MELEE_HOLD_TIME_GROUNDED;
 }
@@ -1979,21 +1980,8 @@ void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 	auto playerIndex = actorData.newPlayerIndex;
 	auto entityIndex = actorData.newEntityIndex;
-
-	// FLYING ARC AIR JDC
-	static bool  airJdcArcActive[PLAYER_COUNT][ENTITY_COUNT] = { false };
-	static uint8 airJdcArcLastMotion[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
-	static float airJdcArcPhaseTimer[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };      // per-index timer (for bell/descent)
-	static float airJdcArcTotalRiseTimer[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };  // merged timer for 13 and 14
-	static float airJdcArcBaseY[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static float airJdcArcBaseX[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static float airJdcArcBaseZ[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static float airJdcArcDistance[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static uint16 airJdcArcRotation[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
-	static float airJdcArcMotion15StartY[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static float airJdcArcTotalTimer[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static float airJdcArcLastPull[PLAYER_COUNT][ENTITY_COUNT] = { 0.0f };
-	static int   airJdcConsecutiveCount[PLAYER_COUNT][ENTITY_COUNT] = { 0 };
+	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
 
 	bool inNormalAirJdc =
 		(actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
@@ -2005,150 +1993,66 @@ void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 
 	bool inAnyAirJdc = inNormalAirJdc || inJFAirJdc;
 
-	auto EaseInOut = [](float t) -> float {
-		t = glm::clamp(t, 0.0f, 1.0f);
-		return t * t * (3.0f - 2.0f * t); // smoothstep
-		};
-
 	float dtScaled = ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
 
-	if (actorData.action == DARK_SLAYER_TRICK_DOWN && 
+	if (actorData.action == DARK_SLAYER_TRICK_DOWN &&
 		actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN) {
-		actorData.horizontalPull = -25.0f;
+
+		actorData.horizontalPull = 25.0f;
+
+		int32 rotationDelta = static_cast<int32>(static_cast<uint16>(actorData.inertiaRotation - actorData.rotation));
+		if (rotationDelta > 0x7FFF) {
+			// Recenter to signed shortest-arc delta.
+			rotationDelta -= 0x10000;
+		}
+		int32 rotationDeltaAbs = (rotationDelta >= 0) ? rotationDelta : -rotationDelta;
+
+		// Only invert if currently moving forward (delta < 90°), so trick down always sends player backward.
+		if (rotationDeltaAbs < 0x4000) {
+			// 0x8000 is half-turn in uint16-space (180° = pi radians), so this inverts inertia direction.
+			actorData.inertiaRotation = static_cast<uint16>(actorData.inertiaRotation + 0x8000);
+		}
+		
 	}
+
+	int movePart = actorData.recoverState[0];
 
 	if (inAnyAirJdc) {
-		// Detect consecutive JDC by checking if we cycled back to motion 13
-		if (airJdcArcLastMotion[playerIndex][entityIndex] != actorData.motionData[0].index) {
-			if (actorData.motionData[0].index == 13 && airJdcArcLastMotion[playerIndex][entityIndex] != 0) {
-				airJdcArcActive[playerIndex][entityIndex] = false; // Reset to allow chain
-				if (inJFAirJdc) {
-					airJdcConsecutiveCount[playerIndex][entityIndex]++;
-				}
-			}
 
-			airJdcArcPhaseTimer[playerIndex][entityIndex] = 0.0f;
-			airJdcArcLastMotion[playerIndex][entityIndex] = static_cast<uint8>(actorData.motionData[0].index);
+		CrimsonReversedCalls::TriggerCPlayerGravity_sub_1401FB300((uintptr_t)&actorData, actorData.inertiaRotation, 1.0f);
 
-			if (actorData.motionData[0].index == 15) {
-				airJdcArcMotion15StartY[playerIndex][entityIndex] = actorData.position.y;
-			}
-		}
-
-		if (!airJdcArcActive[playerIndex][entityIndex]) {
-			airJdcArcActive[playerIndex][entityIndex] = true;
-			airJdcArcTotalRiseTimer[playerIndex][entityIndex] = 0.0f;
-			airJdcArcTotalTimer[playerIndex][entityIndex] = 0.0f;
-			airJdcArcBaseY[playerIndex][entityIndex] = actorData.position.y;
-			airJdcArcBaseX[playerIndex][entityIndex] = actorData.position.x;
-			airJdcArcBaseZ[playerIndex][entityIndex] = actorData.position.z;
-
-			float currentPull = actorData.horizontalPull;
-			airJdcArcLastPull[playerIndex][entityIndex] = currentPull;
-// 			if (glm::abs(currentPull) > 0.1f) {
-// 				airJdcArcLastPull[playerIndex][entityIndex] = currentPull;
-// 			}
-// 			else if (inJFAirJdc && airJdcArcLastPull[playerIndex][entityIndex] != 0.0f) {
-// 				currentPull = airJdcArcLastPull[playerIndex][entityIndex];
-// 			}
-// 			else if (inJFAirJdc) {
-// 				currentPull = 5.0f; // Fallback if horizontalPull uninitialized on first frame
-// 			}
-// 			else {
-// 				currentPull = airJdcArcLastPull[playerIndex][entityIndex]; // Also fallback for normal if it 0'ed out
-// 			}
-
-			float distMult = 95.0f;
-			if (inJFAirJdc) {
-				distMult = 65.0f; // Constant high momentum extended across entire move
-			}
-
-			// DMC3 represents locked-on backwards tricking internally via a negative horizontal pull,
-			// rather than flipping inertiaRotation backwards. We MUST extract the sign to know if we are moving backwards, 
-			// even if currentPull's magnitude doesn't control the distance anymore.
-			float pullSign = (currentPull < 0.0f) ? -1.0f : ((currentPull > 0.0f) ? 1.0f : 0.0f);
-			airJdcArcDistance[playerIndex][entityIndex] = distMult * pullSign;
-
-			airJdcArcRotation[playerIndex][entityIndex] = actorData.inertiaRotation;
-			//actorData.horizontalPull = 0.0f; // Let script control velocity
-		}
-
-		airJdcArcPhaseTimer[playerIndex][entityIndex] += dtScaled;
-		airJdcArcTotalTimer[playerIndex][entityIndex] += dtScaled;
-		if (actorData.motionData[0].index == 13 || actorData.motionData[0].index == 14) {
-			airJdcArcTotalRiseTimer[playerIndex][entityIndex] += dtScaled;
-		}
-
-		float TOTAL_RISE_TIME = inJFAirJdc ? 0.15f : 0.56f;
-		float TOTAL_FORWARD_TIME = inJFAirJdc ? 0.80f : 1.2f;
-		float JUMP_APEX_HEIGHT = inJFAirJdc ? 20.0f : 40.0f;
-
-		auto EaseOut = [](float t) -> float {
-			t = glm::clamp(t, 0.0f, 1.0f);
-			return 1.0f - ((1.0f - t) * (1.0f - t));
-			};
-
-		auto EaseIn = [](float t) -> float {
-			t = glm::clamp(t, 0.0f, 1.0f);
-			return t * t;
-			};
-
-		// Consistent X and Z movement across all indexes
-		float angle = airJdcArcRotation[playerIndex][entityIndex] * (3.14159265f / 32768.0f);
-
-		float currentDist;
 		if (inJFAirJdc) {
-			// Constant velocity formula for Just Frame: extends movement consistently without clamping to time
-			currentDist = (airJdcArcDistance[playerIndex][entityIndex] / TOTAL_FORWARD_TIME) * airJdcArcTotalTimer[playerIndex][entityIndex];
-		} else {
-			float tForward = EaseOut(airJdcArcTotalTimer[playerIndex][entityIndex] / TOTAL_FORWARD_TIME);
-			currentDist = airJdcArcDistance[playerIndex][entityIndex] * tForward;
+			if (actionTimer <= 0.02f) {
+				CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 2.5f, -0.27f);
+				CrimsonReversedCalls::ApplyNewXInertiaCPl_sub_1401FD050((uintptr_t)&actorData, 1.7f, -0.03f);
+			}
+			else if (actionTimer >= 0.62f) {
+				actorData.verticalPullMultiplier = -1.5f;
+			}
 		}
 
-		actorData.position.x = airJdcArcBaseX[playerIndex][entityIndex] + (std::sin(angle) * currentDist);
-		actorData.position.z = airJdcArcBaseZ[playerIndex][entityIndex] + (std::cos(angle) * currentDist);
-
-
-
-		if (actorData.motionData[0].index == 13 || actorData.motionData[0].index == 14) {
-			float tRise = EaseOut(airJdcArcTotalRiseTimer[playerIndex][entityIndex] / TOTAL_RISE_TIME);
-
-			float continuousRise = JUMP_APEX_HEIGHT * tRise;
-			actorData.position.y = airJdcArcBaseY[playerIndex][entityIndex] + continuousRise;
-
-			actorData.verticalPullMultiplier = 0.0f;
+		if (inNormalAirJdc || !inJFAirJdc) {
+			if (actionTimer <= 0.02f) {
+				CrimsonReversedCalls::ApplyNewXInertiaCPl_sub_1401FD050((uintptr_t)&actorData, 1.7f, -0.03f);
+			} else if (actionTimer <= 0.45f) {
+				CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 1.5f, -0.27f);
+			}
+			else if (movePart > 2) {
+				actorData.verticalPullMultiplier = -1.5f;
+			}
 		}
-		else if (actorData.motionData[0].index == 15) {
-			float fallTime = inJFAirJdc ? 0.15f : 0.22f;
-			float t = EaseIn(airJdcArcPhaseTimer[playerIndex][entityIndex] / fallTime);
-			float targetY = airJdcArcBaseY[playerIndex][entityIndex] - 22.0f;
-			actorData.position.y = glm::mix(airJdcArcMotion15StartY[playerIndex][entityIndex], targetY, t);
-			actorData.horizontalPull = airJdcArcDistance[playerIndex][entityIndex] >= 0 ? 5.0f : -5.0f; // Retain some horizontal momentum during descent for better control
-			actorData.verticalPullMultiplier = -0.7f;
+
+		if (actorData.verticalPull < 0.0f &&
+			CrimsonReversedCalls::IsCPlGrounded_sub_1401E8470((uintptr_t)&actorData, actorData.verticalPull)) {
+
+			CrimsonReversedCalls::LandCPlayer_sub_1401E04A0((uintptr_t)&actorData);
 		}
+
+		
 	}
 	else {
-		airJdcArcActive[playerIndex][entityIndex] = false;
-		airJdcArcLastMotion[playerIndex][entityIndex] = 0;
-		airJdcArcPhaseTimer[playerIndex][entityIndex] = 0.0f;
-		airJdcArcTotalRiseTimer[playerIndex][entityIndex] = 0.0f;
-		airJdcArcTotalTimer[playerIndex][entityIndex] = 0.0f;
-		airJdcArcLastPull[playerIndex][entityIndex] = 0.0f;
-		airJdcConsecutiveCount[playerIndex][entityIndex] = 0;
+		
 	}
-}
-
-static constexpr uintptr_t PLAYSFXWITHPOSBYTYPE_OFFSET() { return 0x339930; }
-
-using PlaySFXWithPosByType_t = uintptr_t(__fastcall*)(uintptr_t fileAddr, uint32 index, uintptr_t posPtr, uint32 type);
-
-static uintptr_t PlaySFXWithPos_ByType_sub_140339930(uintptr_t fileAddr, uint32 index, uintptr_t posPtr, uint32 type) {
-	PlaySFXWithPosByType_t PlaySFXWithPosByTypeFunc = reinterpret_cast<PlaySFXWithPosByType_t>(appBaseAddr + PLAYSFXWITHPOSBYTYPE_OFFSET());
-	if (!PlaySFXWithPosByTypeFunc) {
-		return NULL;
-	}
-
-	return PlaySFXWithPosByTypeFunc(fileAddr, index, posPtr, type);
 }
 
 void VergilJudgementCutRework(byte8* actorBaseAddr) {
@@ -2186,7 +2090,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	constexpr float MELEE_HOLD_TIME_GROUNDED = 0.8f;
 	constexpr float MELEE_HOLD_TIME_AIR = 0.6f;
 	constexpr float JUST_FRAME_WINDOW_GROUND = 0.09f; // ~3 frames at 60 FPS
-	constexpr float JUST_FRAME_WINDOW_AIR = 0.08f; // ~4 frames at 60 FPS
+	constexpr float JUST_FRAME_WINDOW_AIR = 0.09f; // ~4 frames at 60 FPS
 
 	auto& jCut = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
 
@@ -2202,6 +2106,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	CharSettings2& charSettings2 = **reinterpret_cast<CharSettings2**>(actorBaseAddr + 0x3DF8); 
 	DamageData& jdcDmgData = *reinterpret_cast<DamageData*>(appBaseAddr + 0x5CDF40);
 
+	ApplyJDCFlyingArc(actorData);
+
 	// JUDGEMENT CUT SFX
 	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 ||
 		actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1)) {
@@ -2211,14 +2117,16 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 				actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCut_pl021_00_3) {
 				if (jCut.fireSound) {
 					CrimsonSDL::PlayJDC(playerIndex, true, 0);
-					PlaySFXWithPos_ByType_sub_140339930((uintptr_t)appBaseAddr + 0xD6DC90, 8, (uintptr_t)&actorData.position, 11);
+					CrimsonReversedCalls::PlaySFXWithPos_ByType_sub_140339930((uintptr_t)appBaseAddr + 0xD6DC90, 
+						8, (uintptr_t)&actorData.position, 11);
 					jCut.fireSound = false;
 				}
 
 			}
 			else if (actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] == newJudgementCutAir_pl021_00_3) {
 				if (jCut.fireSound) {
-					PlaySFXWithPos_ByType_sub_140339930((uintptr_t)appBaseAddr + 0xD6DC90, 8, (uintptr_t)&actorData.position, 11);
+					CrimsonReversedCalls::PlaySFXWithPos_ByType_sub_140339930((uintptr_t)appBaseAddr + 0xD6DC90, 
+						8, (uintptr_t)&actorData.position, 11);
 					jCut.fireSound = false;
 				}
 			}
@@ -2374,19 +2282,24 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3) { 
 			pendingJustFrameJDC[playerIndex][entityIndex] = false;
+
+			bool atAirTrickEnd = (actorData.eventData[0].event == ACTOR_EVENT::AIR_TRICK_END) &&
+				((actorData.motionData[0].group == 0 && actorData.motionData[0].index == 16) 
+					|| (actorData.motionData[0].group == 0 && actorData.motionData[0].index == 52) ||
+					(actorData.motionData[0].group == 0 && actorData.motionData[0].index == 36));
 			
 			actorData.action = YAMATO_JUDGEMENT_CUT_LEVEL_2;
 			if ((actorData.eventData[0].event == 3 || actorData.eventData[0].event == 6 || actorData.eventData[0].event == 2
 				|| actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
 					actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_DOWN ||
 				actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_TRICK_UP || 
-				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL)) {
+				actorData.eventData[0].event == ACTOR_EVENT::JUMP_CANCEL ||
+				atAirTrickEnd)) {
 				if (inAir) {
 					actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] = newJudgementCutAir_pl021_00_3; // Swap to Normal Air Just Frame Judgement Cut animation
 					jCut.state = JDC_STATE::NORMAL_AIR;
 				}
 
-				
 				func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
 				actionTimer = 0.0f;
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0xf71a0a), 1.2f); DEBUG COLOR NORMAL
@@ -2498,8 +2411,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 // 	cDrawReverse* vergilSwordcDraw = reinterpret_cast<cDrawReverse*>(vergilSword.weaponCDraw);
 // 	Matrix44Ptr* swordMatrix = reinterpret_cast<Matrix44Ptr*>(vergilSwordcDraw[1].bonesMatrixesPtr);
 //     auto& chargeHandle = chargeParticle[playerIndex][entityIndex];
-	
-	ApplyJDCFlyingArc(actorData);
  }
 
 void VergilAirTauntRisingSunDetection(byte8* actorBaseAddr) {
@@ -5349,36 +5260,6 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
 }
 
-static constexpr uintptr_t SHOTGUN_SHL_FIRE_OFFSET() { return 0x1CA390; }
-
-using ShotgunShlFire_t = void(__fastcall*)(PlayerActorData* actorData, vec4* pos, vec4* pos2, uint8 mode, uint16 shotType);
-
-static void CallShotgunShlFire(PlayerActorData& actorData, vec4& pos, vec4& pos2, uint8 mode = 0, uint16 shotType = 8) {
-	// This func fires only the projectiles, without muzzle flash or sound effects. 
-	auto shotgunShlFire = reinterpret_cast<ShotgunShlFire_t>(appBaseAddr + SHOTGUN_SHL_FIRE_OFFSET());
-	if (!shotgunShlFire) {
-		return;
-	}
-
-	shotgunShlFire(&actorData, &pos, &pos2, mode, shotType);
-}
-
-
-static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
-
-using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
-
-static void CallShotgunFire(PlayerActorData& actorData, uint8 mode=8, uint32 unk3=0) {
-	// Fire Mode 8 is Charged Shot, Fire Mode is 0 is normal shot
-	auto shotgunFire = reinterpret_cast<ShotgunFire_t>(appBaseAddr + SHOTGUN_FIRE_OFFSET());
-	if (!shotgunFire) {
-		return;
-	}
-
-	shotgunFire(&actorData, mode, unk3);
-}
-
-
 void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	using namespace ACTION_DANTE;
 	if (!actorBaseAddr) {
@@ -5419,13 +5300,13 @@ void DanteShotgunBackslide(byte8* actorBaseAddr) {
 		actorData.action = SHOTGUN_POINT_BLANK;
 
 		backslide.performing = true;
-		func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+		CrimsonReversedCalls::TriggerCPlayerEvent_sub_1401E0800((uintptr_t)actorBaseAddr, 17, 0, 0);
 		CrimsonPatches::ToggleKillPointBlankCCEffects(true);
 	}
 
 	// Let's fire the goddamn shotgun (with a delay queued up from the detour)
 	if (backslide.pendingFire && actorData.action == SHOTGUN_POINT_BLANK && actionTimer >= 0.1f) {
-		CallShotgunFire(actorData, 0, 0);
+		CrimsonReversedCalls::ShotgunFire_sub_140217FF0(actorData, 0, 0);
 		backslide.pendingFire = false;
 	}
 	// Resetting stuff

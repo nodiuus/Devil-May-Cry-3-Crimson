@@ -80,6 +80,7 @@
 #include "ImGui/imgui.h"
 #include "CrimsonHUD.hpp"
 #include "CrimsonFX.hpp"
+#include "CrimsonReversedCalls.hpp"
 
 #define SDL_FUNCTION_DECLRATION(X) decltype(X)* fn_##X
 #define LOAD_SDL_FUNCTION(X) fn_##X = GetSDLFunction<decltype(X)*>(#X)
@@ -8640,14 +8641,14 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
             ImGui::Text("");
         }
-		if (activeConfig.Actor.enable) {
-			[&]() {
-				ImGui::Text("Arkham CCS Fight Phase			%u", arkhamFightData.fightPhase);
-				ImGui::Text("Arkham CCS Next Fight Phase	%u", arkhamFightData.nextFightPhase);
-				ImGui::Text("Arkham CCS Fight Active		%u", arkhamFightData.fightActive);
-				ImGui::Text("Arkham CCS Fight Ending		%u", arkhamFightData.fightEnding);
-				}();
-		}
+// 		if (activeConfig.Actor.enable) {
+// 			[&]() {
+// 				ImGui::Text("Arkham CCS Fight Phase			%u", arkhamFightData.fightPhase);
+// 				ImGui::Text("Arkham CCS Next Fight Phase	%u", arkhamFightData.nextFightPhase);
+// 				ImGui::Text("Arkham CCS Fight Active		%u", arkhamFightData.fightActive);
+// 				ImGui::Text("Arkham CCS Fight Ending		%u", arkhamFightData.fightEnding);
+// 				}();
+// 		}
         if (activeConfig.debugOverlayData.showPosition) {
             [&]() {
                 auto pool_10213 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
@@ -8749,11 +8750,17 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
+			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
+			ImGui::Text("Vertical Pull  %g", actorData.verticalPull);
+			ImGui::Text("Vertical Pull Multiplier %g", actorData.verticalPullMultiplier);
+			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
+			ImGui::Text("ACTION:  %u", actorData.action);
+			ImGui::Text("MovePart %u", actorData.recoverState[0]);
 			ImGui::Text("cameraLag: %g", cameraData.cameraLag);
 			ImGui::Text("fixedCamAddr: %x", cameraControlMetadata.fixedCameraAddr);
 			ImGui::Text("in JustFrame JDC:  %u", crimsonPlayer[0].jCut.inJustFrameJDC);
 			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
-			ImGui::Text("ACTION:  %u", actorData.action);
 			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
 			ImGui::Text("inertiaRotation : % x", actorData.inertiaRotation);
 			ImGui::Text("MOTION TIMER:  %g", crimsonPlayer[0].motionTimer);
@@ -8773,7 +8780,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("meleeHold jcut %g", crimsonPlayer[0].jCut.meleeButtonHold);
 			ImGui::Text("meleeHold stinger %g", crimsonPlayer[0].stingerInput.meleeButtonHold);
 			ImGui::Text("melee Released Stinger %u", crimsonPlayer[0].stingerInput.meleeReleasedStinger);
-			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
 			ImGui::Text("action Timer Trick not change:  %g", crimsonPlayer[0].actionTimerNotTrickChange);
 			ImGui::Text("Event Data %u", actorData.eventData[0].event);
 			ImGui::Text("Actor Data Permissions: %d", actorData.permissions);
@@ -8794,7 +8800,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("inertia airguard %g", crimsonPlayer[0].inertia.airGuard.cachedPull);
 			ImGui::Text("mirageGauge %g", crimsonPlayer[0].vergilDoppelganger.miragePoints);
 			ImGui::Text("maxMirageGauge %g", crimsonPlayer[0].vergilDoppelganger.maxMiragePoints);
-			ImGui::Text("MovePart %u", actorData.recoverState[0]);
 			ImGui::Text("Vertical Pull Multiplier %g", actorData.verticalPullMultiplier);
 			ImGui::Text("cameraHittingWall: %u", g_cameraHittingWall);
 			ImGui::Text("actorData styleLevel: %u", actorData.styleLevel);
@@ -8830,10 +8835,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("BufferedAction: %u", actorData.bufferedAction);
 			ImGui::Text("Air Trick Count : %u", actorData.newAirTrickCount);
 			ImGui::Text("rainstorm cached inertia:  %g", crimsonPlayer[0].inertia.rainstorm.cachedPull);
-			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
-			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
-			ImGui::Text("Vertical Pull  %g", actorData.verticalPull);
-			ImGui::Text("Vertical Pull Multiplier %g", actorData.verticalPullMultiplier);
 			ImGui::Text("AIR SWORD COUNT: %u", actorData.airSwordAttackCount);
 			ImGui::Text("Back Buffer: %g", crimsonPlayer[0].b2F.backBuffer);
 			ImGui::Text("Forward Buffer: %g", crimsonPlayer[0].b2F.forwardBuffer);
@@ -15251,18 +15252,6 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 #pragma endregion
 
-static constexpr uintptr_t INPUTSUPDATE_OFFSET() { return 0x32CFE0; }
-
-using InputsUpdate_t = int16(__fastcall*)(uintptr_t inputAddr, int playerIndex, unsigned int a3);
-
-static int16 InputsUpdate_sub_14032CFE0(uintptr_t inputAddr, int playerIndex, unsigned int a3) {
-	InputsUpdate_t InputsUpdateFunc = reinterpret_cast<InputsUpdate_t>(appBaseAddr + INPUTSUPDATE_OFFSET());
-	if (!InputsUpdateFunc) {
-		return NULL;
-	}
-
-	return InputsUpdateFunc(inputAddr, playerIndex, a3);
-}
 
 void ExperimentalInputUpdate() {
 	static bool hasEnteredMainScene = false;
@@ -15276,7 +15265,7 @@ void ExperimentalInputUpdate() {
 	}
 	if (hasEnteredMainScene) {
 		for (uint8 playerIndex = 0; playerIndex < 4; playerIndex++) {
-			InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
+			CrimsonReversedCalls::InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
 		}
 	}
 }
