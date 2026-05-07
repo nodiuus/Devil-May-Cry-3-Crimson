@@ -12679,7 +12679,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	//ImGui::End();
 
 	// Game Mode Text Window
-	float gameModeFontSize = 30.0f;
+	float gameModeFontSize = 28.0f;//30.0f;
 	//ImGui::PushStyleColor(ImGuiCol_Text, *reinterpret_cast<ImVec4*>(&gameModeData.colors[activeCrimsonGameplay.GameMode.preset]));
 	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[gameModeFontSize]);
 	std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
@@ -12701,10 +12701,10 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Version Text Window
 	float versionFontSize = 20.0f;
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[versionFontSize]);
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[versionFontSize]);
 
 	// Format the version string
-	std::string versionStr = std::format("v{}.{}{}", UI::g_UIContext.CurrentVersion.Major, UI::g_UIContext.CurrentVersion.Minor, UI::g_UIContext.CurrentVersion.PatchLetter);
+	std::string versionStr = std::format("V{}.{}{}", UI::g_UIContext.CurrentVersion.Major, UI::g_UIContext.CurrentVersion.Minor, UI::g_UIContext.CurrentVersion.PatchLetter);
 	std::string versionText = "BETA " + versionStr;
 
 	// Calculate text size
@@ -12752,13 +12752,13 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	float guiHotkeyFontSize = 28.0f;
 	int guiHotkeyAlpha = 255; // Fixed alpha
 
-	ImFont* guiHotkeyFont = UI::g_ImGuiFont_RussoOne[guiHotkeyFontSize];
+	ImFont* guiHotkeyFont = UI::g_ImGuiFont_Benguiat[guiHotkeyFontSize];
 	float guiHotkeyScaledFontSize = guiHotkeyFont->FontSize * scaleFactorY;
 
 	auto guiHotkey = keyBindings[0].mainInfo.buffer;
-	std::string guiHotkeyTextKeyboard = "Press " + (std::string)guiHotkey;
-	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + " or Left Stick + Right Stick\nto toggle the Overlay";
-	std::string guiHotkeyTextKeyboardOnly = "Press " + (std::string)keyBindings[0].mainInfo.buffer + " to toggle the Overlay";
+	std::string guiHotkeyTextKeyboard = "" + (std::string)guiHotkey;
+	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + "/LS + RS:\nTOGGLE OVERLAY";
+	std::string guiHotkeyTextKeyboardOnly = "" + (std::string)keyBindings[0].mainInfo.buffer + ":\nTOGGLE OVERLAY";
 	ImVec2 guiTextSize = ImGui::CalcTextSize(guiHotkeyTextComplete.c_str());
 	ImVec2 guiTextSize2 = ImGui::CalcTextSize(guiHotkeyTextKeyboardOnly.c_str());
 
@@ -12818,16 +12818,16 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Credits Text Window
 	float creditsFontSize = 22.0f;
-	float creditsCapCoFontSize = 10.0f;
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[creditsFontSize]);
-	auto creditsText = u8"C•Team • Directed by Berthrage • Project Crimson © • 2025";
-	auto creditsCapCo = "Devil May Cry is a property of Capcom Co., Ltd. All assets belong to their respective owners.";
+	float creditsCapCoFontSize = 14.0f;
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsFontSize]);
+	auto creditsText = u8"C•TEAM • DIRECTED BY BERTHRAGE • PROJECT CRIMSON © • 2025";
+	auto creditsCapCo = "DEVIL MAY CRY IS A PROPERTY OF CAPCOM CO., LTD. ALL ASSETS BELONG TO THEIR RESPECTIVE OWNERS.";
 
 	// Calculate text sizes with correct fonts
 	ImVec2 creditsTextSize = ImGui::CalcTextSize((const char*)creditsText);
 	ImGui::PopFont();
 
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[creditsCapCoFontSize]);
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsCapCoFontSize]);
 	ImVec2 creditsCapCoSize = ImGui::CalcTextSize(creditsCapCo);
 	ImGui::PopFont();
 
@@ -12848,7 +12848,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	ImGui::Begin("CreditsTextWindow", nullptr, windowFlags);
 
 	// Main credits text (centered)
-	ImFont* creditsFont = UI::g_ImGuiFont_RussoOne[creditsFontSize];
+	ImFont* creditsFont = UI::g_ImGuiFont_Benguiat[creditsFontSize];
 	float creditsScaledFontSize = creditsFont->FontSize * scaleFactorY;
 	ImVec2 creditsTextSizeScaled = creditsFont->CalcTextSizeA(
 		creditsScaledFontSize, FLT_MAX, 0.0f, (const char*)creditsText
@@ -12878,7 +12878,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 
 	// CapCo copyright (smaller, centered)
-	ImFont* capcoFont = UI::g_ImGuiFont_RussoOne[creditsCapCoFontSize];
+	ImFont* capcoFont = UI::g_ImGuiFont_Benguiat[creditsCapCoFontSize];
 	float capcoScaledFontSize = capcoFont->FontSize * scaleFactorY;
 	ImVec2 capcoTextSizeScaled = capcoFont->CalcTextSizeA(
 		capcoScaledFontSize, FLT_MAX, 0.0f, creditsCapCo
