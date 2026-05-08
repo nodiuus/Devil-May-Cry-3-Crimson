@@ -574,7 +574,7 @@ struct CrimsonConfig {
 		float fpsCap = 120.0f;
 		bool fpsUnlocked = false;
 
-		bool disableMenuTransitions = false;
+		bool disableMenuFadeouts = false;
 
 		struct BlendingEffects {
 			bool ghosting = false;
@@ -605,7 +605,7 @@ struct CrimsonConfig {
 				std::make_pair("flipModelPresentation", &System::flipModelPresentation),
 				std::make_pair("fpsCap", &System::fpsCap),
 				std::make_pair("fpsUnlocked", &System::fpsUnlocked),
-				std::make_pair("disableMenuTransitions", &System::disableMenuTransitions),
+				std::make_pair("disableMenuFadeouts", &System::disableMenuFadeouts),
 				std::make_pair("BlendingEffects", &System::BlendingEffects)
 			);
 		}

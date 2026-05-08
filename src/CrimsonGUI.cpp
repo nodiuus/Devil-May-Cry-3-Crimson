@@ -10072,9 +10072,9 @@ void SystemSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 	
-			GUI_Checkbox2("Disable Menu Transitions", activeCrimsonConfig.System.disableMenuTransitions, queuedCrimsonConfig.System.disableMenuTransitions);
+			GUI_Checkbox2("Disable Menu Fadeouts", activeCrimsonConfig.System.disableMenuFadeouts, queuedCrimsonConfig.System.disableMenuFadeouts);
+				
 			
-
 			ImGui::TableNextColumn();
 
 

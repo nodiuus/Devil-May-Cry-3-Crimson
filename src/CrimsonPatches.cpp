@@ -1372,6 +1372,24 @@ void DisableAllBlendingEffects(bool enable) {
     run = enable;
 }
 
+void DisableScreenFadeOuts(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// From UpdateCFadeControl_sub_1402E8B10:
+	// dmc3.exe+2E8B3F - E8 1C DE 03 00           - call dmc3.ControlCFadeAmount_sub_140326960
+	
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x2E8B3F), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x2E8B3F), (char*)"\xE8\x1C\xDE\x03\x00", 5);
+	}
+
+	run = enable;
+}
+
 #pragma endregion
 
 #pragma region InertiaFixes

@@ -1938,15 +1938,16 @@ void MultiplayerDamageScaling() {
 		}
 	}
 }
+
 bool GetGigapedeMoment() {
 	//get event & nextevent
 	if (!InGame())
 		return false;
-	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10298 || !pool_10298[8]) {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
 		return false;
 	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
 
 	auto pool_12959 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
 	if (!pool_12959 || !pool_12959[12]) {
@@ -1960,10 +1961,34 @@ bool GetGigapedeMoment() {
 
 	return (eventData.room == ROOM::GIANTWALKER_CHAMBER && sessionData.mission == 4);
 }
+
+void ControlMenuFadeouts() {
+	if (g_scene != SCENE::GAME) {
+		CrimsonPatches::DisableScreenFadeOuts(activeCrimsonConfig.System.disableMenuFadeouts);
+	}
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+
+	if (g_scene == SCENE::GAME && 
+		eventData.event != EVENT::STATUS &&
+		eventData.event != EVENT::OPTIONS &&
+		eventData.event != EVENT::SAVE) {
+		CrimsonPatches::DisableScreenFadeOuts(false);
+	}
+	else {
+		CrimsonPatches::DisableScreenFadeOuts(activeCrimsonConfig.System.disableMenuFadeouts);
+	}
+}
+
+
 void TriggerOnTickFuncs() {
 	// These functions run OnTick globally (in game and in menus) through Game Thread
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
+	ControlMenuFadeouts();
 	CrimsonHighFPSFixes::ClothPhysicsFixesController();
 	bool gigapedemoment = GetGigapedeMoment();
 	CrimsonHighFPSFixes::LookAtBossCamFixes(!gigapedemoment);

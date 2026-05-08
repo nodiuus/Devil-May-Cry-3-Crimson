@@ -46,6 +46,7 @@ void DisableBloomEffect(bool enable);
 void DisableFogMistEffect(bool enable);
 void DisableWarpingEffect(bool enable);
 void DisableAllBlendingEffects(bool enable);
+void DisableScreenFadeOuts(bool enable);
 
 #pragma endregion
 
