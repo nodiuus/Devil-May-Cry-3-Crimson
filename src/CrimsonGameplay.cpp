@@ -2245,7 +2245,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool pendingJustFrameJDC[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
-	uint8 jdcLimit = activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[actorData.devil] + 1;
+	// Consecutive Judgement Cuts are 1 at JDC level 1, and 3 (and 4 with DT) at level 2
+	uint8 jdcLimit = (ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2]) ?
+		activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[actorData.devil] + 1 : 1;
 
 	// FIX: consume persistent AIR_TRICK_END state so it only triggers once
 	static bool consumedAirTrickEnd[PLAYER_COUNT][ENTITY_COUNT] = { false };
