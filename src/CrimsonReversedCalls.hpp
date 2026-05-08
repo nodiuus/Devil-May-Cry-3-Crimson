@@ -33,6 +33,7 @@ namespace CrimsonReversedCalls {
 	extern bool IsCPlGrounded_sub_1401E8470(uintptr_t playerActorAddr, float yInertia);
 	extern uintptr_t LandCPlayer_sub_1401E04A0(uintptr_t playerActorAddr);
 	extern void ExecuteYamatoRaveCPl_sub_14021BDE0(uintptr_t playerActorAddr);
+	extern void ExecuteJDCMove_sub_14021C8A0(uintptr_t playerActorAddr);
 	extern void ShotgunFire_sub_140217FF0(PlayerActorData& actorData, uint8 mode = 8, uint32 unk3 = 0);
 	extern void ShotgunShlFire_sub_1401CA390(PlayerActorData& actorData, vec4& pos, vec4& pos2, uint8 mode = 0, uint16 shotType = 8);
 }

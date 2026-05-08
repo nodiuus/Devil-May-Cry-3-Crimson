@@ -71,6 +71,10 @@ namespace CrimsonReversedCalls {
 		GAME_CALL_SAFE(0x21BDE0, void, uintptr_t)(playerActorAddr);
 	}	
 
+	void ExecuteJDCMove_sub_14021C8A0(uintptr_t playerActorAddr) {
+		GAME_CALL_SAFE(0x21C8A0, void, uintptr_t)(playerActorAddr);
+	}
+
 	void ShotgunShlFire_sub_1401CA390(PlayerActorData& actorData, vec4& pos, vec4& pos2, uint8 mode, uint16 shotType) {
 		GAME_CALL_SAFE(0x1CA390, void, PlayerActorData&, vec4&, vec4&, uint8, uint16)(actorData, pos, pos2, mode, shotType);
 	}
