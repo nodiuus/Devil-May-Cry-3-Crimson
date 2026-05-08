@@ -4046,7 +4046,7 @@ void RenderMissionResultCheatsUsed() {
 			alpha = fadeProgress;
 		}
 	} else if (isFadingOut) {
-		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
 		if (fadeProgress >= 1.0f) {
 			alpha = 0.0f;
 			isFadingOut = false;
@@ -12593,18 +12593,7 @@ void GameplaySection() {
 
 #pragma region Indicators
 
-	auto transitionTotal = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA8);
-	if (transitionTotal != 60.0f)
-		return 0.0f;
-	auto percentage = (transitionAmount / transitionTotal);
-	percentage = (std::max)(0.0f, percentage);
-	percentage = (std::min)(1.0f, percentage);
-	return percentage;
-}
 
-ImVec4 LerpFadeToBlack(ImVec4 color) {
-	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress()); // default is white
-}
 
 void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	static bool wasInMenu = false;
