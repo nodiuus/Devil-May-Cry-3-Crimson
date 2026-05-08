@@ -1976,6 +1976,134 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 	return startedInAir ? MELEE_HOLD_TIME_AIR : MELEE_HOLD_TIME_GROUNDED;
 }
 
+void AirJDCCancellingController(byte8* actorBaseAddr) {
+	using namespace ACTION_VERGIL;
+	using namespace NEXT_ACTION_REQUEST_POLICY;
+
+	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
+		return;
+	}
+
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
+	if (actorData.character != CHARACTER::VERGIL) return;
+	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+
+	auto playerIndex = actorData.newPlayerIndex;
+	if (playerIndex >= PLAYER_COUNT) {
+		playerIndex = 0;
+	}
+
+	auto characterIndex = actorData.newCharacterIndex;
+	auto entityIndex = actorData.newEntityIndex;
+
+
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
+	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
+	auto& movePart = actorData.recoverState[0];
+
+	static bool executes[PLAYER_COUNT][ENTITY_COUNT] = {};
+	static bool prevStyleButton[PLAYER_COUNT][ENTITY_COUNT] = {};
+	static float cancelTimers[PLAYER_COUNT][ENTITY_COUNT] = {};
+	static float timerSinceMovePart2[PLAYER_COUNT][ENTITY_COUNT] = {};
+
+	constexpr float COOLDOWN_MS = 700.0f;
+	constexpr float MOVE_PART_2_CANCEL_WINDOW = 300.0f; // seconds
+
+	float deltaTime = ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier) * 1000.0f; // to ms
+
+	// Detect style button press (edge, not hold) for trick cancels
+	bool styleButtonDown = (actorData.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) != 0;
+	bool styleButtonPressed = styleButtonDown && !prevStyleButton[playerIndex][entityIndex];
+	prevStyleButton[playerIndex][entityIndex] = styleButtonDown;
+
+	// Detect melee button hold (NOT edge) for melee cancels —
+	// the player is already holding melee to charge the next JDC,
+	// so an edge detector would never fire.
+	bool meleeButtonDown = (actorData.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	auto& execute = executes[playerIndex][entityIndex];
+	auto& timer = cancelTimers[playerIndex][entityIndex];
+	auto& timerMovePart2 = timerSinceMovePart2[playerIndex][entityIndex];
+
+	if (timer > 0.0f) {
+		timer -= deltaTime;
+		if (timer < 0.0f) timer = 0.0f;
+	}
+
+	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) {
+		if (movePart >= 2) {
+			timerMovePart2 += deltaTime;
+		}
+		else {
+			timerMovePart2 = 0.0f;
+		}
+	}
+	else {
+		timerMovePart2 = 0.0f;
+	}
+
+	// ── Style Trick Cancels (edge-based, share cooldown via execute flag) ──
+	bool canCancel = false;
+
+	if (actorData.character == CHARACTER::VERGIL) {
+		// Darkslayer Trick Cancel (ground)
+		if (actorData.state != STATE::IN_AIR && actorData.state != 65538 && styleButtonPressed) {
+			canCancel = true;
+		}
+		// TRICK UP (air)
+		else if ((actorData.state & STATE::IN_AIR) && styleButtonPressed && lockOn && tiltDirection == TILT_DIRECTION::UP && actorData.trickUpCount > 0) {
+			canCancel = true;
+		}
+		// TRICK DOWN (air)
+		else if ((actorData.state & STATE::IN_AIR) && styleButtonPressed && lockOn && tiltDirection == TILT_DIRECTION::DOWN && actorData.trickDownCount > 0) {
+			canCancel = true;
+		}
+		// AIR TRICK (air)
+		else if ((actorData.state & STATE::IN_AIR) && styleButtonPressed &&
+			(((lockOn && tiltDirection == TILT_DIRECTION::NEUTRAL) || !lockOn) && actorData.airTrickCount > 0)) {
+			canCancel = true;
+		}
+	}
+
+	if (canCancel && execute && timer <= 0.0f) {
+		execute = false;
+		timer = COOLDOWN_MS;
+	}
+	else if (!styleButtonDown) {
+		execute = true;
+	}
+
+	bool doingJump = (actorData.buttons[0] & GetBinding(BINDING::JUMP));
+	auto& closeToEnemy = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].isCloseToEnemy : crimsonPlayer[playerIndex].isCloseToEnemyClone;
+
+	auto& policyMelee = actorData.nextActionRequestPolicy[MELEE_ATTACK];
+	auto& policyTrick = actorData.nextActionRequestPolicy[TRICKSTER_DARK_SLAYER];
+	auto& policyJump = actorData.nextActionRequestPolicy[JUMP_ROLL];
+
+	if ((actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) && actorData.state & STATE::IN_AIR) {
+		policyTrick = BUFFER;
+
+		// ── Melee Cancel (hold-based, independent from style trick cooldown) ──
+		if (timerMovePart2 >= MOVE_PART_2_CANCEL_WINDOW && meleeButtonDown) {
+			policyMelee = EXECUTE;
+		}
+		else {
+			policyMelee = BUFFER;
+		}
+
+		// ── Style Trick Cancel (edge-based, respects execute flag) ──
+		if (timerMovePart2 >= MOVE_PART_2_CANCEL_WINDOW && execute) {
+			actorData.permissions = 3080; // This is a soft version of Reset Permissions.
+			if (styleButtonPressed)
+				policyTrick = EXECUTE;
+		}
+	}
+}
+
 void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 	using namespace ACTION_VERGIL;
 	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
@@ -1986,6 +2114,7 @@ void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 	auto entityIndex = actorData.newEntityIndex;
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :
 		crimsonPlayer[playerIndex].actionTimerClone;
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
 	bool inNormalAirJdc =
 		(actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2) &&
@@ -2113,6 +2242,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool triggerAirJDCOnce[PLAYER_COUNT][ENTITY_COUNT] = { false };
 
 	ApplyJDCFlyingArc(actorData);
+	AirJDCCancellingController(actorData);
 
 	// FIX: reset latch only after AIR_TRICK_END fully exits
 	if (actorData.eventData[0].event != ACTOR_EVENT::AIR_TRICK_END) {
