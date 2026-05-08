@@ -1829,6 +1829,23 @@ static_assert(countof(trackFilenames) == countof(trackNames));
 
 #pragma endregion
 
+float GetFadeToBlackProgress(float targetTotal = 60.0f) {
+	auto transitionAmount = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA4);
+	auto transitionTotal = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA8);
+	if (transitionTotal != targetTotal)
+		return 0.0f;
+	auto percentage = (transitionAmount / transitionTotal);
+	percentage = (std::max)(0.0f, percentage);
+	percentage = (std::min)(1.0f, percentage);
+	return percentage;
+}
+ImVec4 LerpFadeToBlack(ImVec4 color, float target) {
+	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress(target)); // default is white
+}
+ImVec4 LerpFadeToBlack(ImVec4 color) {
+	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress()); // default is white
+}
+
 void PauseWhenGUIOpened() {
 	if (activeCrimsonConfig.GUI.pauseWhenOpened) {
 		if (g_show) {
@@ -3763,7 +3780,7 @@ void RenderMissionResultGameModeStats() {
 			alpha = fadeProgress;
 		}
 	} else if (isFadingOut) {
-		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
 		if (fadeProgress >= 1.0f) {
 			alpha = 0.0f;
 			isFadingOut = false;
@@ -4029,7 +4046,7 @@ void RenderMissionResultCheatsUsed() {
 			alpha = fadeProgress;
 		}
 	} else if (isFadingOut) {
-		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
 		if (fadeProgress >= 1.0f) {
 			alpha = 0.0f;
 			isFadingOut = false;
@@ -12576,20 +12593,7 @@ void GameplaySection() {
 
 #pragma region Indicators
 
-float GetFadeToBlackProgress() {
-	auto transitionAmount = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA4);
-	auto transitionTotal = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA8);
-	if (transitionTotal != 60.0f)
-		return 0.0f;
-	auto percentage = (transitionAmount / transitionTotal);
-	percentage = (std::max)(0.0f, percentage);
-	percentage = (std::min)(1.0f, percentage);
-	return percentage;
-}
 
-ImVec4 LerpFadeToBlack(ImVec4 color) {
-	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress()); // default is white
-}
 
 void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	static bool wasInMenu = false;
