@@ -2194,7 +2194,20 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (!IsActiveCharacterActor(actorData)) return;
 	CrimsonDetours::ToggleJudgementCutDetours(activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework);
-	if (!activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework || actorData.character != CHARACTER::VERGIL) {
+	bool enable = activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework;
+	static bool run = false;
+	// Messing with default Judgement Cut Counts to be new ones inside Crimson Mode.
+	if (run != enable && enable) {
+		defaultCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+		defaultCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 3;
+		run = enable;
+	}
+	else if (run != enable && !enable) {
+		defaultCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+		defaultCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 2;
+		run = enable;
+	}
+	if (!enable || actorData.character != CHARACTER::VERGIL) {
 		return;
 	}
 	if (actorData.character != CHARACTER::VERGIL) return;
@@ -2231,6 +2244,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool indicatorFired[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool rotatedWhileFiring[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	static bool pendingJustFrameJDC[PLAYER_COUNT][ENTITY_COUNT] = { false };
+
+	uint8 jdcLimit = activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[actorData.devil] + 1;
 
 	// FIX: consume persistent AIR_TRICK_END state so it only triggers once
 	static bool consumedAirTrickEnd[PLAYER_COUNT][ENTITY_COUNT] = { false };
@@ -2354,7 +2369,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 
 
 			// INDICATOR
-			if (!indicatorFired[playerIndex][entityIndex]) {
+			if (!indicatorFired[playerIndex][entityIndex] && jCut.consecutiveJdcCount < jdcLimit) {
 				indicatorFired[playerIndex][entityIndex] = true;
 				//CrimsonDetours::CreateEffectDetour(actorData, 3, 143, 1, true, CrimsonUtil::HexToAABBGGRR(0x1fcbed), 1.2f); // Indicator
 
@@ -2380,7 +2395,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		chargeInitialized[playerIndex][entityIndex] = false;
 
 		// JUST FRAME RELEASE LOGIC
-		if (jCut.isJustFrameCharged) { 
+		if (jCut.isJustFrameCharged && jCut.consecutiveJdcCount < jdcLimit) {
+			jCut.consecutiveJdcCount++;
 			pendingJustFrameJDC[playerIndex][entityIndex] = true;
 
 			if (!inAir) {
@@ -2406,7 +2422,9 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		// REGULAR JDCS RELEASE LOGIC
 		else if (jCut.isAfterJustFrameCharged && actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
 			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
-			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3) { 
+			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3 &&
+			jCut.consecutiveJdcCount < jdcLimit) {
+			jCut.consecutiveJdcCount++;
 			pendingJustFrameJDC[playerIndex][entityIndex] = false;
 
 			if (inAir) {
@@ -2428,6 +2446,11 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	}
 
     bool isJudgementCutAction = (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_1);
+
+	// Reset consecutive JDC counter when not in a Judgement Cut action
+	if (!isJudgementCutAction) {
+		jCut.consecutiveJdcCount = 0;
+	}
 
 	if (pendingJustFrameJDC[playerIndex][entityIndex] && isJudgementCutAction) {
 		pendingJustFrameJDC[playerIndex][entityIndex] = false;

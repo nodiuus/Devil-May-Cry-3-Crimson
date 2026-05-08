@@ -282,6 +282,9 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	mobility.vergilAirTrickCount[0] = 1; mobility.vergilAirTrickCount[1] = 1;
 	mobility.trickUpCount[0] = 1;  mobility.trickUpCount[1] = 1;
 	mobility.trickDownCount[0] = 1; mobility.trickDownCount[1] = 1;
+	auto& judgementCutCount = preset.Cheats.Vergil.judgementCutCount;
+	judgementCutCount[0] = 2;
+	judgementCutCount[1] = 3;
 
 	// Game mode preset marker
 	preset.GameMode.preset = GAMEMODEPRESETS::CRIMSON;

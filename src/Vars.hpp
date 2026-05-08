@@ -5666,6 +5666,7 @@ struct VergilJudgementCut {
     bool isAfterJustFrameCharged = false;
     bool inJustFrameJDC = false;
     bool fireSound = true;
+    uint8 consecutiveJdcCount = 0;
 };
 
 struct DanteStingerInput {

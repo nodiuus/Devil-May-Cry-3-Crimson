@@ -11991,6 +11991,21 @@ void VergilGameplayOptions() {
 				activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
 				queuedCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
 				activeCrimsonGameplayMask.Gameplay.Vergil.judgementCutRework)) {
+
+				if (activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 3;
+
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 3;
+				}
+				else {
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 2;
+
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 2;
+				}
 			}
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
