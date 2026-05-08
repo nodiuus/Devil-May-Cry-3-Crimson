@@ -294,7 +294,7 @@ void ClothPhysicsFixesController() {
 	ClothPhysicsEnhancementFixes(activeCrimsonConfig.Visual.clothPhysicsEnhancement);
 }
 
-void BossCamFixes(bool enable) {
+void LookAtBossCamFixes(bool enable) {
 	using namespace Utility;
 	static bool run = false;
 	if (run == enable) {
@@ -307,6 +307,16 @@ void BossCamFixes(bool enable) {
 		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0xE7DDE, &FixBossCamLookAtDetour, 5);
 	g_FixBossCamLookAt_ReturnAddr = BossCamLookAtHook->GetReturnAddress();
 	BossCamLookAtHook->Toggle(enable);
+	run = enable;
+}
+
+void BossCamFixes(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	LookAtBossCamFixes(enable);
 
 	// From CCameraBossVergilFightMovement_sub_140054490:
 	// dmc3.exe + 544CD - F3 0F 5C 05 97 90 30 00 - subss xmm0, [dmc3.exe + 35D56C] { (1.00) }

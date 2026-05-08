@@ -12625,68 +12625,68 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	ImGui::End();
 
-	// C•Team 'A Berthrage Project' window
-	float cTeamBerthrageFontSize = 30.0f;
-	int cTeamBerthrageAlpha = static_cast<int>(fadeProgress * 255.0f);
-	ImFont* berthrageFont = UI::g_ImGuiFont_RussoOne[cTeamBerthrageFontSize];
-	float scaledFontSize = berthrageFont->FontSize * scaleFactorY;
-	auto cTeamBerthrageText = u8"C•Team Presents • A Berthrage Project";
+	//// C•Team 'A Berthrage Project' window
+	//float cTeamBerthrageFontSize = 30.0f;
+	//int cTeamBerthrageAlpha = static_cast<int>(fadeProgress * 255.0f);
+	//ImFont* berthrageFont = UI::g_ImGuiFont_RussoOne[cTeamBerthrageFontSize];
+	//float scaledFontSize = berthrageFont->FontSize * scaleFactorY;
+	//auto cTeamBerthrageText = u8"C•Team Presents • A Berthrage Project";
 
-	// Calculate text size with scaling
-	ImVec2 cTeamBerthrageTextSize = berthrageFont->CalcTextSizeA(
-		scaledFontSize, FLT_MAX, 0.0f, (const char*)cTeamBerthrageText
-	);
+	//// Calculate text size with scaling
+	//ImVec2 cTeamBerthrageTextSize = berthrageFont->CalcTextSizeA(
+	//	scaledFontSize, FLT_MAX, 0.0f, (const char*)cTeamBerthrageText
+	//);
 
-	// Calculate centered position in screen space
-	ImVec2 berthrageTitleTextScreenPos = ImVec2(
-		(g_renderSize.x - cTeamBerthrageTextSize.x) * 0.5f,
-		logoWindowPos.y - (40.0f * scaleFactorY) // Y position as before
-	);
+	//// Calculate centered position in screen space
+	//ImVec2 berthrageTitleTextScreenPos = ImVec2(
+	//	(g_renderSize.x - cTeamBerthrageTextSize.x) * 0.5f,
+	//	logoWindowPos.y - (40.0f * scaleFactorY) // Y position as before
+	//);
 
-	// Setup window (make sure it's big enough, but position doesn't matter for AddText)
-	ImVec2 cTeamBerthrageTextWindowSize = ImVec2(
-		cTeamBerthrageTextSize.x + 20.0f * scaleFactorY,
-		cTeamBerthrageTextSize.y + 20.0f * scaleFactorY
-	);
-	ImVec2 cTeamBerthrageTextWindowPos = ImVec2(
-		berthrageTitleTextScreenPos.x - 10.0f * scaleFactorY,
-		berthrageTitleTextScreenPos.y - 10.0f * scaleFactorY
-	);
+	//// Setup window (make sure it's big enough, but position doesn't matter for AddText)
+	//ImVec2 cTeamBerthrageTextWindowSize = ImVec2(
+	//	cTeamBerthrageTextSize.x + 20.0f * scaleFactorY,
+	//	cTeamBerthrageTextSize.y + 20.0f * scaleFactorY
+	//);
+	//ImVec2 cTeamBerthrageTextWindowPos = ImVec2(
+	//	berthrageTitleTextScreenPos.x - 10.0f * scaleFactorY,
+	//	berthrageTitleTextScreenPos.y - 10.0f * scaleFactorY
+	//);
 
-	ImGui::SetNextWindowPos(cTeamBerthrageTextWindowPos);
-	ImGui::SetNextWindowSize(cTeamBerthrageTextWindowSize);
-	ImGui::Begin("CTeamBerthrageProjectWindow", nullptr, windowFlags);
+	//ImGui::SetNextWindowPos(cTeamBerthrageTextWindowPos);
+	//ImGui::SetNextWindowSize(cTeamBerthrageTextWindowSize);
+	//ImGui::Begin("CTeamBerthrageProjectWindow", nullptr, windowFlags);
 
-	// Draw shadow
-	ImVec2 berthrageTitleTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
-	ImGui::GetWindowDrawList()->AddText(
-		berthrageFont,
-		scaledFontSize,
-		berthrageTitleTextScreenPos + berthrageTitleTextShadowOffset,
-		IM_COL32(0, 0, 0, cTeamBerthrageAlpha),
-		(const char*)cTeamBerthrageText
-	);
+	//// Draw shadow
+	//ImVec2 berthrageTitleTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
+	//ImGui::GetWindowDrawList()->AddText(
+	//	berthrageFont,
+	//	scaledFontSize,
+	//	berthrageTitleTextScreenPos + berthrageTitleTextShadowOffset,
+	//	IM_COL32(0, 0, 0, cTeamBerthrageAlpha),
+	//	(const char*)cTeamBerthrageText
+	//);
 
-	// Draw normal text
-	ImGui::GetWindowDrawList()->AddText(
-		berthrageFont,
-		scaledFontSize,
-		berthrageTitleTextScreenPos,
-		IM_COL32(255, 255, 255, cTeamBerthrageAlpha),
-		(const char*)cTeamBerthrageText
-	);
+	//// Draw normal text
+	//ImGui::GetWindowDrawList()->AddText(
+	//	berthrageFont,
+	//	scaledFontSize,
+	//	berthrageTitleTextScreenPos,
+	//	IM_COL32(255, 255, 255, cTeamBerthrageAlpha),
+	//	(const char*)cTeamBerthrageText
+	//);
 
-	
-	ImGui::End();
+	//
+	//ImGui::End();
 
 	// Game Mode Text Window
-	float gameModeFontSize = 30.0f;
+	float gameModeFontSize = 28.0f;//30.0f;
 	//ImGui::PushStyleColor(ImGuiCol_Text, *reinterpret_cast<ImVec4*>(&gameModeData.colors[activeCrimsonGameplay.GameMode.preset]));
 	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[gameModeFontSize]);
 	std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
 	ImVec2 gameModeTextSize = ImGui::CalcTextSize(gameModeText.c_str());
 	ImVec2 gameModeTextSizeWindowSize = ImVec2((gameModeTextSize.x + 20.0f) * scaleFactorY, 100.0f * scaleFactorY);
-	ImVec2 gameModeTextSizeWindowPos = ImVec2((g_renderSize.x - (gameModeTextSize.x * scaleFactorY)) * 0.5f, 675.0f * scaleFactorY);
+	ImVec2 gameModeTextSizeWindowPos = ImVec2((g_renderSize.x - (gameModeTextSize.x * scaleFactorY)) * 0.97f, 900 * scaleFactorY);
 
 	ImGui::SetNextWindowPos(gameModeTextSizeWindowPos);
 	ImGui::SetNextWindowSize(gameModeTextSizeWindowSize);
@@ -12702,10 +12702,10 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Version Text Window
 	float versionFontSize = 20.0f;
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[versionFontSize]);
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[versionFontSize]);
 
 	// Format the version string
-	std::string versionStr = std::format("v{}.{}{}", UI::g_UIContext.CurrentVersion.Major, UI::g_UIContext.CurrentVersion.Minor, UI::g_UIContext.CurrentVersion.PatchLetter);
+	std::string versionStr = std::format("V{}.{}{}", UI::g_UIContext.CurrentVersion.Major, UI::g_UIContext.CurrentVersion.Minor, UI::g_UIContext.CurrentVersion.PatchLetter);
 	std::string versionText = "BETA " + versionStr;
 
 	// Calculate text size
@@ -12726,7 +12726,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	// Offset the position to align the text correctly
 	ImVec2 versionTextSizeWindowPos = ImVec2(
 		centerX + (800.0f * scaleFactorY), // Center horizontally
-		100.0f * scaleFactorY // Center vertically
+		879.0f * scaleFactorY // Center vertically
 	);
 
 	// Ensure the position stays within bounds
@@ -12747,19 +12747,19 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// GUI Hotket Text Window
 	static bool guiHotkeyRun = false;
-	float guiKeyFontSize = 35.0f;
+	float guiKeyFontSize = 28.0f;
 	if (!guiHotkeyRun) keyBindings[0].UpdateBuffer(keyBindings[0].mainInfo, keyBindings[0].activeKeyData);
 	
-	float guiHotkeyFontSize = 35.0f;
+	float guiHotkeyFontSize = 28.0f;
 	int guiHotkeyAlpha = 255; // Fixed alpha
 
-	ImFont* guiHotkeyFont = UI::g_ImGuiFont_RussoOne[guiHotkeyFontSize];
+	ImFont* guiHotkeyFont = UI::g_ImGuiFont_Benguiat[guiHotkeyFontSize];
 	float guiHotkeyScaledFontSize = guiHotkeyFont->FontSize * scaleFactorY;
 
 	auto guiHotkey = keyBindings[0].mainInfo.buffer;
-	std::string guiHotkeyTextKeyboard = "Press " + (std::string)guiHotkey;
-	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + " or Left Stick + Right Stick to toggle the Overlay";
-	std::string guiHotkeyTextKeyboardOnly = "Press " + (std::string)keyBindings[0].mainInfo.buffer + " to toggle the Overlay";
+	std::string guiHotkeyTextKeyboard = "" + (std::string)guiHotkey;
+	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + "/LS + RS:\nTOGGLE OVERLAY";
+	std::string guiHotkeyTextKeyboardOnly = "" + (std::string)keyBindings[0].mainInfo.buffer + ":\nTOGGLE OVERLAY";
 	ImVec2 guiTextSize = ImGui::CalcTextSize(guiHotkeyTextComplete.c_str());
 	ImVec2 guiTextSize2 = ImGui::CalcTextSize(guiHotkeyTextKeyboardOnly.c_str());
 
@@ -12778,8 +12778,8 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Calculate centered position in screen space
 	ImVec2 guiHotkeyTextScreenPos = ImVec2(
-		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.5f,
-		775.0f * scaleFactorY
+		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.01f,
+		879.0f * scaleFactorY
 	);
 
 	// Setup window (make sure it's big enough, but position doesn't matter for AddText)
@@ -12819,16 +12819,16 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Credits Text Window
 	float creditsFontSize = 22.0f;
-	float creditsCapCoFontSize = 10.0f;
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[creditsFontSize]);
-	auto creditsText = u8"C•Team • Directed by Berthrage • Project Crimson © • 2025";
-	auto creditsCapCo = "Devil May Cry is a property of Capcom Co., Ltd. All assets belong to their respective owners.";
+	float creditsCapCoFontSize = 14.0f;
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsFontSize]);
+	auto creditsText = u8"C•TEAM • DIRECTED BY BERTHRAGE • PROJECT CRIMSON © • 2025";
+	auto creditsCapCo = "DEVIL MAY CRY IS A PROPERTY OF CAPCOM CO., LTD. ALL ASSETS BELONG TO THEIR RESPECTIVE OWNERS.";
 
 	// Calculate text sizes with correct fonts
 	ImVec2 creditsTextSize = ImGui::CalcTextSize((const char*)creditsText);
 	ImGui::PopFont();
 
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[creditsCapCoFontSize]);
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsCapCoFontSize]);
 	ImVec2 creditsCapCoSize = ImGui::CalcTextSize(creditsCapCo);
 	ImGui::PopFont();
 
@@ -12849,7 +12849,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	ImGui::Begin("CreditsTextWindow", nullptr, windowFlags);
 
 	// Main credits text (centered)
-	ImFont* creditsFont = UI::g_ImGuiFont_RussoOne[creditsFontSize];
+	ImFont* creditsFont = UI::g_ImGuiFont_Benguiat[creditsFontSize];
 	float creditsScaledFontSize = creditsFont->FontSize * scaleFactorY;
 	ImVec2 creditsTextSizeScaled = creditsFont->CalcTextSizeA(
 		creditsScaledFontSize, FLT_MAX, 0.0f, (const char*)creditsText
@@ -12879,7 +12879,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 
 	// CapCo copyright (smaller, centered)
-	ImFont* capcoFont = UI::g_ImGuiFont_RussoOne[creditsCapCoFontSize];
+	ImFont* capcoFont = UI::g_ImGuiFont_Benguiat[creditsCapCoFontSize];
 	float capcoScaledFontSize = capcoFont->FontSize * scaleFactorY;
 	ImVec2 capcoTextSizeScaled = capcoFont->CalcTextSizeA(
 		capcoScaledFontSize, FLT_MAX, 0.0f, creditsCapCo

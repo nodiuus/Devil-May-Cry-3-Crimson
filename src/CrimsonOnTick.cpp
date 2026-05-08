@@ -1938,12 +1938,35 @@ void MultiplayerDamageScaling() {
 		}
 	}
 }
+bool GetGigapedeMoment() {
+	//get event & nextevent
+	if (!InGame())
+		return false;
+	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_10298 || !pool_10298[8]) {
+		return false;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
 
+	auto pool_12959 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_12959 || !pool_12959[12]) {
+		return false;
+	}
+	auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_12959[12]);
+
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	if (&sessionData == nullptr || &eventData == nullptr)
+		return false;
+
+	return (eventData.room == ROOM::GIANTWALKER_CHAMBER && sessionData.mission == 4);
+}
 void TriggerOnTickFuncs() {
 	// These functions run OnTick globally (in game and in menus) through Game Thread
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
 	CrimsonHighFPSFixes::ClothPhysicsFixesController();
+	bool gigapedemoment = GetGigapedeMoment();
+	CrimsonHighFPSFixes::LookAtBossCamFixes(!gigapedemoment);
 	CrimsonOnTick::InCreditsDetection();
 	CrimsonOnTick::WeaponProgressionTracking();
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();
