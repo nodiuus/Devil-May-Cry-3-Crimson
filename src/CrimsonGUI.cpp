@@ -12694,7 +12694,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	//
 	//ImGui::End();
 
-	auto onNewGame = *reinterpret_cast<float*>(appBaseAddr + 0xC0D1A0);
+	auto onNewGame = *reinterpret_cast<float*>(appBaseAddr + 0xC0D1E0);
 	if (onNewGame != 0.0f) {
 		// Game Mode Text Window
 		float gameModeFontSize = 55.0f;
