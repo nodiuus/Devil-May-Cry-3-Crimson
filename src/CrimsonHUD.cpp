@@ -38,7 +38,6 @@
 #include "CrimsonPatches.hpp"
 #include "CrimsonTimers.hpp"
 #include "CrimsonUtil.hpp"
-#include "UI\Texture2DD3D11.hpp"
 #include "UI\EmbeddedImages.hpp"
 #include "CrimsonGUI.hpp"
 #include "CrimsonFileHandling.hpp"
@@ -173,6 +172,7 @@ static Texture2DD3D11* royalGaugeCircle{ nullptr };
 static Texture2DD3D11* mirageGaugeDpadTexture{ nullptr };
 static Texture2DD3D11* mirageGaugeDpadActiveTexture{ nullptr };
 
+static Texture2DD3D11* crimsonTitleGradient{ nullptr };
 
 void InitRedOrbTexture(ID3D11Device* pd3dDevice) {
 	//RedOrbTexture = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "RedorbVanilla3.png").c_str(), pd3dDevice);
@@ -396,6 +396,11 @@ void InitMirageGaugeTextures(ID3D11Device* pd3dDevice) {
 	mirageGaugeDpadActiveTexture = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\miragegauge\\dpad-active.png").c_str(), pd3dDevice);
 	assert(mirageGaugeDpadTexture);
 	assert(mirageGaugeDpadActiveTexture);
+}
+
+void InitGradientTextures(ID3D11Device* pd3dDevice) {
+	crimsonTitleGradient = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "CrimsonGradient.png").c_str(), pd3dDevice);
+	assert(crimsonTitleGradient);
 }
 
 
@@ -3410,6 +3415,11 @@ void MirageGaugeMainPlayer() {
 	ImGui::End();
 }
 
+Texture2DD3D11 *getCrimsonGradient()
+{
+	return crimsonTitleGradient;
+}
+
 
 
 void InitTextures(ID3D11Device* pd3dDevice) {
@@ -3418,6 +3428,7 @@ void InitTextures(ID3D11Device* pd3dDevice) {
 	InitLockOnTexture(pd3dDevice);
 	InitStyleGlassTextures(pd3dDevice);
 	InitMirageGaugeTextures(pd3dDevice);
+	InitGradientTextures(pd3dDevice);
 }
 
 }

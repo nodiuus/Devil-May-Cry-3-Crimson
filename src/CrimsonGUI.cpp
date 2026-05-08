@@ -12694,26 +12694,73 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	//
 	//ImGui::End();
 
-	// Game Mode Text Window
-	float gameModeFontSize = 28.0f;//30.0f;
-	//ImGui::PushStyleColor(ImGuiCol_Text, *reinterpret_cast<ImVec4*>(&gameModeData.colors[activeCrimsonGameplay.GameMode.preset]));
-	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[gameModeFontSize]);
-	std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
-	ImVec2 gameModeTextSize = ImGui::CalcTextSize(gameModeText.c_str());
-	ImVec2 gameModeTextSizeWindowSize = ImVec2((gameModeTextSize.x + 20.0f) * scaleFactorY, 100.0f * scaleFactorY);
-	ImVec2 gameModeTextSizeWindowPos = ImVec2((g_renderSize.x - (gameModeTextSize.x * scaleFactorY)) * 0.97f, 900 * scaleFactorY);
+	auto onNewGame = *reinterpret_cast<float*>(appBaseAddr + 0xC0D1A0);
+	if (onNewGame != 0.0f) {
+		// Game Mode Text Window
+		float gameModeFontSize = 55.0f;
+		//ImGui::PushStyleColor(ImGuiCol_Text, *reinterpret_cast<ImVec4*>(&gameModeData.colors[activeCrimsonGameplay.GameMode.preset]));
+		ImGui::PushFont(UI::g_ImGuiFont_Benguiat256);
+		std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
+		ImVec2 gameModeTextSize = ImGui::CalcTextSize(gameModeText.c_str());
+		ImVec2 gameModeTextSizeWindowSize = ImVec2((gameModeTextSize.x + 20.0f) * scaleFactorY, 100.0f * scaleFactorY);
+		ImVec2 gameModeTextSizeWindowPos = ImVec2(-5.0f * scaleFactorY, 869.0f * scaleFactorY);
 
-	ImGui::SetNextWindowPos(gameModeTextSizeWindowPos);
-	ImGui::SetNextWindowSize(gameModeTextSizeWindowSize);
+		ImVec2 gameModeGradientSize = ImVec2((700.0f) * scaleFactorY, 69.0f * scaleFactorY);
+		ImVec2 gameModeGradientPos = ImVec2((g_renderSize.x) * 0.0f, 869.0f * scaleFactorY);
+		if (gameModeTextSizeWindowSize.x < gameModeGradientSize.x) {
+			gameModeTextSizeWindowSize.x = gameModeGradientSize.x + 5.0f;
+		}
+		ImGui::SetNextWindowPos(gameModeTextSizeWindowPos);
+		ImGui::SetNextWindowSize(gameModeTextSizeWindowSize);
 
-	ImGui::Begin("GameModeTextWindow", nullptr, windowFlags);
-	ImGui::SetWindowFontScale(scaleFactorY);
-	ImGui::Text(gameModeText.c_str());
+		ImGui::Begin("GameModeTextWindow", nullptr, windowFlags);
+		ImGui::SetWindowFontScale(scaleFactorY);
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		static ImU32 styleswitchcolor = 0xE8BA18FF;
+		static ImU32 vanillacolor = 0xBDC0C1FF;
+		// Draw shadow
+		ImU32 gradientColor = gameModeData.colors[activeCrimsonGameplay.GameMode.preset];
+		if (activeCrimsonGameplay.GameMode.preset == GAMEMODEPRESETS::VANILLA) {
+			gradientColor = vanillacolor;
+		}
+		if (activeCrimsonGameplay.GameMode.preset == GAMEMODEPRESETS::STYLE_SWITCHER) {
+			gradientColor = styleswitchcolor;
+		}
+		ImVec2 gamemodeTextShadowOffset = ImVec2(6.0f * scaleFactorY, 6.0f * scaleFactorY);
+		ImVec2 gamemodePadding = ImVec2(15.0f * scaleFactorY, 8.0f * scaleFactorY);
+		auto gradientaddr = CrimsonHUD::getCrimsonGradient();
+		if (gradientaddr != nullptr) {
+			ImGui::GetWindowDrawList()->AddImage(
+				gradientaddr->GetTexture(),
+				gameModeGradientPos,
+				ImVec2(gameModeGradientPos.x + gameModeGradientSize.x, gameModeGradientPos.y + gameModeGradientSize.y),
+				ImVec2(0, 0), ImVec2(1, 1),
+				ImColor(UI::SwapColorEndianness(gradientColor))
 
-	//ImGui::PopStyleColor();
-	ImGui::PopFont();
+			);
+		}
+		ImGui::GetWindowDrawList()->AddText(
+			UI::g_ImGuiFont_Benguiat256,
+			gameModeFontSize * scaleFactorY,
+			gameModeTextSizeWindowPos + gamemodeTextShadowOffset + gamemodePadding,
+			IM_COL32(0, 0, 0, 155),
+			gameModeText.c_str()
+		);
 
-	ImGui::End();
+		ImGui::GetWindowDrawList()->AddText(
+			UI::g_ImGuiFont_Benguiat256,
+			gameModeFontSize * scaleFactorY,
+			gameModeTextSizeWindowPos + gamemodePadding,
+			IM_COL32(255, 255, 255, 255),
+			gameModeText.c_str()
+		);
+
+		//ImGui::PopStyleColor();
+		ImGui::PopFont();
+
+		ImGui::End();
+	}
+	
 
 	// Version Text Window
 	float versionFontSize = 20.0f;
@@ -12749,23 +12796,24 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	versionTextSizeWindowPos.y = (std::max)(0.0f, versionTextSizeWindowPos.y);
 
 	// Set the window position and size
-	ImGui::SetNextWindowPos(versionTextSizeWindowPos);
-	ImGui::SetNextWindowSize(versionTextSizeWindowSize);
+	//ImGui::SetNextWindowPos(versionTextSizeWindowPos);
+	//ImGui::SetNextWindowSize(versionTextSizeWindowSize);
 
-	ImGui::Begin("VersionTextWindow", nullptr, windowFlags);
+	//ImGui::Begin("VersionTextWindow", nullptr, windowFlags);
 
-	ImGui::SetWindowFontScale(scaleFactorY);
-	ImGui::Text(versionText.c_str());
+	//ImGui::SetWindowFontScale(scaleFactorY);
+	//ImGui::Text(versionText.c_str());
+
+
+	//ImGui::End();
 	ImGui::PopFont();
-
-	ImGui::End();
 
 	// GUI Hotket Text Window
 	static bool guiHotkeyRun = false;
-	float guiKeyFontSize = 28.0f;
+	float guiKeyFontSize = 24.0f;
 	if (!guiHotkeyRun) keyBindings[0].UpdateBuffer(keyBindings[0].mainInfo, keyBindings[0].activeKeyData);
 	
-	float guiHotkeyFontSize = 28.0f;
+	float guiHotkeyFontSize = 24.0f;
 	int guiHotkeyAlpha = 255; // Fixed alpha
 
 	ImFont* guiHotkeyFont = UI::g_ImGuiFont_Benguiat[guiHotkeyFontSize];
@@ -12793,7 +12841,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Calculate centered position in screen space
 	ImVec2 guiHotkeyTextScreenPos = ImVec2(
-		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.01f,
+		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.97f,
 		879.0f * scaleFactorY
 	);
 
@@ -12826,7 +12874,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		guiHotkeyFont,
 		guiHotkeyScaledFontSize,
 		guiHotkeyTextScreenPos,
-		IM_COL32(255, 255, 255, guiHotkeyAlpha),
+		IM_COL32(118, 117, 118, guiHotkeyAlpha),
 		guiHotkeyTextFinal
 	);
 

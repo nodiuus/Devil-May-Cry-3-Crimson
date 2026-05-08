@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Core/DataTypes.hpp"
+#include "UI/Texture2DD3D11.hpp"
 #include <dxgi.h>
 
 
@@ -23,7 +24,7 @@ void StyleEXPDisplayWindow();
 void StyleLvlDispWindow();
 void RoyalGaugeDispWindow();
 void MirageGaugeMainPlayer();
-
+Texture2DD3D11 *getCrimsonGradient();
 
 struct FadeState {
 	float alpha = 0.0f;
