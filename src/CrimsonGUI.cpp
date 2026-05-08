@@ -12833,13 +12833,16 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	ImGui::End();
 
 	// Credits Text Window
-	float creditsFontSize = 22.0f;
-	float creditsCapCoFontSize = 14.0f;
+	float creditsFontSize = 20.0f;
+	float creditsCapCoFontSize = 20.0f;
 	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsFontSize]);
+	auto OGcreditsText = u8"©CAPCOM CO., LTD. 2005, 2018 ALL RIGHTS RESERVED./ILLUSTRATIONS: Kazuma Kaneko/ATLUS";
 	auto creditsText = u8"C•TEAM • DIRECTED BY BERTHRAGE • PROJECT CRIMSON © • 2025";
+
 	auto creditsCapCo = "DEVIL MAY CRY IS A PROPERTY OF CAPCOM CO., LTD. ALL ASSETS BELONG TO THEIR RESPECTIVE OWNERS.";
 
 	// Calculate text sizes with correct fonts
+	ImVec2 OGcreditsTextSize = ImGui::CalcTextSize((const char*)OGcreditsText);
 	ImVec2 creditsTextSize = ImGui::CalcTextSize((const char*)creditsText);
 	ImGui::PopFont();
 
@@ -12849,11 +12852,11 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	ImVec2 creditsWindowSize = ImVec2(
 		g_renderSize.x,
-		60.0f * scaleFactorY
+		180.0f * scaleFactorY
 	);
 	ImVec2 creditsWindowPos = ImVec2(
 		(g_renderSize.x - (creditsWindowSize.x)) * 0.5f,
-		1030.0f * scaleFactorY
+		940.0f * scaleFactorY
 	);
 
 	ImGui::SetNextWindowPos(creditsWindowPos);
@@ -12866,16 +12869,43 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	// Main credits text (centered)
 	ImFont* creditsFont = UI::g_ImGuiFont_Benguiat[creditsFontSize];
 	float creditsScaledFontSize = creditsFont->FontSize * scaleFactorY;
+	ImVec2 OGcreditsTextSizeScaled = creditsFont->CalcTextSizeA(
+		creditsScaledFontSize, FLT_MAX, 0.0f, (const char*)OGcreditsText
+	);
+
 	ImVec2 creditsTextSizeScaled = creditsFont->CalcTextSizeA(
 		creditsScaledFontSize, FLT_MAX, 0.0f, (const char*)creditsText
 	);
+
+	ImVec2 OGcreditsTextScreenPos = ImVec2(
+		(g_renderSize.x - OGcreditsTextSizeScaled.x) * 0.5f,
+		creditsWindowPos.y + ImGui::GetCursorPosY()
+	);
+
 	ImVec2 creditsTextScreenPos = ImVec2(
 		(g_renderSize.x - creditsTextSizeScaled.x) * 0.5f,
-		creditsWindowPos.y + ImGui::GetCursorPosY()
+		creditsWindowPos.y + ImGui::GetCursorPosY()+ OGcreditsTextSizeScaled.y
 	);
 
 	// Draw shadow
 	ImVec2 creditsTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
+
+	ImGui::GetWindowDrawList()->AddText(
+		creditsFont,
+		creditsScaledFontSize,
+		OGcreditsTextScreenPos + creditsTextShadowOffset,
+		IM_COL32(0, 0, 0, 255),
+		(const char*)OGcreditsText
+	);
+	// Draw main text
+	ImGui::GetWindowDrawList()->AddText(
+		creditsFont,
+		creditsScaledFontSize,
+		OGcreditsTextScreenPos,
+		ImGui::GetColorU32(ImGuiCol_Text),
+		(const char*)OGcreditsText
+	);
+
 	ImGui::GetWindowDrawList()->AddText(
 		creditsFont,
 		creditsScaledFontSize,
@@ -12901,7 +12931,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	);
 	ImVec2 capcoTextScreenPos = ImVec2(
 		(g_renderSize.x - capcoTextSizeScaled.x) * 0.5f,
-		creditsWindowPos.y + ImGui::GetCursorPosY() + 25.0f * scaleFactorY
+		creditsWindowPos.y + ImGui::GetCursorPosY() + OGcreditsTextSizeScaled.y + creditsTextSizeScaled.y
 	);
 
 	// Draw CapCo main text
