@@ -12576,6 +12576,21 @@ void GameplaySection() {
 
 #pragma region Indicators
 
+float GetFadeToBlackProgress() {
+	auto transitionAmount = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA4);
+	auto transitionTotal = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA8);
+	if (transitionTotal != 60.0f)
+		return 0.0f;
+	auto percentage = (transitionAmount / transitionTotal);
+	percentage = (std::max)(0.0f, percentage);
+	percentage = (std::min)(1.0f, percentage);
+	return percentage;
+}
+
+ImVec4 LerpFadeToBlack(ImVec4 color) {
+	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress()); // default is white
+}
+
 void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	static bool wasInMenu = false;
 	static bool resized = false;
@@ -12586,7 +12601,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		g_Image_CrimsonMainLogo.Resize(1924.0f, 509.0f);
 		resized = true;
 	}
-
+	auto textColor = ImColor(LerpFadeToBlack(UI::ColorToImVec4(IM_COL32(255, 255, 255, 255))));
 	if (g_inMainMenu != 1) {
 		// Reset fade when not in menu
 		wasInMenu = false;
@@ -12629,7 +12644,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	// Fade from white to normal color
 	ImVec4 tintColor = ImLerp(ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1), fadeProgress); // default is white
 	tintColor = ImVec4(1, 1, 1, fadeProgress);
-
+	tintColor = LerpFadeToBlack(tintColor);
 	ImGui::GetWindowDrawList()->AddImage(
 		logo,
 		logoWindowPos,
@@ -12735,7 +12750,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 				gameModeGradientPos,
 				ImVec2(gameModeGradientPos.x + gameModeGradientSize.x, gameModeGradientPos.y + gameModeGradientSize.y),
 				ImVec2(0, 0), ImVec2(1, 1),
-				ImColor(UI::SwapColorEndianness(gradientColor))
+				ImColor(LerpFadeToBlack(UI::ColorToImVec4(gradientColor)))
 
 			);
 		}
@@ -12751,7 +12766,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 			UI::g_ImGuiFont_Benguiat256,
 			gameModeFontSize * scaleFactorY,
 			gameModeTextSizeWindowPos + gamemodePadding,
-			IM_COL32(255, 255, 255, 255),
+			ImColor(LerpFadeToBlack(ImVec4(1, 1, 1, 1))),
 			gameModeText.c_str()
 		);
 
@@ -12874,7 +12889,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		guiHotkeyFont,
 		guiHotkeyScaledFontSize,
 		guiHotkeyTextScreenPos,
-		IM_COL32(118, 117, 118, guiHotkeyAlpha),
+		ImColor(LerpFadeToBlack(ImVec4(0.46, 0.46, 0.46, 1))),
 		guiHotkeyTextFinal
 	);
 
@@ -12945,12 +12960,15 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		IM_COL32(0, 0, 0, 255),
 		(const char*)OGcreditsText
 	);
+	//ImGui::GetColorU32()
+	// 
 	// Draw main text
+
 	ImGui::GetWindowDrawList()->AddText(
 		creditsFont,
 		creditsScaledFontSize,
 		OGcreditsTextScreenPos,
-		ImGui::GetColorU32(ImGuiCol_Text),
+		ImColor(LerpFadeToBlack(ImGui::GetStyleColorVec4(ImGuiCol_Text))),
 		(const char*)OGcreditsText
 	);
 
@@ -12966,7 +12984,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		creditsFont,
 		creditsScaledFontSize,
 		creditsTextScreenPos,
-		ImGui::GetColorU32(ImGuiCol_Text),
+		ImColor(LerpFadeToBlack(ImGui::GetStyleColorVec4(ImGuiCol_Text))),
 		(const char*)creditsText
 	);
 
@@ -12987,7 +13005,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		capcoFont,
 		capcoScaledFontSize,
 		capcoTextScreenPos,
-		ImGui::GetColorU32(ImGuiCol_Text),
+		ImColor(LerpFadeToBlack(ImGui::GetStyleColorVec4(ImGuiCol_Text))),
 		creditsCapCo
 	);
 
