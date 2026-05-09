@@ -99,7 +99,16 @@ void ArtemisInstantFullChargeDetour2();
 // CameraSensitivity
 void CameraSensitivityDetour1();
 void CameraSensitivityDetour2();
-}
+
+// CheckScreenBreak
+void CheckScreenBreakDetour();
+// CheckMissionResultScreen
+void CheckMissionResultScreenDetour1();
+// CheckMissionResultBPScreen
+void CheckMissionResultBPScreenDetour1();
+void CheckMissionResultBPScreenDetour2();
+void CheckMissionResultBPScreenDetour3();
+void CheckMissionResultBPScreenDetour4();}
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData);
 bool DisableStaggerCheck(PlayerActorData& actorData);
@@ -137,4 +146,6 @@ void ToggleArkhamPt2GrabCrashFix(bool enable);
 void ToggleArkhamPt2DoppelCrashFix(bool enable);
 void ToggleStyleLevellingCCSFix(bool enable);
 void ToggleDTMustStyleArmor(bool enable);
+void ToggleAllDetours(bool enable);
+void CheckMissionResultBPScreen(bool enable);
 }

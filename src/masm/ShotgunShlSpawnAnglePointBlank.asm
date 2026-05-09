@@ -9,6 +9,7 @@ EXTERN g_PointBlankShotgunFireTailCall_ReturnAddr:QWORD
 EXTERN g_PointBlankShotgunFireDelayCall:QWORD
 EXTERN g_PointBlankShotgunFireOgCall:QWORD
 EXTERN g_PointBlankShotgunCancelAnimTailCall:QWORD
+EXTERN appBaseAddr:QWORD
 originalJumpAddr dq 0
 newJumpAddr dq 0
 
@@ -96,14 +97,16 @@ OriginalCode:
 
 OriginalJump:
 	push r13
-	mov r13, 14020EE09h
+	mov r13, qword ptr [appBaseAddr]
+	add r13, 20EE09h
 	mov qword ptr [originalJumpAddr], r13
 	pop r13
 	jmp originalJumpAddr
 
 NewJump:
 	push r13
-	mov r13, 14020EE16h
+	mov r13, qword ptr [appBaseAddr]
+	add r13, 20EE16h
 	mov qword ptr [newJumpAddr], r13
 	pop r13
 	jmp newJumpAddr

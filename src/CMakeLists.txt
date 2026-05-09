@@ -49,6 +49,9 @@ set(MASM_SRC
     masm/VergilTricksAsm.asm
     masm/StyleRankHudNoFadeout.asm
     masm/ArtemisInstantFullCharge.asm
+    masm/CheckScreenBreak.asm
+    masm/CheckMissionResultScreen.asm
+    masm/CheckMissionResultBPScreen.asm
 )
 
 set (ASM_LIBS)
