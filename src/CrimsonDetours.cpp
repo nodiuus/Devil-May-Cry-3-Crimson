@@ -355,6 +355,39 @@ std::uint64_t g_DTMustStyleArmor_ReturnAddr;
 void DTMustStyleArmorDetour();
 void* g_DTMustStyleArmor_CheckCall1;
 void* g_DTMustStyleArmor_CheckCall2;
+
+// CheckScreenBreak
+std::uint64_t g_CheckScreenBreak_ReturnAddr;
+void CheckScreenBreakDetour();
+
+// CheckMissionResultScreen
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr1;
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr2;
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr3;
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr4;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr1;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr2;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr3;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr4;
+void CheckMissionResultScreenDetour1();
+void CheckMissionResultScreenDetour2();
+void CheckMissionResultScreenDetour3();
+void CheckMissionResultScreenDetour4();
+
+// CheckMissionResultBPScreen
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr1;
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr2;
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr3;
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr4;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr1;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr2;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr3;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr4;
+void CheckMissionResultBPScreenDetour1();
+void CheckMissionResultBPScreenDetour2();
+void CheckMissionResultBPScreenDetour3();
+void CheckMissionResultBPScreenDetour4();
+
 }
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
@@ -2265,6 +2298,111 @@ void ToggleDTMustStyleArmor(bool enable) {
 	g_DTMustStyleArmor_CheckCall2 = &SetAnnouncerWasHit;
 	DTMustStyleArmorHook->Toggle(enable);
 	run = enable;
+}
+
+void CheckScreenBreak(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CScrnBreakUpdate_sub_1402440B0:
+	// dmc3.exe+24419E - F3 0F 11 8E 50 24 00 00 - movss [rsi+00002450],xmm1 { Screen Break }
+	static std::unique_ptr<Utility::Detour_t> checkScreenBreakHook =
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x24419E, &CheckScreenBreakDetour, 8);
+	g_CheckScreenBreak_ReturnAddr = checkScreenBreakHook->GetReturnAddress();
+
+	checkScreenBreakHook->Toggle(enable);
+
+	run = enable;
+}
+
+
+void CheckMissionResultScreen(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CUIDResultUpdate_sub_1402A3170:
+	// dmc3.exe+2A2718 - E8 B3 00 00 00 - call dmc3.sub_1402A27D0 { begin mission results screen }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A2718, &CheckMissionResultScreenDetour1, 5);
+	g_CheckMissionResultScreen_ReturnAddr1 = checkMissionResultScreenHook->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr1 = (uintptr_t)appBaseAddr + 0x2A27D0;
+	checkMissionResultScreenHook->Toggle(enable);
+
+	// dmc3.exe+2A2768 - E8 B30C0000           - call dmc3.sub_1402A3420 { process mission results screen }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A2768, &CheckMissionResultScreenDetour2, 5);
+	g_CheckMissionResultScreen_ReturnAddr2 = checkMissionResultScreenHook2->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr2 = (uintptr_t)appBaseAddr + 0x2A3420;
+	checkMissionResultScreenHook2->Toggle(enable);
+
+	// dmc3.exe+2A277C - E8 5F0C0000           - call dmc3.sub_1402A33E0 { process save screen }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A277C, &CheckMissionResultScreenDetour3, 5);
+	g_CheckMissionResultScreen_ReturnAddr3 = checkMissionResultScreenHook3->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr3 = (uintptr_t)appBaseAddr + 0x2A33E0;
+	checkMissionResultScreenHook3->Toggle(enable);
+
+	// dmc3.exe+2A2772 - E8 E91A0000           - call dmc3.sub_1402A4260 { leaving mission results }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook4 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A2772, &CheckMissionResultScreenDetour4, 5);
+	g_CheckMissionResultScreen_ReturnAddr4 = checkMissionResultScreenHook4->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr4 = (uintptr_t)appBaseAddr + 0x2A4260;
+	checkMissionResultScreenHook4->Toggle(enable);
+
+	run = enable;
+}
+
+
+void CheckMissionResultBPScreen(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CUIDResultBPUpdate_sub_1402A5350:
+	// dmc3.exe+2A5378 - E8 93 00 00 00 - call dmc3.sub_1402A5410 { begin results BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A5378, &CheckMissionResultBPScreenDetour1, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr1 = checkMissionResultBPScreenHook1->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr1 = (uintptr_t)appBaseAddr + 0x2A5410;
+	checkMissionResultBPScreenHook1->Toggle(enable);
+
+	// dmc3.exe+2A53AA - E8 41 06 00 00 - call dmc3.sub_1402A59F0 { process results BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A53AA, &CheckMissionResultBPScreenDetour2, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr2 = checkMissionResultBPScreenHook2->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr2 = (uintptr_t)appBaseAddr + 0x2A59F0;
+	checkMissionResultBPScreenHook2->Toggle(enable);
+
+	// dmc3.exe+2A53B4 - E8 77 0B 00 00 - call dmc3.sub_1402A5F30 { leaving results BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A53B4, &CheckMissionResultBPScreenDetour3, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr3 = checkMissionResultBPScreenHook3->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr3 = (uintptr_t)appBaseAddr + 0x2A5F30;
+	checkMissionResultBPScreenHook3->Toggle(enable);
+
+	// dmc3.exe+2A53BE - E8 ED 05 00 00 - call dmc3.sub_1402A59B0 { process save screen BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook4 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A53BE, &CheckMissionResultBPScreenDetour4, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr4 = checkMissionResultBPScreenHook4->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr4 = (uintptr_t)appBaseAddr + 0x2A59B0;
+	checkMissionResultBPScreenHook4->Toggle(enable);
+
+	run = enable;
+}
+
+void ToggleAllDetours(bool enable) {
+	CheckScreenBreak(enable);
+	CheckMissionResultScreen(enable);
+	CheckMissionResultBPScreen(enable);
+
 }
 
 }

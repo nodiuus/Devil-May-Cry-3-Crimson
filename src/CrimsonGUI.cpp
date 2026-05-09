@@ -3742,8 +3742,26 @@ void RenderMissionResultGameModeStats() {
 
 	// We use this to identify whether or not we're in the exact Mission Result Screen
 	uint32 inMissionResultScreenInt = *reinterpret_cast<uint32*>(appBaseAddr + 0x5CF9A0);
-	bool inMissionResultScreen = inMissionResultScreenInt == 0x14FD80 ? true : false;
-	bool shouldShow = (g_scene == SCENE::MISSION_RESULT && inMissionResultScreen);
+	bool inMissionResultScreen = true;
+	bool shouldShow = false;
+	if (sessionData.mission == MISSION::BLOODY_PALACE || sessionData.mission == 0) { // Skips Screen Break
+		shouldShow = g_inMissionResultBPScreen;
+	}
+	else if (sessionData.mission == 20) { // Skips Screen Break
+		shouldShow = g_inMissionResultScreen;
+	}
+	else {
+		if (activeConfig.skipCutscenes) { // Skips Screen Break
+			shouldShow = g_inMissionResultScreen;
+		}
+		else {
+			shouldShow = g_inMissionResultScreen && g_screenBreakTriggered;
+		}
+	}
+
+	if (g_scene != SCENE::MISSION_RESULT) {
+		g_screenBreakTriggered = false;
+	}
 
 	// Static variables to track fade state
 	static bool wasShowing = false;
@@ -3994,6 +4012,125 @@ void RenderMissionResultGameModeStats() {
 	ImGui::PopStyleColor(); // Pop the alpha style var
 }
 
+void RenderMissionResultVersionDisplay() {
+	using namespace UI;
+	auto sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	// We use this to identify whether or not we're in the exact Mission Result Screen
+	uint32 inMissionResultScreenInt = *reinterpret_cast<uint32*>(appBaseAddr + 0x5CF9A0);
+	bool inMissionResultScreen = true;
+	bool shouldShow = false;
+	if (sessionData.mission == MISSION::BLOODY_PALACE || sessionData.mission == 0) { // Skips Screen Break
+		shouldShow = g_inMissionResultBPScreen;
+	}
+	else if (sessionData.mission == 20) { // Skips Screen Break
+		shouldShow = g_inMissionResultScreen;
+	}
+	else {
+		if (activeConfig.skipCutscenes) { // Skips Screen Break
+			shouldShow = g_inMissionResultScreen;
+		}
+		else {
+			shouldShow = g_inMissionResultScreen && g_screenBreakTriggered;
+		}
+	}
+
+	if (g_scene != SCENE::MISSION_RESULT) {
+		g_screenBreakTriggered = false;
+	}
+
+	if (g_scene != SCENE::MISSION_RESULT) {
+		g_screenBreakTriggered = false;
+	}
+
+	// Static variables to track fade state (shared with other mission result windows)
+	static bool wasShowing = false;
+	static float fadeStartTime = 0.0f;
+	static bool isFadingIn = false;
+	static bool isFadingOut = false;
+
+	float currentTime = ImGui::GetTime();
+	const float fadeDuration = 1.0f;
+
+	// Handle fade state transitions
+	if (shouldShow && !wasShowing) {
+		isFadingIn = true;
+		isFadingOut = false;
+		fadeStartTime = currentTime;
+	} else if (!shouldShow && wasShowing) {
+		isFadingIn = false;
+		isFadingOut = true;
+		fadeStartTime = currentTime;
+	}
+
+	wasShowing = shouldShow;
+
+	// Calculate alpha based on fade state
+	float alpha = 1.0f;
+	if (isFadingIn) {
+		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		if (fadeProgress >= 1.0f) {
+			alpha = 1.0f;
+			isFadingIn = false;
+		} else {
+			alpha = fadeProgress;
+		}
+	} else if (isFadingOut) {
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
+		if (fadeProgress >= 1.0f) {
+			alpha = 0.0f;
+			isFadingOut = false;
+			return;
+		} else {
+			alpha = 1.0f - fadeProgress;
+		}
+	} else if (!shouldShow) {
+		return;
+	}
+
+	// Build version string
+	std::string versionStr{};
+	if (g_UIContext.CurrentVersion.PatchLetter == 0) {
+		versionStr = std::format("v{}.{}", g_UIContext.CurrentVersion.Major, g_UIContext.CurrentVersion.Minor);
+	} else {
+		versionStr = std::format("v{}.{}{}", g_UIContext.CurrentVersion.Major, g_UIContext.CurrentVersion.Minor, g_UIContext.CurrentVersion.PatchLetter);
+	}
+	std::string versionDisplay = " Crimson " + versionStr;
+
+	ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+	// Offset from the right edge — larger than the RedOrb counter (~38) to keep distance
+	float edgeOffsetX = 60.0f * scaleFactorY;
+	float edgeOffsetY = 30.0f * scaleFactorY;
+
+	ImFont* font = g_ImGuiFont_Benguiat[20.0f];
+	ImGui::PushFont(font);
+	ImVec2 textSize = ImGui::CalcTextSize(versionDisplay.c_str());
+
+	// Window size and position - bottom right corner, with generous right offset
+	ImVec2 windowSize = ImVec2(textSize.x + 30.0f * scaleFactorY, 100.0f * scaleFactorY);
+	ImVec2 windowPos = ImVec2(displaySize.x - windowSize.x - edgeOffsetX, displaySize.y - windowSize.y - edgeOffsetY);
+
+	ImGui::SetNextWindowSize(windowSize);
+	ImGui::SetNextWindowPos(windowPos);
+
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
+		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMouseInputs;
+
+	ImGui::Begin("MissionResultVersionWindow", nullptr, windowFlags);
+
+	ImGui::SetWindowFontScale(scaleFactorY);
+
+	// Apply alpha to text color
+	ImU32 alphaPacked = (ImU32)(alpha * 255.0f);
+	ImU32 textColor = (0xD5D9DBFF & 0x00FFFFFF) | (alphaPacked << 24);
+
+	ImVec2 textPos = ImVec2(0.0f, (windowSize.y - textSize.y * scaleFactorY) / 2.0f);
+	ImGui::SetCursorScreenPos(ImGui::GetWindowPos() + textPos);
+	ImGui::TextColored(ImColor(textColor), "%s", versionDisplay.c_str());
+
+	ImGui::End();
+	ImGui::PopFont();
+}
 
 void RenderMissionResultCheatsUsed() {
 	using namespace UI;
@@ -8530,6 +8667,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
 				
 				ImGui::Text("inMainMenu: %u", g_inMainMenu);
+				ImGui::Text("inMissionResultScreen: %u", g_inMissionResultScreen);
                 ImGui::Text(sceneNames[g_scene]);
                 ImGui::Text("sessionData mission:  %u", sessionData.mission);
                 ImGui::Text("SCENE:  %u", g_scene);
@@ -15462,6 +15600,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 
 	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
 	RenderMissionResultGameModeStats();
+	RenderMissionResultVersionDisplay();
 	RenderMissionResultCheatsUsed();
 	//CrimsonGameModes::TrackGameMode();
 	//CrimsonGameModes::TrackCheats();
