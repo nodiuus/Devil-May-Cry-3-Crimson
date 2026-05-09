@@ -86,7 +86,7 @@ namespace CrimsonFastcalls{
             PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 2, -1.0f, -1, 2, 5);
             break;
         case STYLE_RANK::STYLISH:
-            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 3, -1.0f, -1, 2, 5);
+            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 3, -1.0f, -1, 2, 0);
             break;
         default:
             PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 0, -1.0f, -1, 2, 5);
