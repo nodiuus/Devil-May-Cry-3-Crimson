@@ -1,0 +1,124 @@
+#include "CrimsonFastcalls.hpp"
+#include "Internal.hpp"
+#include "File.hpp"
+#include "Utility/Detour.hpp"
+#include "Global.hpp"
+#include "../Core/Core.hpp"
+#include <memory>
+#include <array>
+#include "imgui.h"
+#include <cassert>
+#include "Vars.hpp"
+#include "CrimsonConfig.hpp"
+using namespace Utility;
+namespace CrimsonFastcalls{
+
+ static constexpr auto DANTE_TAUNT_OFFSET() { return 0x1FE860; }
+
+ static std::unique_ptr<Utility::Detour_t> s_DanteTauntHook;
+
+ /// <summary>
+ /// Why yes I did just steal this off of en.cppreference.com, how could you tell?
+ /// </summary>
+ /// <param name="range"></param>
+ /// <returns></returns>
+ unsigned bounded_rand(unsigned range)
+ {
+     for (unsigned x, r;;)
+         if (x = rand(), r = x % range, x - r <= -range)
+             return r;
+ }
+
+ static uintptr_t __fastcall cDanteTaunt_sub_1401FE860(byte8* actorBaseAddr) {
+ 	typedef uintptr_t (__fastcall *DanteTauntTrampoline)(byte8*);
+    auto& extramovemode = activeCrimsonGameplay.Gameplay.General.extramoves;
+
+ 	uintptr_t trampoline_raw = s_DanteTauntHook->GetTrampoline();
+
+
+
+    uintptr_t res = NULL;
+        
+    DanteTauntTrampoline trampoline = (DanteTauntTrampoline)trampoline_raw;
+
+
+    if (!actorBaseAddr) {
+        return res;
+    }
+
+    auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+
+
+    //someone should probably set up rand, but i'm lazy sooo
+    //std::rand(ImGui::GetTime());
+ 	if (!extramovemode) {
+        res = trampoline(actorBaseAddr);
+ 		return res;
+ 	}
+    int stylerank = actorData.styleData.rank;
+    int motionbank = bounded_rand(3);
+    if (motionbank < 0 || motionbank > 2) {
+        Log("Error in taunt rand function");
+        res = trampoline(actorBaseAddr);
+        return res;
+    }
+    if (actorData.recoverState[0] == 0) {
+        if (motionbank == 0) {
+            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = File_staticFiles[pl000_00_2]; 
+            res = trampoline(actorBaseAddr);
+            return res;
+        }
+        if (motionbank == 1) {
+            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newTauntDanteAnims1_pl000_00_2; // Swap Force Edge High Time animation
+            actorData.recoverState[0] = 1;
+        }
+        if (motionbank == 2) {
+            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newTauntDanteAnims2_pl000_00_2; // Swap Force Edge High Time animation
+        }
+        actorData.recoverState[0] = 1;
+        switch (stylerank) {
+        case STYLE_RANK::BLAST:
+        case STYLE_RANK::ALRIGHT:
+            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 1, -1.0f, -1, 2, 5);
+            break;
+        case STYLE_RANK::SWEET:
+        case STYLE_RANK::SHOWTIME:
+            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 2, -1.0f, -1, 2, 5);
+            break;
+        case STYLE_RANK::STYLISH:
+            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 3, -1.0f, -1, 2, 5);
+            break;
+        default:
+            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 0, -1.0f, -1, 2, 5);
+            break;
+        }
+        return res;
+    }
+
+
+    res = trampoline(actorBaseAddr);
+ 	return res;
+ }
+
+ void ModdedTauntDetour() {
+ 	s_DanteTauntHook =
+ 		std::make_unique<Utility::Detour_t>(
+ 			(uintptr_t)appBaseAddr + DANTE_TAUNT_OFFSET(),
+ 			(uintptr_t)&cDanteTaunt_sub_1401FE860,
+ 			NULL, "dante_taunt_detour");
+ 	bool res = s_DanteTauntHook->Toggle();
+ 	assert(res);
+ }
+
+ void InitDetours() {
+     ModdedTauntDetour();
+ }
+}
+// void LdkDrawImGuiWidget() {
+// 	ImGui::Checkbox("Enable LDK", &s_ldkEnable);
+// 	ImGui::Checkbox("Bosses LDK", &s_ldkBosses);
+// 	ImGui::InputInt("Enemy multiplier", &s_dudeMultiplier);
+// 	if(s_ldkBosses) {
+// 		ImGui::InputInt("Bosses multipler", &s_bossMultiplier);
+// 	}
+// }
