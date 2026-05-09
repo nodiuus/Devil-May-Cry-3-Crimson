@@ -343,6 +343,8 @@ byte8* newYamatoHighTime_pl021_00_5 = 0;
 byte8* newBaseDanteAnims_pl000_00_0 = 0;
 byte8* newTauntDanteAnims1_pl000_00_2 = 0;
 byte8* newTauntDanteAnims2_pl000_00_2 = 0;
+byte8* newTauntVergilAnims2_pl021_00_2 = 0;
+byte8* newTauntVergilAnims1_pl021_00_2 = 0;
 byte8* newBaseVergilAnims_pl021_00_0 = 0;
 byte8* newStyleSwitching01_pl000_00_4 = 0;
 byte8* newStyleSwitching02_pl000_00_4 = 0;
@@ -594,6 +596,8 @@ bool File_Init() {
 		const char* newBackslideFilename = "newBackslide_pl000_00_19.pac";
         const char* newTauntDanteAnims1Filename = "newTauntDanteAnims1_pl000_00_2.pac";
         const char* newTauntDanteAnims2Filename = "newTauntDanteAnims2_pl000_00_2.pac";
+        const char* newTauntVergilAnims1Filename = "newTauntVergilAnims1_pl021_00_2.pac";
+        const char* newTauntVergilAnims2Filename = "newTauntVergilAnims2_pl021_00_2.pac";
         auto& file = demo_pl000_00_3 = File_staticFiles.Push(filename);
         auto& file2 = vergil_pl021_00_3 = File_staticFiles.Push(vergilYamatoFilename);
         auto& file3 = newRisingStar_pl021_00_4 = File_staticFiles.Push(newRisingStarYamatoFilename);
@@ -611,6 +615,8 @@ bool File_Init() {
 		auto& file15 = newBackslide_pl000_00_19 = File_staticFiles.Push(newBackslideFilename);
         auto& file16 = newTauntDanteAnims1_pl000_00_2 = File_staticFiles.Push(newTauntDanteAnims1Filename);
         auto& file17 = newTauntDanteAnims2_pl000_00_2 = File_staticFiles.Push(newTauntDanteAnims2Filename);
+        auto& file18 = newTauntVergilAnims1_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims1Filename);
+        auto& file19 = newTauntVergilAnims2_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims2Filename);
         if (!file) {
             return;
         }
@@ -633,6 +639,10 @@ bool File_Init() {
 		AdjustPointers(file13);
 		AdjustPointers(file14);
 		AdjustPointers(file15);
+        AdjustPointers(file16);
+        AdjustPointers(file17);
+        AdjustPointers(file18);
+        AdjustPointers(file19);
     }();
 
 

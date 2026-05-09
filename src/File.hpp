@@ -29,6 +29,8 @@ extern byte8* newYamatoHighTime_pl021_00_5;
 extern byte8* newBaseDanteAnims_pl000_00_0;
 extern byte8* newTauntDanteAnims1_pl000_00_2;
 extern byte8* newTauntDanteAnims2_pl000_00_2;
+extern byte8* newTauntVergilAnims1_pl021_00_2;
+extern byte8* newTauntVergilAnims2_pl021_00_2;
 extern byte8* newBaseVergilAnims_pl021_00_0;
 extern byte8* newStyleSwitching01_pl000_00_4;
 extern byte8* newStyleSwitching02_pl000_00_4;
