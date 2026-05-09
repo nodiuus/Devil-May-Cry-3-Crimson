@@ -56,24 +56,24 @@ namespace CrimsonFastcalls{
  		return res;
  	}
     int stylerank = actorData.styleData.rank;
-    int motionbank = bounded_rand(3);
+    int motionbank = bounded_rand(2);
     if (motionbank < 0 || motionbank > 2) {
         Log("Error in taunt rand function");
         res = trampoline(actorBaseAddr);
         return res;
     }
     if (actorData.recoverState[0] == 0) {
+        //if (motionbank == 0) {
+        //    actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = File_staticFiles[pl000_00_2]; 
+        //    res = trampoline(actorBaseAddr);
+        //    return res;
+        //}
         if (motionbank == 0) {
-            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = File_staticFiles[pl000_00_2]; 
-            res = trampoline(actorBaseAddr);
-            return res;
-        }
-        if (motionbank == 1) {
-            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newTauntDanteAnims1_pl000_00_2; // Swap Force Edge High Time animation
+            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newTauntDanteAnims1_pl000_00_2; // Taunt Bank 1
             actorData.recoverState[0] = 1;
         }
-        if (motionbank == 2) {
-            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newTauntDanteAnims2_pl000_00_2; // Swap Force Edge High Time animation
+        if (motionbank == 1) {
+            actorData.motionArchives[MOTION_GROUP_DANTE::TAUNTS] = newTauntDanteAnims2_pl000_00_2; // Taunt Bank 2
         }
         actorData.recoverState[0] = 1;
         switch (stylerank) {
