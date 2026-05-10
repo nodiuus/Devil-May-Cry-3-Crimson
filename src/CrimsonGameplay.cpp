@@ -2621,6 +2621,7 @@ void VergilAdjustAirMovesPos(byte8* actorBaseAddr) {
         return;
     }
     auto& actorData  = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
     if (actorData.character != CHARACTER::VERGIL) return;
     auto playerIndex = actorData.newPlayerIndex;
     auto& gamepad    = GetGamepad(actorData.newGamepad);
