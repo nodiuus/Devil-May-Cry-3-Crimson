@@ -3280,17 +3280,17 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 			0.5f,
 			YAMATO_FORCE_EDGE_HIGH_TIME);
 
-		// Consecutive Beowulf Lunar Phase lvl 2
-		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2,
-			0.38f,
-			BEOWULF_LUNAR_PHASE_LEVEL_2);
-
-		// Consecutive Beowulf Lunar Phase lvl 1
-		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1,
-			0.38f,
-			BEOWULF_LUNAR_PHASE_LEVEL_1);
+		// Consecutive Beowulf Lunar Phase lvl 2 -- buggy, let's not do it for now
+// 		triggerConsecutiveAttack(
+// 			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2,
+// 			0.38f,
+// 			BEOWULF_LUNAR_PHASE_LEVEL_2);
+// 
+// 		// Consecutive Beowulf Lunar Phase lvl 1
+// 		triggerConsecutiveAttack(
+// 			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1,
+// 			0.38f,
+// 			BEOWULF_LUNAR_PHASE_LEVEL_1);
 
 		// Override Serp's Beowulf Lunar Phase lvl 1 Intersperse
 		if (actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1 &&
