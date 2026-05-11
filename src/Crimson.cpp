@@ -3,7 +3,7 @@
 #include "Core/Core.hpp"
 #include "Core/Input.hpp"
 #include "CrimsonDetours.hpp"
-#include "CrimsonFastcalls.hpp"
+#include "CrimsonFastcallDetours.hpp"
 #include "DMC3Input.hpp"
 #include "CrimsonSDL.hpp"
 #include "File.hpp"
@@ -277,7 +277,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         Hooks::Init();
 
         CrimsonDetours::InitDetours();
-        CrimsonFastcalls::InitDetours();
+        CrimsonFastcallDetours::InitDetours();
         if (activeConfig.Actor.enable) {
             CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
         }

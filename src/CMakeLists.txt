@@ -157,8 +157,8 @@ file(GLOB MAIN_SRC
     CrimsonDetours.hpp
     CrimsonEnemyAITarget.cpp
     CrimsonEnemyAITarget.hpp
-	CrimsonFastcalls.cpp
-	CrimsonFastcalls.hpp
+    CrimsonFastcallDetours.cpp
+    CrimsonFastcallDetours.hpp
     CrimsonFileHandling.cpp
     CrimsonFileHandling.hpp	
     CrimsonFX.cpp

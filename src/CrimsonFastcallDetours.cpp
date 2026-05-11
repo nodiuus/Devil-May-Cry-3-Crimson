@@ -1,6 +1,6 @@
 #include <random>
 
-#include "CrimsonFastcalls.hpp"
+#include "CrimsonFastcallDetours.hpp"
 #include "Internal.hpp"
 #include "File.hpp"
 #include "Utility/Detour.hpp"
@@ -32,7 +32,7 @@ namespace CrimsonFastcallDetours{
      return dist(rng);
  }
 
- static uintptr_t __fastcall cDanteTaunt_sub_1401FE860(byte8* actorBaseAddr) {
+ static uintptr_t __fastcall CPlDanteTauntController_sub_1401FE860(byte8* actorBaseAddr) {
  	typedef uintptr_t (__fastcall *DanteTauntTrampoline)(byte8*);
     auto& extramovemode = activeCrimsonGameplay.Gameplay.General.extramoves;
 
@@ -51,10 +51,10 @@ namespace CrimsonFastcallDetours{
 
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 
- 	if (!extramovemode) {
-        res = trampoline(actorBaseAddr);
- 		return res;
- 	}
+//  	if (!extramovemode) {
+//         res = trampoline(actorBaseAddr);
+//  		return res;
+//  	}
     int stylerank = actorData.styleData.rank;
     int motionbank = bounded_rand(2);
     if (motionbank < 0 || motionbank > 2) {
@@ -101,7 +101,7 @@ namespace CrimsonFastcallDetours{
  }
 
 
- static uintptr_t __fastcall cVergilTaunt_sub_14021A220(byte8* actorBaseAddr) {
+ static uintptr_t __fastcall CPlNewVergilTauntController_sub_14021A220(byte8* actorBaseAddr) {
      typedef uintptr_t(__fastcall* VergilTauntTrampoline)(byte8*);
      auto& extramovemode = activeCrimsonGameplay.Gameplay.General.extramoves;
 
@@ -157,7 +157,7 @@ namespace CrimsonFastcallDetours{
  	s_DanteTauntHook =
  		std::make_unique<Utility::Detour_t>(
  			(uintptr_t)appBaseAddr + DANTE_TAUNT_OFFSET(),
- 			(uintptr_t)&cDanteTaunt_sub_1401FE860,
+ 			(uintptr_t)&CPlDanteTauntController_sub_1401FE860,
  			NULL, "dante_taunt_detour");
  	bool res = s_DanteTauntHook->Toggle();
  	assert(res);
@@ -168,7 +168,7 @@ namespace CrimsonFastcallDetours{
      s_VergilTauntHook =
          std::make_unique<Utility::Detour_t>(
              (uintptr_t)appBaseAddr + VERGIL_TAUNT_OFFSET(),
-             (uintptr_t)&cVergilTaunt_sub_14021A220,
+             (uintptr_t)&CPlNewVergilTauntController_sub_14021A220,
              NULL, "vergil_taunt_detour");
      bool res = s_VergilTauntHook->Toggle();
      assert(res);

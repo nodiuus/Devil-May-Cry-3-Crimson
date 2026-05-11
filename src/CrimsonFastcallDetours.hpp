@@ -1,5 +1,5 @@
 #pragma once
-namespace CrimsonFastcalls {
+namespace CrimsonFastcallDetours {
 	void ModdedTauntDetour();
 	void InitDetours();
 
