@@ -3050,6 +3050,8 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 		crimsonPlayer[playerIndex].stingerInputClone;
 	auto& risingStarInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].risingStarInput :
 		crimsonPlayer[playerIndex].risingStarInputClone;
+	auto& inAirLunarPhase = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inAirLunarPhase :
+		crimsonPlayer[playerIndex].inAirLunarPhaseClone;
 
 	static bool prevMeleeButton[PLAYER_COUNT][ENTITY_COUNT] = {};
 	bool meleeButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
@@ -3291,13 +3293,17 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 // 			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1,
 // 			0.38f,
 // 			BEOWULF_LUNAR_PHASE_LEVEL_1);
-
-		// Override Serp's Beowulf Lunar Phase lvl 1 Intersperse
-		if (actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1 &&
-			ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2]) {
-			actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_2;
-			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
-		}
+// 
+// 		// Override Serp's Beowulf Lunar Phase lvl 1 Intersperse
+// 		if (actorData.action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1 &&
+// 			ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2]) {
+// 			actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_2;
+// 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
+// 		}
+// 
+// 		if (actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_2 && actionTimer <= 0.001f && !inAirLunarPhase) {
+// 			CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)actorBaseAddr, 1, 6.83f, -0.35f);
+// 		}
 	}
 }
 
