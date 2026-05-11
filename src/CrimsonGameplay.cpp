@@ -1772,6 +1772,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		!risingStarInput.meleeReleasedRisingStar &&
 		meleeWeaponEquipped == WEAPON::YAMATO_VERGIL;
 
+	// TRIGGER RISING STAR
 	// Only allow transition once per action
 	if ((canTransition || canTransitionClose)) {
         if (!inRisingStar) {
@@ -1779,8 +1780,9 @@ void VergilRisingStar(byte8* actorBaseAddr) {
         }
         
 		actorData.action = BEOWULF_RISING_SUN;
-		PlayAnimation_1EFB90(actorData, 4, 11, 20.0f, 0, 0, -1);
+		CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, 4, 11, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
+		CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 0.0f, -1.15f);
 
 		CrimsonEfkPreload::risingStar_PoseHit_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::risingStar_PoseHit_Handle, CrimsonEfkPreload::risingStar_PoseHit_Path, 40.0f);
 		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix3, &actorData);
@@ -1791,7 +1793,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	}
 
 	// Reset apply flag when action changes away from YAMATO_RAPID_SLASH_LEVEL_2
-	if ((actorData.action == BEOWULF_RISING_SUN && actionTimer > 1.0f) || 
+	if ((actorData.action == BEOWULF_RISING_SUN && actionTimer > 1.7f) || 
 		(actorData.action != BEOWULF_RISING_SUN && actorData.action != YAMATO_RAPID_SLASH_LEVEL_2 &&
 			actorData.action != YAMATO_RAPID_SLASH_LEVEL_1) ||
         (actorData.eventData[0].event == ACTOR_EVENT::DARK_SLAYER_AIR_TRICK ||
@@ -1810,10 +1812,23 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 	}
 
 
-	// Controlling Yamato's visibility and parenting during Rising Star.
+	
 	if (inRisingStar) {
-		if (motionTimer >= 0.09f && motionTimer < 0.95f) {
-			actorData.weaponMotionState[7] = 11;
+		// Apply Gravity
+		if (actionTimer >= 1.03f) {
+			CrimsonReversedCalls::TriggerCPlayerGravity_sub_1401FB300((uintptr_t)&actorData, actorData.inertiaRotation, 1.0f);
+			actorData.verticalPullMultiplier = -1.15f;
+			CrimsonReversedCalls::ApplyNewXInertiaCPl_sub_1401FD050((uintptr_t)&actorData, 0.0f, 0.0f);
+		}
+		if (actorData.verticalPull < 0.0f &&
+			CrimsonReversedCalls::IsCPlGrounded_sub_1401E8470((uintptr_t)&actorData, actorData.verticalPull)) {
+
+			CrimsonReversedCalls::LandCPlayer_sub_1401E04A0((uintptr_t)&actorData);
+		}
+
+		// Controlling Yamato's visibility and parenting during Rising Star.
+		if (motionTimer >= 0.09f && motionTimer < 1.33f) {
+			actorData.weaponMotionState[7] = 2;
 			vergilSword.hideYamatoTip = false;
 		}
 		else {
