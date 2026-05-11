@@ -34,16 +34,12 @@ namespace CrimsonFastcallDetours{
 
  static uintptr_t __fastcall CPlDanteTauntController_sub_1401FE860(byte8* actorBaseAddr) {
  	typedef uintptr_t (__fastcall *DanteTauntTrampoline)(byte8*);
-    auto& extramovemode = activeCrimsonGameplay.Gameplay.General.extramoves;
 
  	uintptr_t trampoline_raw = s_DanteTauntHook->GetTrampoline();
-
-
 
     uintptr_t res = NULL;
         
     DanteTauntTrampoline trampoline = (DanteTauntTrampoline)trampoline_raw;
-
 
     if (!actorBaseAddr) {
         return res;
@@ -51,10 +47,10 @@ namespace CrimsonFastcallDetours{
 
     auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
 
-//  	if (!extramovemode) {
-//         res = trampoline(actorBaseAddr);
-//  		return res;
-//  	}
+ 	if (!activeCrimsonConfig.Visual.moreTauntsAnimations) {
+        res = trampoline(actorBaseAddr);
+ 		return res;
+ 	}
     int stylerank = actorData.styleData.rank;
     int motionbank = bounded_rand(2);
     if (motionbank < 0 || motionbank > 2) {

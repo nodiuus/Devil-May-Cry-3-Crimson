@@ -11226,6 +11226,15 @@ void VisualSection(size_t defaultFontSize) {
 			}
 			ImGui::PopItemWidth();
 
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("More Taunt Animations", activeCrimsonConfig.Visual.moreTauntsAnimations, queuedCrimsonConfig.Visual.moreTauntsAnimations);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Brings several taunt animations from other DMC games. Taunts are cycled using Pseudo RNG.");
+			}
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+
             ImGui::TableNextRow(0, rowWidth * 0.1f);
             ImGui::TableNextColumn();
             

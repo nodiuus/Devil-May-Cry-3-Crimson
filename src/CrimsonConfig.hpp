@@ -402,10 +402,12 @@ struct CrimsonConfig {
 
 	struct Visual {
 		bool clothPhysicsEnhancement = true;
+		bool moreTauntsAnimations = true;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("clothPhysicsEnhancement", &Visual::clothPhysicsEnhancement)
+				std::make_pair("clothPhysicsEnhancement", &Visual::clothPhysicsEnhancement),
+				std::make_pair("moreTauntsAnimations", &Visual::moreTauntsAnimations)
 			);
 		}
 	} Visual;
