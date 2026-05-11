@@ -9716,12 +9716,18 @@ void SetAction(byte8* actorBaseAddr) {
             actorData.action == BEOWULF_STARFALL_LEVEL_1) 
             && lockOn && (tiltDirection == TILT_DIRECTION::UP)) {
 
+            CrimsonGameplay::StoreAirCountsVergil(actorData);
+
             if (ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2]) {
 				actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_2;
             }
             else {
 				actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_1;
             }
+
+            // For some god-forsaken reason this was cancelling Vergil's Trick Air Counts so this prevents it from happening
+			std::thread darkslayerCountsTracker(CrimsonGameplay::AirCancelCountsTrackerVergil, actorBaseAddr);
+            darkslayerCountsTracker.detach();
 
 			inAirLunarPhase = true;
         } 

@@ -5371,6 +5371,10 @@ extern float doppDurationDT;
 
 struct StoredAirCounts {
 	uint8 trickUp = 0;
+    uint8 trickDown = 0;
+    uint8 airTrick = 0;
+    uint8 airRisingSun = 0;
+
     uint8 skyStar = 0;
     uint8 airHike = 0;
     uint8 airStinger = 0;

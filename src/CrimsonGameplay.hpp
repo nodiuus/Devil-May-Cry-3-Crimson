@@ -10,6 +10,8 @@ bool IsActiveCharacterActor(byte8* actorBaseAddr);
 void UpdateCrimsonPlayerData();
 void FixAirStingerCancelTime(byte8* actorBaseAddr);
 void DanteStingerInputCrazyCombo(byte8* actorBaseAddr);
+void StoreAirCountsVergil(byte8* actorBaseAddr);
+void AirCancelCountsTrackerVergil(byte8* actorBaseAddr);
 void ImprovedCancelsRoyalguardController(byte8* actorBaseAddr);
 void ImprovedCancelsDanteController(byte8* actorBaseAddr);
 void DarkslayerCancelsVergilController(byte8* actorBaseAddr);

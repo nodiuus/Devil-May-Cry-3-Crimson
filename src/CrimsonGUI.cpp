@@ -8898,7 +8898,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
-			ImGui::Text("inAirLunarPhase: %u", crimsonPlayer[0].inAirLunarPhase);
+			ImGui::Text("trickUpCount: %u", actorData.newTrickUpCount);
 			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
 			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
 			ImGui::Text("Vertical Pull  %g", actorData.verticalPull);

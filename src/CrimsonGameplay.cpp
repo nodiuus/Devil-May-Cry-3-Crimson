@@ -775,6 +775,43 @@ void AirCancelCountsTracker(byte8* actorBaseAddr) {
     storedAirCounts.cancelTrackerRunning = false;
 }
 
+void StoreAirCountsVergil(byte8* actorBaseAddr) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& storedAirCounts = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].storedAirCounts : crimsonPlayer[playerIndex].storedAirCountsClone;
+	auto& airCounts = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].airCounts : crimsonPlayer[playerIndex].airCountsClone;
+
+	storedAirCounts.trickUp = actorData.newTrickUpCount;
+	storedAirCounts.trickDown = actorData.newTrickDownCount;
+	storedAirCounts.airTrick = actorData.newAirTrickCount;
+	storedAirCounts.airRisingSun = actorData.newAirRisingSunCount;
+}
+
+void AirCancelCountsTrackerVergil(byte8* actorBaseAddr) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& storedAirCounts = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].storedAirCounts : crimsonPlayer[playerIndex].storedAirCountsClone;
+	auto& airCounts = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].airCounts : crimsonPlayer[playerIndex].airCountsClone;
+
+	// This restores player counts back to what they were before the Royal Cancel
+	storedAirCounts.cancelTrackerRunning = true;
+	std::this_thread::sleep_for(std::chrono::milliseconds(20));
+
+
+	actorData.newTrickUpCount = storedAirCounts.trickUp;
+	actorData.newTrickDownCount = storedAirCounts.trickDown;
+	actorData.newAirTrickCount = storedAirCounts.airTrick;
+	actorData.newAirRisingSunCount = storedAirCounts.airRisingSun;
+	
+	storedAirCounts.cancelTrackerRunning = false;
+}
+
 void FixAirStingerCancelTime(byte8* actorBaseAddr) {
 	using namespace ACTION_DANTE;
 	using namespace ACTION_VERGIL;
@@ -1554,20 +1591,21 @@ void DarkslayerCancelsVergilController(byte8* actorBaseAddr) {
 		}
 	}
 
+	auto& policy = actorData.nextActionRequestPolicy[MELEE_ATTACK];
+	auto& policyTrick = actorData.nextActionRequestPolicy[TRICKSTER_DARK_SLAYER];
+	auto& policyJump = actorData.nextActionRequestPolicy[JUMP_ROLL];
+
 	if (canCancel && execute && timer <= 0.0f) {
 		execute = false;
 		timer = COOLDOWN_MS;
-		actorData.state &= ~STATE::BUSY;
+		actorData.permissions = 3080; // This is a soft version of Reset Permissions.
+		policyTrick = EXECUTE;
 	} else if (!styleButtonDown) {
 		execute = true;
 	}
 
 	bool doingJump = (actorData.buttons[0] & GetBinding(BINDING::JUMP));
 	auto& closeToEnemy = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].isCloseToEnemy : crimsonPlayer[playerIndex].isCloseToEnemyClone;
-
-	auto& policy = actorData.nextActionRequestPolicy[MELEE_ATTACK];
-	auto& policyTrick = actorData.nextActionRequestPolicy[TRICKSTER_DARK_SLAYER];
-	auto& policyJump = actorData.nextActionRequestPolicy[JUMP_ROLL];
 
 	if ((actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 || actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2 && actorData.state & STATE::IN_AIR)) {
 		policyTrick = BUFFER;
