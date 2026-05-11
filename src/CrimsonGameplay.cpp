@@ -2151,7 +2151,7 @@ void ApplyJDCFlyingArc(byte8* actorBaseAddr) {
 
 	int movePart = actorData.recoverState[0];
 
-	if (inAnyAirJdc) {
+	if (inAnyAirJdc && actorData.eventData[0].event == ACTOR_EVENT::ATTACK) {
 
 		CrimsonReversedCalls::TriggerCPlayerGravity_sub_1401FB300((uintptr_t)&actorData, actorData.inertiaRotation, 1.0f);
 
