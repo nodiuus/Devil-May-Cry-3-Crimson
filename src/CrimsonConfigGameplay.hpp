@@ -147,7 +147,7 @@ struct CrimsonConfigGameplay {
 			bool mirageTrigger = true;
 			bool downertia = true;
 			bool trickUpNoLockOn = true;
-			std::string adjustLunarPhasePos = "From Air";
+			bool noAirLunarPhaseLift = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
@@ -164,7 +164,7 @@ struct CrimsonConfigGameplay {
 					std::make_pair("mirageTrigger", &Vergil::mirageTrigger),
 					std::make_pair("downertia", &Vergil::downertia),
 					std::make_pair("trickUpNoLockOn", &Vergil::trickUpNoLockOn),
-					std::make_pair("adjustLunarPhasePos", &Vergil::adjustLunarPhasePos)
+					std::make_pair("noAirLunarPhaseLift", &Vergil::noAirLunarPhaseLift)
 				);
 			}
         } Vergil;
@@ -435,6 +435,7 @@ extern "C" {
 	// Exported pointers for MASM access
 	extern bool* g_FasterTurnRateSettingAddr;
 	extern float* g_ActiveFOVMultSettingAddr;
+	extern bool* g_NoAirLunarPhaseLiftSettingAddr;
 }
 
 

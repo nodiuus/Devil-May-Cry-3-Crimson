@@ -108,7 +108,9 @@ void CheckMissionResultScreenDetour1();
 void CheckMissionResultBPScreenDetour1();
 void CheckMissionResultBPScreenDetour2();
 void CheckMissionResultBPScreenDetour3();
-void CheckMissionResultBPScreenDetour4();}
+void CheckMissionResultBPScreenDetour4();
+// NoAirLunarPhaseLift
+void NoAirLunarPhaseLiftDetour();}
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData);
 bool DisableStaggerCheck(PlayerActorData& actorData);
@@ -148,4 +150,5 @@ void ToggleStyleLevellingCCSFix(bool enable);
 void ToggleDTMustStyleArmor(bool enable);
 void ToggleAllDetours(bool enable);
 void CheckMissionResultBPScreen(bool enable);
+void NoAirLunarPhaseLift(bool enable);
 }

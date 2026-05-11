@@ -5622,10 +5622,7 @@ struct Inertia {
 
 struct VergilMoveAdjustments {
     float storedRisingSunPosY;
-    float storedLunarPhasePosY;
-    float storedLunarPhaseLv1PosY;
     bool startingRisingSunFromGround = false;
-    bool startingLunarPhaseFromGround = false;
 };
 
 struct DelayedComboFX {
@@ -5801,6 +5798,7 @@ struct CrimsonPlayerData {
     bool inYamatoHighTime = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
+    bool inAirLunarPhase = false;
     bool inAirTornado = false;
     EffekseerHandle yamatoGroundedHighTimeHandle;
     VergilJudgementCut jCut;
@@ -5878,6 +5876,7 @@ struct CrimsonPlayerData {
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
 	bool inAirTornadoClone = false;
+    bool inAirLunarPhaseClone = false;
     EffekseerHandle yamatoGroundedHighTimeHandleClone;
 	VergilJudgementCut jCutClone;
 	DanteBackslide backslideClone;

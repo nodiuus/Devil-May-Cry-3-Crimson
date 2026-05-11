@@ -1761,13 +1761,6 @@ constexpr uint8 missionTimerDisplayStateMap[3] = {
 	MISSIONTIMERDISPLAY::ALWAYS,
 };
 
-
-std::vector<std::string> VergilMoveAdjustmentsNames = {
-	"Off",
-	"From Air",
-	"Always",
-};
-
 const char* ldkModeNames[] = {
 	"Off",
 	"LDK",
@@ -8905,6 +8898,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("inAirLunarPhase: %u", crimsonPlayer[0].inAirLunarPhase);
 			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
 			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
 			ImGui::Text("Vertical Pull  %g", actorData.verticalPull);
@@ -12261,11 +12255,10 @@ void VergilGameplayOptions() {
 			ImGui::TableNextColumn();
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			ImGui::PushItemWidth(itemWidth * 0.5f);
-			GUI_ComboVectorString2("Alt. Lunar Phase Pos.",
-				VergilMoveAdjustmentsNames,
-				activeCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos,
-				queuedCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos,
-				activeCrimsonGameplayMask.Gameplay.Vergil.adjustLunarPhasePos);
+			GUI_Checkbox2("No Air Lunar Phase Lift",
+				activeCrimsonGameplay.Gameplay.Vergil.noAirLunarPhaseLift,
+				queuedCrimsonGameplay.Gameplay.Vergil.noAirLunarPhaseLift,
+				activeCrimsonGameplayMask.Gameplay.Vergil.noAirLunarPhaseLift);
 			ImGui::PopItemWidth();
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();

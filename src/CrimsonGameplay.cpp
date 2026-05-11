@@ -2624,6 +2624,7 @@ void VergilAdjustAirMovesPos(byte8* actorBaseAddr) {
 	if (!IsActiveCharacterActor(actorData)) return;
     if (actorData.character != CHARACTER::VERGIL) return;
     auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
     auto& gamepad    = GetGamepad(actorData.newGamepad);
 
     auto* v     = (actorData.newEntityIndex == 0) ? &crimsonPlayer[playerIndex].vergilMoves : &crimsonPlayer[playerIndex].vergilMovesClone;
@@ -2640,93 +2641,52 @@ void VergilAdjustAirMovesPos(byte8* actorBaseAddr) {
     auto& lastActionTime = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lastActionTime : crimsonPlayer[playerIndex].lastActionTimeClone;
 	auto& tweak = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].lunarPhaseTweak :
 		crimsonPlayer[playerIndex].lunarPhaseTweakClone;
+
+	auto& inAirLunarPhase = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirLunarPhase :
+		crimsonPlayer[playerIndex].inAirLunarPhaseClone;
+
+	auto& movePart = actorData.recoverState[0];
+
+	// Air Lunar Phase Detection Reset
+	if (inAirLunarPhase && ((action != BEOWULF_LUNAR_PHASE_LEVEL_1 && action != BEOWULF_LUNAR_PHASE_LEVEL_2))) {
+		inAirLunarPhase = false;
+	}
+
+	// Storing the pos
+	if (!(action == BEOWULF_RISING_SUN && event == ACTOR_EVENT::ATTACK)) {
+		v->storedRisingSunPosY = actorData.position.y;
+	}
     
-    if (actorData.character == CHARACTER::VERGIL) {
-
-        // Storing the pos
-        if (!(action == BEOWULF_RISING_SUN && event == ACTOR_EVENT::ATTACK)) {
-            v->storedRisingSunPosY = actorData.position.y;
-        }
-
-        if (!(action == BEOWULF_LUNAR_PHASE_LEVEL_2 && event == ACTOR_EVENT::ATTACK)) {
-
-            v->storedLunarPhasePosY = actorData.position.y;
-        }
-
-		if (!(action == BEOWULF_LUNAR_PHASE_LEVEL_1 && event == ACTOR_EVENT::ATTACK)) {
-
-			v->storedLunarPhaseLv1PosY = actorData.position.y;
+	if (action != BEOWULF_RISING_SUN) {
+		if (!(state & STATE::IN_AIR)) {
+			v->startingRisingSunFromGround = true;
 		}
-
-
-        // Take configs into account if new positionings will be applied or not
-		if (action != BEOWULF_RISING_SUN) {
-			if (!(state & STATE::IN_AIR)) {
-				v->startingRisingSunFromGround = true;
-			} else {
-				v->startingRisingSunFromGround = false;
-			}
+		else {
+			v->startingRisingSunFromGround = false;
 		}
+	}
 
-        if (activeCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos == "From Air") {
-            if (action != BEOWULF_LUNAR_PHASE_LEVEL_1 && action != BEOWULF_LUNAR_PHASE_LEVEL_2) {
-                if (!(state & STATE::IN_AIR)) {
-                    v->startingLunarPhaseFromGround = true;
-                } else {
-                    v->startingLunarPhaseFromGround = false;
-                }
-            }
-		} else if (activeCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos == "Always") {
-			v->startingLunarPhaseFromGround = false;
-        } else if (activeCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos == "Off") {
-            v->startingLunarPhaseFromGround = true;
-        }
+	// Applying the pos
+	if (event == ACTOR_EVENT::ATTACK && state & STATE::IN_AIR) {
 
-        // Applying the pos
-        if (event == ACTOR_EVENT::ATTACK && state & STATE::IN_AIR) {
+		// Adjusts Vergil Pos to be lower when starting Ground/Air Rising Sun
+		if (action == BEOWULF_RISING_SUN && inAirTauntRisingSun) {
 
-            // Adjusts Vergil Pos to be lower when starting Ground/Air Rising Sun
-            if (action == BEOWULF_RISING_SUN && inAirTauntRisingSun) {
-
-                if (actionTimer <= 0.6f) {
-                    actorData.verticalPullMultiplier = 0.0f;
-                }
-
-                actorData.position.y = v->storedRisingSunPosY - 50.0f;
-            }
-
-            // Adjusts Vergil Pos to be lower when starting Ground/Air Lunar Phase
-            if ((actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_2) && 
-                motion != 23 &&
-                !v->startingLunarPhaseFromGround) {
-
-                actorData.verticalPullMultiplier = 0.0f;
-                actorData.position.y             = v->storedLunarPhasePosY - 20.0f;
-            }
-
-			if ((actorData.action == BEOWULF_LUNAR_PHASE_LEVEL_1) &&
-				motion != 10 &&
-				!v->startingLunarPhaseFromGround) {
-
+			if (actionTimer <= 0.6f) {
 				actorData.verticalPullMultiplier = 0.0f;
-				actorData.position.y = v->storedLunarPhaseLv1PosY - 20.0f;
 			}
-        }
 
-		// Fix for the weird carry over to air hike/jump cancel from Lunar Phase
-		if ((event == ACTOR_EVENT::JUMP_CANCEL) && 
-            (action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_1 || action == ACTION_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2)) {
-			actorData.verticalPullMultiplier = -1.5f;
-			return;
+			actorData.position.y = v->storedRisingSunPosY - 50.0f;
 		}
+	}
 
-		// Fix for the weird carry over to air hike/jump cancel from Rising Sun
-		if ((event == ACTOR_EVENT::JUMP_CANCEL) &&
-			(action == ACTION_VERGIL::BEOWULF_RISING_SUN)) {
-			actorData.verticalPullMultiplier = -1.5f;
-			return;
-		}
-    }
+	// Fix for the weird carry over to air hike/jump cancel from Rising Sun
+	if ((event == ACTOR_EVENT::JUMP_CANCEL) &&
+		(action == ACTION_VERGIL::BEOWULF_RISING_SUN)) {
+		actorData.verticalPullMultiplier = -1.5f;
+		return;
+	}
+    
 }
 
 void VergilDownertia(byte8* actorBaseAddr) {

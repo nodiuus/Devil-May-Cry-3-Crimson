@@ -9503,12 +9503,15 @@ void SetAction(byte8* actorBaseAddr) {
     bool wasRebellionAttack = (lastAction == REBELLION_COMBO_1_PART_1 || lastAction == REBELLION_COMBO_1_PART_2 ||
         lastAction == REBELLION_COMBO_1_PART_3 || lastAction == REBELLION_COMBO_2_PART_2 || lastAction == REBELLION_COMBO_2_PART_3);
 	auto& drive = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].drive : crimsonPlayer[playerIndex].driveClone;
-	auto& inYamatoHighTime = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime : 
-        crimsonPlayer[playerIndex].inYamatoHighTimeClone;
 	auto& characterData = GetCharacterData(actorData);
 	auto meleeWeaponEquipped = characterData.meleeWeapons[characterData.meleeWeaponIndex];
 
-    auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado : crimsonPlayer[playerIndex].inAirTornadoClone;
+	auto& inYamatoHighTime = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime :
+		crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+    auto& inAirTornado = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirTornado : 
+        crimsonPlayer[playerIndex].inAirTornadoClone;
+	auto& inAirLunarPhase = (entityIndex == 0) ? crimsonPlayer[playerIndex].inAirLunarPhase : 
+        crimsonPlayer[playerIndex].inAirLunarPhaseClone;
 	cDrawReverse playerVergilcDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
 	Matrix44Ptr* playerBoneMatrix = reinterpret_cast<Matrix44Ptr*>(playerVergilcDraw.bonesMatrixesPtr);
 
@@ -9719,10 +9722,15 @@ void SetAction(byte8* actorBaseAddr) {
             else {
 				actorData.action = BEOWULF_LUNAR_PHASE_LEVEL_1;
             }
+
+			inAirLunarPhase = true;
         } 
+		else {
+			inAirLunarPhase = false;
+		}
 		
         // FORCE EDGE AIR STINGER
-		else if (activeCrimsonGameplay.Gameplay.General.extramoves && 
+		if (activeCrimsonGameplay.Gameplay.General.extramoves && 
             ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR] &&
                    (actorData.newAirStingerCount < activeConfig.YamatoForceEdge.airStingerCount[index]) && lockOn &&
                    (tiltDirection == TILT_DIRECTION::UP) &&

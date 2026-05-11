@@ -126,7 +126,7 @@ struct CrimsonConfigGameplayMask {
 			bool mirageTrigger = true;
 			bool downertia = true;
 			bool trickUpNoLockOn = true;
-			bool adjustLunarPhasePos = true;
+			bool noAirLunarPhaseLift = true;
 			
 
 			static constexpr auto Metadata() {
@@ -144,7 +144,7 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("mirageTrigger", &Vergil::mirageTrigger),
 					std::make_pair("downertia", &Vergil::downertia),
 					std::make_pair("trickUpNoLockOn", &Vergil::trickUpNoLockOn),
-					std::make_pair("adjustLunarPhasePos", &Vergil::adjustLunarPhasePos)
+					std::make_pair("noAirLunarPhaseLift", &Vergil::noAirLunarPhaseLift)
 				);
 			}
 		} Vergil;

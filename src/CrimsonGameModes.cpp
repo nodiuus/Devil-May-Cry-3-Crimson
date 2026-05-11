@@ -101,8 +101,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	vergil.airRisingSun = false;
 	vergil.airLunarPhase = false;
 	vergil.judgementCutRework = false;
-	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
-	//vergil.adjustLunarPhasePos = "Off";
+	vergil.noAirLunarPhaseLift = false;
 
 	// Cheats: disabled
 	preset.Cheats = defaultCrimsonGameplay.Cheats;
@@ -170,8 +169,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	vergil.yamatoHighTime = false;
 	vergil.airTauntRisingSun = false;
 	vergil.mirageTrigger = false;
-	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
-	//vergil.adjustLunarPhasePos = "Off";
+	vergil.noAirLunarPhaseLift = false;
 
 	// Cheats section
 	preset.Cheats.General = defaultCrimsonGameplay.Cheats.General;
@@ -255,9 +253,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	vergil.yamatoHighTime = true;
 	vergil.airTauntRisingSun = true;
 	vergil.mirageTrigger = true;
-	
-	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
-	//vergil.adjustLunarPhasePos = "Off";
+	vergil.noAirLunarPhaseLift = true;
 
 	preset.Cheats.General = defaultCrimsonGameplay.Cheats.General;
 	preset.Cheats.Damage = defaultCrimsonGameplay.Cheats.Damage;
@@ -367,19 +363,6 @@ const CrimsonConfigGameplayMask STYLE_SWITCHER_MASK = [] {
 	mask.Gameplay.Dante.swapDancePierceInputs = false;
 	mask.Gameplay.Dante.swapHammerVocalnoInputs = false;
 	
-	// NEW MOVES are optional
-	mask.Gameplay.Dante.airRevolver = false;
-	mask.Gameplay.Dante.airTornado = false;
-	mask.Gameplay.Dante.airRisingDragonLaunch = false;
-	mask.Gameplay.Dante.airAgniRudraWhirlwind = false;
-	mask.Gameplay.Dante.skyLaunchAirTaunt = false;
-	mask.Gameplay.Dante.airStinger = false;
-	mask.Gameplay.Vergil.airLunarPhase = false;
-	mask.Gameplay.Vergil.airRisingSun = false;
-	mask.Gameplay.Vergil.airStinger = false;
-	mask.Gameplay.Vergil.yamatoRisingStar = false;
-	mask.Gameplay.Vergil.yamatoHighTime = false;
-	mask.Gameplay.Vergil.airTauntRisingSun = false;
 	mask.Gameplay.Vergil.trickUpNoLockOn = false;
 
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;

@@ -7,3 +7,4 @@ CrimsonConfigGameplay activeCrimsonGameplay;
 
 bool* g_FasterTurnRateSettingAddr = nullptr;
 float* g_ActiveFOVMultSettingAddr = nullptr;
+bool* g_NoAirLunarPhaseLiftSettingAddr = nullptr;

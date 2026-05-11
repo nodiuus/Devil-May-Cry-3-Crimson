@@ -388,6 +388,11 @@ void CheckMissionResultBPScreenDetour2();
 void CheckMissionResultBPScreenDetour3();
 void CheckMissionResultBPScreenDetour4();
 
+
+// NoAirLunarPhaseLift
+std::uint64_t g_NoAirLunarPhaseLift_ReturnAddr;
+void NoAirLunarPhaseLiftDetour();
+void* g_NoAirLunarPhaseLiftCheckCall;  
 }
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
@@ -1261,6 +1266,18 @@ bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
 // 	}
 
 	return true;
+}
+
+bool CheckIfInAirLunarPhase(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	if (actorData.character != CHARACTER::VERGIL) return false;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& inAirLunarPhase = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].inAirLunarPhase
+		: crimsonPlayer[actorData.newPlayerIndex].inAirLunarPhaseClone;
+	if (inAirLunarPhase) {
+		return true;
+	}
+	return false;
 }
 
 void InitDetours() {
@@ -2398,10 +2415,31 @@ void CheckMissionResultBPScreen(bool enable) {
 	run = enable;
 }
 
+void NoAirLunarPhaseLift(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From ExecuteLunarPhaseMove_sub_14021DE20:
+	// dmc3.exe+21E34A - F3 0F 10 98 70 01 00 00 - movss xmm3,[rax+00000170] { movePart 0 yInertiaMult }
+	// dmc3.exe+21E352 - F3 0F 10 90 6C 01 00 00 - movss xmm2,[rax+0000016C] { movePart 0 yInertia }
+	static std::unique_ptr<Utility::Detour_t> noAirLunarPhaseLiftHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x21E34A, &NoAirLunarPhaseLiftDetour, 16);
+	g_NoAirLunarPhaseLift_ReturnAddr = noAirLunarPhaseLiftHook->GetReturnAddress();
+	g_NoAirLunarPhaseLiftCheckCall = &CheckIfInAirLunarPhase;  // Uncomment if calling C++ functions
+	g_NoAirLunarPhaseLiftSettingAddr = &activeCrimsonGameplay.Gameplay.Vergil.noAirLunarPhaseLift;
+	noAirLunarPhaseLiftHook->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleAllDetours(bool enable) {
 	CheckScreenBreak(enable);
 	CheckMissionResultScreen(enable);
 	CheckMissionResultBPScreen(enable);
+	NoAirLunarPhaseLift(enable);
 
 }
 

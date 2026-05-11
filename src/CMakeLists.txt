@@ -52,6 +52,7 @@ set(MASM_SRC
     masm/CheckScreenBreak.asm
     masm/CheckMissionResultScreen.asm
     masm/CheckMissionResultBPScreen.asm
+    masm/NoAirLunarPhaseLift.asm
 )
 
 set (ASM_LIBS)
