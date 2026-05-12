@@ -216,9 +216,9 @@ namespace CrimsonFastcallDetours{
 			 newDmgData.knockbackAnimation = 2;
 			 newDmgData.unk1Uint32 = 4;
 			 newDmgData.displacement = 5.0f;
-			 newDmgData.dmgValue = 37.0f;
+			 newDmgData.dmgValue = 45.0f;
 			 newDmgData.angle = 0.0f;
-			 newDmgData.styleMeterIncrease = 70.0f;
+			 newDmgData.styleMeterIncrease = 80.0f;
 			 newDmgData.knockbackSpeed = 10.0f;
 		 }
 		 else {
