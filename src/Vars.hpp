@@ -3298,25 +3298,42 @@ public:
 	uint32_t knockbackAnimation; //0x0000
 	uint32_t unk1; //0x0004
 	uint32_t unk2; //0x0008
-	float projectileDmg; //0x000C
+	float dmgValue; //0x000C
 	char pad_0010[4]; //0x0010
 	float displacement; //0x0014
 	float angle; //0x0018
-	char pad_001C[16]; //0x001C
+	float unk3; //0x001C
+	char pad_0020[4]; //0x0020
+	float unk4; //0x0024
+	char pad_0028[4]; //0x0028
 	float styleMeterIncrease; //0x002C
-	char pad_0030[16]; //0x0030
+	char pad_0030[4]; //0x0030
+	float hitStopDuration; //0x0034
+	char pad_0038[8]; //0x0038
 	float knockbackSpeed; //0x0040
-	char pad_0044[84]; //0x0044
-}; //Size: 0x0098
+	char pad_0044[80]; //0x0044
+}; //Size: 0x0094
 
 static_assert(offsetof(DamageData, knockbackAnimation) == 0x0);
 static_assert(offsetof(DamageData, unk1) == 0x4);
 static_assert(offsetof(DamageData, unk2) == 0x8);
-static_assert(offsetof(DamageData, projectileDmg) == 0xC);
+static_assert(offsetof(DamageData, dmgValue) == 0xC);
 static_assert(offsetof(DamageData, displacement) == 0x14);
 static_assert(offsetof(DamageData, angle) == 0x18);
+static_assert(offsetof(DamageData, unk3) == 0x1C);
+static_assert(offsetof(DamageData, unk4) == 0x24);
 static_assert(offsetof(DamageData, styleMeterIncrease) == 0x2C);
+static_assert(offsetof(DamageData, hitStopDuration) == 0x34);
 static_assert(offsetof(DamageData, knockbackSpeed) == 0x40);
+
+struct DamageDataAddrOffsets {
+    uintptr_t drivePhysicalHit = 0x5C6D20;
+    uintptr_t driveShl = 0x5CB1E0;
+    uintptr_t jdcShl = 0x5CDF40;
+	uintptr_t risingSunHit1 = 0x5CD360;
+    uintptr_t risingSunHit2 = 0x5CD3B0;
+};
+DamageDataAddrOffsets damageDataOffsets;
 
 
 struct PlayerActorDataBase : ActorDataBase {
