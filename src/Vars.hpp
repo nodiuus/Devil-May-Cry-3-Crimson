@@ -3333,7 +3333,7 @@ struct DamageDataAddrOffsets {
 	uintptr_t risingSunHit1 = 0x5CD360;
     uintptr_t risingSunHit2 = 0x5CD3B0;
 };
-DamageDataAddrOffsets damageDataOffsets;
+extern DamageDataAddrOffsets damageDataOffsets;
 
 
 struct PlayerActorDataBase : ActorDataBase {

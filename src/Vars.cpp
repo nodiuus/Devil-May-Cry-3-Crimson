@@ -839,6 +839,7 @@ CheatsPopUpData cheatsPopUp;
 WeaponProgressionData weaponProgression;
 
 GameModeData gameModeData;
+DamageDataAddrOffsets damageDataOffsets;
 
 CrimsonPlayerData crimsonPlayer[20];
 ArkhamFightData arkhamFightData;
