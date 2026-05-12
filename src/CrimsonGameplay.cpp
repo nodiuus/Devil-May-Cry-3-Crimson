@@ -2285,8 +2285,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	static bool startedInAir[PLAYER_COUNT][ENTITY_COUNT] = { false };
 	constexpr float MELEE_HOLD_TIME_GROUNDED = 0.8f;
 	constexpr float MELEE_HOLD_TIME_AIR = 0.6f;
-	constexpr float JUST_FRAME_WINDOW_GROUND = 0.09f; // ~3 frames at 60 FPS
-	constexpr float JUST_FRAME_WINDOW_AIR = 0.09f; // ~4 frames at 60 FPS
+	constexpr float JUST_FRAME_WINDOW_GROUND = 0.07f; // ~4 frames at 60 FPS
+	constexpr float JUST_FRAME_WINDOW_AIR = 0.075f; // ~4 frames at 60 FPS
 
 	auto& jCut = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
 
