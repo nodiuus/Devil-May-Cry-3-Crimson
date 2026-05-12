@@ -1782,7 +1782,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		actorData.action = BEOWULF_RISING_SUN;
 		CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, 4, 11, 20.0f, 0, 0, -1);
 		actorData.recoverState[0] = 1;
-		CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 0.01f, -1.15f);
+		CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 1.0f, -1.15f);
 
 		CrimsonEfkPreload::risingStar_PoseHit_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::risingStar_PoseHit_Handle, CrimsonEfkPreload::risingStar_PoseHit_Path, 40.0f);
 		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix3, &actorData);
