@@ -2409,7 +2409,8 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		
 		// Use locked value instead of recalculating every frame
 		jCut.meleeHoldTime = lockedHoldTime[playerIndex][entityIndex];
-		float JUST_FRAME_WINDOW = startedInAir[playerIndex][entityIndex] ? JUST_FRAME_WINDOW_AIR : JUST_FRAME_WINDOW_GROUND;
+		float speedFactor = actorData.speed / g_FrameRateTimeMultiplier;
+		float JUST_FRAME_WINDOW = (startedInAir[playerIndex][entityIndex] ? JUST_FRAME_WINDOW_AIR : JUST_FRAME_WINDOW_GROUND) * speedFactor;
 		jCut.meleeMaxHoldTime = jCut.meleeHoldTime + JUST_FRAME_WINDOW;
 
 		jCut.meleeButtonHold += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
@@ -2526,7 +2527,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
   static bool jdcDefaultsApplied = false;
 
 	if (jCut.inJustFrameJDC) {
-		// We 1/4 the damage because Just Frame JDCs hit four times.
 		jdcDefaultsApplied = false;
 		charSettings2.jdcRadius = 220.0f;
 		charSettings2.jdcDelay1 = 10.0f;
