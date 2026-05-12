@@ -181,7 +181,7 @@ namespace CrimsonFastcallDetours{
  static void __fastcall ApplyDamageCalc_sub_140088190(
      uintptr_t CDamageCalcAddr,
      DamageData* dmgData,
-     uintptr_t playerActorAddr60,
+     uintptr_t actorAddr60,
      uintptr_t floatArray) {
 	 // This function is called when the game applies the damage calculation for an attack hit.
      // This is a powerful detour, which we can use to modify (almost) every damage application in the game.
@@ -190,10 +190,10 @@ namespace CrimsonFastcallDetours{
 	 uintptr_t trampoline_raw = s_DamageCalcHook->GetTrampoline();
      DamageCalcTrampoline trampoline = (DamageCalcTrampoline)trampoline_raw;
 
-	 if (!playerActorAddr60) {
+	 if (!actorAddr60) {
 		 return;
 	 }
-	 auto& actorData = *reinterpret_cast<PlayerActorData*>(playerActorAddr60 - 0x60);
+	 auto& actorData = *reinterpret_cast<PlayerActorData*>(actorAddr60 - 0x60);
 	 auto playerIndex = actorData.newPlayerIndex;
 	 auto entityIndex = actorData.newEntityIndex;
 	 auto& inRisingStar = (entityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
@@ -202,35 +202,72 @@ namespace CrimsonFastcallDetours{
 		 crimsonPlayer[playerIndex].inYamatoHighTimeClone;
 	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
 
-	 if (actorData.character == CHARACTER::VERGIL) {
-		 // RISING STAR
-		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
-			 if (inRisingStar) {
-				 newDmgData.hitStopDuration = 1.0f;
-			 }
+	 // JUDGEMENT CUT (REWORK)
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.jdcShl) &&
+		 activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
+		 auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(actorAddr60 - 0x60);
+		 auto& playerActorDataShl = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+		 auto playerIndexShl = playerActorDataShl.newPlayerIndex;
+		 auto entityIndexShl = playerActorDataShl.newEntityIndex;
+		 auto& jCut = (entityIndexShl == 0) ? crimsonPlayer[playerIndexShl].jCut :
+			 crimsonPlayer[playerIndexShl].jCutClone;
+		 if (shlActorData.justFrame) {
+			 newDmgData.knockbackAnimation = 2;
+			 newDmgData.unk1Uint32 = 4;
+			 newDmgData.displacement = 5.0f;
+			 newDmgData.dmgValue = 60.0f;
+			 newDmgData.angle = 0.0f;
+			 newDmgData.styleMeterIncrease = 70.0f;
+			 newDmgData.knockbackSpeed = 10.0f;
 		 }
-		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
-			 if (inRisingStar) {
-				 newDmgData.stun = 700.0f; // default value is 100.0f, we increase this to guarantee the second hit will lift up DT'ed enemies.
-				 newDmgData.hitStopDuration = 1.0f;
-
-			 }
+		 else {
+			 newDmgData.knockbackAnimation = 0;
+			 newDmgData.unk1Uint32 = 6;
+			 newDmgData.displacement = 300.0f;
+			 newDmgData.dmgValue = 200.0f;
+			 newDmgData.angle = 10.0f;
+			 newDmgData.styleMeterIncrease = 200.0f;
+			 newDmgData.knockbackSpeed = 20.0f;
 		 }
 
-		 // YAMATO HIGH TIME
-		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
-			 if (inYamatoHighTime) {
-				 newDmgData.hitStopDuration = 1.0f;
-			 }
+		 // defaults:
+		 /*newDmgData.knockbackAnimation = 0;
+		 newDmgData.unk1Uint32 = 6;
+		 newDmgData.displacement = 300.0f;
+		 newDmgData.dmgValue = 300.0f;
+		 newDmgData.angle = 10.0f;
+		 newDmgData.styleMeterIncrease = 300.0f;
+		 newDmgData.knockbackSpeed = 20.0f;*/
+	 }
+
+
+	 // RISING STAR
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
+		 if (inRisingStar) {
+			 newDmgData.hitStopDuration = 1.0f;
+		 }
+	 }
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
+		 if (inRisingStar) {
+			 newDmgData.stun = 700.0f; // default value is 100.0f, we increase this to guarantee the second hit will lift up DT'ed enemies.
+			 newDmgData.hitStopDuration = 1.0f;
+
 		 }
 	 }
 
-	 trampoline(CDamageCalcAddr, &newDmgData, playerActorAddr60, floatArray);  // call the original, then fall through
+	 // YAMATO HIGH TIME
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
+		 if (inYamatoHighTime) {
+			 newDmgData.hitStopDuration = 1.0f;
+		 }
+	 }
+
+	 trampoline(CDamageCalcAddr, &newDmgData, actorAddr60, floatArray);  // call the original, then fall through
 	 return;
  }
 
  static uintptr_t __fastcall ApplyColDamageHitstopToCPl_sub_1401ED460(
-	 uintptr_t playerActorAddr60,
+	 uintptr_t actorAddr60,
 	 DamageData* dmgData,
 	 uintptr_t enemyActorAddr,
 	 vec4* coords) {
@@ -240,40 +277,40 @@ namespace CrimsonFastcallDetours{
 	 CollisionDmgHitstopToPlayerTrampoline trampoline = (CollisionDmgHitstopToPlayerTrampoline)trampoline_raw;
      uintptr_t res = NULL;
 
-	 if (!playerActorAddr60) {
+	 if (!actorAddr60) {
 		 return res;
 	 }
-	 auto& actorData = *reinterpret_cast<PlayerActorData*>(playerActorAddr60 - 0x60);
-	 auto playerIndex = actorData.newPlayerIndex;
-	 auto entityIndex = actorData.newEntityIndex;
+	 auto& playerActorData = *reinterpret_cast<PlayerActorData*>(actorAddr60 - 0x60);
+	 auto playerIndex = playerActorData.newPlayerIndex;
+	 auto entityIndex = playerActorData.newEntityIndex;
 	 auto& inRisingStar = (entityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
 		 crimsonPlayer[playerIndex].inRisingStarClone;
 	 auto& inYamatoHighTime = (entityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
 		 crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	 
 	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
 
-	 if (actorData.character == CHARACTER::VERGIL) {
-		 // RISING STAR
-		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
-			 if (inRisingStar) {
-				 newDmgData.hitStopDuration = 1.0f;
-			 }
+	 // RISING STAR
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
+		 if (inRisingStar) {
+			 newDmgData.hitStopDuration = 1.0f;
 		 }
-		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
-			 if (inRisingStar) {
-				 newDmgData.hitStopDuration = 1.0f;
-			 }
-		 }
-
-		 // YAMATO HIGH TIME
-		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
-			 if (inYamatoHighTime) {
-				 newDmgData.hitStopDuration = 1.0f;
-			 }
+	 }
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
+		 if (inRisingStar) {
+			 newDmgData.hitStopDuration = 1.0f;
 		 }
 	 }
 
-	 res = trampoline(playerActorAddr60, &newDmgData, enemyActorAddr, coords);  // call the original, then fall through
+	 // YAMATO HIGH TIME
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
+		 if (inYamatoHighTime) {
+			 newDmgData.hitStopDuration = 1.0f;
+		 }
+	 }
+	 
+
+	 res = trampoline(actorAddr60, &newDmgData, enemyActorAddr, coords);  // call the original, then fall through
 	 return res;
  }
 

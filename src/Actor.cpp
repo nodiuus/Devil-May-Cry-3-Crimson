@@ -8854,25 +8854,6 @@ float ApplyDamage(byte8* dest, float value) {
                 return 0;
             }
         }
-
-        // Global Enemy Damage Nullifier for Sky Launch
-// 		for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-// 			auto& playerData = GetPlayerData(playerIndex);
-// 			auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-// 			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-// 
-// 			if (!newActorData.baseAddr) {
-//                 continue;
-// 			}
-// 			auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
-// 			auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
-// 			auto& skyLaunch = crimsonPlayer[playerIndex].skyLaunch;
-//             auto& skyLaunchClone = crimsonPlayer[playerIndex].skyLaunchClone;
-// 
-//             if (skyLaunch.executing || skyLaunchClone.executing) {
-//                 return 0;
-//             }
-// 		}
     }
 
     return value;

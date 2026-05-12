@@ -812,6 +812,8 @@ void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
 	const bool isJustFrameJdc = CheckIfInJustFrameJDC(shlActorData.playerActorAddr);
 
 	if (isJustFrameJdc) {
+		shlActorData.justFrame = true; // Mark the SHL as a Just Frame JDC for use in Damage logic
+
 		auto extraIt = s_extraAddrToSource.find(shlActorBaseAddr);
 		if (extraIt != s_extraAddrToSource.end()) {
 			auto fixedPosIt = s_fixedExtraPosBySource.find(extraIt->second);

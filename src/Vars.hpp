@@ -4336,7 +4336,9 @@ public:
 	float facingAngle; //0x00B4
 	char pad_00B8[8]; //0x00B8
 	uint16_t rotation; //0x00C0
-	char pad_00C2[126]; //0x00C2
+	char pad_00C2[30]; //0x00C2
+	bool justFrame; //0x00E0 -- Random ass offset I chose for this flag, deosn't break anything for JDCShl. -- Berthrage
+	char pad_00E1[95]; //0x00E1
 	vec3 direction; //0x0140
 	char pad_014C[84]; //0x014C
 	float matrix[16]; //0x01A0
@@ -4399,6 +4401,7 @@ static_assert(offsetof(CPl021Shl02Actor, shlVfTable) == 0x60);
 static_assert(offsetof(CPl021Shl02Actor, position) == 0x80);
 static_assert(offsetof(CPl021Shl02Actor, facingAngle) == 0xB4);
 static_assert(offsetof(CPl021Shl02Actor, rotation) == 0xC0);
+static_assert(offsetof(CPl021Shl02Actor, justFrame) == 0xE0);
 static_assert(offsetof(CPl021Shl02Actor, direction) == 0x140);
 static_assert(offsetof(CPl021Shl02Actor, matrix) == 0x1A0);
 static_assert(offsetof(CPl021Shl02Actor, collisionDataStart) == 0x1E0);

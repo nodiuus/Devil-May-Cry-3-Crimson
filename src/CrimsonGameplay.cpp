@@ -2519,7 +2519,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	bool isJustFrameJdcState = (jCut.state == JDC_STATE::JUST_FRAME_GROUNDED || jCut.state == JDC_STATE::JUST_FRAME_AIR);
 	jCut.inJustFrameJDC = (isJudgementCutAction && isJustFrameJdcState);
 
-	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 0.5f) {
+	if (actorData.action == YAMATO_JUDGEMENT_CUT_LEVEL_2 && actionTimer > 0.7f) {
 		jCut.inJustFrameJDC = false;
 	}
 
@@ -2530,15 +2530,6 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		jdcDefaultsApplied = false;
 		charSettings2.jdcRadius = 220.0f;
 		charSettings2.jdcDelay1 = 10.0f;
-		jdcDmgData.knockbackAnimation = 2;
-		jdcDmgData.unk1Uint32 = 4;
-		jdcDmgData.displacement = 5.0f;
-		jdcDmgData.dmgValue = 90.0f;
-		jdcDmgData.angle = 0.0f;
-		jdcDmgData.styleMeterIncrease = 100.0f;
-		jdcDmgData.knockbackSpeed = 10.0f;
-
-
 	}
 	else if (!isJudgementCutAction) {
 		bool anyJustFrameJdcActive = false;
@@ -2552,13 +2543,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
        if (!anyJustFrameJdcActive && !jdcDefaultsApplied) {
 			charSettings2.jdcRadius = 160.0f;
 			charSettings2.jdcDelay1 = 35.0f;
-			jdcDmgData.knockbackAnimation = 0;
-			jdcDmgData.unk1Uint32 = 6;
-			jdcDmgData.displacement = 300.0f;
-			jdcDmgData.dmgValue = 300.0f;
-			jdcDmgData.angle = 10.0f;
-			jdcDmgData.styleMeterIncrease = 300.0f;
-			jdcDmgData.knockbackSpeed = 20.0f;
+			
            jdcDefaultsApplied = true;
 		}
 	}
