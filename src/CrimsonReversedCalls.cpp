@@ -37,13 +37,6 @@ namespace CrimsonReversedCalls {
 		uintptr_t playerActorAddr60) {
 		GAME_CALL_SAFE(0x612C0, void, uintptr_t, DamageData*, uintptr_t)(CComEmAddr, dmgData, playerActorAddr60);
 	}
-
-	void ApplyCollisionDamageLight_sub_1400612C0(
-		uintptr_t CComEmAddr,
-		DamageData* dmgData,
-		uintptr_t playerActorAddr60) {
-		GAME_CALL_SAFE(0x612C0, void, uintptr_t, DamageData*, uintptr_t)(CComEmAddr, dmgData, playerActorAddr60);
-	}
 	// There's ApplyCollisionDamageNoStun as well, but with several different versions of it for each enemy type. 
 	// All of these are called by ApplyDamageCalc through CComEm Vftable +0x40 (Heavy), +0x48 (Light), +0x50 (NoStun), 
 	// so we can detour that function instead of all the individual ApplyCollisionDamageNoStun versions if we want to modify the 
