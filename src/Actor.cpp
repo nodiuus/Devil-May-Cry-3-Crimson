@@ -9572,8 +9572,8 @@ void SetAction(byte8* actorBaseAddr) {
         if (activeCrimsonGameplay.Gameplay.Dante.driveRework &&
             ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_DRIVE] &&
             (wasRebellionAttack) && (demo_pl000_00_3 != 0) &&
-            (actorData.action == REBELLION_STINGER_LEVEL_2 || actorData.action == REBELLION_STINGER_LEVEL_1 ||
-                action == REBELLION_COMBO_1_PART_1) &&
+            (actorData.action == REBELLION_STINGER_LEVEL_2 || actorData.action == REBELLION_STINGER_LEVEL_1 || 
+            action == REBELLION_COMBO_1_PART_1 ||  action == REBELLION_COMBO_1_PART_2) &&
             b2F.forwardCommand) {
             actorData.action = REBELLION_DRIVE_1;
 
