@@ -3105,6 +3105,8 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 		crimsonPlayer[playerIndex].risingStarInputClone;
 	auto& inAirLunarPhase = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inAirLunarPhase :
 		crimsonPlayer[playerIndex].inAirLunarPhaseClone;
+	auto& inYamatoHighTime = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime :
+		crimsonPlayer[playerIndex].inYamatoHighTimeClone;
 
 	static bool prevMeleeButton[PLAYER_COUNT][ENTITY_COUNT] = {};
 	bool meleeButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
@@ -3331,7 +3333,7 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Force Edge High Times
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME,
+			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME && !inYamatoHighTime,
 			0.5f,
 			YAMATO_FORCE_EDGE_HIGH_TIME);
 
