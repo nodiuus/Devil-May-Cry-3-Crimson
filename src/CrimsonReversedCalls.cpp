@@ -23,6 +23,32 @@ namespace CrimsonReversedCalls {
 		return GAME_CALL_SAFE(0x5C320, uintptr_t, uintptr_t, uint8)(collisionDataStruct, a2);
 	}
 
+	void ApplyDamageCalc_sub_140088190(
+		uintptr_t CDamageCalcAddr,
+		DamageData* dmgData,
+		uintptr_t playerActorAddr60,
+		uintptr_t floatArray) {
+		GAME_CALL_SAFE(0x88190, void, uintptr_t, DamageData*, uintptr_t, uintptr_t)(CDamageCalcAddr, dmgData, playerActorAddr60, floatArray);
+	}
+
+	void ApplyCollisionDamageLight_sub_1400612C0(
+		uintptr_t CComEmAddr,
+		DamageData* dmgData,
+		uintptr_t playerActorAddr60) {
+		GAME_CALL_SAFE(0x612C0, void, uintptr_t, DamageData*, uintptr_t)(CComEmAddr, dmgData, playerActorAddr60);
+	}
+
+	void ApplyCollisionDamageLight_sub_1400612C0(
+		uintptr_t CComEmAddr,
+		DamageData* dmgData,
+		uintptr_t playerActorAddr60) {
+		GAME_CALL_SAFE(0x612C0, void, uintptr_t, DamageData*, uintptr_t)(CComEmAddr, dmgData, playerActorAddr60);
+	}
+	// There's ApplyCollisionDamageNoStun as well, but with several different versions of it for each enemy type. 
+	// All of these are called by ApplyDamageCalc through CComEm Vftable +0x40 (Heavy), +0x48 (Light), +0x50 (NoStun), 
+	// so we can detour that function instead of all the individual ApplyCollisionDamageNoStun versions if we want to modify the 
+	// NoStun behavior for all enemy types at once. -- Berthrage
+	
 	uintptr_t SetJDCPosition_sub_1401DC1A0(uintptr_t posPtr, uintptr_t matrixPtr, uintptr_t playerActorAddr, uint8 a4) {
 		return GAME_CALL_SAFE(0x1DC1A0, uintptr_t, uintptr_t, uintptr_t, uintptr_t, uint8)(posPtr, matrixPtr, playerActorAddr, a4);
 	}

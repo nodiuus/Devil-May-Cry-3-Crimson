@@ -2531,7 +2531,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		charSettings2.jdcRadius = 220.0f;
 		charSettings2.jdcDelay1 = 10.0f;
 		jdcDmgData.knockbackAnimation = 2;
-		jdcDmgData.unk1 = 4;
+		jdcDmgData.unk1Uint32 = 4;
 		jdcDmgData.displacement = 5.0f;
 		jdcDmgData.dmgValue = 90.0f;
 		jdcDmgData.angle = 0.0f;
@@ -2553,7 +2553,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 			charSettings2.jdcRadius = 160.0f;
 			charSettings2.jdcDelay1 = 35.0f;
 			jdcDmgData.knockbackAnimation = 0;
-			jdcDmgData.unk1 = 6;
+			jdcDmgData.unk1Uint32 = 6;
 			jdcDmgData.displacement = 300.0f;
 			jdcDmgData.dmgValue = 300.0f;
 			jdcDmgData.angle = 10.0f;

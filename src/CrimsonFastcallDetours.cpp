@@ -12,6 +12,7 @@
 #include <cassert>
 #include "Vars.hpp"
 #include "CrimsonConfig.hpp"
+#include "CrimsonReversedCalls.hpp"
 using namespace Utility;
 namespace CrimsonFastcallDetours{
 
@@ -75,17 +76,17 @@ namespace CrimsonFastcallDetours{
         switch (stylerank) {
         case STYLE_RANK::BLAST:
         case STYLE_RANK::ALRIGHT:
-            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 1, -1.0f, -1, 2, 5);
+            CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, MOTION_GROUP_DANTE::TAUNTS, 1, -1.0f, -1, 2, 5);
             break;
         case STYLE_RANK::SWEET:
         case STYLE_RANK::SHOWTIME:
-            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 2, -1.0f, -1, 2, 5);
+            CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, MOTION_GROUP_DANTE::TAUNTS, 2, -1.0f, -1, 2, 5);
             break;
         case STYLE_RANK::STYLISH:
-            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 3, -1.0f, -1, 2, 0);
+            CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, MOTION_GROUP_DANTE::TAUNTS, 3, -1.0f, -1, 2, 0);
             break;
         default:
-            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_DANTE::TAUNTS, 0, -1.0f, -1, 2, 5);
+            CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, MOTION_GROUP_DANTE::TAUNTS, 0, -1.0f, -1, 2, 5);
             break;
         }
         return res;
@@ -134,7 +135,7 @@ namespace CrimsonFastcallDetours{
             else {
                 actorData.motionArchives[MOTION_GROUP_VERGIL::TAUNTS] = newTauntVergilAnims1_pl021_00_2;
             }
-            PlayAnimation_1EFB90(actorBaseAddr, MOTION_GROUP_VERGIL::TAUNTS, fileIndex, -1.0f, -1, 2, 5);
+            CrimsonReversedCalls::PlayAnimation_sub_1401EFB90((uintptr_t)&actorData, MOTION_GROUP_VERGIL::TAUNTS, fileIndex, -1.0f, -1, 2, 5);
             actorData.recoverState[0] = 1;
             return res;
             }
@@ -171,16 +172,137 @@ namespace CrimsonFastcallDetours{
  }
 
 
+ static constexpr auto DAMAGE_CALC_OFFSET() { return 0x088190; }
+ static constexpr auto COLLISION_DAMAGE_HITSTOP_TO_PLAYER_OFFSET() { return 0x1ED460; }
+ static std::unique_ptr<Utility::Detour_t> s_DamageCalcHook;
+ static std::unique_ptr<Utility::Detour_t> s_CollisionDmgHitstopToPlayerHook;
+
+
+ static void __fastcall ApplyDamageCalc_sub_140088190(
+     uintptr_t CDamageCalcAddr,
+     DamageData* dmgData,
+     uintptr_t playerActorAddr60,
+     uintptr_t floatArray) {
+	 // This function is called when the game applies the damage calculation for an attack hit.
+     // This is a powerful detour, which we can use to modify (almost) every damage application in the game.
+     // Known exceptions are: Cerberus 
+	 typedef void(__fastcall* DamageCalcTrampoline)(uintptr_t, DamageData*, uintptr_t, uintptr_t);
+	 uintptr_t trampoline_raw = s_DamageCalcHook->GetTrampoline();
+     DamageCalcTrampoline trampoline = (DamageCalcTrampoline)trampoline_raw;
+
+	 if (!playerActorAddr60) {
+		 return;
+	 }
+	 auto& actorData = *reinterpret_cast<PlayerActorData*>(playerActorAddr60 - 0x60);
+	 auto playerIndex = actorData.newPlayerIndex;
+	 auto entityIndex = actorData.newEntityIndex;
+	 auto& inRisingStar = (entityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
+		 crimsonPlayer[playerIndex].inRisingStarClone;
+	 auto& inYamatoHighTime = (entityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
+		 crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
+
+	 if (actorData.character == CHARACTER::VERGIL) {
+		 // RISING STAR
+		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
+			 if (inRisingStar) {
+				 newDmgData.hitStopDuration = 1.0f;
+			 }
+		 }
+		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
+			 if (inRisingStar) {
+				 newDmgData.stun = 700.0f; // default value is 100.0f, we increase this to guarantee the second hit will lift up DT'ed enemies.
+				 newDmgData.hitStopDuration = 1.0f;
+
+			 }
+		 }
+
+		 // YAMATO HIGH TIME
+		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
+			 if (inYamatoHighTime) {
+				 newDmgData.hitStopDuration = 1.0f;
+			 }
+		 }
+	 }
+
+	 trampoline(CDamageCalcAddr, &newDmgData, playerActorAddr60, floatArray);  // call the original, then fall through
+	 return;
+ }
+
+ static uintptr_t __fastcall ApplyColDamageHitstopToCPl_sub_1401ED460(
+	 uintptr_t playerActorAddr60,
+	 DamageData* dmgData,
+	 uintptr_t enemyActorAddr,
+	 vec4* coords) {
+     // This function applies the Hitstop feedback to the player itself.   
+	 typedef uintptr_t(__fastcall* CollisionDmgHitstopToPlayerTrampoline)(uintptr_t, DamageData*, uintptr_t, vec4*);
+	 uintptr_t trampoline_raw = s_CollisionDmgHitstopToPlayerHook->GetTrampoline();
+	 CollisionDmgHitstopToPlayerTrampoline trampoline = (CollisionDmgHitstopToPlayerTrampoline)trampoline_raw;
+     uintptr_t res = NULL;
+
+	 if (!playerActorAddr60) {
+		 return res;
+	 }
+	 auto& actorData = *reinterpret_cast<PlayerActorData*>(playerActorAddr60 - 0x60);
+	 auto playerIndex = actorData.newPlayerIndex;
+	 auto entityIndex = actorData.newEntityIndex;
+	 auto& inRisingStar = (entityIndex == 0) ? crimsonPlayer[playerIndex].inRisingStar :
+		 crimsonPlayer[playerIndex].inRisingStarClone;
+	 auto& inYamatoHighTime = (entityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
+		 crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
+
+	 if (actorData.character == CHARACTER::VERGIL) {
+		 // RISING STAR
+		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
+			 if (inRisingStar) {
+				 newDmgData.hitStopDuration = 1.0f;
+			 }
+		 }
+		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
+			 if (inRisingStar) {
+				 newDmgData.hitStopDuration = 1.0f;
+			 }
+		 }
+
+		 // YAMATO HIGH TIME
+		 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
+			 if (inYamatoHighTime) {
+				 newDmgData.hitStopDuration = 1.0f;
+			 }
+		 }
+	 }
+
+	 res = trampoline(playerActorAddr60, &newDmgData, enemyActorAddr, coords);  // call the original, then fall through
+	 return res;
+ }
+
+ void ModdedDamageCalcDetour() {
+	 s_DamageCalcHook =
+		 std::make_unique<Utility::Detour_t>(
+			 (uintptr_t)appBaseAddr + DAMAGE_CALC_OFFSET(),
+			 (uintptr_t)&ApplyDamageCalc_sub_140088190,
+			 NULL, "damage_calc_detour");
+	 bool res = s_DamageCalcHook->Toggle();
+	 assert(res);
+ }
+
+ void ModdedCollisionDmgHitstopToPlayerDetour() {
+	 s_CollisionDmgHitstopToPlayerHook =
+		 std::make_unique<Utility::Detour_t>(
+			 (uintptr_t)appBaseAddr + COLLISION_DAMAGE_HITSTOP_TO_PLAYER_OFFSET(),
+			 (uintptr_t)&ApplyColDamageHitstopToCPl_sub_1401ED460,
+			 NULL, "collision_dmg_hitstop_to_player_detour");
+	 bool res = s_CollisionDmgHitstopToPlayerHook->Toggle();
+	 assert(res);
+ }
+
+
  void InitDetours() {
      ModdedTauntDetour();
      ModdedTauntVergilDetour();
+     ModdedDamageCalcDetour();
+	 ModdedCollisionDmgHitstopToPlayerDetour();
  }
 }
-// void LdkDrawImGuiWidget() {
-// 	ImGui::Checkbox("Enable LDK", &s_ldkEnable);
-// 	ImGui::Checkbox("Bosses LDK", &s_ldkBosses);
-// 	ImGui::InputInt("Enemy multiplier", &s_dudeMultiplier);
-// 	if(s_ldkBosses) {
-// 		ImGui::InputInt("Bosses multipler", &s_bossMultiplier);
-// 	}
-// }
+
