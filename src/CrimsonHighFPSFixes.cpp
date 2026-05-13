@@ -119,6 +119,12 @@ extern "C" {
 	// FixBloodgoyleStormFormTime
 	std::uint64_t g_FixBloodgoyleStormFormTime_ReturnAddr;
 	void FixBloodgoyleStormFormTimeDetour();
+
+	// FixCStaffRollCredits
+	std::uint64_t g_CStaffRollCreditsFix_ReturnAddr1;
+	std::uint64_t g_CStaffRollCreditsFix_ReturnAddr2;
+	void CStaffRollCreditsFixDetour1();
+	void CStaffRollCreditsFixDetour2();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -451,6 +457,33 @@ void FixBloodgoyleStormFormTime(bool enable) {
 }
 
 
+
+void FixCStaffRollCredits(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CStaffRollUpdate_sub_1402454A0:
+	// dmc3.exe+2454D3 - F3 0F 58 0D 91 80 11 00 - addss xmm1,[dmc3.exe+35D56C] { (1.00) -- CStaffRollSpeed }
+	static std::unique_ptr<Utility::Detour_t> cStaffRollCreditsFixHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2454D3, &CStaffRollCreditsFixDetour1, 8);
+	g_CStaffRollCreditsFix_ReturnAddr1 = cStaffRollCreditsFixHook1->GetReturnAddress();
+	// g_CStaffRollCreditsFixCheckCall1 = &SomeCppFunction;  // Uncomment if calling C++ functions
+	cStaffRollCreditsFixHook1->Toggle(enable);
+
+	// From ManageCEventMission_sub_1401A6510:
+	// dmc3.exe+1A6CFF - F3 0F 5C 0D 65 68 1B 00 - subss xmm1,[dmc3.exe+35D56C] { (1.00) -- Mission20CreditsEndMissionTime }
+	static std::unique_ptr<Utility::Detour_t> cStaffRollCreditsFixHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1A6CFF, &CStaffRollCreditsFixDetour2, 8);
+	g_CStaffRollCreditsFix_ReturnAddr2 = cStaffRollCreditsFixHook2->GetReturnAddress();
+	cStaffRollCreditsFixHook2->Toggle(enable);
+
+	run = enable;
+}
+
+
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
@@ -458,6 +491,7 @@ void ToggleAllFixes(bool enable) {
 	CStageSetGateSpawnFix(enable);
 	FixEnemyAttackCooldowns(enable);
 	FixBloodgoyleStormFormTime(enable);
+	FixCStaffRollCredits(enable);
 }
 
 }

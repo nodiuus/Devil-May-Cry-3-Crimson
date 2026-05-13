@@ -55,6 +55,7 @@ set(MASM_SRC
     masm/NoAirLunarPhaseLift.asm
     masm/FixEnemyAttackCooldowns.asm
     masm/FixBloodgoyleStormFormTime.asm
+    masm/FixCStaffRollCredits.asm
 )
 
 set (ASM_LIBS)
