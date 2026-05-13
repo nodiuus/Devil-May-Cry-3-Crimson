@@ -115,6 +115,10 @@ extern "C" {
 	std::uint64_t g_FixEnemyAttackCooldowns_ReturnAddr2;
 	void FixEnemyAttackCooldownsDetour1();
 	void FixEnemyAttackCooldownsDetour2();
+
+	// FixBloodgoyleStormFormTime
+	std::uint64_t g_FixBloodgoyleStormFormTime_ReturnAddr;
+	void FixBloodgoyleStormFormTimeDetour();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -428,6 +432,24 @@ void FixEnemyAttackCooldowns(bool enable) {
 	run = enable;
 }
 
+void FixBloodgoyleStormFormTime(bool enable) {
+	using namespace Utility;
+
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CEm014BloodgoyleUpdate_sub_1400E2D70:
+	// dmc3.exe+E2E2C - F3 0F 5C 84 C7 68 B5 56 00 - subss xmm0,[rdi+rax*8+0056B568] { Calculate time to turn back to blood from stone }
+	static std::unique_ptr<Utility::Detour_t> fixBloodgoyleStormFormTimeHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0xE2E2C, &FixBloodgoyleStormFormTimeDetour, 9);
+	g_FixBloodgoyleStormFormTime_ReturnAddr = fixBloodgoyleStormFormTimeHook->GetReturnAddress();
+	fixBloodgoyleStormFormTimeHook->Toggle(enable);
+
+	run = enable;
+}
+
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
@@ -435,7 +457,7 @@ void ToggleAllFixes(bool enable) {
 	StaggerGravityInertiaFix(enable);
 	CStageSetGateSpawnFix(enable);
 	FixEnemyAttackCooldowns(enable);
+	FixBloodgoyleStormFormTime(enable);
 }
-
 
 }

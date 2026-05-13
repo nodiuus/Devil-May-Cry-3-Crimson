@@ -214,31 +214,31 @@ namespace CrimsonFastcallDetours{
 		 if (shlActorData.justFrame) {
 			 // We 1/4 the damage because Just Frame JDCs hit four times.
 			 newDmgData.knockbackAnimation = 2;
-			 newDmgData.unk1Uint32 = 4;
+			 newDmgData.attackReactionIdx = 4;
 			 newDmgData.displacement = 5.0f;
 			 newDmgData.dmgValue = 45.0f;
 			 newDmgData.angle = 0.0f;
 			 newDmgData.styleMeterIncrease = 80.0f;
-			 newDmgData.knockbackSpeed = 10.0f;
+			 newDmgData.knockbackImpact = 10.0f;
 		 }
 		 else {
 			 newDmgData.knockbackAnimation = 0;
-			 newDmgData.unk1Uint32 = 6;
+			 newDmgData.attackReactionIdx = 6;
 			 newDmgData.displacement = 300.0f;
 			 newDmgData.dmgValue = 120.0f;
 			 newDmgData.angle = 10.0f;
 			 newDmgData.styleMeterIncrease = 260.0f;
-			 newDmgData.knockbackSpeed = 20.0f;
+			 newDmgData.knockbackImpact = 20.0f;
 		 }
 
 		 // defaults:
 		 /*newDmgData.knockbackAnimation = 0;
-		 newDmgData.unk1Uint32 = 6;
+		 newDmgData.attackReactionIdx = 6;
 		 newDmgData.displacement = 300.0f;
 		 newDmgData.dmgValue = 300.0f;
 		 newDmgData.angle = 10.0f;
 		 newDmgData.styleMeterIncrease = 300.0f;
-		 newDmgData.knockbackSpeed = 20.0f;*/
+		 newDmgData.knockbackImpact = 20.0f;*/
 	 }
 
 

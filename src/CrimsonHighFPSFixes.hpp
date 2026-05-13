@@ -9,4 +9,5 @@ namespace CrimsonHighFPSFixes {
 	void ClothPhysicsEnhancementFixes(bool enable);
 	void LookAtBossCamFixes(bool enable);
 	void ToggleAllFixes(bool enable);
+	void FixBloodgoyleStormFormTime(bool enable);
 }

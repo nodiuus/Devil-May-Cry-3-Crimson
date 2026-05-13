@@ -3296,10 +3296,10 @@ static_assert(offsetof(CharSettings2, rainstormPop) == 0x190);
 class DamageData {
 public:
 	uint32_t knockbackAnimation; //0x0000
-	uint32_t unk1Uint32; //0x0004
-	uint32_t unk2Uint32; //0x0008
+	uint32_t attackReactionIdx; //0x0004
+	uint32_t enemyDefenseIdx; //0x0008
 	float dmgValue; //0x000C
-	float knockbackUnk1; //0x0010
+	float bonusStunDisplacementChance; //0x0010
 	float displacement; //0x0014
 	float angle; //0x0018
 	float stun; //0x001C
@@ -3309,20 +3309,21 @@ public:
 	float styleMeterIncrease; //0x002C
 	float knockbackUnk3; //0x0030
 	float hitStopDuration; //0x0034
-	char pad_0038[4]; //0x0038
+	float forceHit; //0x0038
 	uint16_t unk6Uint16; //0x003C
 	uint16_t unk7Uint16; //0x003E
-	float knockbackSpeed; //0x0040
+	float knockbackImpact; //0x0040
 	float unk5Float; //0x0044
 	float unk6Float; //0x0048
 	int32_t unk7StructEnd; //0x004C
 }; //Size: 0x0050
 
+
 static_assert(offsetof(DamageData, knockbackAnimation) == 0x0);
-static_assert(offsetof(DamageData, unk1Uint32) == 0x4);
-static_assert(offsetof(DamageData, unk2Uint32) == 0x8);
+static_assert(offsetof(DamageData, attackReactionIdx) == 0x4);
+static_assert(offsetof(DamageData, enemyDefenseIdx) == 0x8);
 static_assert(offsetof(DamageData, dmgValue) == 0xC);
-static_assert(offsetof(DamageData, knockbackUnk1) == 0x10);
+static_assert(offsetof(DamageData, bonusStunDisplacementChance) == 0x10);
 static_assert(offsetof(DamageData, displacement) == 0x14);
 static_assert(offsetof(DamageData, angle) == 0x18);
 static_assert(offsetof(DamageData, stun) == 0x1C);
@@ -3331,7 +3332,11 @@ static_assert(offsetof(DamageData, unk4Float) == 0x24);
 static_assert(offsetof(DamageData, unk5Uint32) == 0x28);
 static_assert(offsetof(DamageData, styleMeterIncrease) == 0x2C);
 static_assert(offsetof(DamageData, hitStopDuration) == 0x34);
-static_assert(offsetof(DamageData, knockbackSpeed) == 0x40);
+static_assert(offsetof(DamageData, forceHit) == 0x38);
+static_assert(offsetof(DamageData, unk6Uint16) == 0x3C);
+static_assert(offsetof(DamageData, unk7Uint16) == 0x3E);
+static_assert(offsetof(DamageData, knockbackImpact) == 0x40);
+static_assert(offsetof(DamageData, unk5Float) == 0x44);
 static_assert(offsetof(DamageData, unk6Float) == 0x48);
 static_assert(offsetof(DamageData, unk7StructEnd) == 0x4C);
 
@@ -3341,6 +3346,7 @@ struct DamageDataAddrOffsets {
     // All these offsets are added to AppBaseAddr
     // --- Dante ---
     uintptr_t rebellionStingerHit = 0x5C6C80;
+    uintptr_t rebellionHighTime = 0x5C6C30;
 	uintptr_t drivePhysicalHit = 0x5C6D20;
 	uintptr_t driveShl = 0x5CB1E0;
     uintptr_t shotgunShl = 0x5CAE70;

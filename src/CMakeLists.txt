@@ -54,6 +54,7 @@ set(MASM_SRC
     masm/CheckMissionResultBPScreen.asm
     masm/NoAirLunarPhaseLift.asm
     masm/FixEnemyAttackCooldowns.asm
+    masm/FixBloodgoyleStormFormTime.asm
 )
 
 set (ASM_LIBS)
