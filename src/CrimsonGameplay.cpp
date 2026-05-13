@@ -3507,9 +3507,11 @@ void StoreInertia(byte8* actorBaseAddr) {
 			i->airGuard.cachedRotation = actorData.rotation;
 		}
 
-		bool inGuardFlyableMoves = ((action == BEOWULF_KILLER_BEE && actorData.horizontalPull > 20.0f) || 
+		bool inGuardFlyableMoves = ((action == BEOWULF_KILLER_BEE && actorData.horizontalPull > 05.0f) || 
             (action == NEVAN_VORTEX && actorData.horizontalPull > 20.0f && actionTimer < 0.95f) ||
             ((action == ROYALGUARD_AIR_RELEASE_2 || action == ROYALGUARD_RELEASE_2) && actorData.horizontalPull > 20.0f));
+
+		bool inSlowerGuarflyableMoves = (action == NEVAN_AIR_PLAY && actorData.horizontalPull > 4.0f);
 
 		// Important for Guardflying.
 		if (!actorData.airGuard && event != ACTOR_EVENT::JUMP_CANCEL && event != ACTOR_EVENT::AIR_HIKE) {
@@ -3520,6 +3522,10 @@ void StoreInertia(byte8* actorBaseAddr) {
 				if (inGuardFlyableMoves) {
 
 					i->airGuard.cachedPull = 28.0f;
+				}
+
+				if (inSlowerGuarflyableMoves) {
+					i->airGuard.cachedPull = 17.0f;  // A lower pull for moves that should be guardflyable but not as fast as the others, like Nevan Air Play.
 				}
 			} else {
 				i->airGuard.cachedPull = 3.0f;
