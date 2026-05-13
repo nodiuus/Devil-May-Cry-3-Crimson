@@ -303,6 +303,253 @@ dmc3.exe+326B0C: 8B 81 B0 00 00 00     - mov eax,[rcx+000000B0]
 }
 </AssemblerScript>
     </CheatEntry>
+    <CheatEntry>
+      <ID>2783</ID>
+      <Description>"FixEnigmasChargeTime -- try 1"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : dmc3.exe
+  Version: 
+  Date   : 2026-05-12
+  Author : berth
+
+  This script does blah blah blah
+}
+
+define(address,"dmc3.exe"+D9092)
+define(frameRateMult, Crimson.g_FrameRateTimeMultiplier)
+define(bytes,F3 44 0F 10 0D B9 CF 3E 00)
+
+[ENABLE]
+
+assert(address,bytes)
+alloc(newmem,$1000,"dmc3.exe"+D9092)
+
+label(code)
+label(return)
+
+newmem:
+dd (float)0.0
+
+code:
+  push rax
+  movdqu [rsp+10], xmm1 // preserve registers
+
+  mov rax, frameRateMult
+  movss xmm1, dword ptr [rax] // load frameratemult
+
+  movss xmm9,[newmem]
+  //mulss xmm9, xmm1
+
+  movdqu xmm1, [rsp+10]
+  pop rax
+  jmp return
+
+address:
+  jmp code
+  nop 4
+return:
+
+[DISABLE]
+
+address:
+  db bytes
+  // movss xmm9,[dmc3.exe+4C6054]
+
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: dmc3.exe+D9092
+
+dmc3.exe+D904E: C6 83 90 37 00 00 01        - mov byte ptr [rbx+00003790],01
+dmc3.exe+D9055: 44 89 AB 10 38 00 00        - mov [rbx+00003810],r13d
+dmc3.exe+D905C: 44 89 AB 18 38 00 00        - mov [rbx+00003818],r13d
+dmc3.exe+D9063: FE 83 FD 09 00 00           - inc byte ptr [rbx+000009FD]
+dmc3.exe+D9069: 4C 89 B4 24 98 00 00 00     - mov [rsp+00000098],r14
+dmc3.exe+D9071: 48 8D BB 58 38 00 00        - lea rdi,[rbx+00003858]
+dmc3.exe+D9078: 4C 89 BC 24 90 00 00 00     - mov [rsp+00000090],r15
+dmc3.exe+D9080: 4C 8D B3 50 2F 00 00        - lea r14,[rbx+00002F50]
+dmc3.exe+D9087: BE 02 00 00 00              - mov esi,00000002
+dmc3.exe+D908C: 44 0F 29 4C 24 50           - movaps [rsp+50],xmm9
+// ---------- INJECTING HERE ----------
+dmc3.exe+D9092: F3 44 0F 10 0D B9 CF 3E 00  - movss xmm9,[dmc3.exe+4C6054]
+// ---------- DONE INJECTING  ----------
+dmc3.exe+D909B: 4C 8D BB F1 09 00 00        - lea r15,[rbx+000009F1]
+dmc3.exe+D90A2: 8B EE                       - mov ebp,esi
+dmc3.exe+D90A4: 8B 47 E4                    - mov eax,[rdi-1C]
+dmc3.exe+D90A7: 83 F8 02                    - cmp eax,02
+dmc3.exe+D90AA: 0F 84 3F 01 00 00           - je dmc3.exe+D91EF
+dmc3.exe+D90B0: 83 F8 07                    - cmp eax,07
+dmc3.exe+D90B3: 0F 84 36 01 00 00           - je dmc3.exe+D91EF
+dmc3.exe+D90B9: F3 0F 10 07                 - movss xmm0,[rdi]
+dmc3.exe+D90BD: 0F 2F C6                    - comiss xmm0,xmm6
+dmc3.exe+D90C0: 0F 86 68 01 00 00           - jbe dmc3.exe+D922E
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>2784</ID>
+      <Description>"FixEnigmasTimeBetweenCharges -- try 2 -- WORKS"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : dmc3.exe
+  Version: 
+  Date   : 2026-05-12
+  Author : berth
+
+  This script does blah blah blah
+}
+
+define(address,"dmc3.exe"+D90C6)
+define(frameRateMult, Crimson.g_FrameRateTimeMultiplier)
+define(bytes,F3 41 0F 5C C0)
+
+[ENABLE]
+
+assert(address,bytes)
+alloc(newmem,$1000,"dmc3.exe"+D90C6)
+
+label(code)
+label(return)
+
+newmem:
+dd (float)0.2
+
+code:
+  push rax
+  movdqu [rsp+10], xmm1 // preserve registers
+
+  mov rax, frameRateMult
+  movss xmm1, dword ptr [rax] // load frameratemult
+
+  mulss xmm8, xmm1
+  subss xmm0,xmm8
+
+  movdqu xmm1, [rsp+10]
+  pop rax
+  jmp return
+
+address:
+  jmp code
+return:
+
+[DISABLE]
+
+address:
+  db bytes
+  // subss xmm0,xmm8
+
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: dmc3.exe+D90C6
+
+dmc3.exe+D909B: 4C 8D BB F1 09 00 00  - lea r15,[rbx+000009F1]
+dmc3.exe+D90A2: 8B EE                 - mov ebp,esi
+dmc3.exe+D90A4: 8B 47 E4              - mov eax,[rdi-1C]
+dmc3.exe+D90A7: 83 F8 02              - cmp eax,02
+dmc3.exe+D90AA: 0F 84 3F 01 00 00     - je dmc3.exe+D91EF
+dmc3.exe+D90B0: 83 F8 07              - cmp eax,07
+dmc3.exe+D90B3: 0F 84 36 01 00 00     - je dmc3.exe+D91EF
+dmc3.exe+D90B9: F3 0F 10 07           - movss xmm0,[rdi]
+dmc3.exe+D90BD: 0F 2F C6              - comiss xmm0,xmm6
+dmc3.exe+D90C0: 0F 86 68 01 00 00     - jbe dmc3.exe+D922E
+// ---------- INJECTING HERE ----------
+dmc3.exe+D90C6: F3 41 0F 5C C0        - subss xmm0,xmm8
+// ---------- DONE INJECTING  ----------
+dmc3.exe+D90CB: 0F 2F F0              - comiss xmm6,xmm0
+dmc3.exe+D90CE: F3 0F 11 07           - movss [rdi],xmm0
+dmc3.exe+D90D2: 0F 82 56 01 00 00     - jb dmc3.exe+D922E
+dmc3.exe+D90D8: 48 8D 0D B1 77 4F 00  - lea rcx,[dmc3.exe+5D0890]
+dmc3.exe+D90DF: E8 AC 02 F8 FF        - call dmc3.sub_140059390
+dmc3.exe+D90E4: 0F B6 8B FE 09 00 00  - movzx ecx,byte ptr [rbx+000009FE]
+dmc3.exe+D90EB: 0F 57 C0              - xorps xmm0,xmm0
+dmc3.exe+D90EE: 8B C0                 - mov eax,eax
+dmc3.exe+D90F0: F3 48 0F 2A C0        - cvtsi2ss xmm0,rax
+dmc3.exe+D90F5: 0F B6 83 54 38 00 00  - movzx eax,byte ptr [rbx+00003854]
+}
+</AssemblerScript>
+    </CheatEntry>
+    <CheatEntry>
+      <ID>2785</ID>
+      <Description>"EnigmaTimeToGetBackUp Fix?"</Description>
+      <VariableType>Auto Assembler Script</VariableType>
+      <AssemblerScript>{ Game   : dmc3.exe
+  Version: 
+  Date   : 2026-05-12
+  Author : berth
+
+  This script does blah blah blah
+}
+
+define(address,"dmc3.exe"+D9007)
+define(frameRateMult, Crimson.g_FrameRateTimeMultiplier)
+define(bytes,F3 41 0F 5C C0)
+
+[ENABLE]
+
+assert(address,bytes)
+alloc(newmem,$1000,"dmc3.exe"+D9007)
+
+label(code)
+label(return)
+
+newmem:
+dd (float)0.0
+
+code:
+  push rax
+  movdqu [rsp+10], xmm1 // preserve registers
+
+  mov rax, frameRateMult
+  movss xmm1, dword ptr [rax] // load frameratemult
+
+  mulss xmm8, xmm1
+  subss xmm0,xmm8
+
+  movdqu xmm1, [rsp+10]
+  pop rax
+  jmp return
+
+address:
+  jmp code
+return:
+
+[DISABLE]
+
+address:
+  db bytes
+  // subss xmm0,xmm8
+
+dealloc(newmem)
+
+{
+// ORIGINAL CODE - INJECTION POINT: dmc3.exe+D9007
+
+dmc3.exe+D8FCC: F3 0F 59 C7                    - mulss xmm0,xmm7
+dmc3.exe+D8FD0: F3 41 0F 59 84 D4 7C B1 56 00  - mulss xmm0,[r12+rdx*8+0056B17C]
+dmc3.exe+D8FDA: F3 41 0F 58 84 84 70 B1 56 00  - addss xmm0,[r12+rax*4+0056B170]
+dmc3.exe+D8FE4: F3 0F 11 07                    - movss [rdi],xmm0
+dmc3.exe+D8FE8: 48 83 C7 04                    - add rdi,04
+dmc3.exe+D8FEC: 48 FF C6                       - inc rsi
+dmc3.exe+D8FEF: 48 83 ED 01                    - sub rbp,01
+dmc3.exe+D8FF3: 0F 85 77 FF FF FF              - jne dmc3.exe+D8F70
+dmc3.exe+D8FF9: FE 83 FD 09 00 00              - inc byte ptr [rbx+000009FD]
+dmc3.exe+D8FFF: F3 0F 10 83 E0 35 00 00        - movss xmm0,[rbx+000035E0]
+// ---------- INJECTING HERE ----------
+dmc3.exe+D9007: F3 41 0F 5C C0                 - subss xmm0,xmm8
+// ---------- DONE INJECTING  ----------
+dmc3.exe+D900C: 0F 2F F0                       - comiss xmm6,xmm0
+dmc3.exe+D900F: F3 0F 11 83 E0 35 00 00        - movss [rbx+000035E0],xmm0
+dmc3.exe+D9017: 0F 86 44 02 00 00              - jbe dmc3.exe+D9261
+dmc3.exe+D901D: 44 89 AB E0 35 00 00           - mov [rbx+000035E0],r13d
+dmc3.exe+D9024: C6 83 10 36 00 00 01           - mov byte ptr [rbx+00003610],01
+dmc3.exe+D902B: 44 89 AB 90 36 00 00           - mov [rbx+00003690],r13d
+dmc3.exe+D9032: 44 89 AB 98 36 00 00           - mov [rbx+00003698],r13d
+dmc3.exe+D9039: C6 83 D0 36 00 00 01           - mov byte ptr [rbx+000036D0],01
+dmc3.exe+D9040: 44 89 AB 50 37 00 00           - mov [rbx+00003750],r13d
+dmc3.exe+D9047: 44 89 AB 58 37 00 00           - mov [rbx+00003758],r13d
+}
+</AssemblerScript>
+    </CheatEntry>
   </CheatEntries>
   <CheatCodes>
     <CodeEntry>
@@ -327,6 +574,112 @@ dmc3.exe+326B0C: 8B 81 B0 00 00 00     - mov eax,[rcx+000000B0]
         <Byte>44</Byte>
         <Byte>88</Byte>
         <Byte>4A</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of subss xmm0,xmm8</Description>
+      <AddressString>dmc3.exe+D90C6</AddressString>
+      <Before>
+        <Byte>86</Byte>
+        <Byte>68</Byte>
+        <Byte>01</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>F3</Byte>
+        <Byte>41</Byte>
+        <Byte>0F</Byte>
+        <Byte>5C</Byte>
+        <Byte>C0</Byte>
+      </Actual>
+      <After>
+        <Byte>0F</Byte>
+        <Byte>2F</Byte>
+        <Byte>F0</Byte>
+        <Byte>F3</Byte>
+        <Byte>0F</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of movss xmm0,[r12+rcx*4+0056B1F0]</Description>
+      <AddressString>dmc3.exe+D919B</AddressString>
+      <Before>
+        <Byte>8B</Byte>
+        <Byte>C0</Byte>
+        <Byte>0F</Byte>
+        <Byte>57</Byte>
+        <Byte>C9</Byte>
+      </Before>
+      <Actual>
+        <Byte>F3</Byte>
+        <Byte>41</Byte>
+        <Byte>0F</Byte>
+        <Byte>10</Byte>
+        <Byte>84</Byte>
+        <Byte>8C</Byte>
+        <Byte>F0</Byte>
+        <Byte>B1</Byte>
+        <Byte>56</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>F3</Byte>
+        <Byte>48</Byte>
+        <Byte>0F</Byte>
+        <Byte>2A</Byte>
+        <Byte>C8</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of jbe dmc3.exe+D9261</Description>
+      <AddressString>dmc3.exe+D9017</AddressString>
+      <Before>
+        <Byte>83</Byte>
+        <Byte>E0</Byte>
+        <Byte>35</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>0F</Byte>
+        <Byte>86</Byte>
+        <Byte>44</Byte>
+        <Byte>02</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Actual>
+      <After>
+        <Byte>44</Byte>
+        <Byte>89</Byte>
+        <Byte>AB</Byte>
+        <Byte>E0</Byte>
+        <Byte>35</Byte>
+      </After>
+    </CodeEntry>
+    <CodeEntry>
+      <Description>Change of subss xmm0,xmm8</Description>
+      <AddressString>dmc3.exe+D9007</AddressString>
+      <Before>
+        <Byte>83</Byte>
+        <Byte>E0</Byte>
+        <Byte>35</Byte>
+        <Byte>00</Byte>
+        <Byte>00</Byte>
+      </Before>
+      <Actual>
+        <Byte>F3</Byte>
+        <Byte>41</Byte>
+        <Byte>0F</Byte>
+        <Byte>5C</Byte>
+        <Byte>C0</Byte>
+      </Actual>
+      <After>
+        <Byte>0F</Byte>
+        <Byte>2F</Byte>
+        <Byte>F0</Byte>
+        <Byte>F3</Byte>
+        <Byte>0F</Byte>
       </After>
     </CodeEntry>
   </CheatCodes>
@@ -9181,4 +9534,1067 @@ dmc3.exe+326B0C: 8B 81 B0 00 00 00     - mov eax,[rcx+000000B0]
       </Elements>
     </Structure>
   </Structures>
+  <DisassemblerComments>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+80644</Address>
+      <Comment>SPAWNS
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+15E710</Address>
+      <Comment>%s scarecrow arm spawn
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+338AA2</Address>
+      <Comment>spawns most enemies
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+338AA4</Address>
+      <Comment>%s
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3AB88A</Address>
+      <Comment>dont nop this it crashes
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3AB8B1</Address>
+      <Comment>no
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3AB8B6</Address>
+      <Comment>no
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3AB8BB</Address>
+      <Comment>no
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3AB8C0</Address>
+      <Comment>no
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3CEDA7</Address>
+      <Comment>crossunder ban distance
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3CEDC8</Address>
+      <Comment>crash 
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3D3445</Address>
+      <Comment>get isLockedOn?
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3D3534</Address>
+      <Comment>part 2 starts here
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3D3710</Address>
+      <Comment>effects
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+3EA52F</Address>
+      <Comment>rk address
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+411B38</Address>
+      <Comment>call to get damage and knockback stuff from files
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+4158DC</Address>
+      <Comment>stops them turning red before exploding
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"DevilMayCry4_DX9.exe"+4DC540</Address>
+      <Comment>SPAWNS
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"Mary.dll"+769B0</Address>
+      <Comment>MoreSetActionMeleeAttack
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>045F8E47</Address>
+      <Comment>mission 19 crash part2
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+300C6</Address>
+      <Comment>Controls something for Character anim
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+558AC</Address>
+      <Comment>Force Fixed Cameras to go 
+to Third Person Camera instead
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+569AD</Address>
+      <Comment>Setting this byte to 1 will trigger locked on cam
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+569E6</Address>
+      <Comment>Arkham Charge Attack Yellow Target Position ?
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+571BC</Address>
+      <Comment>Determine camera's X by player pos
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+5EBC6</Address>
+      <Comment>TPSCamera
+Collision to keep it going to tight spaces
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+60304</Address>
+      <Comment>Camera Hitting Wall ?
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+60306</Address>
+      <Comment>Skip cam collision rotation stop 1
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+60520</Address>
+      <Comment>Skip cam collision rotation stop 2
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+606D1</Address>
+      <Comment>Skip cam collision rotation stop
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+60F43</Address>
+      <Comment>Devil Trigger enemy
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+6105F</Address>
+      <Comment>Checking if it goes into DT
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+616EB</Address>
+      <Comment>Standard Enemy Set Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+616F2</Address>
+      <Comment>followup to standard target pos
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+881F1</Address>
+      <Comment>gets damage
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+881F7</Address>
+      <Comment>gets knockback knockup thing
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+8864A</Address>
+      <Comment>dmgHeavy
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+886A5</Address>
+      <Comment>dmgLight
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+886ED</Address>
+      <Comment>dmgNoStun
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+90C9D</Address>
+      <Comment>set aura colour
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+BF553</Address>
+      <Comment>Arachne Set Target Position for Jump Attack
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+C5A40</Address>
+      <Comment>Arachne Set Target Position for Circling Around
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+D5419</Address>
+      <Comment>Dullahan Sword Up Attack Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+D90C6</Address>
+      <Comment>EnigmaCharge for BlueandRedAttacks
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+D919B</Address>
+      <Comment>NOP this for red attacks only
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+D9277</Address>
+      <Comment>EnigmaActualRotationTarget Call
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+E7A12</Address>
+      <Comment>BloodgoyleRotationFunc
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+E7EC2</Address>
+      <Comment>Bloodgoyle Dive Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+E8142</Address>
+      <Comment>BloodgoyleRotationFunc
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+E81CB</Address>
+      <Comment>SoulEaterGrabTargetDetour
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+E94E2</Address>
+      <Comment>Soul Eater goes visible
+
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+EC4CF</Address>
+      <Comment>SoulEaterGrabTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+EF871</Address>
+      <Comment>ChessBishopRotationTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+F25B8</Address>
+      <Comment>ChessPawnAttackTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+F2C98</Address>
+      <Comment>ChessKnightAttackTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+F3DB3</Address>
+      <Comment>ChessBishopAttackTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+F6D89</Address>
+      <Comment>ChessKingAttackTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+10E89E</Address>
+      <Comment>Cerberus Set Position to Target
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+116DD8</Address>
+      <Comment>Cerberus Ice Ball Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+117F33</Address>
+      <Comment>Cerberus Ice From Above Attack Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+12C6ED</Address>
+      <Comment>Nevan's Kiss Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+12CE41</Address>
+      <Comment>Nevan Forward Spikes Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+133D85</Address>
+      <Comment>Apply Nevan Shield Damage 1
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+134548</Address>
+      <Comment>Nevan Lightning Balls Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+135085</Address>
+      <Comment>noping this makes it so nevan never loses her shield
+but it still damages it
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+135097</Address>
+      <Comment>Apply Nevan Shield Damage 2
+
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+136363</Address>
+      <Comment>Nevan Lightning Balls 2 Target Position DON'T YOU LIKE THIS
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+137DBF</Address>
+      <Comment>Nevan Bolt From Above Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+148EEF</Address>
+      <Comment>BeowulfRotateToTargetAttack
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+14AC47</Address>
+      <Comment>Beowulf SetRotation To Target
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1603DC</Address>
+      <Comment>Arkham Leeches Circling Around Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+163DD5</Address>
+      <Comment>Arkham Spikes Attack Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+16725C</Address>
+      <Comment>Arkham Leeches Jump Attack 2 Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1675B3</Address>
+      <Comment>Arkham Leeches Jump Attack Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1871C5</Address>
+      <Comment>Vergil Blink/Trick Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1A2A93</Address>
+      <Comment>EnigmaAimTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1A345A</Address>
+      <Comment>EnigmaAimTarget
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1B269C</Address>
+      <Comment>Vergil Attack After Blocking
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1B6E29</Address>
+      <Comment>Adding to player's hp value (green orb regen)
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1B6E34</Address>
+      <Comment>Regenerated using green orbs
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1BB04C</Address>
+      <Comment>Enigma Set Target Position to Aim 1
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1CA996</Address>
+      <Comment>Loading Player into rcx
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1CAD08</Address>
+      <Comment>knockback angle
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DC29C</Address>
+      <Comment>Determine JDC xyzcoord
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DC37C</Address>
+      <Comment>BuildMatrixFromForwardUp (Sets up Matrix for VFX)
+ 
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DC3AB</Address>
+      <Comment>JudgementCut Position Detour
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DC3B5</Address>
+      <Comment>JudgementCut PlayVFX Call
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DC620</Address>
+      <Comment>Start of JDC Update func, runs ontick
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DF20C</Address>
+      <Comment>Set Dante's default expertise
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DF212</Address>
+      <Comment>Set Dante's default expertise [1]
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1DF220</Address>
+      <Comment>Set Dante's default expertise [3]
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1E64C6</Address>
+      <Comment>start of style actions
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1E65D5</Address>
+      <Comment>sets rdx 11
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1E6D8A</Address>
+      <Comment>SetActionMeleeAttack
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1E7C16</Address>
+      <Comment>Geryon Carriage hit Target Position
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EB689</Address>
+      <Comment>shoot remap
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EB691</Address>
+      <Comment>controller mapping
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EBF42</Address>
+      <Comment>Set actorCameraDirection
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EC45A</Address>
+      <Comment>Determine stagger dmg (on eax) to royal block
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EEDF7</Address>
+      <Comment>257, Release Level 1,
+this will affect RoyalguardReleaseLevel
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EEE27</Address>
+      <Comment>770, Release Level 2
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EEE4A</Address>
+      <Comment>1283, Release Level 3
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1EFC6C</Address>
+      <Comment>Process Lower Part Animation
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1F7086</Address>
+      <Comment>CPlMovesController
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1F8DB0</Address>
+      <Comment>mission 19 actor system crashes here
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA343</Address>
+      <Comment>Level up StyleLevel to lvl 3
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA3D9</Address>
+      <Comment>Level up StyleLevel to lvl 2
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA484</Address>
+      <Comment>Loading player rotation onto r11d
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA48C</Address>
+      <Comment>Loading rotation towards enemy, 
+but still needs calculations (rotationUncalculated)
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA493</Address>
+      <Comment>Subtracts uncalculatedRotation to currentRotation 
+(rotationDifference)
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA49A</Address>
+      <Comment>if rotationDifference is below or equal 0
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA49C</Address>
+      <Comment>if not, Load in Rotation Offset into eax
+
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4A6</Address>
+      <Comment>if rotationDifference &lt;= rotationOffset
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4A8</Address>
+      <Comment>if not, move rotationOffset into edx
+replacing rotationDifference
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4AB</Address>
+      <Comment>let's do calculations 
+with rotationOffset as basis
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4AD</Address>
+      <Comment>load in RotationOffset into r10d
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4B5</Address>
+      <Comment>move rotationDifference into ecx
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4B8</Address>
+      <Comment>Invert rotationDifference's sign
+inside ecx
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4BD</Address>
+      <Comment>if (rotationDifferenceInverted &lt;= rotationOffset)
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4BF</Address>
+      <Comment>if not load rotationOffset into edx
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4C3</Address>
+      <Comment>invert rotationOffset's sign
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4C8</Address>
+      <Comment>let's start Calculations
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4CB</Address>
+      <Comment>move rotationPreppedForCalc into eax
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4D9</Address>
+      <Comment>multiply rotationPreppedForCalc by 360
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4E1</Address>
+      <Comment>multiplying by 0.00001525878906
+therefore normalizing into a range 0 - 1
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA4E9</Address>
+      <Comment>multiply by actor speed
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA509</Address>
+      <Comment>Final step to Set Rotation Towards Enemy, 
+adding to current rotation
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FA50D</Address>
+      <Comment>Set Character Rotation when doing directional move
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FB382</Address>
+      <Comment>pos Y axis
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC453</Address>
+      <Comment>x motion
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC468</Address>
+      <Comment>black screen
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC47D</Address>
+      <Comment>z motion
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC608</Address>
+      <Comment>multiply by 360
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC617</Address>
+      <Comment>multiply by speed (rbp + 14)
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC624</Address>
+      <Comment>divide it by 360
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC63C</Address>
+      <Comment>multiply by player speed
+Determines Character Turn Rate
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC64E</Address>
+      <Comment>divide it by 360
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FC65E</Address>
+      <Comment>Add in to rotation
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FD113</Address>
+      <Comment>apply new y inertia mult
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+1FDF10</Address>
+      <Comment>attacks and release
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+201251</Address>
+      <Comment>tracking
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+202588</Address>
+      <Comment>Checking TransitionMove?
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20258F</Address>
+      <Comment>Transition from Rising Dragon Launch to Whirlwind
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+209BAE</Address>
+      <Comment>the really cool spin
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20B217</Address>
+      <Comment>Tornado's CC Effect CreateEffectA
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20B26C</Address>
+      <Comment>Tornado's CC Sound Effect
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20B7F0</Address>
+      <Comment>release??
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20BD57</Address>
+      <Comment>This drains RGGauge on tick until move is completed
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20BD61</Address>
+      <Comment>This is updating RGGauge HUD
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20DAF0</Address>
+      <Comment>compare flicker inertia to 2.0f
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20DAF7</Address>
+      <Comment>if inertia is less than 2, don't kill it
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20ECC6</Address>
+      <Comment>Play PointBlank Anim
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20EE2F</Address>
+      <Comment>Point Blank CC effect CreateEffectA
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20EE82</Address>
+      <Comment>Point Blank CC Sound Effect 
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F53D</Address>
+      <Comment>cmp that stops rave happening
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F53F</Address>
+      <Comment>%s set freefall speed
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F58C</Address>
+      <Comment>rotation of inertia maybe
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F5DD</Address>
+      <Comment>rave 1 motion
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F5FC</Address>
+      <Comment>rave 1 turn speed
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F60B</Address>
+      <Comment>rave 1 push forward
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F61B</Address>
+      <Comment>rave 1 push forward
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+20F63F</Address>
+      <Comment>rave 1 float
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+211B95</Address>
+      <Comment>Million Stab CC Effect CreateEffectA
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+211BA5</Address>
+      <Comment>crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2120BF</Address>
+      <Comment>adds weight to Dante coat
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+215EF3</Address>
+      <Comment>noping this makes the blinding effect go away
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+215F03</Address>
+      <Comment>Differentiate MultiLock/Normal Shot
+If equals goes to MultiLock
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+215F05</Address>
+      <Comment>Normal Shot Func
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+215F0C</Address>
+      <Comment>MultiLock func
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2180C8</Address>
+      <Comment>Spawn Angle taking Player Rotation for Normal Shots 
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2180DC</Address>
+      <Comment>Spawn Angle taking Player Rotation for Normal Shots 2
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2181BD</Address>
+      <Comment>ShotgunShlFire()
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21828B</Address>
+      <Comment>Spawn Angle taking Player Rotation for Point Blank
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2182BD</Address>
+      <Comment>Spawn Angle taking Player Rotation for Point Blank 2
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+218568</Address>
+      <Comment>Shotgun MuzzleFlashEffect Spawn
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21BDE0</Address>
+      <Comment>mov [rsp+08],rbx
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21BF3F</Address>
+      <Comment>stop anim
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21C062</Address>
+      <Comment>Apply new y inertia mult
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21CDF4</Address>
+      <Comment>Vergil Aura VFX JDC
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21CE57</Address>
+      <Comment>Spawn JDC Setup VFX
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+21CE73</Address>
+      <Comment>Play JDC audio
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+22E273</Address>
+      <Comment>Hiding Yamato's tip instruct
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+23D3C1</Address>
+      <Comment>Add to missionData.frameCount
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27C0DD</Address>
+      <Comment>Setting secret mission timer
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27E524</Address>
+      <Comment>style hud falls off left
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27E529</Address>
+      <Comment>style hud falls off
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27E830</Address>
+      <Comment>Red Orb Alpha
+Check if Fade Out is needed
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27E850</Address>
+      <Comment>Red Orb Count Alpha
+Iterating on loop for fade out
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27E85C</Address>
+      <Comment>Reb Orb Count Alpha
+Setting it to 0
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+27E874</Address>
+      <Comment>Red Orb Count Alpha
+Setting max alpha value (127)
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2BAF85</Address>
+      <Comment>%s crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2BAFB3</Address>
+      <Comment>crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2BAFE8</Address>
+      <Comment>crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2BB08C</Address>
+      <Comment>style bar colours
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2BB1BF</Address>
+      <Comment>kills style letter dont nop this
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2BB1C7</Address>
+      <Comment>kills style letter dont nop this
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2C6813</Address>
+      <Comment>Enigma Rotate to Target
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2C688F</Address>
+      <Comment>Dullahan Maybe This is used ? Also Judgement Cut
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+2C68C2</Address>
+      <Comment>Beowulf Attack Distance Function
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+3153EA</Address>
+      <Comment>breaks effect
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+315B92</Address>
+      <Comment>crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+315E92</Address>
+      <Comment>crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+3161EA</Address>
+      <Comment>doesnt reenable
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+32E630</Address>
+      <Comment>BeowulfAttackTargetPos
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>"dmc3.exe"+5CA0C6</Address>
+      <Comment>Sends Knockback Value to Air Slash pt. 1
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>7FF6AEE6AF43</Address>
+      <Comment>%s crash
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>7FF7B30C47B0</Address>
+      <Comment>SetActionMeleeAttack
+</Comment>
+    </DisassemblerComment>
+    <DisassemblerComment>
+      <Address>7FF7BE2A5ED0</Address>
+      <Comment>Moving TPS Cam into proper orbit
+</Comment>
+    </DisassemblerComment>
+  </DisassemblerComments>
 </CheatTable>

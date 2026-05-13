@@ -110,6 +110,11 @@ extern "C" {
 	std::uint64_t g_FixCStageSetGateSpawn_ReturnAddr3;
 	std::uint64_t g_FixCStageSetGateSpawn_ReturnAddr4;
 
+	// FixEnemyAttackCooldowns
+	std::uint64_t g_FixEnemyAttackCooldowns_ReturnAddr1;
+	std::uint64_t g_FixEnemyAttackCooldowns_ReturnAddr2;
+	void FixEnemyAttackCooldownsDetour1();
+	void FixEnemyAttackCooldownsDetour2();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -398,12 +403,38 @@ void CStageSetGateSpawnFix(bool enable) {
 	run = enable;
 }
 
+void FixEnemyAttackCooldowns(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From EnemySlottingControl_sub_1401C9A30:
+	// dmc3.exe+1C9A56 - F3 0F 10 05 42 93 B2 00 - movss xmm0,[dmc3.exe+CF2DA0] { Enemy Slotting Cooldown }
+	static std::unique_ptr<Utility::Detour_t> fixEnemyAttackCooldownsHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1C9A56, &FixEnemyAttackCooldownsDetour1, 8);
+	g_FixEnemyAttackCooldowns_ReturnAddr1 = fixEnemyAttackCooldownsHook1->GetReturnAddress();
+	// g_FixEnemyAttackCooldownsCheckCall1 = &SomeCppFunction;  // Uncomment if calling C++ functions
+	fixEnemyAttackCooldownsHook1->Toggle(enable);
+
+	// From CEm013UpdateEnigmaAttackBehavior_sub_1400D8CB0:
+	// dmc3.exe+D90C6 - F3 41 0F 5C C0         - subss xmm0,xmm8 { Enigma Time Between Charges for BlueandRedAttacks }
+	static std::unique_ptr<Utility::Detour_t> fixEnemyAttackCooldownsHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0xD90C6, &FixEnemyAttackCooldownsDetour2, 5);
+	g_FixEnemyAttackCooldowns_ReturnAddr2 = fixEnemyAttackCooldownsHook2->GetReturnAddress();
+	fixEnemyAttackCooldownsHook2->Toggle(enable);
+
+	run = enable;
+}
+
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
 	StaggerGravityInertiaFix(enable);
 	CStageSetGateSpawnFix(enable);
+	FixEnemyAttackCooldowns(enable);
 }
 
 

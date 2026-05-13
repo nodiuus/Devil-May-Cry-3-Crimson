@@ -53,6 +53,7 @@ set(MASM_SRC
     masm/CheckMissionResultScreen.asm
     masm/CheckMissionResultBPScreen.asm
     masm/NoAirLunarPhaseLift.asm
+    masm/FixEnemyAttackCooldowns.asm
 )
 
 set (ASM_LIBS)
