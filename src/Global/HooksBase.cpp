@@ -564,6 +564,13 @@ LRESULT WindowProc(HWND windowHandle, UINT message, WPARAM wParameter, LPARAM lP
 
         break;
     }
+    case WM_ACTIVATEAPP: {
+        if (wParameter == TRUE) {
+            SetForegroundWindow(windowHandle);
+            SetWindowPos(windowHandle, HWND_TOP, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_SHOWWINDOW);
+        }
+        break;
+    }
     case WM_SETCURSOR: {
         CoreImGui::UpdateMouseCursor(windowHandle);
 
@@ -1085,9 +1092,9 @@ HRESULT D3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Dr
     if (flipModelEnabled && ::DXGI::swapChain) {
         IDXGIFactory* factory = nullptr;
         if (SUCCEEDED(::DXGI::swapChain->GetParent(IID_PPV_ARGS(&factory)))) {
-            factory->MakeWindowAssociation(appWindow, DXGI_MWA_NO_ALT_ENTER);
+            factory->MakeWindowAssociation(appWindow, DXGI_MWA_NO_ALT_ENTER | DXGI_MWA_NO_WINDOW_CHANGES);
             factory->Release();
-            Log("Disabled DXGI Alt+Enter handling - using custom borderless fullscreen");
+            Log("Disabled DXGI Alt+Enter & Window Change handling - preventing DXGI interference with Alt-Tab");
         }
         
         // Apply low-latency optimizations for flip model

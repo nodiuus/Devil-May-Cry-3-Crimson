@@ -208,6 +208,13 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
     // Note: Advanced frame latency waitable object optimization is implemented
     // in the D3D11CreateDeviceAndSwapChain function for DXGI 1.2+ compatibility
 
+    DXGI_SWAP_CHAIN_DESC swapDesc = {};
+    pSwapChain->GetDesc(&swapDesc);
+
+    if (IsIconic(swapDesc.OutputWindow) || !IsWindowVisible(swapDesc.OutputWindow)) {
+        return S_OK;
+    }
+
     if (activeConfig.vSync != 0) {
         SyncInterval = (activeConfig.vSync - 1);
     }
@@ -232,9 +239,6 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
     }
-
-    DXGI_SWAP_CHAIN_DESC swapDesc = {};
-    pSwapChain->GetDesc(&swapDesc);
 
 	uint32 width = swapDesc.BufferDesc.Width;
 	uint32 height = swapDesc.BufferDesc.Height;
