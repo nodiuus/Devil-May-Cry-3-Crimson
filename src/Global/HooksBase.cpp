@@ -1138,7 +1138,7 @@ HRESULT D3D11CreateDeviceAndSwapChain(IDXGIAdapter* pAdapter, D3D_DRIVER_TYPE Dr
     CreateMouse();
     CreateGamepad();
 
-    FPSLimiter_Init(activeCrimsonConfig.System.fpsCap);
+    FPSLimiter_Init(500.0);
 
 
     SetLastError(error);

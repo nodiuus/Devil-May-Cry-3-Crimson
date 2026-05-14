@@ -327,16 +327,19 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
 
     HRESULT presentResult = ::Base::DXGI::Present(pSwapChain, SyncInterval, presentFlags);
 
-	double newCap = activeCrimsonConfig.System.fpsCap;
-    static double g_currentCap = -1.0;
+	static double g_currentCap = -1.0;
+	constexpr double maxFPSAllowed = 500.0;
+
+	double newCap = activeCrimsonConfig.System.fpsUnlocked
+		? maxFPSAllowed
+		: (activeCrimsonConfig.System.fpsCap < maxFPSAllowed ? activeCrimsonConfig.System.fpsCap : maxFPSAllowed);
 
 	if (g_currentCap != newCap) {
 		g_currentCap = newCap;
-		FPSLimiter_Init(g_currentCap);
+		FPSLimiter_Init(newCap);
 	}
 
-    if (!activeCrimsonConfig.System.fpsUnlocked)
-        FPSLimiter_Apply();
+	FPSLimiter_Apply();
 
     return presentResult;
 }
