@@ -2246,6 +2246,10 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (!IsActiveCharacterActor(actorData)) return;
+
+	if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1])
+		return;
+
 	CrimsonDetours::ToggleJudgementCutDetours(activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework);
 	bool enable = activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework;
 	static bool run = false;

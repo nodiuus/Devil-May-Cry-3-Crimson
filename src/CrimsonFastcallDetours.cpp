@@ -202,6 +202,9 @@ namespace CrimsonFastcallDetours{
 		 crimsonPlayer[playerIndex].inYamatoHighTimeClone;
 	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
 
+	 if (!ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1])
+		 return;
+
 	 // JUDGEMENT CUT (REWORK)
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.jdcShl) &&
 		 activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
