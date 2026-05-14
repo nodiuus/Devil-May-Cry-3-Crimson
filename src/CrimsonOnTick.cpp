@@ -458,7 +458,7 @@ void PreparePlayersDataBeforeSpawn() {
 	}
 
 
-	if (g_scene != SCENE::GAME || (g_scene == SCENE::GAME && eventData.event == EVENT::DEATH)) {
+	if ((g_scene != SCENE::GAME && g_scene != SCENE::CUTSCENE) || (g_scene == SCENE::GAME && eventData.event == EVENT::DEATH) && eventData.subevent == 1) {
 		for (int playerIndex = 0; playerIndex < PLAYER_COUNT; ++playerIndex) {
 			//write from active missiondata here instead of session so that we can use purchased but unsaved blorbs
 			crimsonPlayer[playerIndex].hitPoints = activeMissionActorData.hitPoints;
