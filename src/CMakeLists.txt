@@ -56,6 +56,7 @@ set(MASM_SRC
     masm/FixEnemyAttackCooldowns.asm
     masm/FixBloodgoyleStormFormTime.asm
     masm/FixCStaffRollCredits.asm
+    masm/FixCStageSetSeal.asm
 )
 
 set (ASM_LIBS)

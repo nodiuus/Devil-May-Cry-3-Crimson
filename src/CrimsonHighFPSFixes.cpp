@@ -125,6 +125,14 @@ extern "C" {
 	std::uint64_t g_CStaffRollCreditsFix_ReturnAddr2;
 	void CStaffRollCreditsFixDetour1();
 	void CStaffRollCreditsFixDetour2();
+
+	// FixCStageSetSeal
+	std::uint64_t g_FixCStageSetSeal_ReturnAddr1;
+	std::uint64_t g_FixCStageSetSeal_ReturnAddr2;
+	std::uint64_t g_FixCStageSetSeal_ReturnAddr3;
+	void FixCStageSetSealDetour1();
+	void FixCStageSetSealDetour2();
+	void FixCStageSetSealDetour3();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -483,6 +491,36 @@ void FixCStaffRollCredits(bool enable) {
 	run = enable;
 }
 
+void FixCStageSetSeal(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CStageSetSealHandAndAnim_sub_14026E910:
+	// dmc3.exe+26E9BD - F3 44 0F 2C C0 - cvttss2si r8d,xmm0 { fade logic truncation (bad) }
+	static std::unique_ptr<Utility::Detour_t> fixCStageSetSealHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x26E9BD, &FixCStageSetSealDetour1, 5);
+	g_FixCStageSetSeal_ReturnAddr1 = fixCStageSetSealHook1->GetReturnAddress();
+	fixCStageSetSealHook1->Toggle(enable);
+
+	// dmc3.exe+26EB09 - F3 0F 10 73 14 - movss xmm6,[rbx+14] { setting speed for scrolling anim }
+	static std::unique_ptr<Utility::Detour_t> fixCStageSetSealHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x26EB09, &FixCStageSetSealDetour2, 5);
+	g_FixCStageSetSeal_ReturnAddr2 = fixCStageSetSealHook2->GetReturnAddress();
+	fixCStageSetSealHook2->Toggle(enable);
+
+	// dmc3.exe+26EB46 - F3 44 0F 2C C8 - cvttss2si r9d,xmm0 { scrolling speed truncation (bad) }
+	// dmc3.exe+26EB4B - F3 44 0F 2C C1 - cvttss2si r8d,xmm1
+	static std::unique_ptr<Utility::Detour_t> fixCStageSetSealHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x26EB46, &FixCStageSetSealDetour3, 10);
+	g_FixCStageSetSeal_ReturnAddr3 = fixCStageSetSealHook3->GetReturnAddress();
+	fixCStageSetSealHook3->Toggle(enable);
+
+	run = enable;
+}
+
 
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
@@ -492,6 +530,7 @@ void ToggleAllFixes(bool enable) {
 	FixEnemyAttackCooldowns(enable);
 	FixBloodgoyleStormFormTime(enable);
 	FixCStaffRollCredits(enable);
+	FixCStageSetSeal(enable);
 }
 
 }
