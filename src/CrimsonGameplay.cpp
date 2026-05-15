@@ -1999,7 +1999,7 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 		return 2.07f; 
 	}
 	if (actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4) {
-		return 2.92f;
+		return 2.89f;
 	}
 	else if (actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME &&
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] == newYamatoHighTime_pl021_00_5) {
