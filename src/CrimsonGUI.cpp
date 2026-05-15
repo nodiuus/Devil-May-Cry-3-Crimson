@@ -172,7 +172,10 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 		ImRect wndRect = window->Rect();
 		ImGuiStyle& style = ImGui::GetStyle();
 		
-
+		queuedCrimsonConfig.System.windowSizeX = window->Size.x;
+		queuedCrimsonConfig.System.windowSizeY = window->Size.y;
+		queuedCrimsonConfig.System.windowPosX = window->Pos.x;
+		queuedCrimsonConfig.System.windowPosY = window->Pos.y;
 		window->ContentRegionRect = ImRect{ window->ContentRegionRect.Min, window->ContentRegionRect.Max - ImVec2{ 0.0f, 70.0f } };
 
 		float contentMinHeightOffsetFromTop;
@@ -13440,8 +13443,11 @@ void Main(IDXGISwapChain* pSwapChain) {
         doOnce = true;
 
         // Originally 800x725, or screenWidth / 2.4 x screenHeight / 1.4 for 1080p
-        float width  = g_renderSize.x / 1.40;
-        float height = g_renderSize.y / 1.20;
+		float width = (activeCrimsonConfig.System.windowSizeX != 9999.0f) ? activeCrimsonConfig.System.windowSizeX :g_renderSize.x / 1.40;
+		float height = (activeCrimsonConfig.System.windowSizeY != 9999.0f) ? activeCrimsonConfig.System.windowSizeY : g_renderSize.y / 1.20;
+		float xpos = (activeCrimsonConfig.System.windowPosX != 9999.0f) ? activeCrimsonConfig.System.windowPosX : g_renderSize.x *0.5f;
+		float ypos = (activeCrimsonConfig.System.windowPosY != 9999.0f) ? activeCrimsonConfig.System.windowPosY : g_renderSize.y * 0.5f;
+
 
         ImGui::SetNextWindowSize(ImVec2(width, height));
 
@@ -13452,7 +13458,13 @@ void Main(IDXGISwapChain* pSwapChain) {
 //         } else {
 // 
         // CENTER MAIN SCREEN
-        ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		if (activeCrimsonConfig.System.windowPosX == 9999.0f && activeCrimsonConfig.System.windowPosY == 9999.0f) {
+			ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		}
+		else {
+			ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+		}
+
 
 
         // ImGuiIO & io = ImGui::GetIO();
