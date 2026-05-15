@@ -133,6 +133,10 @@ extern "C" {
 	void FixCStageSetSealDetour1();
 	void FixCStageSetSealDetour2();
 	void FixCStageSetSealDetour3();
+
+	// FixSummonedSwordsInitialTravel
+	std::uint64_t g_FixSummonedSwordsInitialTravel_ReturnAddr;
+	void FixSummonedSwordsInitialTravelDetour();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -522,6 +526,24 @@ void FixCStageSetSeal(bool enable) {
 }
 
 
+void FixCPl021Shl01SummonedSwordsInitialTravel(bool enable) {
+	using namespace Utility;
+
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CPl021Shl01ForwardStepTowardTargetYaw_sub_1401DA020:
+	// dmc3.exe+1DA078 - F3 0F 11 4C 24 68 - movss [rsp+68],xmm1 { store initial summoned sword easing step distance }
+	static std::unique_ptr<Utility::Detour_t> fixCPl021Shl01SummonedSwordsInitialTravelHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DA078, &FixSummonedSwordsInitialTravelDetour, 6);
+	g_FixSummonedSwordsInitialTravel_ReturnAddr = fixCPl021Shl01SummonedSwordsInitialTravelHook->GetReturnAddress();
+	fixCPl021Shl01SummonedSwordsInitialTravelHook->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
@@ -531,6 +553,9 @@ void ToggleAllFixes(bool enable) {
 	FixBloodgoyleStormFormTime(enable);
 	FixCStaffRollCredits(enable);
 	FixCStageSetSeal(enable);
+	FixCPl021Shl01SummonedSwordsInitialTravel(enable);
 }
+
+
 
 }

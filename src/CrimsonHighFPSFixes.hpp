@@ -10,4 +10,5 @@ namespace CrimsonHighFPSFixes {
 	void LookAtBossCamFixes(bool enable);
 	void ToggleAllFixes(bool enable);
 	void FixBloodgoyleStormFormTime(bool enable);
+	void FixCPl021Shl01SummonedSwordsInitialTravel(bool enable);
 }
