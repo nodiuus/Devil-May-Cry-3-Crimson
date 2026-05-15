@@ -23,6 +23,11 @@
 #include "CrimsonUtil.hpp"
 #include "CrimsonTimers.hpp"
 #include "CrimsonConfigGameplay.hpp"
+#include "CrimsonGameplay.hpp"
+#include "Arcade.hpp"
+#include "Scene.hpp"
+#include "Training.hpp"
+#include "HUD.hpp"
 #include "CrimsonGameModes.hpp"
 #include "CrimsonConfigGameplayMask.hpp"
 
@@ -507,6 +512,109 @@ const CrimsonConfigGameplay& GetCurrentPreset(uint8 mode) {
 	}
 }
 
+void UpdateCheatsPostPreset() {
+
+	Actor::Toggle(activeConfig.Actor.enable);
+	ToggleBossLadyFixes(activeConfig.enableBossLadyFixes);
+	ToggleBossVergilFixes(activeConfig.enableBossVergilFixes);
+	//ToggleDergil(activeConfig.dergil);
+	Camera::ToggleInvertX(activeCrimsonConfig.Camera.invertX);
+	Camera::ToggleDisableBossCamera(activeCrimsonConfig.Camera.disableBossCamera);
+	//ToggleNoDevilForm(activeConfig.noDevilForm);
+
+	UpdateCrazyComboLevelMultiplier();
+
+	ToggleAirHikeCoreAbility(activeCrimsonGameplay.Gameplay.Dante.airHikeCoreAbility);
+	CrimsonPatches::ToggleRoyalguardForceJustFrameRelease(activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease);
+	CrimsonPatches::DisableAirSlashKnockback(activeCrimsonGameplay.Gameplay.Dante.disableAirSlashKnockback);
+	CrimsonPatches::ToggleDisableSoulEaterInvis(activeCrimsonGameplay.Gameplay.General.disableSoulEaterInvis);
+	ToggleRebellionInfiniteSwordPierce(activeCrimsonGameplay.Cheats.Dante.infiniteSwordPierce);
+	ToggleYamatoForceEdgeInfiniteRoundTrip(activeCrimsonGameplay.Cheats.Vergil.infiniteRoundTrip);
+	ToggleEbonyIvoryFoursomeTime(activeCrimsonGameplay.Gameplay.Dante.foursomeTime);
+	ToggleEbonyIvoryInfiniteRainStorm(activeCrimsonGameplay.Gameplay.Dante.infiniteRainstorm);
+	ToggleArtemisSwapNormalShotAndMultiLock(activeCrimsonGameplay.Gameplay.Dante.swapArtemisMultiLockNormalShot);
+	CrimsonDetours::ToggleArtemisInstantFullCharge(activeCrimsonGameplay.Gameplay.Dante.artemisRework);
+	CrimsonPatches::ReduceArtemisProjectileDamage(activeCrimsonGameplay.Gameplay.Dante.artemisRework);
+	ToggleChronoSwords(activeCrimsonGameplay.Cheats.Vergil.chronoSwords);
+	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
+	CrimsonGameModes::SetGameModeMasked(activeCrimsonGameplay.GameMode.preset);
+	CrimsonGameplay::AdjustDMC4MobilitySettings();
+	//Arcade::Toggle(activeConfig.Arcade.enable);
+
+	if (!activeCrimsonGameplay.Cheats.General.enemySpawnerTool) {
+		activeConfig.enemyAutoSpawn = false;
+		queuedConfig.enemyAutoSpawn = false;
+	}
+
+
+
+	//ToggleSkipIntro(activeConfig.skipIntro);
+	//ToggleSkipCutscenes(activeConfig.skipCutscenes);
+
+	//ToggleHideMainHUD(activeConfig.hideMainHUD);
+
+
+	CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
+	CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.HudOptions.hideStyleMeter);
+
+	//ToggleHideBossHUD(false);
+	//ToggleHideBossHUD(activeConfig.hideBossHUD);
+
+	//ToggleForceVisibleHUD(false);
+	//ToggleForceVisibleHUD(activeConfig.forceVisibleHUD);
+
+	// Overriding default additional player bars positions so as not to spawn them together in a mush initially.
+	//defaultConfig.barsData[1].pos = { 900, 60 };
+	//defaultConfig.barsData[2].pos = { 1180, 60 };
+	//defaultConfig.barsData[3].pos = { 1180, 140 };
+
+	//Scene::Toggle(false);
+	//Scene::Toggle(true);
+
+	//Speed::Toggle(false);
+	//Speed::Toggle(true);
+
+
+	ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
+	ToggleInfiniteMagicPoints(activeCrimsonGameplay.Cheats.Training.infiniteDT);
+	CrimsonPatches::DisableRegularEnemyAttacks(activeCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks);
+	ToggleDisableTimer(activeCrimsonGameplay.Cheats.Training.disableTimers);
+	ToggleInfiniteBullets(activeCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets);
+
+
+	// Why are we calling these with false first???? - Answer: See Line 119
+	//ToggleForceWindowFocus(activeConfig.forceWindowFocus);
+
+	ToggleDisablePlayerActorIdleTimer(false);
+	ToggleDisablePlayerActorIdleTimer(activeConfig.disablePlayerActorIdleTimer);
+
+	ToggleRebellionInfiniteShredder(false);
+	ToggleRebellionInfiniteShredder(activeCrimsonGameplay.Cheats.Dante.infiniteShredder);
+
+	if (activeConfig.Actor.enable) {
+		CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
+	}
+	else {
+		CrimsonDetours::ToggleHoldToCrazyCombo(false);
+	}
+
+	if (queuedConfig.Actor.playerCount > 1) {
+		activeCrimsonConfig.Camera.multiplayerCamera = true;
+		queuedCrimsonConfig.Camera.multiplayerCamera = true;
+		activeCrimsonConfig.Camera.thirdPersonCamera = true;
+		queuedCrimsonConfig.Camera.thirdPersonCamera = true;
+	}
+
+
+	CrimsonPatches::HoldToAutoFire(activeCrimsonGameplay.Gameplay.General.holdToShoot);
+	CrimsonDetours::ToggleClassicHUDPositionings(!activeCrimsonConfig.CrimsonHudAddons.positionings);
+	CrimsonDetours::ToggleStyleRankHudNoFadeout(activeConfig.disableStyleRankHudFadeout);
+	CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
+
+	CrimsonPatches::ToggleIncreasedEnemyJuggleTime(activeCrimsonGameplay.Gameplay.General.increasedEnemyJuggleTime);
+	//CrimsonPatches::SetEnemyDTMode(activeCrimsonGameplay.Gameplay.ExtraDifficulty.enemyDTMode);
+}
+
 void CrimsonGameModes::SetGameModePreset(uint8 mode) {
 	// This function sets the game mode using full assignment,
 	// meaning it updates all fields in the Gameplay and Cheats structures,
@@ -536,6 +644,7 @@ void CrimsonGameModes::SetGameModePreset(uint8 mode) {
 	// Set the preset field explicitly
 	activeCrimsonGameplay.GameMode.preset = mode;
 	queuedCrimsonGameplay.GameMode.preset = mode;
+	UpdateCheatsPostPreset();
 }
 
 void CrimsonGameModes::SetGameModeMasked(uint8 mode) {

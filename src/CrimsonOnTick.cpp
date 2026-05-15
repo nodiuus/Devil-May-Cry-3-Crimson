@@ -1937,7 +1937,10 @@ bool GetGigapedeMoment() {
 	if (&sessionData == nullptr || &eventData == nullptr)
 		return false;
 
-	return (eventData.room == ROOM::GIANTWALKER_CHAMBER && sessionData.mission == 4);
+	bool condition = false;
+	condition = condition || (eventData.room == ROOM::GIANTWALKER_CHAMBER && sessionData.mission == 4);
+	condition = condition || (eventData.room == ROOM::GIANTWALKER_REBORN && sessionData.mission == 18);
+	return condition;
 }
 
 void ControlMenuFadeouts() {

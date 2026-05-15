@@ -636,9 +636,9 @@ void PlaySnap(byte8* actorBaseAddr) {
 
 	if (actorData.eventData[0].event != 1 || actorData.character != CHARACTER::DANTE)
 		return;
-
-	float slider = 5.0f / 100.0f;
-	int   volume = (int)(255.0f * slider);
+	float slider = (activeCrimsonConfig.SFX.styleChangeSnapVolume / 100.0f);
+	//float slider = 5.0f / 100.0f;
+	int   volume = (int)(255.0f * 5.0f / 100.0f * slider);
 
 	std::chrono::milliseconds delay{ 0 };
 	bool playDouble = false;

@@ -348,6 +348,7 @@ struct CrimsonConfig {
 		uint8 changeWeaponEffectVolume = 100;
 		uint8 styleChangeNew = 1;
 		uint8 styleChangeVolume = 100;
+		uint8 styleChangeSnapVolume = 100;
 		uint8 styleChangeVoiceOverVolume = 100;
 		uint8 sprintEffectVolume = 100;
 		uint8 dTInL1Volume = 100;
@@ -376,6 +377,7 @@ struct CrimsonConfig {
                 std::make_pair("changeWeaponEffectVolume", &SFX::changeWeaponEffectVolume),
 				std::make_pair("styleChangeNew", &SFX::styleChangeNew),
                 std::make_pair("styleChangeVolume", &SFX::styleChangeVolume),
+				std::make_pair("styleChangeSnapVolume", &SFX::styleChangeSnapVolume),
                 std::make_pair("styleChangeVoiceOverVolume", &SFX::styleChangeVoiceOverVolume),
                 std::make_pair("sprintEffectVolume", &SFX::sprintEffectVolume),
                 std::make_pair("dTInL1Volume", &SFX::dTInL1Volume),

@@ -10656,6 +10656,9 @@ void SoundSection(size_t defaultFontSize) {
 			ImGui::PushItemWidth(itemWidth * smallerComboMult);
 			GUI_Slider2<uint8>("Effect Volume", activeCrimsonConfig.SFX.styleChangeVolume, queuedCrimsonConfig.SFX.styleChangeVolume, 0, 100);
 			ImGui::PopItemWidth();
+			ImGui::PushItemWidth(itemWidth * smallerComboMult);
+			GUI_Slider2<uint8>("Snap Volume", activeCrimsonConfig.SFX.styleChangeSnapVolume, queuedCrimsonConfig.SFX.styleChangeSnapVolume, 0, 100);
+			ImGui::PopItemWidth();
 
 			ImGui::PushItemWidth(itemWidth * smallerComboMult);
 			GUI_Slider2<uint8>("VO Volume", activeCrimsonConfig.SFX.styleChangeVoiceOverVolume, queuedCrimsonConfig.SFX.styleChangeVoiceOverVolume, 0, 100);
