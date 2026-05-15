@@ -1075,30 +1075,30 @@ void CameraTiltController(CameraData* cameraData, CameraControlMetadata& cameraM
 	static int lastVerticalTilt = -1;
 	static bool tiltApplied = false;
 
-	if (!cameraData) {
-		lastCameraData = nullptr;
-		tiltApplied = false;
-		return;
-	}
+	//if (!cameraData) {
+	//	lastCameraData = nullptr;
+	//	tiltApplied = false;
+	//	return;
+	//}
 
-	if (lastCameraData != cameraData) {
-		lastCameraData = cameraData;
-		tiltApplied = false;
-	}
+	//if (lastCameraData != cameraData) {
+	//	lastCameraData = cameraData;
+	//	tiltApplied = false;
+	//}
 
-	if (cameraMetadata.fixedCameraAddr != 0) {
-        tiltApplied = false;
-		return; // Disable tilt adjustment when a fixed camera is active
-	}
+	//if (cameraMetadata.fixedCameraAddr != 0) {
+ //       tiltApplied = false;
+	//	return; // Disable tilt adjustment when a fixed camera is active
+	//}
 
-	if (lastVerticalTilt != activeCrimsonConfig.Camera.verticalTilt) {
-		lastVerticalTilt = activeCrimsonConfig.Camera.verticalTilt;
-		tiltApplied = false;
-	}
+	//if (lastVerticalTilt != activeCrimsonConfig.Camera.verticalTilt) {
+	//	lastVerticalTilt = activeCrimsonConfig.Camera.verticalTilt;
+	//	tiltApplied = false;
+	//}
 
-	if (tiltApplied) {
-		return;
-	}
+	//if (tiltApplied) {
+	//	return;
+	//}
 
     if (activeCrimsonConfig.Camera.verticalTilt == 0) { // Original (Vanilla Default)
 		cameraData->tilt = 0.253073f;
