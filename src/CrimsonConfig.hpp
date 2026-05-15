@@ -600,7 +600,10 @@ struct CrimsonConfig {
 			}
 		} BlendingEffects;
 
-
+		float windowSizeX = 9999.0f;
+		float windowSizeY = 9999.0f;
+		float windowPosX = 9999.0f;
+		float windowPosY = 9999.0f;
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("ButtonConfig", &System::ButtonConfig),
@@ -610,7 +613,11 @@ struct CrimsonConfig {
 				std::make_pair("fpsCap", &System::fpsCap),
 				std::make_pair("fpsUnlocked", &System::fpsUnlocked),
 				std::make_pair("disableMenuFadeouts", &System::disableMenuFadeouts),
-				std::make_pair("BlendingEffects", &System::BlendingEffects)
+				std::make_pair("BlendingEffects", &System::BlendingEffects),
+				std::make_pair("windowSizeX",&System::windowSizeX),
+				std::make_pair("windowSizeY", &System::windowSizeY),
+				std::make_pair("windowPosX", &System::windowPosX),
+				std::make_pair("windowPosY", &System::windowPosY)
 			);
 		}
 	} System;
