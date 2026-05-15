@@ -2896,7 +2896,12 @@ void SpawnActors() {
 		return;
 	}
     auto eventFlags = reinterpret_cast<byte32*>(pool_19337[1]);
-    
+
+    auto pool_19326 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+    if (!pool_19326 || !pool_19326[12]) {
+        return;
+    }
+    auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_19326[12]);
 
     old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
         auto& playerData = GetPlayerData(playerIndex);
@@ -2916,7 +2921,10 @@ void SpawnActors() {
                 return;
             }
             auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+            
 
+            if((sessionData.mission == 18) && (nextEventData.room == 403))
+                actorData.mode = ACTOR_MODE::MISSION_18;
             // Commission Enemy Actor
 
             auto& characterData = GetCharacterData(playerIndex, characterIndex, ENTITY::MAIN);
@@ -4132,7 +4140,8 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     auto& characterData = GetCharacterData(actorData);
 
     if (actorData.mode == ACTOR_MODE::MISSION_18) {
-        return true;
+        //actorData.mode = ACTOR_MODE::DEFAULT;
+        //return true;
     } else if (actorData.var_3F19) {
         return false;
     }
@@ -13953,8 +13962,8 @@ void SceneGame() {
 
     // This determines that the Actor System gets temporarily deactivated at certain points 
     // where it would crash the game otherwise (mission 19 Battle of Brothers, as an example). - Mia
-    if (((sessionData.mission == 18) && (nextEventData.room == 403)) ||
-        ((sessionData.mission == 19) && (nextEventData.room == 421) && (eventFlags[20] == 1)) 
+    if (((sessionData.mission == 18) && (nextEventData.room == 403) && !activeConfig.debugOverlayData.enable) ||
+        ((sessionData.mission == 19) && (nextEventData.room == 421) && (eventFlags[20] == 1))
         || ((sessionData.mission == 20) && (nextEventData.room == 12)&& !activeConfig.debugOverlayData.enable)
         ) {
         actorLastEnable                = activeConfig.Actor.enable;
