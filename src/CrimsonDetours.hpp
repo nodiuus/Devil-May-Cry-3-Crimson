@@ -113,7 +113,9 @@ void CheckMissionResultBPScreenDetour4();
 void NoAirLunarPhaseLiftDetour();
 // FixEnemyAttackCooldowns
 void FixEnemyAttackCooldownsDetour1();
-void FixEnemyAttackCooldownsDetour2();}
+void FixEnemyAttackCooldownsDetour2();
+// CheckTotalResultsScreen
+void CheckTotalResultsScreenDetour();}
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData);
 bool DisableStaggerCheck(PlayerActorData& actorData);
@@ -155,4 +157,5 @@ void ToggleAllDetours(bool enable);
 void CheckMissionResultBPScreen(bool enable);
 void NoAirLunarPhaseLift(bool enable);
 void FixEnemyAttackCooldowns(bool enable);
+void CheckTotalResultsScreen(bool enable);
 }

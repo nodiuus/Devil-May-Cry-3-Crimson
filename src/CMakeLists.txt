@@ -57,6 +57,7 @@ set(MASM_SRC
     masm/FixBloodgoyleStormFormTime.asm
     masm/FixCStaffRollCredits.asm
     masm/FixCStageSetSeal.asm
+    masm/CheckTotalResultsScreen.asm
 )
 
 set (ASM_LIBS)

@@ -797,6 +797,7 @@ float g_missionTimer = 0.0f;
 bool g_screenBreakTriggered = false;
 bool g_inMissionResultScreen = false;
 bool g_inMissionResultBPScreen = false;
+bool g_inTotalResultsScreen = false;
 bool g_inCombat = false;
 bool g_inBossfight = false;
 bool g_inCredits = false;

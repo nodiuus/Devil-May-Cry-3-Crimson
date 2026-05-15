@@ -388,6 +388,9 @@ void CheckMissionResultBPScreenDetour2();
 void CheckMissionResultBPScreenDetour3();
 void CheckMissionResultBPScreenDetour4();
 
+// CheckTotalResultsScreen
+std::uint64_t g_CheckTotalResultsScreen_ReturnAddr;
+void CheckTotalResultsScreenDetour();
 
 // NoAirLunarPhaseLift
 std::uint64_t g_NoAirLunarPhaseLift_ReturnAddr;
@@ -2417,6 +2420,24 @@ void CheckMissionResultBPScreen(bool enable) {
 	run = enable;
 }
 
+void CheckTotalResultsScreen(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CUIDTotalRankingUpdate_sub_1402BE980:
+	// dmc3.exe+2BE989 - 0F B6 49 08 - movzx ecx,byte ptr [rcx+08]
+	// dmc3.exe+2BE98D - 85 C9                 - test ecx,ecx
+	static std::unique_ptr<Utility::Detour_t> checkTotalResultsScreenHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2BE989, &CheckTotalResultsScreenDetour, 6);
+	g_CheckTotalResultsScreen_ReturnAddr = checkTotalResultsScreenHook->GetReturnAddress();
+	checkTotalResultsScreenHook->Toggle(enable);
+
+	run = enable;
+}
+
 void NoAirLunarPhaseLift(bool enable) {
 	using namespace Utility;
 	static bool run = false;
@@ -2442,7 +2463,7 @@ void ToggleAllDetours(bool enable) {
 	CheckMissionResultScreen(enable);
 	CheckMissionResultBPScreen(enable);
 	NoAirLunarPhaseLift(enable);
-
+	CheckTotalResultsScreen(enable);
 }
 
 }

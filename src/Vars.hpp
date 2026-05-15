@@ -5471,6 +5471,7 @@ extern "C" float g_missionTimer;
 extern "C" bool g_screenBreakTriggered;
 extern "C" bool g_inMissionResultScreen;
 extern "C" bool g_inMissionResultBPScreen;
+extern "C" bool g_inTotalResultsScreen;
 extern bool g_inCombat;
 extern bool g_inBossfight;
 extern bool g_inCredits;
