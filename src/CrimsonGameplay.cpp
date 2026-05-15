@@ -1998,6 +1998,9 @@ float ComputeDynamicJDCHoldTime(const PlayerActorData& actorData, bool inAir, bo
 	else if (actorData.action == YAMATO_UPPER_SLASH_PART_2) {
 		return 2.07f; 
 	}
+	if (actorData.action == YAMATO_FORCE_EDGE_COMBO_PART_4) {
+		return 2.92f;
+	}
 	else if (actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME &&
 		actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO_FORCE_EDGE] == newYamatoHighTime_pl021_00_5) {
 		return 1.53f;
@@ -2351,7 +2354,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		}
 	}
 
-	if (actorData.queuedMeleeWeaponIndex != 0) {
+	if (actorData.queuedMeleeWeaponIndex != 0 && actorData.action != YAMATO_FORCE_EDGE_COMBO_PART_4) {
 		chargeInitialized[playerIndex][entityIndex] = false;
 		jCut.meleeButtonHold = 0.0f;
 		jCut.isJustFrameCharged = false;
