@@ -159,8 +159,8 @@ namespace UI {
 
 		struct {
 			uint32_t Major = 0;
-			uint32_t Minor = 4;
-			char	 PatchLetter = 'A';
+			uint32_t Minor = 5;
+			char	 PatchLetter = 'PR';
 		} CurrentVersion;
 
 		struct {
