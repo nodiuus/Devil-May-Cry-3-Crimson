@@ -56,6 +56,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = false;
 	general.sprint = false;
+	general.multiplayerDamageScaling = false;
 	general.extramoves = false;
 	general.freeformSoftLock = false;
 	general.bufferlessReversals = false;

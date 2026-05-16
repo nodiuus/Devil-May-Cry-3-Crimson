@@ -1899,7 +1899,8 @@ void ForceDifficultyController() {
 void MultiplayerDamageScaling() {
 
 	if (!activeCrimsonGameplay.Cheats.General.customDamage && 
-		activeCrimsonGameplay.Gameplay.General.multiplayerDamageScaling) {
+		activeCrimsonGameplay.Gameplay.General.multiplayerDamageScaling
+		&& activeConfig.Actor.enable) {
 
 		if (activeConfig.Actor.playerCount == 2) {
 			queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 0.7f;
