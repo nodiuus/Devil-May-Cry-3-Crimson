@@ -567,6 +567,25 @@ namespace UI {
 		}
 	}
 
+
+	void DropShadowText(const ImFont* font, float font_size, const ImVec2& pos, ImVec4 col, const char* text_begin, const char* text_end, float wrap_width, const ImVec4* cpu_fine_clip_rect, ImVec2 offset) {
+
+		ImGui::GetWindowDrawList()->AddText(
+			font,
+			font_size,
+			pos + offset,
+			ImColor(0.0f, 0.0f, 0.0f, col.w),
+			text_begin
+		);
+		// Draw normal text
+		ImGui::GetWindowDrawList()->AddText(
+			font,
+			font_size,
+			pos,
+			ImGui::GetColorU32(col),
+			text_begin
+		);
+	}
 #pragma region SerpCode
 	bool Selectable(const char* label, bool* selected, ImGuiSelectableFlags flags) {
 		UI::PushID();

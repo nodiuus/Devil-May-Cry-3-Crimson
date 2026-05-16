@@ -233,6 +233,9 @@ namespace UI {
 
 	void SeparatorEx(float length = 0.0f, float align = 0.0f, ImGuiSeparatorFlags flags = ImGuiSeparatorFlags_Horizontal);
 
+	void DropShadowText(const ImFont* font, float font_size, const ImVec2& pos, ImVec4 col, const char* text_begin, const char* text_end = NULL, float wrap_width = 0.0f, const ImVec4* cpu_fine_clip_rect = NULL, ImVec2 offset = ImVec2(2.0f, 2.0f));
+
+
 #pragma region SerpCode
 	bool Selectable(const char* label, bool* selected, ImGuiSelectableFlags flags = 0);
 
