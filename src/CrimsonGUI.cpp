@@ -3868,7 +3868,7 @@ void RenderMissionResultGameModeStats() {
 		ImVec2 textSize = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, missionResultGameModeString);
 		ImVec2 textPos = ImGui::GetWindowPos() + ImVec2(10.0f * scaleFactorY, 0.0f);
 
-		drawList->AddText(g_ImGuiFont_Benguiat256, scaledFontSize * 3.8f, textPos, gameModeStringColor, missionResultGameModeString);
+		UI::DropShadowText(g_ImGuiFont_Benguiat256, scaledFontSize * 3.8f, textPos, UI::ColorToImVec4(UI::SwapColorEndianness(gameModeStringColor)), missionResultGameModeString,NULL,0.0f,NULL, ImVec2(5.0f,5.0f));
 
 		ImGui::End();
 	}

@@ -795,8 +795,13 @@ void CrimsonGameModes::TrackCheats() {
 		activeCheats.General.customDamage != currentPreset.Cheats.General.customDamage ||
 		activeCheats.Damage.playerReceivedDmgMult != currentPreset.Cheats.Damage.playerReceivedDmgMult ||
 		activeCheats.Damage.enemyReceivedDmgMult != currentPreset.Cheats.Damage.enemyReceivedDmgMult;
-
-	updateCheatFlag(damageChanged, CHEATS::DAMAGE);
+	if (activeCrimsonGameplay.Gameplay.General.multiplayerDamageScaling && !activeCheats.General.customDamage) {
+		updateCheatFlag(false, CHEATS::DAMAGE);
+	}
+	else {
+		updateCheatFlag(damageChanged, CHEATS::DAMAGE);
+	}
+	
 
 	// === CHEATS::SPEED ===
 	bool speedChanged =
