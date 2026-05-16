@@ -396,6 +396,12 @@ void CheckTotalResultsScreenDetour();
 std::uint64_t g_NoAirLunarPhaseLift_ReturnAddr;
 void NoAirLunarPhaseLiftDetour();
 void* g_NoAirLunarPhaseLiftCheckCall;  
+
+// ChargeMechanicsCPlayer
+std::uint64_t g_ChargeMechanicsCPlayer_ReturnAddr;
+std::uint64_t g_ChargeMechanicsCPlayer_ConstAddr;
+void ChargeMechanicsCPlayerDetour();
+void* g_ChargeMechanicsCPlayerCheckCall;  // Uncomment if calling C++ functions from ASM
 }
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
@@ -1282,6 +1288,17 @@ bool CheckIfInAirLunarPhase(uintptr_t playerAddr) {
 	if (inAirLunarPhase) {
 		return true;
 	}
+	return false;
+}
+
+bool CheckChargeMechanics(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+
+	if (activeCrimsonGameplay.Gameplay.Dante.chargedShotgunLifts && actorData.activeRangedWeapon == WEAPON::SHOTGUN) {
+		return true;
+	}
+	
 	return false;
 }
 
@@ -2458,12 +2475,33 @@ void NoAirLunarPhaseLift(bool enable) {
 	run = enable;
 }
 
+
+void ChargeMechanicsCPlayer(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From DMC3_sub_1401EB3D0:
+	// dmc3.exe+1EB6F7 - 0F 2F 05 D2 BB 2D 00 - comiss xmm0,[dmc3.exe+4C72D0] { (10000.00) }
+	static std::unique_ptr<Utility::Detour_t> chargeMechanicsCPlayerHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1EB6F7, &ChargeMechanicsCPlayerDetour, 7);
+	g_ChargeMechanicsCPlayer_ReturnAddr = chargeMechanicsCPlayerHook->GetReturnAddress();
+	g_ChargeMechanicsCPlayerCheckCall = &CheckChargeMechanics;  
+	g_ChargeMechanicsCPlayer_ConstAddr = (uintptr_t)appBaseAddr + 0x4C72D0; // Address of the 10000.0 float constant used in charge mechanics
+	chargeMechanicsCPlayerHook->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleAllDetours(bool enable) {
 	CheckScreenBreak(enable);
 	CheckMissionResultScreen(enable);
 	CheckMissionResultBPScreen(enable);
 	NoAirLunarPhaseLift(enable);
 	CheckTotalResultsScreen(enable);
+	ChargeMechanicsCPlayer(enable);
 }
 
 }

@@ -200,6 +200,28 @@ namespace CrimsonFastcallDetours{
 	 bool modified = false;
 	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
 
+	 // CHARGED SHOTGUN SHL
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunChargedShl))) { // && activeCrimsonGameplay.Gameplay.Dante.chargedShotgunShlBuff
+		 newDmgData.knockbackAnimation = 3.0f;
+		 newDmgData.displacement = 20.0f;
+		 modified = true;
+	 }
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunChargedShl2))) { 
+		 newDmgData.knockbackAnimation = 3.0f;
+		 modified = true;
+	 }
+
+	 // GUN STINGER SHL
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunGunStingerShl))) {
+		 newDmgData.knockbackAnimation = 3.0f;
+		 newDmgData.displacement = 20.0f;
+		 newDmgData.stun = 30.0f;
+		 modified = true;
+	 }
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunGunStingerShl2))) {
+		 newDmgData.knockbackAnimation = 3.0f;
+		 modified = true;
+	 }
 
 	 // JUDGEMENT CUT (REWORK)
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.jdcShl) &&
