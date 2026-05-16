@@ -1797,7 +1797,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 1.0f, -1.15f);
 
 		CrimsonEfkPreload::risingStar_PoseHit_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::risingStar_PoseHit_Handle, CrimsonEfkPreload::risingStar_PoseHit_Path, 40.0f);
-		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix3, &actorData);
+		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix1, &actorData);
 		uint32_t vergilColor = CrimsonUtil::HexToAABBGGRR(0x522BFFFF);
 		//CrimsonEfk::SetAllColor(risingStarParticleHandle[playerIndex][entityIndex], vergilColor);
         
