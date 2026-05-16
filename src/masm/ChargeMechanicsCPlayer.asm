@@ -6,7 +6,7 @@ EXTERN g_ChargeMechanicsCPlayerCheckCall:QWORD
 EXTERN g_ChargeMechanicsCPlayer_ConstAddr:QWORD
 EXTERN g_FrameRateTimeMultiplier:DWORD
 newChargeShotgunValue dd 100.0
-constOne dd 0.9
+constOne dd 1.0
 
 .CODE
 ; From DMC3_sub_1401EB3D0:
