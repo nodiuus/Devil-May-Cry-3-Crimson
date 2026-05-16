@@ -97,6 +97,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	dante.groundTrick = false;
 	dante.swapDancePierceInputs = false;
 	dante.swapArtemisMultiLockNormalShot = false;
+	dante.chargedShotgunLifts = false;
 
 	// Vergil section
 	auto& vergil = preset.Gameplay.Vergil;
@@ -161,6 +162,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	dante.artemisRework = true;
 	dante.groundTrick = false;
 	//dante.swapDancePierceInputs = false;
+	dante.chargedShotgunLifts = false;
 
 	// Vergil section
 	auto& vergil = preset.Gameplay.Vergil;
@@ -426,6 +428,7 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Gameplay.Dante.swapArtemisMultiLockNormalShot = false;
 	mask.Gameplay.Dante.swapDancePierceInputs = false;
 	mask.Gameplay.Dante.swapHammerVocalnoInputs = false;
+	mask.Gameplay.Dante.chargedShotgunLifts = false;
 
 	mask.Gameplay.Dante.downertiaD = false; // This should be optional
 	mask.Gameplay.Dante.airRevolver = false;

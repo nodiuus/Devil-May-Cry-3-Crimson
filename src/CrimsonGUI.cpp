@@ -8901,6 +8901,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
 
+			ImGui::Text("activeRangedWeapon: %u", actorData.activeRangedWeapon);
 			ImGui::Text("trickUpCount: %u", actorData.newTrickUpCount);
 			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
 			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
@@ -11968,6 +11969,16 @@ void DanteGameplayOptions() {
 			}
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Disables the Knockback from Nevan's Air Slash pt. 1.");
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Charged Shotgun Lifts",
+				activeCrimsonGameplay.Gameplay.Dante.chargedShotgunLifts,
+				queuedCrimsonGameplay.Gameplay.Dante.chargedShotgunLifts,
+				activeCrimsonGameplayMask.Gameplay.Dante.chargedShotgunLifts);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Makes Charged Shots Shotgun lift enemies instead of knocking them back,"
+				"\nharkening to the old DMC1 days. Makes shotgun charge slightly faster.");
 
 			ImGui::EndTable();
 		}

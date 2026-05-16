@@ -58,6 +58,8 @@ set(MASM_SRC
     masm/FixCStaffRollCredits.asm
     masm/FixCStageSetSeal.asm
     masm/CheckTotalResultsScreen.asm
+    masm/FixSummonedSwordsInitialTravel.asm
+    masm/ChargeMechanicsCPlayer.asm
 )
 
 set (ASM_LIBS)

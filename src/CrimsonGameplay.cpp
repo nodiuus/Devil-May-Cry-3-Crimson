@@ -1219,7 +1219,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     auto tiltDirection = GetRelativeTiltDirection(actorData);
     auto playerIndex = actorData.newPlayerIndex;
     auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
-
+	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
     bool inCancellableActionRebellion =
         (actorData.action == REBELLION_COMBO_1_PART_1 || actorData.action == REBELLION_COMBO_1_PART_1 ||
             actorData.action == REBELLION_COMBO_1_PART_1 || actorData.action == REBELLION_COMBO_1_PART_2 ||
@@ -1294,6 +1294,7 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     static bool prevStyleButton[PLAYER_COUNT][ENTITY_COUNT] = {};
     static bool prevShootButton[PLAYER_COUNT][ENTITY_COUNT] = {};
     static bool prevStyleButton2[PLAYER_COUNT][ENTITY_COUNT] = {};
+	static bool prevMeleeButton[PLAYER_COUNT][ENTITY_COUNT] = {};
 
     // Buffer for style button press (per player/entity)
     static float styleButtonBuffer[PLAYER_COUNT][ENTITY_COUNT] = {};
@@ -1328,6 +1329,10 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
     bool styleButton2Down = (actorData.buttons[2] & GetBinding(BINDING::STYLE_ACTION)) != 0;
     bool styleButton2Pressed = styleButton2Down && !prevStyleButton2[playerIndex][entityIndex];
     prevStyleButton2[playerIndex][entityIndex] = styleButton2Down;
+
+	bool meleeButtonDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+	bool meleeButtonPressed = meleeButtonDown && !prevMeleeButton[playerIndex][entityIndex];
+	prevMeleeButton[playerIndex][entityIndex] = meleeButtonDown;
     // -------------------------------------
 
     // Lambda for updating a buffer
@@ -1401,6 +1406,13 @@ void ImprovedCancelsDanteController(byte8* actorBaseAddr) {
                 policyTrick = EXECUTE;
             }
         }
+
+		if (actorData.action == SHOTGUN_GUN_STINGER) {
+			if (actorData.recoverState[0] == 3 && motionTimer >= 0.15f) {
+				if (actorData.style == STYLE::TRICKSTER && styleButtonPressed)
+					actorData.state &= ~STATE::BUSY;
+			}
+		}
 
         // Dante's Trickster Actions Cancels Most Things (w/ cooldown)
         if ((actorData.style == STYLE::TRICKSTER) &&
@@ -1785,7 +1797,7 @@ void VergilRisingStar(byte8* actorBaseAddr) {
 		CrimsonReversedCalls::ApplyNewYInertiaCPl_sub_1401FD110((uintptr_t)&actorData, 1, 1.0f, -1.15f);
 
 		CrimsonEfkPreload::risingStar_PoseHit_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::risingStar_PoseHit_Handle, CrimsonEfkPreload::risingStar_PoseHit_Path, 40.0f);
-		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix3, &actorData);
+		risingStarParticleHandle[playerIndex][entityIndex] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::risingStar_PoseHit_Handle, boneMatrix->matrix1, &actorData);
 		uint32_t vergilColor = CrimsonUtil::HexToAABBGGRR(0x522BFFFF);
 		//CrimsonEfk::SetAllColor(risingStarParticleHandle[playerIndex][entityIndex], vergilColor);
         

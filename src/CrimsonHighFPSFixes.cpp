@@ -133,6 +133,14 @@ extern "C" {
 	void FixCStageSetSealDetour1();
 	void FixCStageSetSealDetour2();
 	void FixCStageSetSealDetour3();
+
+	// FixSummonedSwordsInitialTravel
+	std::uint64_t g_FixSummonedSwordsInitialTravel_ReturnAddr;
+	std::uint64_t g_FixSummonedSwordsInitialTravel_ReturnAddr2;
+	std::uint64_t g_FixSummonedSwordsInitialTravel_ReturnAddr3;
+	void FixSummonedSwordsInitialTravelDetour();
+	void FixSummonedSwordsInitialTravelDetour2();
+	void FixSummonedSwordsInitialTravelDetour3();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -522,6 +530,37 @@ void FixCStageSetSeal(bool enable) {
 }
 
 
+void FixCPl021Shl01SummonedSwordsInitialTravel(bool enable) {
+	using namespace Utility;
+
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CPl021Shl01ForwardStepTowardTargetYaw_sub_1401DA020:
+	// dmc3.exe+1DA078 - F3 0F 11 4C 24 68 - movss [rsp+68],xmm1 { store initial summoned sword easing step distance }
+	static std::unique_ptr<Utility::Detour_t> fixCPl021Shl01SummonedSwordsInitialTravelHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DA078, &FixSummonedSwordsInitialTravelDetour, 6);
+	g_FixSummonedSwordsInitialTravel_ReturnAddr = fixCPl021Shl01SummonedSwordsInitialTravelHook->GetReturnAddress();
+	fixCPl021Shl01SummonedSwordsInitialTravelHook->Toggle(enable);
+
+	// dmc3.exe+1DB8C2 - F3 0F 11 83 D4 0D 00 00 - movss [rbx+00000DD4],xmm0 { easing accumulation }
+
+	static std::unique_ptr<Utility::Detour_t> fixCPl021Shl01SummonedSwordsInitialTravelHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DB8C2, &FixSummonedSwordsInitialTravelDetour2, 8);
+	g_FixSummonedSwordsInitialTravel_ReturnAddr2 = fixCPl021Shl01SummonedSwordsInitialTravelHook2->GetReturnAddress();
+	fixCPl021Shl01SummonedSwordsInitialTravelHook2->Toggle(enable);
+
+	// dmc3.exe+1DA133 - 0F 28 4C 24 20 - movaps xmm1,[rsp+20] { easing displacement vector }
+	static std::unique_ptr<Utility::Detour_t> fixCPl021Shl01SummonedSwordsInitialTravelHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DA133, &FixSummonedSwordsInitialTravelDetour3, 5);
+	g_FixSummonedSwordsInitialTravel_ReturnAddr3 = fixCPl021Shl01SummonedSwordsInitialTravelHook3->GetReturnAddress();
+	fixCPl021Shl01SummonedSwordsInitialTravelHook3->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
@@ -531,6 +570,9 @@ void ToggleAllFixes(bool enable) {
 	FixBloodgoyleStormFormTime(enable);
 	FixCStaffRollCredits(enable);
 	FixCStageSetSeal(enable);
+	FixCPl021Shl01SummonedSwordsInitialTravel(enable);
 }
+
+
 
 }

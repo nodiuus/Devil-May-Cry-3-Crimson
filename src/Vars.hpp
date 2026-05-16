@@ -3351,6 +3351,13 @@ struct DamageDataAddrOffsets {
 	uintptr_t driveShl = 0x5CB1E0;
     uintptr_t shotgunShl = 0x5CAE70;
     uintptr_t shotgunShl2 = 0x5CB000;
+	uintptr_t shotgunChargedShl = 0x5CAF60;
+	uintptr_t shotgunChargedShl2 = 0x5CB0A0;
+    uintptr_t shotgunPointBlankSlide = 0x5CA600; // slide
+    uintptr_t shotgunPointBlankInitialShl = 0x5CBF00; // initial / faraway shot
+    uintptr_t shotgunPointBlankShl2 = 0x5CBEB0; // subsequent shots
+    uintptr_t shotgunGunStingerShl = 0x5CB6E0;
+    uintptr_t shotgunGunStingerShl2 = 0x5CB690;
 
 	// --- Vergil ---
 	uintptr_t jdcShl = 0x5CDF40;

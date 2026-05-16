@@ -190,9 +190,6 @@ namespace CrimsonFastcallDetours{
 	 uintptr_t trampoline_raw = s_DamageCalcHook->GetTrampoline();
      DamageCalcTrampoline trampoline = (DamageCalcTrampoline)trampoline_raw;
 
-	 if (!actorAddr60) {
-		 return;
-	 }
 	 auto& actorData = *reinterpret_cast<PlayerActorData*>(actorAddr60 - 0x60);
 	 auto playerIndex = actorData.newPlayerIndex;
 	 auto entityIndex = actorData.newEntityIndex;
@@ -200,8 +197,31 @@ namespace CrimsonFastcallDetours{
 		 crimsonPlayer[playerIndex].inRisingStarClone;
 	 auto& inYamatoHighTime = (entityIndex == 0) ? crimsonPlayer[playerIndex].inYamatoHighTime :
 		 crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+	 bool modified = false;
 	 DamageData newDmgData = *dmgData; // copy of the original DmgData pointer so we can modify it without affecting the original struct's parameters
 
+	 // CHARGED SHOTGUN SHL
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunChargedShl))) { // && activeCrimsonGameplay.Gameplay.Dante.chargedShotgunShlBuff
+		 newDmgData.knockbackAnimation = 3.0f;
+		 newDmgData.displacement = 20.0f;
+		 modified = true;
+	 }
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunChargedShl2))) { 
+		 newDmgData.knockbackAnimation = 3.0f;
+		 modified = true;
+	 }
+
+	 // GUN STINGER SHL
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunGunStingerShl))) {
+		 newDmgData.knockbackAnimation = 3.0f;
+		 newDmgData.displacement = 20.0f;
+		 newDmgData.stun = 30.0f;
+		 modified = true;
+	 }
+	 if (((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunGunStingerShl2))) {
+		 newDmgData.knockbackAnimation = 3.0f;
+		 modified = true;
+	 }
 
 	 // JUDGEMENT CUT (REWORK)
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.jdcShl) &&
@@ -231,6 +251,7 @@ namespace CrimsonFastcallDetours{
 			 newDmgData.styleMeterIncrease = 260.0f;
 			 newDmgData.knockbackImpact = 20.0f;
 		 }
+		 modified = true;
 
 		 // defaults:
 		 /*newDmgData.knockbackAnimation = 0;
@@ -247,13 +268,14 @@ namespace CrimsonFastcallDetours{
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit1)) {
 		 if (inRisingStar) {
 			 newDmgData.hitStopDuration = 1.0f;
+			 modified = true;
 		 }
 	 }
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.risingSunHit2)) {
 		 if (inRisingStar) {
 			 newDmgData.stun = 700.0f; // default value is 100.0f, we increase this to guarantee the second hit will lift up DT'ed enemies.
 			 newDmgData.hitStopDuration = 1.0f;
-
+			 modified = true;
 		 }
 	 }
 
@@ -261,10 +283,11 @@ namespace CrimsonFastcallDetours{
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.forceEdgeHighTimeHit)) {
 		 if (inYamatoHighTime) {
 			 newDmgData.hitStopDuration = 1.0f;
+			 modified = true;
 		 }
 	 }
 
-	 trampoline(CDamageCalcAddr, &newDmgData, actorAddr60, floatArray);  // call the original, then fall through
+	 trampoline(CDamageCalcAddr, modified ? &newDmgData : dmgData, actorAddr60, floatArray);  // call the original, then fall through
 	 return;
  }
 
