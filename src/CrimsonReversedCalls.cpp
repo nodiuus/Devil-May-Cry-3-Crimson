@@ -90,6 +90,10 @@ namespace CrimsonReversedCalls {
 		return GAME_CALL_SAFE(0x1E04A0, uintptr_t, uintptr_t)(playerActorAddr);
 	}
 
+	uintptr_t CPlFetchBoneMatrix_sub_1401FAA90(uintptr_t playerActorAddr, int boneIndex) {
+		return GAME_CALL_SAFE(0x1FAA90, uintptr_t, uintptr_t, int)(playerActorAddr, boneIndex);
+	}
+
 	void ExecuteYamatoRaveCPl_sub_14021BDE0(uintptr_t playerActorAddr) {
 		GAME_CALL_SAFE(0x21BDE0, void, uintptr_t)(playerActorAddr);
 	}	

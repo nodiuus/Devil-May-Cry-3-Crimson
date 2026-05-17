@@ -405,7 +405,10 @@ void* g_ChargeMechanicsCPlayerCheckCall;  // Uncomment if calling C++ functions 
 
 // CItemOrbPickupAllPlayers
 std::uint64_t g_CItemOrbPickupAllPlayers_ReturnAddr;
+std::uint64_t g_CItemOrbPickupAllPlayers_ReturnAddr2;
+std::uint64_t g_CItemOrbPickupAllPlayers_BoneMatrixCall;
 void CItemOrbPickupAllPlayersDetour();
+void CItemOrbPickupAllPlayersDetour2();
 void* g_CItemOrbPickupAllPlayersCheckCall; 
 }
 
@@ -2530,6 +2533,7 @@ void CItemOrbPickupAllPlayers(bool enable) {
 		return;
 	}
 
+	// Proximity pickup 
 	// From CItemOrbBehavior_sub_1401B61C0:
 	// dmc3.exe+1B6344 - 80 B9 99 3E 00 00 01 - cmp byte ptr [rcx+00003E99],01 { compare player->isDead }
 	static std::unique_ptr<Utility::Detour_t> cItemOrbPickupAllPlayersHook =
@@ -2537,6 +2541,16 @@ void CItemOrbPickupAllPlayers(bool enable) {
 	g_CItemOrbPickupAllPlayers_ReturnAddr = cItemOrbPickupAllPlayersHook->GetReturnAddress();
 	g_CItemOrbPickupAllPlayersCheckCall = &CheckPlayerClosestToOrb;  
 	cItemOrbPickupAllPlayersHook->Toggle(enable);
+
+	// VFX, SFX for orb pickup 
+	// From CItemOrbAfterPickup_sub_1401B6910:
+	// dmc3.exe+1B6990 - E8 FB 40 04 00 - call dmc3.CPlFetchBoneMatrix_sub_1401FAA90
+	// dmc3.exe+1B6B00 - E8 9B 11 13 00 - call dmc3.PlayVFX_sub_1402E7CA0 { orb pickup vfx }
+	static std::unique_ptr<Utility::Detour_t> cItemOrbPickupAllPlayersHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1B6990, &CItemOrbPickupAllPlayersDetour2, 5);
+	g_CItemOrbPickupAllPlayers_ReturnAddr2 = cItemOrbPickupAllPlayersHook2->GetReturnAddress();
+	g_CItemOrbPickupAllPlayers_BoneMatrixCall = (uintptr_t)appBaseAddr + 0x1FAA90;
+	cItemOrbPickupAllPlayersHook2->Toggle(enable);
 
 	run = enable;
 }
