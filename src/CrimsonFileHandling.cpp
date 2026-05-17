@@ -67,7 +67,7 @@ void GetStyleRanksAccoladesDirectories() {
 }
 
 void CopyHUDtoGame() {
-	std::string hudPath = Paths::huds + (std::string)"\\" + activeConfig.selectedHUD;
+	std::string hudPath = Paths::huds + (std::string)"\\" + activeCrimsonConfig.HudOptions.selectedHUD;
 	std::vector<std::string> files = GetFiles(hudPath);
 	std::vector<std::string> HUDFilenames = { "id100.pac", "id100V.pac" };
 

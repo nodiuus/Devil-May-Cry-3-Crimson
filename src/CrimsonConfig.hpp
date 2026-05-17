@@ -75,6 +75,15 @@ namespace STYLESWITCHVFXTYPE {
 };
 }
 
+namespace VISUALSTYLEPRESETS {
+enum {
+	CLASSIC,
+	HYBRID,
+	MODERN,
+	CUSTOM,
+	};
+}
+
 struct CrimsonConfig {
 	struct MultiplayerBars2D {
 		bool show = true;
@@ -190,14 +199,35 @@ struct CrimsonConfig {
 
 	struct HudOptions {
 		bool hideStyleMeter = false;
+		bool hideMainHUD = false;
+		bool hideLockOn = false;
+		bool hideBossHUD = false;
+		bool forceVisibleHUD = false;
+		bool disableStyleRankHudFadeout = true;
+		std::string selectedHUD = "Crimson HUD";
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("hideStyleMeter", &HudOptions::hideStyleMeter)
+				std::make_pair("hideStyleMeter", &HudOptions::hideStyleMeter),
+				std::make_pair("hideMainHUD", &HudOptions::hideMainHUD),
+				std::make_pair("hideLockOn", &HudOptions::hideLockOn),
+				std::make_pair("hideBossHUD", &HudOptions::hideBossHUD),
+				std::make_pair("forceVisibleHUD", &HudOptions::forceVisibleHUD),
+				std::make_pair("disableStyleRankHudFadeout", &HudOptions::disableStyleRankHudFadeout),
+				std::make_pair("selectedHUD", &HudOptions::selectedHUD)
 			);
 		}
 	} HudOptions;
 
+	struct VisualStyle {
+		uint8 preset = VISUALSTYLEPRESETS::MODERN;
+
+		static constexpr auto Metadata() {
+			return std::make_tuple(
+				std::make_pair("preset", &VisualStyle::preset)
+			);
+		}
+	} VisualStyle;
 
 	struct Camera {
 		float fovMultiplier = 1.2f;
@@ -733,6 +763,7 @@ struct CrimsonConfig {
 			std::make_pair("WeaponWheel", &CrimsonConfig::WeaponWheel),
             std::make_pair("CrimsonHudAddons", &CrimsonConfig::CrimsonHudAddons),
 			std::make_pair("HudOptions", &CrimsonConfig::HudOptions),
+			std::make_pair("VisualStyle", &CrimsonConfig::VisualStyle),
             std::make_pair("Camera", &CrimsonConfig::Camera),
             std::make_pair("StyleSwitchFX", &CrimsonConfig::StyleSwitchFX),
 			std::make_pair("VFX", &CrimsonConfig::VFX),

@@ -555,17 +555,17 @@ void UpdateCheatsPostPreset() {
 	//ToggleSkipIntro(activeConfig.skipIntro);
 	//ToggleSkipCutscenes(activeConfig.skipCutscenes);
 
-	//ToggleHideMainHUD(activeConfig.hideMainHUD);
+	//ToggleHideMainHUD(activeCrimsonConfig.HudOptions.hideMainHUD);
 
 
-	CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
+	CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
 	CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.HudOptions.hideStyleMeter);
 
 	//ToggleHideBossHUD(false);
-	//ToggleHideBossHUD(activeConfig.hideBossHUD);
+	//ToggleHideBossHUD(activeCrimsonConfig.HudOptions.hideBossHUD);
 
 	//ToggleForceVisibleHUD(false);
-	//ToggleForceVisibleHUD(activeConfig.forceVisibleHUD);
+	//ToggleForceVisibleHUD(activeCrimsonConfig.HudOptions.forceVisibleHUD);
 
 	// Overriding default additional player bars positions so as not to spawn them together in a mush initially.
 	//defaultConfig.barsData[1].pos = { 900, 60 };
@@ -612,7 +612,7 @@ void UpdateCheatsPostPreset() {
 
 	CrimsonPatches::HoldToAutoFire(activeCrimsonGameplay.Gameplay.General.holdToShoot);
 	CrimsonDetours::ToggleClassicHUDPositionings(!activeCrimsonConfig.CrimsonHudAddons.positionings);
-	CrimsonDetours::ToggleStyleRankHudNoFadeout(activeConfig.disableStyleRankHudFadeout);
+	CrimsonDetours::ToggleStyleRankHudNoFadeout(activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout);
 	CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
 
 	CrimsonPatches::ToggleIncreasedEnemyJuggleTime(activeCrimsonGameplay.Gameplay.General.increasedEnemyJuggleTime);

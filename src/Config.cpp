@@ -536,19 +536,11 @@ void CreateMembers(Config& config_) {
     Create<bool>(member, "enableBossLadyFixes", config.enableBossLadyFixes);
     Create<bool>(member, "enableBossVergilFixes", config.enableBossVergilFixes);
     Create<bool>(member, "enablePVPFixes", config.enablePVPFixes);
-    Create<bool>(member, "hideMainHUD", config.hideMainHUD);
-    Create<bool>(member, "hideLockOn", config.hideLockOn);
-    Create<bool>(member, "hideBossHUD", config.hideBossHUD);
-    Create<bool>(member, "disableStyleRankHudFadeout", config.disableStyleRankHudFadeout);
     Create<bool>(member, "soundIgnoreEnemyData", config.soundIgnoreEnemyData);
     Create<uint8>(member, "dergil", config.dergil);
     Create<uint8>(member, "costumeRespectsProgression", config.costumeRespectsProgression);
 
-    CreateString(member, "selectedHUD", config.selectedHUD.c_str());
-
     CreateArray<uint8, 2>(member, "beowulfVergilAirRisingSunCount", config.beowulfVergilAirRisingSunCount);
-
-    Create<bool>(member, "forceVisibleHUD", config.forceVisibleHUD);
 
 
     {
@@ -866,19 +858,11 @@ void ToJSON(Config& config_) {
     Set<bool>(member["enableBossLadyFixes"], config.enableBossLadyFixes);
     Set<bool>(member["enableBossVergilFixes"], config.enableBossVergilFixes);
     Set<bool>(member["enablePVPFixes"], config.enablePVPFixes);
-    Set<bool>(member["hideMainHUD"], config.hideMainHUD);
-    Set<bool>(member["hideLockOn"], config.hideLockOn);
-    Set<bool>(member["hideBossHUD"], config.hideBossHUD);
-    Set<bool>(member["disableStyleRankHudFadeout"], config.disableStyleRankHudFadeout);
     Set<bool>(member["soundIgnoreEnemyData"], config.soundIgnoreEnemyData);
     Set<uint8>(member["dergil"], config.dergil);
     Set<uint8>(member["costumeRespectsProgression"], config.costumeRespectsProgression);
 
-    SetString(member["selectedHUD"], config.selectedHUD.c_str());
-
     SetArray<uint8, 2>(member["beowulfVergilAirRisingSunCount"], config.beowulfVergilAirRisingSunCount);
-
-    Set<bool>(member["forceVisibleHUD"], config.forceVisibleHUD);
 
 
     for_all(playerIndex, PLAYER_COUNT) {
@@ -1192,18 +1176,11 @@ void ToConfig(Config& config_) {
     config.enableBossLadyFixes                = Get<bool>(member["enableBossLadyFixes"]);
     config.enableBossVergilFixes              = Get<bool>(member["enableBossVergilFixes"]);
     config.enablePVPFixes                     = Get<bool>(member["enablePVPFixes"]);
-    config.hideMainHUD                        = Get<bool>(member["hideMainHUD"]);
-    config.hideLockOn                         = Get<bool>(member["hideLockOn"]);
-    config.disableStyleRankHudFadeout         = Get<bool>(member["disableStyleRankHudFadeout"]);
     config.soundIgnoreEnemyData               = Get<bool>(member["soundIgnoreEnemyData"]);
     config.dergil                             = Get<uint8>(member["dergil"]);
     config.costumeRespectsProgression         = Get<uint8>(member["costumeRespectsProgression"]);
 
-    config.selectedHUD = Get<std::string>(member["selectedHUD"]);
-
     GetArray<uint8, 2>(config.beowulfVergilAirRisingSunCount, member["beowulfVergilAirRisingSunCount"]);
-
-    config.forceVisibleHUD = Get<bool>(member["forceVisibleHUD"]);
 
 
     for_all(playerIndex, PLAYER_COUNT) {

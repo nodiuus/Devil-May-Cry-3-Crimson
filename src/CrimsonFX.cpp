@@ -330,7 +330,7 @@ void StyleRankHudFadeoutController() {
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_12857[3]);
 
 
-	if (activeConfig.disableStyleRankHudFadeout) {
+	if (activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout) {
 		if (mainActorData.styleData.rank <= 0) {
 			CrimsonDetours::ToggleStyleRankHudNoFadeout(false);
 		}

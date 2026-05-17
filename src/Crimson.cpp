@@ -228,19 +228,19 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         HUD_Init();
 
         ToggleHideMainHUD(false);
-        ToggleHideMainHUD(activeConfig.hideMainHUD);
+        ToggleHideMainHUD(activeCrimsonConfig.HudOptions.hideMainHUD);
 
         CrimsonPatches::ToggleHideLockOn(false);
-        CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
+        CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
         CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.HudOptions.hideStyleMeter);
         CrimsonDetours::ToggleDTMustStyleArmor(true);
         CrimsonDetours::ToggleAllDetours(true);
 
         ToggleHideBossHUD(false);
-        ToggleHideBossHUD(activeConfig.hideBossHUD);
+        ToggleHideBossHUD(activeCrimsonConfig.HudOptions.hideBossHUD);
 
         ToggleForceVisibleHUD(false);
-        ToggleForceVisibleHUD(activeConfig.forceVisibleHUD);
+        ToggleForceVisibleHUD(activeCrimsonConfig.HudOptions.forceVisibleHUD);
 
         // Overriding default additional player bars positions so as not to spawn them together in a mush initially.
         defaultConfig.barsData[1].pos = { 900, 60 };
@@ -295,7 +295,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         
         CrimsonPatches::HoldToAutoFire(activeCrimsonGameplay.Gameplay.General.holdToShoot);
         CrimsonDetours::ToggleClassicHUDPositionings(!activeCrimsonConfig.CrimsonHudAddons.positionings);
-        CrimsonDetours::ToggleStyleRankHudNoFadeout(activeConfig.disableStyleRankHudFadeout);
+        CrimsonDetours::ToggleStyleRankHudNoFadeout(activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout);
         CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
         CrimsonDetours::ToggleTurnRateFix(true);
         CrimsonPatches::ToggleIncreasedEnemyJuggleTime(activeCrimsonGameplay.Gameplay.General.increasedEnemyJuggleTime);

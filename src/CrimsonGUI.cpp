@@ -67,6 +67,7 @@
 #include "CrimsonTimers.hpp"
 #include "CrimsonOnTick.hpp"
 #include "CrimsonGameModes.hpp"
+#include "CrimsonVisualStyle.hpp"
 #include "CrimsonSDL.hpp"
 #include "CrimsonPatches.hpp"
 #include "CrimsonDetours.hpp"
@@ -9561,10 +9562,10 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedConfig.selectedHUD)) {
+			if (UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedCrimsonConfig.HudOptions.selectedHUD)) {
 				CrimsonFiles::CopyHUDtoGame();
 			}
-			if (queuedConfig.selectedHUD != activeConfig.selectedHUD) {
+			if (queuedCrimsonConfig.HudOptions.selectedHUD != activeCrimsonConfig.HudOptions.selectedHUD) {
 				auto restartStrColor = CrimsonUtil::HexToImVec4(0x1DD6FFFF);
 				ImGui::TextColored(restartStrColor, "Restart the game to properly apply new HUD.");
 			}
@@ -9573,8 +9574,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (GUI_Checkbox2("Hide Main HUD", activeConfig.hideMainHUD, queuedConfig.hideMainHUD)) {
-				ToggleHideMainHUD(activeConfig.hideMainHUD);
+			if (GUI_Checkbox2("Hide Main HUD", activeCrimsonConfig.HudOptions.hideMainHUD, queuedCrimsonConfig.HudOptions.hideMainHUD)) {
+				ToggleHideMainHUD(activeCrimsonConfig.HudOptions.hideMainHUD);
 			}
 			ImGui::PopItemWidth();
 
@@ -9582,8 +9583,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (GUI_Checkbox2("Always Show Main HUD", activeConfig.forceVisibleHUD, queuedConfig.forceVisibleHUD)) {
-				ToggleForceVisibleHUD(activeConfig.forceVisibleHUD);
+			if (GUI_Checkbox2("Always Show Main HUD", activeCrimsonConfig.HudOptions.forceVisibleHUD, queuedCrimsonConfig.HudOptions.forceVisibleHUD)) {
+				ToggleForceVisibleHUD(activeCrimsonConfig.HudOptions.forceVisibleHUD);
 			}
 
 			ImGui::PopItemWidth();
@@ -9591,8 +9592,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Hide Lock-On", activeConfig.hideLockOn, queuedConfig.hideLockOn)) {
-				CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn);
+			if (GUI_Checkbox2("Hide Lock-On", activeCrimsonConfig.HudOptions.hideLockOn, queuedCrimsonConfig.HudOptions.hideLockOn)) {
+				CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn);
 			}
 
 			ImGui::TableNextColumn();
@@ -9603,13 +9604,13 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Hide Boss Damage Bar", activeConfig.hideBossHUD, queuedConfig.hideBossHUD)) {
-				ToggleHideBossHUD(activeConfig.hideBossHUD);
+			if (GUI_Checkbox2("Hide Boss Damage Bar", activeCrimsonConfig.HudOptions.hideBossHUD, queuedCrimsonConfig.HudOptions.hideBossHUD)) {
+				ToggleHideBossHUD(activeCrimsonConfig.HudOptions.hideBossHUD);
 			}
 
 			ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Disable Style Rank Fadeout", activeConfig.disableStyleRankHudFadeout, queuedConfig.disableStyleRankHudFadeout);
+			GUI_Checkbox2("Disable Style Rank Fadeout", activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout, queuedCrimsonConfig.HudOptions.disableStyleRankHudFadeout);
 
 			ImGui::EndTable();
 		}
@@ -9882,6 +9883,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 	//ImGui::PopFont();
 
 	BarsSection(defaultFontSize);
+
+	CrimsonVisualStyle::TrackVisualStyle();
 }
 
 #pragma endregion
@@ -13615,9 +13618,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 		constexpr float align = 0.5f; // Center = 0.5f
 
-		constexpr const char* MODE_SELECTION_TEXT = "Choose your desired Devil May Cry 3 version! Game Modes govern your style of gameplay.\n"
+		constexpr const char* MODE_SELECTION_TEXT = "Choose your desired Devil May Cry 3 version! GAME MODES govern your style of gameplay.\n"
 			"This will affect the entire Gameplay Options globally and tag you at the Mission Result screen.\n\n"
-			"If Gameplay Options diverge too much from any preset, the 'CUSTOM MODE' Game Mode will be selected instead automatically.";
+			"If Gameplay Options diverge too much from any preset, the 'CUSTOM MODE' Game Mode will be selected instead automatically.\n";
 
 		float width = ImGui::CalcTextSize(MODE_SELECTION_TEXT).x;
 
@@ -13697,6 +13700,8 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 		auto previewValue = context.SelectedGameMode == UI::UIContext::GameModes::Custom ? modesWCustom[size_t(context.SelectedGameMode)] :
 			modes[size_t(context.SelectedGameMode)];
 
+		static bool tieVisualStyleToGameMode = false;
+
 		if (UI::BeginCombo("##Game Mode", previewValue, { 0.5f, 0.5f }, 0.9f)) {
 			ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, { 0.5f, 0.5f });
 
@@ -13754,6 +13759,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				if (ImGui::Selectable(modes[i], isSelected)) {
 					CrimsonGameModes::SetGameModePreset((uint8)i);
 					CrimsonGameplay::AdjustDMC4MobilitySettings();
+					if (tieVisualStyleToGameMode) {
+						CrimsonVisualStyle::SetVisualStylePreset((uint8)i); // maps Vanilla->Classic, SS->Hybrid, Crimso->Modern
+					}
 					::GUI::save = true;
 				}
 
@@ -13770,6 +13778,127 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 		}
 
 		ImGui::PopStyleColor(3);
+		ImGui::PopFont(); // Pop Benguiat[baseFontSize * 1.7f] from the Game Mode section above
+
+		ImGui::PushFont(UI::g_ImGuiFont_Benguiat[baseFontSize * 0.9f]);
+		float visualStyleComboBoxWidth = width * 0.4f;
+
+		// Visual Style dropdown
+		{
+
+			std::array<const char*, 3> visualModes{ "CLASSIC VISUAL STYLE", "HYBRID VISUAL STYLE", "MODERN VISUAL STYLE" };
+			std::array<const char*, 4> visualModesWCustom{ "CLASSIC VISUAL STYLE", "HYBRID VISUAL STYLE", "MODERN VISUAL STYLE", "CUSTOM VISUAL STYLE" };
+
+			uint8 currentPreset = activeCrimsonConfig.VisualStyle.preset;
+			auto previewValue = (currentPreset == VISUALSTYLEPRESETS::CUSTOM)
+				? visualModesWCustom[size_t(currentPreset)]
+				: visualModes[size_t(currentPreset)];
+
+			ImGui::SetNextItemWidth(visualStyleComboBoxWidth);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (cntRegion.GetWidth() - visualStyleComboBoxWidth) * align);
+
+			ImU32 vsFrameBG, vsFrameBGHovered, vsTextColor;
+			switch (currentPreset) {
+			case VISUALSTYLEPRESETS::CLASSIC:
+				vsFrameBG = UI::SwapColorEndianness(0xFFFFFFFF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0x979797AA);
+				vsTextColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_WindowBgText]);
+				break;
+			case VISUALSTYLEPRESETS::HYBRID:
+				vsFrameBG = UI::SwapColorEndianness(0xE8BA18FF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0xE8BA18AA);
+				vsTextColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_WindowBgText]);
+				break;
+			case VISUALSTYLEPRESETS::MODERN:
+				vsFrameBG = UI::SwapColorEndianness(0xDA1B53FF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0xDA1B53AA);
+				vsTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+				break;
+			case VISUALSTYLEPRESETS::CUSTOM:
+			default:
+				vsFrameBG = UI::SwapColorEndianness(0x4050FFFF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0x4050FFAA);
+				vsTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+				break;
+			}
+
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, vsFrameBG);
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, vsFrameBGHovered);
+			ImGui::PushStyleColor(ImGuiCol_Text, vsTextColor);
+
+			GUI_PushDisable(tieVisualStyleToGameMode);
+
+			if (UI::BeginCombo("##Visual Style", previewValue, { 0.5f, 0.5f }, 0.9f)) {
+				ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, { 0.5f, 0.5f });
+
+				for (size_t i = 0; i < visualModes.size(); i++) {
+					ImU32 headerColor, headerHoveredColor, headerTextColor, headerActiveColor;
+					switch ((int)i) {
+					case VISUALSTYLEPRESETS::CLASSIC:
+						headerColor = UI::SwapColorEndianness(0x6B6B6BFF);
+						headerHoveredColor = UI::SwapColorEndianness(0x6B6B6BCC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0x6B6B6BFF);
+						break;
+					case VISUALSTYLEPRESETS::HYBRID:
+						headerColor = UI::SwapColorEndianness(0x856E1CFF);
+						headerHoveredColor = UI::SwapColorEndianness(0x856E1CCC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0x856E1CFF);
+						break;
+					case VISUALSTYLEPRESETS::MODERN:
+						headerColor = UI::SwapColorEndianness(0x821031FF);
+						headerHoveredColor = UI::SwapColorEndianness(0x821031CC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0x821031FF);
+						break;
+					default:
+						headerColor = UI::SwapColorEndianness(0xB7B7B7FF);
+						headerHoveredColor = UI::SwapColorEndianness(0xB7B7B7CC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0xB7B7B7FF);
+						break;
+					}
+
+					ImGui::PushStyleColor(ImGuiCol_Header, headerColor);
+					ImGui::PushStyleColor(ImGuiCol_HeaderHovered, headerHoveredColor);
+					ImGui::PushStyleColor(ImGuiCol_Text, headerTextColor);
+					ImGui::PushStyleColor(ImGuiCol_HeaderActive, headerActiveColor);
+
+					bool isSelected = size_t(currentPreset) == i;
+
+					if (ImGui::Selectable(visualModes[i], isSelected)) {
+						CrimsonVisualStyle::SetVisualStylePreset((uint8)i);
+						tieVisualStyleToGameMode = false;
+						::GUI::save = true;
+					}
+
+					if (isSelected) {
+						ImGui::SetItemDefaultFocus();
+					}
+
+					ImGui::PopStyleColor(4);
+				}
+
+				ImGui::PopStyleVar();
+				ImGui::EndCombo();
+			}
+
+			GUI_PopDisable(tieVisualStyleToGameMode);
+
+			ImGui::PopStyleColor(3);
+			ImGui::PopFont(); // Pop Benguiat[baseFontSize * 0.9f] from the Visual Style section above
+
+			ImGui::SameLine();
+			ImGui::PushFont(UI::g_ImGuiFont_Roboto[baseFontSize]);
+			if (GUI_Checkbox("Tie Visual Style to Game Mode", tieVisualStyleToGameMode)) {
+				if (tieVisualStyleToGameMode) {
+					CrimsonVisualStyle::SetVisualStylePreset(activeCrimsonGameplay.GameMode.preset);
+					::GUI::save = true;
+				}
+			}
+			ImGui::PopFont();
+		}
 
 		const Texture2DD3D11* pMainLogo = nullptr;
 		{
@@ -13817,22 +13946,18 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				u8"• Weapons Slots Restricted (2-Slots).\n";
 			
 			auto descriptionStyleSwitcher =
-				u8"• New Moves\n"
 				u8"• Style Switching\n"
 				u8"• Weapon Wheel (up to 5-Slots)\n"
 				u8"• Improved Cancels\n";
 
 			auto descriptionCrimson =
-				u8"• Inertia\n"
-				u8"• Guardflying\n"
-				u8"• DT-Infused Royalguard\n"
+				u8"• Style Switching\n"
+				u8"• Inertia / Guardflying\n"
+				u8"• Expanded Moveset (Dante & Vergil)\n"
 				u8"• Mirage Trigger\n"
 				u8"• Increased Jump Cancel Hitboxes\n"
 				u8"• Aerial Combat Changes\n"
-				u8"• Enemy Alterations\n"
-				u8"• Higher Mobility\n"
-				u8"• New Moves\n"
-				u8"• Style Switching\n"
+				u8"• Small Enemy Alterations\n"
 				u8"• Weapon Wheel (up to 5-Slots)\n"
 				u8"• Improved Cancels\n";
 
@@ -13882,8 +14007,6 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 			ImGui::PopFont();
 		}
-
-		ImGui::PopFont();
 
 		// Restore window scale for other tabs
 		ImGui::SetWindowFontScale(scaleFactorY);

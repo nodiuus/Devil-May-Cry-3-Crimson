@@ -195,17 +195,11 @@ struct Config {
     bool enableBossVergilFixes = false;
     bool enablePVPFixes        = false;
 
-    bool hideMainHUD = false;
-    bool hideLockOn  = false;
-    bool hideBossHUD = false;
-
     bool soundIgnoreEnemyData = false;
 
     uint8 dergil = 0;
 
     uint8 beowulfVergilAirRisingSunCount[2] = {1, 1};
-
-    bool forceVisibleHUD = false;
 
     _(6);
 
@@ -222,8 +216,6 @@ struct Config {
     };
 
     BarsData barsData[PLAYER_COUNT];
-
-    bool disableStyleRankHudFadeout = true;
 
     bool forceSyncHitMagicPoints = true;
 
@@ -247,10 +239,6 @@ struct Config {
     bool rebellionHoldDrive        = false;
 
     uint8 costumeRespectsProgression = 2;
-
-    // load these from cfg, here are default values for now
-    
-    std::string selectedHUD = "Crimson HUD";
 
     bool playDTReadySFXAtMissionStart = true;
 };

@@ -1347,7 +1347,7 @@ void RedOrbCounterWindow() {
 // 		queuedCrimsonConfig.CrimsonHudAddons.redOrbCounter = true;
 // 	}
 
-	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.redOrbCounter) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.redOrbCounter) {
 		CrimsonDetours::RerouteRedOrbsCounterAlpha(false, crimsonHud.redOrbAlpha);
 		CrimsonPatches::SetRebOrbCounterDurationTillFadeOut(false, 90);
 		return;
@@ -1463,7 +1463,7 @@ void CheatsHUDIndicatorWindow() {
 	if (!(InGame() && !g_inGameCutscene)) {
 		return;
 	}
-	if (activeConfig.hideMainHUD) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD) {
 		return;
 	}
 
@@ -1663,12 +1663,12 @@ void LockOnWindows() {
 	const float spinSpeed = 0.08f; // slow spin
 
 	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
-		CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn);
+		CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn);
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
-	if (activeConfig.hideLockOn) {
+	if (activeCrimsonConfig.HudOptions.hideLockOn) {
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
@@ -1838,7 +1838,7 @@ void StunDisplacementLockOnWindows() {
 		return;
 	}
 
-	if (activeConfig.hideLockOn) {
+	if (activeCrimsonConfig.HudOptions.hideLockOn) {
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
@@ -2170,7 +2170,7 @@ void ShieldLockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = -0.12f; // slow spin
 
-	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
@@ -2810,7 +2810,7 @@ void StyleTextDisplayWindow() {
 	if (!(InGame() && !g_inGameCutscene)) {
 		return;
 	}
-	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.stylesDisplay || g_inCredits) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.stylesDisplay || g_inCredits) {
 		return;
 	}
 	auto& character = mainActorData.character;

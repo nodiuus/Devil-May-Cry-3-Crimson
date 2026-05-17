@@ -186,6 +186,8 @@ file(GLOB MAIN_SRC
     CrimsonLDK.hpp
     CrimsonUtil.cpp
     CrimsonUtil.hpp
+    CrimsonVisualStyle.cpp
+    CrimsonVisualStyle.hpp
     CrimsonOnTick.cpp
     CrimsonOnTick.hpp
     CrimsonPatches.cpp
