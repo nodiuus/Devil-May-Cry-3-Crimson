@@ -19,6 +19,7 @@
 
 namespace CrimsonReversedCalls {
 
+	extern float CalcDistanceVec4_sub_14032E5F0(vec4* a, vec4* b);
 	extern int16 InputsUpdate_sub_14032CFE0(uintptr_t inputAddr, int playerIndex, unsigned int a3);
 	extern uintptr_t SpawnCollision_sub_14005C320(uintptr_t collisionDataStruct, uint8 a2);
 	extern uintptr_t SetJDCPosition_sub_1401DC1A0(uintptr_t posPtr, uintptr_t matrixPtr, uintptr_t playerActorAddr, uint8 a4);

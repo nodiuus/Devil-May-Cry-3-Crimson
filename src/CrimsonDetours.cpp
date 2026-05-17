@@ -402,6 +402,11 @@ std::uint64_t g_ChargeMechanicsCPlayer_ReturnAddr;
 std::uint64_t g_ChargeMechanicsCPlayer_ConstAddr;
 void ChargeMechanicsCPlayerDetour();
 void* g_ChargeMechanicsCPlayerCheckCall;  // Uncomment if calling C++ functions from ASM
+
+// CItemOrbPickupAllPlayers
+std::uint64_t g_CItemOrbPickupAllPlayers_ReturnAddr;
+void CItemOrbPickupAllPlayersDetour();
+void* g_CItemOrbPickupAllPlayersCheckCall; 
 }
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
@@ -1300,6 +1305,29 @@ bool CheckChargeMechanics(uintptr_t playerAddr) {
 	}
 	
 	return false;
+}
+
+uintptr_t CheckPlayerClosestToOrb(uintptr_t playerAddr, vec4* orbPos) {
+	uintptr_t closestAddr = playerAddr;
+	float closestDist = FLT_MAX;
+
+	ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8 pIndex, uint8 entityIndex) {
+		float dist = CrimsonReversedCalls::CalcDistanceVec4_sub_14032E5F0(&playerActor.position, orbPos);
+		if (dist < closestDist) {
+			closestDist = dist;
+			closestAddr = (uintptr_t)&playerActor;
+		}
+	});
+
+	ForEachVanillaPlayerActor([&](PlayerActorData& playerActor, uint8 pIndex, uint8 entityIndex) {
+		float dist = CrimsonReversedCalls::CalcDistanceVec4_sub_14032E5F0(&playerActor.position, orbPos);
+		if (dist < closestDist) {
+			closestDist = dist;
+			closestAddr = (uintptr_t)&playerActor;
+		}
+	});
+
+	return closestAddr;
 }
 
 void InitDetours() {
@@ -2495,6 +2523,24 @@ void ChargeMechanicsCPlayer(bool enable) {
 	run = enable;
 }
 
+void CItemOrbPickupAllPlayers(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CItemOrbBehavior_sub_1401B61C0:
+	// dmc3.exe+1B6344 - 80 B9 99 3E 00 00 01 - cmp byte ptr [rcx+00003E99],01 { compare player->isDead }
+	static std::unique_ptr<Utility::Detour_t> cItemOrbPickupAllPlayersHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1B6344, &CItemOrbPickupAllPlayersDetour, 7);
+	g_CItemOrbPickupAllPlayers_ReturnAddr = cItemOrbPickupAllPlayersHook->GetReturnAddress();
+	g_CItemOrbPickupAllPlayersCheckCall = &CheckPlayerClosestToOrb;  
+	cItemOrbPickupAllPlayersHook->Toggle(enable);
+
+	run = enable;
+}
+
 void ToggleAllDetours(bool enable) {
 	CheckScreenBreak(enable);
 	CheckMissionResultScreen(enable);
@@ -2502,6 +2548,7 @@ void ToggleAllDetours(bool enable) {
 	NoAirLunarPhaseLift(enable);
 	CheckTotalResultsScreen(enable);
 	ChargeMechanicsCPlayer(enable);
+	CItemOrbPickupAllPlayers(enable);
 }
 
 }

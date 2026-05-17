@@ -117,7 +117,9 @@ void FixEnemyAttackCooldownsDetour2();
 // CheckTotalResultsScreen
 void CheckTotalResultsScreenDetour();
 // ChargeMechanicsCPlayer
-void ChargeMechanicsCPlayerDetour();}
+void ChargeMechanicsCPlayerDetour();
+// CItemOrbPickupAllPlayers
+void CItemOrbPickupAllPlayersDetour();}
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData);
 bool DisableStaggerCheck(PlayerActorData& actorData);
@@ -161,4 +163,5 @@ void NoAirLunarPhaseLift(bool enable);
 void FixEnemyAttackCooldowns(bool enable);
 void CheckTotalResultsScreen(bool enable);
 void ChargeMechanicsCPlayer(bool enable);
+void CItemOrbPickupAllPlayers(bool enable);
 }

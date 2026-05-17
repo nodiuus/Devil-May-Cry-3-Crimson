@@ -60,6 +60,7 @@ set(MASM_SRC
     masm/CheckTotalResultsScreen.asm
     masm/FixSummonedSwordsInitialTravel.asm
     masm/ChargeMechanicsCPlayer.asm
+    masm/CItemOrbPickupAllPlayers.asm
 )
 
 set (ASM_LIBS)

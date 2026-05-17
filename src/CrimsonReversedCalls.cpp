@@ -15,6 +15,10 @@ namespace CrimsonReversedCalls {
 // 		return InputsUpdateFunc(inputAddr, playerIndex, a3);
 // 	}
 
+	float CalcDistanceVec4_sub_14032E5F0(vec4* a, vec4* b) {
+		return GAME_CALL_SAFE(0x32E5F0, float, vec4*, vec4*)(a, b);
+	}
+
 	int16 InputsUpdate_sub_14032CFE0(uintptr_t inputAddr, int playerIndex, unsigned int a3) {
 		return GAME_CALL_SAFE(0x32CFE0, int16, uintptr_t, int, unsigned int)(inputAddr, playerIndex, a3);
 	}
