@@ -14,6 +14,7 @@ namespace Paths {
 	const char* sounds = "Crimson\\sound";
 	const char* huds = "Crimson\\huds";
 	const char* styleRanks = "Crimson\\assets\\styleranks";
+	const char* visualStylesPreviews = "Crimson\\assets\\visualstylepreviews";
 	const char* weaponwheel = "Crimson\\weaponwheel";
 	const char* gameMods = "data\\dmc3\\GData.afs";
 }

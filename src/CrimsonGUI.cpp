@@ -13785,6 +13785,10 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 		// Visual Style dropdown
 		{
+			// Preview images for Visual Styles tooltips
+			static const Texture2DD3D11 vsClassicPreview((std::string(Paths::visualStylesPreviews) + "\\Classic.png").c_str(), pDevice);
+			static const Texture2DD3D11 vsHybridPreview((std::string(Paths::visualStylesPreviews) + "\\Hybrid.png").c_str(), pDevice);
+			static const Texture2DD3D11 vsModernPreview((std::string(Paths::visualStylesPreviews) + "\\Modern.png").c_str(), pDevice);
 
 			std::array<const char*, 3> visualModes{ "CLASSIC VISUAL STYLE", "HYBRID VISUAL STYLE", "MODERN VISUAL STYLE" };
 			std::array<const char*, 4> visualModesWCustom{ "CLASSIC VISUAL STYLE", "HYBRID VISUAL STYLE", "MODERN VISUAL STYLE", "CUSTOM VISUAL STYLE" };
@@ -13871,6 +13875,21 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						CrimsonVisualStyle::SetVisualStylePreset((uint8)i);
 						tieVisualStyleToGameMode = false;
 						::GUI::save = true;
+					}
+
+					if (ImGui::IsItemHovered()) {
+						ImGui::BeginTooltip();
+						ImGui::SetWindowFontScale(scaleFactorY);
+						const Texture2DD3D11* previewTex = nullptr;
+						if (i == VISUALSTYLEPRESETS::CLASSIC) previewTex = &vsClassicPreview;
+						else if (i == VISUALSTYLEPRESETS::HYBRID) previewTex = &vsHybridPreview;
+						else if (i == VISUALSTYLEPRESETS::MODERN) previewTex = &vsModernPreview;
+						ImGui::Text("Preview");
+						if (previewTex && previewTex->IsValid()) {
+							ImVec2 tipSize = ImVec2(400.0f * scaleFactorY, 225.0f * scaleFactorY);
+							ImGui::Image(*previewTex, tipSize);
+						}
+						ImGui::EndTooltip();
 					}
 
 					if (isSelected) {
