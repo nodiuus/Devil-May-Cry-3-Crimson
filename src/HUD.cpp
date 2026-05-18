@@ -36,6 +36,9 @@ HUDIconHelper hpFrameVergil = {};
 HUDIconHelper hpBackgroundDante   = {};
 HUDIconHelper hpBackgroundVergil  = {};
 
+HUDIconHelper lockOnIconDante  = {};
+HUDIconHelper lockOnIconVergil = {};
+
 byte8* g_dynamicHUD_id100  = nullptr;
 byte8* g_dynamicHUD_id100V = nullptr;
 
@@ -125,6 +128,12 @@ void InitIcons(const std::string& selectedHUD) {
         hpBackgroundDante.textureFile = SubfilePtr(id100Arch, 0);
         hpBackgroundVergil.modelFile   = SubfilePtr(id100VArch, 5);
         hpBackgroundVergil.textureFile = SubfilePtr(id100VArch, 0);
+
+        // Lock-On icon — texture: 7, model: 8
+        lockOnIconDante.modelFile   = SubfilePtr(id100Arch, 8);
+        lockOnIconDante.textureFile = SubfilePtr(id100Arch, 7);
+        lockOnIconVergil.modelFile   = SubfilePtr(id100VArch, 8);
+        lockOnIconVergil.textureFile = SubfilePtr(id100VArch, 7);
     }
 
     // Weapon Icons Dante
@@ -178,6 +187,11 @@ void HUD_UpdateStyleIcon(uint8 style, uint8 character) {
     auto hudTop    = *reinterpret_cast<byte8**>(name_143 + 0x1B070);
     auto hudBottom = *reinterpret_cast<byte8**>(name_143 + 0x1B078);
 
+    // 0x1AEF0 (0x1B070 - 0x180) -- CUIDCockpit00
+	// 0x1AEF8 (0x1B078 - 0x180) -- CUIDCockpit02
+	// 0x1AF00 (0x1B080 - 0x180) -- CUIDLockOnCuror
+	// 0x1AF08 (0x1B088 - 0x180) -- CUIDPause
+	// 0x1AF10 (0x1B090 - 0x180) -- CUIDStylishCombo
 
     if constexpr (debug) {
         LogFunction();
@@ -425,6 +439,44 @@ void HUD_UpdateHPBar(uint8 character) {
     UpdateElement(hudTopOffs[HUD_TOP::LOWER_HIT_POINTS_BACKGROUND], bgFile);
 }
 
+void HUD_UpdateLockOn(uint8 character) {
+    if ((InCutscene()) || (InCredits())) {
+        return;
+    }
+
+	auto name_143 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E28);
+	if (!name_143) {
+		return;
+	}
+	name_143 -= 0x180;
+	auto lockOnCursor = *reinterpret_cast<byte8**>(name_143 + 0x1B080);
+
+	// 0x1AEF0 (0x1B070 - 0x180) -- CUIDCockpit00
+	// 0x1AEF8 (0x1B078 - 0x180) -- CUIDCockpit02
+	// 0x1AF00 (0x1B080 - 0x180) -- CUIDLockOnCuror
+	// 0x1AF08 (0x1B088 - 0x180) -- CUIDPause
+	// 0x1AF10 (0x1B090 - 0x180) -- CUIDStylishCombo
+
+    if constexpr (debug) {
+        LogFunction();
+    }
+
+    auto modelFile   = lockOnIconDante.modelFile;
+    auto textureFile = lockOnIconDante.textureFile;
+
+    if (((character == CHARACTER::BOB) || (character == CHARACTER::VERGIL))) {
+        modelFile   = lockOnIconVergil.modelFile;
+        textureFile = lockOnIconVergil.textureFile;
+    }
+
+    auto& modelData = *reinterpret_cast<ModelData*>(lockOnCursor + 0x80);
+
+    ResetModel(modelData);
+
+    func_89960(modelData, modelFile, textureFile);
+    func_89E30(modelData, 1);
+}
+
 void HUD_Init() {
     LogFunction();
 
@@ -643,6 +695,9 @@ void HUD_ReloadIcons() {
     HUD_UpdateDevilTriggerGauge(character);
     HUD_UpdateDevilTriggerLightning(character);
     HUD_UpdateDevilTriggerExplosion(character);
+
+    // Re-apply lock-on icon
+    HUD_UpdateLockOn(character);
 
     // Re-apply weapon icons — the game uses a direct index + weapon pair.
     // WEAPON::REBELLION + 0..9 covers both Dante melee & ranged indices.

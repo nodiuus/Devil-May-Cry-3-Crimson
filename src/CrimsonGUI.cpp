@@ -9562,9 +9562,7 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedCrimsonConfig.HudOptions.selectedHUD)) {
-				// Selection changed — applied below
-			}
+			UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedCrimsonConfig.HudOptions.selectedHUD);
 			if (queuedCrimsonConfig.HudOptions.selectedHUD != activeCrimsonConfig.HudOptions.selectedHUD) {
 				activeCrimsonConfig.HudOptions.selectedHUD = queuedCrimsonConfig.HudOptions.selectedHUD;
 				// Copy renamed files to GData.afs for backward compatibility

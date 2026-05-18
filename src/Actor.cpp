@@ -2702,6 +2702,8 @@ template <typename T> byte8* CreatePlayerActor(uint8 playerIndex, uint8 characte
 
     if ((playerIndex == 0) && (characterIndex == playerData.activeCharacterIndex) && (entityIndex == ENTITY::MAIN)) {
         HUD_UpdateStyleIcon(actorData.style, selectedCharacter);
+        HUD_UpdateHPBar(selectedCharacter);
+        HUD_UpdateLockOn(selectedCharacter);
         HUD_UpdateDevilTriggerGauge(selectedCharacter);
         HUD_UpdateDevilTriggerLightning(selectedCharacter);
         HUD_UpdateDevilTriggerExplosion(selectedCharacter);
@@ -3384,6 +3386,8 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
     if (playerIndex == 0) { // Only for player 1
         // Updates the HUD icons.
         HUD_UpdateStyleIcon(actorData.style, characterData.character);
+		HUD_UpdateHPBar(characterData.character);
+		HUD_UpdateLockOn(characterData.character);
         HUD_UpdateDevilTriggerGauge(characterData.character);
         HUD_UpdateDevilTriggerLightning(characterData.character);
         HUD_UpdateDevilTriggerExplosion(characterData.character);
@@ -4533,6 +4537,8 @@ void CharacterSwitchController() {
                 SetMainActor(actorData);
 
                 HUD_UpdateStyleIcon(actorData.style, characterData.character);
+				HUD_UpdateHPBar(characterData.character);
+				HUD_UpdateLockOn(characterData.character);
                 HUD_UpdateDevilTriggerGauge(characterData.character);
                 HUD_UpdateDevilTriggerLightning(characterData.character);
                 HUD_UpdateDevilTriggerExplosion(characterData.character);

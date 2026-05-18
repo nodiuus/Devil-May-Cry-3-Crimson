@@ -4854,21 +4854,49 @@ static_assert(offsetof(EnemyVectorData, nextMetadataAddr) == 0x1050);
 
 static_assert(sizeof(EnemyVectorData) == 4184);
 
-struct HUDData {
-	_(26904);
-	float topLeftAlphaTimer; // 0x6918
-    _(4);
-    uint8 topLeftAlpha; // 0x6920
-    _(23);
-    float orbsCountAlphaTimer; // 0x6938
-    uint8 orbsCountAlpha; // 0x693C
-};
+class CUIDCockpit00
+{
+public:
+	char pad_0000[1792]; //0x0000
+	ModelData CDrawUpperHPFrame; //0x0700
+    ModelData CDrawUpperHPBar; //0x0E80
+    ModelData CDrawUpperHPRed; //0x1600
+	ModelData CDrawLowerHPFrame; //0x1D80
+	ModelData CDrawLowerHPBar; //0x2500
+	ModelData CDrawLowerHPRed; //0x2C80
+	ModelData CDrawDTOrbs; //0x3400
+	ModelData CDrawStyleIcons; //0x3B80
+    ModelData CDrawRedOrbCounter; //0x4300
+    ModelData CDrawUnknown1; //0x4A80
+	ModelData CDrawUnknown2; //0x5200
+	ModelData CDrawDTFlux; //0x5980
+	ModelData CDrawDTExplosion; //0x6100
+	char pad_6880[152]; //0x6880
+	float topLeftAlphaTimer; //0x6918
+	char pad_691C[4]; //0x691C
+	uint8_t topLeftAlpha; //0x6920
+	char pad_6921[23]; //0x6921
+	float orbsCountAlphaTimer; //0x6938
+	uint8_t orbsCountAlpha; //0x693C
+	char pad_693D[1795]; //0x693D
+}; //Size: 0x7040
 
-static_assert(offsetof(HUDData, topLeftAlphaTimer) == 0x6918);
-static_assert(offsetof(HUDData, topLeftAlpha) == 0x6920);
-static_assert(offsetof(HUDData, orbsCountAlphaTimer) == 0x6938);
-static_assert(offsetof(HUDData, orbsCountAlpha) == 0x693C);
+using HUDData = CUIDCockpit00;
 
+static_assert(offsetof(CUIDCockpit00, topLeftAlphaTimer) == 0x6918);
+static_assert(offsetof(CUIDCockpit00, topLeftAlpha) == 0x6920);
+static_assert(offsetof(CUIDCockpit00, orbsCountAlphaTimer) == 0x6938);
+static_assert(offsetof(CUIDCockpit00, orbsCountAlpha) == 0x693C);
+
+class CUIDLockOnCursor
+{
+public:
+	char pad_0000[128]; //0x0000
+	ModelData CDrawStart; //0x0080 // 0x1E0 uiVisibility
+	char pad_0800[95]; //0x0800
+}; //Size: 0x085F
+
+static_assert(offsetof(CUIDLockOnCursor, CDrawStart) == 0x80);
 
 // $EnemyVectorDataEnd
 

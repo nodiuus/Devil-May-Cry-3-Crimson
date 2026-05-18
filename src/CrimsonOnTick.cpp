@@ -1491,6 +1491,9 @@ void ReloadHUDController() {
 	HUD_UpdateDevilTriggerLightning(character);
 	HUD_UpdateDevilTriggerExplosion(character);
 
+	// Re-apply lock-on icon
+	HUD_UpdateLockOn(character);
+
 	hudReloaded = true;
 }
 
