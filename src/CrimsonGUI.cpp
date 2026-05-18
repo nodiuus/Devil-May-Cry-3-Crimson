@@ -9563,11 +9563,15 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			ImGui::PushItemWidth(itemWidth);
 			if (UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedCrimsonConfig.HudOptions.selectedHUD)) {
-				CrimsonFiles::CopyHUDtoGame();
+				// Selection changed — applied below
 			}
 			if (queuedCrimsonConfig.HudOptions.selectedHUD != activeCrimsonConfig.HudOptions.selectedHUD) {
-				auto restartStrColor = CrimsonUtil::HexToImVec4(0x1DD6FFFF);
-				ImGui::TextColored(restartStrColor, "Restart the game to properly apply new HUD.");
+				activeCrimsonConfig.HudOptions.selectedHUD = queuedCrimsonConfig.HudOptions.selectedHUD;
+				// Copy renamed files to GData.afs for backward compatibility
+				CrimsonFiles::CopyHUDFilePactoGameFolder();
+				// Load dynamically and hot-reload icons immediately
+				CrimsonFiles::ApplySelectedHUD(activeCrimsonConfig.HudOptions.selectedHUD);
+				HUD_ReloadIcons();
 			}
 			ImGui::PopItemWidth();
 
@@ -9621,7 +9625,7 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
     ImGui::PopStyleColor();
     
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
-	ImGui::Text("CRIMSON HUD ADDONS");
+	ImGui::Text("CRIMSON HUD 1.0 ADDONS");
 	ImGui::PopFont();
 	
 

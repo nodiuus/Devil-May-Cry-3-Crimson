@@ -30,6 +30,7 @@
 #include "CrimsonGameModes.hpp"
 #include "CrimsonCameraController.hpp"
 #include "CrimsonHighFPSFixes.hpp"
+#include "HUD.hpp"
 
 
 namespace CrimsonOnTick {
@@ -1382,11 +1383,11 @@ void ResetCameraToNearestSide(EventData& eventData, PlayerActorData& mainActorDa
 
 void GeneralCameraOptionsController() {
 	static bool setCamPos = false;
-	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10298 || !pool_10298[8]) {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
 		return;
 	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
 	CameraData* cameraData = GetSafeCameraData();
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
 	if (!pool_4449) return;
@@ -1425,6 +1426,72 @@ void GeneralCameraOptionsController() {
 
 	CrimsonPatches::ToggleLockedOffCamera(g_disableCameraRotation ? false : activeCrimsonConfig.Camera.lockedOff);
 	CrimsonPatches::CameraLockOnDistanceController();
+}
+
+void ReloadHUDController() {
+	// Tracks whether the HUD has already been reloaded for this game session entry.
+	// Reset only when leaving the game state, so the reload fires exactly once on re-entry.
+	static bool hudReloaded = false;
+
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+
+	// When outside valid gameplay events or in a cutscene, reset the flag and bail out.
+	// No HUD reload should happen in these states.
+	if ((eventData.event != EVENT::MAIN && eventData.event != EVENT::PAUSE &&
+		eventData.event != EVENT::MESSAGE && eventData.event != EVENT::ITEM) ||
+		g_inGameCutscene) {
+		hudReloaded = false;
+		return;
+	}
+
+	// Already reloaded this session — nothing to do.
+	if (hudReloaded) {
+		return;
+	}
+
+	// Fetch Player 1's currently active character.
+	// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+	// Vanilla route: GetVanillaPlayerActor — mirrors GetNewActorData for vanilla actors.
+	PlayerActorData* actorDataPtr = nullptr;
+	auto& playerData = GetPlayerData(0);
+
+	if (activeConfig.Actor.enable) {
+		auto& activeNewActorData = GetNewActorData(0, playerData.activeCharacterIndex, ENTITY::MAIN);
+		if (activeNewActorData.baseAddr) {
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+		}
+	}
+	else {
+		actorDataPtr = GetVanillaPlayerActor();
+	}
+	static bool actorNotFoundLogged = false;
+	if (!actorDataPtr) {
+		if (!actorNotFoundLogged) {
+			Log("Player actor not found, cannot reload HUD");
+			actorNotFoundLogged = true;
+		}
+		return;
+	}
+	actorNotFoundLogged = false;
+	auto& actorData = *actorDataPtr;
+	uint8 character = actorData.character;
+
+	// Re-apply style icons for all styles
+	HUD_UpdateStyleIcon(actorData.style, character);
+
+	// Re-apply HP bar frame and fill
+	HUD_UpdateHPBar(character);
+
+	// Re-apply DT gauge, lightning, and explosion
+	HUD_UpdateDevilTriggerGauge(character);
+	HUD_UpdateDevilTriggerLightning(character);
+	HUD_UpdateDevilTriggerExplosion(character);
+
+	hudReloaded = true;
 }
 
 
@@ -1972,6 +2039,7 @@ void TriggerOnTickFuncs() {
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
 	ControlMenuFadeouts();
+	ReloadHUDController();
 	CrimsonHighFPSFixes::ClothPhysicsFixesController();
 	bool gigapedemoment = GetGigapedeMoment();
 	CrimsonHighFPSFixes::LookAtBossCamFixes(!gigapedemoment);

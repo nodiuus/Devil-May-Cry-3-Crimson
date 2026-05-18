@@ -25,5 +25,7 @@ std::vector<std::string> GetFiles(const std::string& path);
 void GetHUDsDirectories();
 void GetStyleRanksDirectories();
 void GetStyleRanksAccoladesDirectories();
-void CopyHUDtoGame();
+void CopyHUDFilePactoGameFolder();
+void FreeDynamicHUD();
+bool ApplySelectedHUD(const std::string& hudName);
 }

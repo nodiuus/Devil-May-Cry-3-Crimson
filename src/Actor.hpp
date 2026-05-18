@@ -376,8 +376,8 @@ template <typename T> bool IsArkham2Actor(T& actorData) {
 // ---------------------------------------------------------------------------
 // ForEachSpawnedPlayerActor — iterate every Crimson-created actor registered
 // in g_playerActorBaseAddrs.  Two overloads:
-//   4-param: (PlayerActorData&, NewActorData&, playerIndex, entityIndex)
-//   3-param: (PlayerActorData&, playerIndex, entityIndex)
+//   5-param: (PlayerActorData&, NewActorData&, playerIndex, characterIndex, entityIndex)
+//   4-param: (PlayerActorData&, playerIndex, characterIndex, entityIndex)
 // No slot‑grid dependency.  Use actorData.character / actorData.costume for
 // routing decisions — they are always authoritative unlike characterData.
 //
@@ -403,17 +403,17 @@ void ForEachSpawnedPlayerActor(F&& callback) {
         // CreatePlayerActor for the Crimson main actor, not themselves.
         if (newActorData.baseAddr != actorBaseAddr) continue;
 
-        callback(actorData, newActorData, playerIndex, entityIndex);
+        callback(actorData, newActorData, playerIndex, characterIndex, entityIndex);
     }
 }
 
-// 3-param overload — delegates to a private impl, dropping newActorData.
+// 4-param overload — delegates to the 5-param version, dropping newActorData.
 template <typename F,
-          typename = decltype(std::declval<F&>()(std::declval<PlayerActorData&>(), uint8{}, uint8{}))>
+          typename = decltype(std::declval<F&>()(std::declval<PlayerActorData&>(), uint8{}, uint8{}, uint8{}))>
 void ForEachSpawnedPlayerActor(F&& callback) {
     ForEachSpawnedPlayerActor([&](PlayerActorData& actorData, NewActorData&,
-                                   uint8 playerIndex, uint8 entityIndex) {
-        callback(actorData, playerIndex, entityIndex);
+                                   uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
+        callback(actorData, playerIndex, characterIndex, entityIndex);
     });
 }
 
@@ -421,7 +421,9 @@ void ForEachSpawnedPlayerActor(F&& callback) {
 // ForEachVanillaPlayerActor — iterate the two vanilla actors (indices 0-1)
 // registered by EventCreateMainActor / EventCreateCloneActor.  These are
 // skipped by ForEachSpawnedPlayerActor.  Only provides (PlayerActorData&,
-// playerIndex, entityIndex) — NewActorData is not valid for vanilla actors. -- Berthrage
+// playerIndex, entityIndex) — NewActorData is not valid for vanilla actors.
+// THIS LOOP WILL ONLY WORK WITH CCS ENABLED, that's when g_playerActorBaseAddrs is populated.
+// -- Berthrage
 // ---------------------------------------------------------------------------
 template <typename F>
 void ForEachVanillaPlayerActor(F&& callback) {
@@ -441,6 +443,20 @@ void ForEachVanillaPlayerActor(F&& callback) {
 
         callback(actorData, playerIndex, entityIndex);
     }
+}
+
+// ---------------------------------------------------------------------------
+// GetVanillaPlayerActor — fetch the vanilla main actor via the game's own
+// actor pool (ie: dmc3.exe+1B6339: mov rax,[C90E28]; mov rcx,[rax+18]).
+// pool[3] (offset 0x18) always holds the currently active main player actor
+// regardless of whether the Crimson Actor module is enabled. -- Berthrage
+// ---------------------------------------------------------------------------
+inline PlayerActorData* GetVanillaPlayerActor() {
+    auto pool_C90E28 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+    if (!pool_C90E28 || !pool_C90E28[3]) {
+        return nullptr;
+    }
+    return reinterpret_cast<PlayerActorData*>(pool_C90E28[3]);
 }
 
 #pragma region Actor Management

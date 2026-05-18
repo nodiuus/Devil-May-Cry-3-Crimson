@@ -150,7 +150,9 @@ void UpdateHUDPostPreset() {
 	CrimsonDetours::ToggleStyleRankHudNoFadeout(cfg.HudOptions.disableStyleRankHudFadeout);
 
 	// Refresh HUD files if selectedHUD changed
-	CrimsonFiles::CopyHUDtoGame();
+	CrimsonFiles::CopyHUDFilePactoGameFolder();
+	CrimsonFiles::ApplySelectedHUD(activeCrimsonConfig.HudOptions.selectedHUD);
+	HUD_ReloadIcons();
 }
 
 } 

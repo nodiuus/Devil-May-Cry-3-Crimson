@@ -95,7 +95,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         ExpConfig::InitExp();
         ExpConfig::LoadExp();
 
-        CrimsonFiles::CopyHUDtoGame();
+        CrimsonFiles::CopyHUDFilePactoGameFolder();
 
         if (!Memory_Init()) {
             Log("Memory_Init failed.");
@@ -112,6 +112,9 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
 
             return 0;
         }
+
+        // Load the selected HUD dynamically before HUD_Init
+        CrimsonFiles::ApplySelectedHUD(activeCrimsonConfig.HudOptions.selectedHUD);
 
         if (!FMOD_Init()) {
             Log("FMOD_Init failed.");

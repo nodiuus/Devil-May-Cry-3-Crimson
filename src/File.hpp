@@ -4,6 +4,7 @@
 #include "Vars.hpp"
 
 bool IsArchive(byte8* addr);
+void AdjustPointers(byte8* archive);
 
 struct FileManager : Container<> {
     struct Metadata {
@@ -41,6 +42,8 @@ extern byte8* newDrivePart1_pl000_00_3;
 extern byte8* newDrivePart2_pl000_00_3;
 extern byte8* newDrivePart3_pl000_00_3;
 extern byte8* newBackslide_pl000_00_19;
+extern byte8* newCrimsonHUD1_0_id_100;
+extern byte8* newCrimsonHUD1_0_id_100V;
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex);
 

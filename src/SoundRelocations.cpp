@@ -45,7 +45,7 @@ void UpdateGlobalHelperIndices(byte8* bodyPartDataAddr) {
         bool matched = false;
 
         ForEachSpawnedPlayerActor([&](PlayerActorData& actorData, NewActorData& newActorData,
-                                 uint8 playerIndex, uint8 entityIndex) {
+                                 uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
             if (matched) return;  // already found a match earlier, skip
             if (baseAddr != newActorData.baseAddr) return;
 
