@@ -17,6 +17,7 @@
 #include "File.hpp"
 #include "Internal.hpp"
 #include "ActorBase.hpp"
+#include "Actor.hpp"
 #include "Core/Core.hpp"
 #include "Memory.hpp"
 #include "Model.hpp"
@@ -1663,7 +1664,7 @@ void LockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = 0.08f; // slow spin
 
-	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn ) {
 		CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn);
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
@@ -1676,16 +1677,28 @@ void LockOnWindows() {
 
 	CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.CrimsonHudAddons.lockOn);
 
-	// Loop through player data
-	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		auto& playerData = GetPlayerData(playerIndex);
-		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+	// Determine player count based on actor module state
+	uint8 playerCount = activeConfig.Actor.enable ? activeConfig.Actor.playerCount : 1;
 
-		if (!newActorData.baseAddr) {
-			continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+	// Loop through player data
+	for (uint8 playerIndex = 0; playerIndex < playerCount; ++playerIndex) {
+		PlayerActorData* actorDataPtr = nullptr;
+
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		} else {
+			// Vanilla route: GetVanillaPlayerActor — only playerIndex 0 is valid.
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		auto& actorData = *actorDataPtr;
 
 		// Update angle
 		float deltaTime = ImGui::GetIO().DeltaTime;
@@ -1695,14 +1708,8 @@ void LockOnWindows() {
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
 
 		// Compute lock-on screen position, camera distance, and clamped distance
-		auto lockedEnemyScreenPositionDD = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
+		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		lockedEnemyScreenPosition = lockedEnemyScreenPositionDD;
-		glm::vec3 lockedEnemyPosition = { actorData.lockOnData.targetPosition.x, actorData.lockOnData.targetPosition.y, actorData.lockOnData.targetPosition.z };
-		glm::vec3 cameraPosition = { cameraData.data[0].x, cameraData.data[0].y, cameraData.data[0].z };
-		crimsonPlayer[playerIndex].cameraLockedEnemyDistance = glm::distance(lockedEnemyPosition, cameraPosition);
-		int distanceLockedEnemy = (int)crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20;
-		crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped = glm::clamp(distanceLockedEnemy, 0, 255);
 		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
 
 		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
@@ -1850,11 +1857,6 @@ void StunDisplacementLockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = -0.12f; // slow spin
 
-	if (!activeConfig.Actor.enable) {
-		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
-		return;
-	}
-
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
 	if (!pool_4449 || !pool_4449[147]) {
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
@@ -1867,11 +1869,24 @@ void StunDisplacementLockOnWindows() {
 		auto& playerData = GetPlayerData(playerIndex);
 		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+		PlayerActorData* actorDataPtr = nullptr;
 
-		if (!newActorData.baseAddr) {
-			continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		else {
+			// Vanilla route: GetVanillaPlayerActor — only playerIndex 0 is valid.
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
+		}
+		auto& actorData = *actorDataPtr;
 
 		if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) continue;
 
@@ -2181,7 +2196,7 @@ void ShieldLockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = -0.12f; // slow spin
 
-	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn) {
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
@@ -2195,14 +2210,24 @@ void ShieldLockOnWindows() {
 
 	// Loop through player data
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		auto& playerData = GetPlayerData(playerIndex);
-		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+		PlayerActorData* actorDataPtr = nullptr;
 
-		if (!newActorData.baseAddr) {
-			continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		else {
+			// Vanilla route: GetVanillaPlayerActor — only playerIndex 0 is valid.
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
+		}
+		auto& actorData = *actorDataPtr;
 
 		if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) continue;
 

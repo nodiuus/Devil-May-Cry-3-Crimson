@@ -4649,9 +4649,10 @@ void GetLockedOnEnemyHitPoints(byte8* actorBaseAddr) {
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
-	auto playerIndex = actorData.newPlayerIndex;
-	auto& lockedOnEnemyHP = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyHP : crimsonPlayer[playerIndex].lockedOnEnemyHPClone;
-	auto& lockedOnEnemyMaxHP = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxHP : crimsonPlayer[playerIndex].lockedOnEnemyMaxHPClone;
+	uint8 playerIndex = activeConfig.Actor.enable ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = activeConfig.Actor.enable ? actorData.newEntityIndex : 0;
+	auto& lockedOnEnemyHP = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyHP : crimsonPlayer[playerIndex].lockedOnEnemyHPClone;
+	auto& lockedOnEnemyMaxHP = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxHP : crimsonPlayer[playerIndex].lockedOnEnemyMaxHPClone;
 
 	if (actorData.lockOnData.targetBaseAddr60 != 0) {
 		auto& enemyActorData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60); // -0x60 very important don't forget
@@ -4759,12 +4760,14 @@ void GetLockedOnEnemyStunDisplacement(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
+	uint8 playerIndex = activeConfig.Actor.enable ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = activeConfig.Actor.enable ? actorData.newEntityIndex : 0;
     if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
-	auto playerIndex = actorData.newPlayerIndex;
-	auto& lockedOnEnemyStun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyStun : crimsonPlayer[playerIndex].lockedOnEnemyStunClone;
-	auto& lockedOnEnemyDisplacement = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyDisplacementClone;
-	auto& lockedOnEnemyMaxStun = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxStun : crimsonPlayer[playerIndex].lockedOnEnemyMaxStunClone;
-	auto& lockedOnEnemyMaxDisplacement = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyMaxDisplacementClone;
+	auto& lockedOnEnemyStun = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyStun : crimsonPlayer[playerIndex].lockedOnEnemyStunClone;
+	auto& lockedOnEnemyDisplacement = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyDisplacementClone;
+	auto& lockedOnEnemyMaxStun = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxStun : crimsonPlayer[playerIndex].lockedOnEnemyMaxStunClone;
+	auto& lockedOnEnemyMaxDisplacement = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyMaxDisplacementClone;
 
 	// Set base values assuming no valid enemy is locked on
 	lockedOnEnemyStun = lockedOnEnemyMaxStun;
@@ -4873,15 +4876,15 @@ void CalculateLockedOnEnemyLastStunDisplacementValue(byte8* actorBaseAddr) {
 	if (!actorBaseAddr) return;
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-	auto playerIndex = actorData.newPlayerIndex;
-	uint32_t entityIdx = actorData.newEntityIndex;
+	uint8 playerIndex = activeConfig.Actor.enable ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = activeConfig.Actor.enable ? actorData.newEntityIndex : 0;
 
     if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 
-	auto& lockedOnEnemyStun = (entityIdx == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyStun : crimsonPlayer[playerIndex].lockedOnEnemyStunClone;
-	auto& lockedOnEnemyDisplacement = (entityIdx == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyDisplacementClone;
-	auto& lockedOnEnemyMinusStun = (entityIdx == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMinusStun : crimsonPlayer[playerIndex].lockedOnEnemyMinusStunClone;
-	auto& lockedOnEnemyMinusDisplacement = (entityIdx == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMinusDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyMinusDisplacementClone;
+	auto& lockedOnEnemyStun = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyStun : crimsonPlayer[playerIndex].lockedOnEnemyStunClone;
+	auto& lockedOnEnemyDisplacement = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyDisplacementClone;
+	auto& lockedOnEnemyMinusStun = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMinusStun : crimsonPlayer[playerIndex].lockedOnEnemyMinusStunClone;
+	auto& lockedOnEnemyMinusDisplacement = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMinusDisplacement : crimsonPlayer[playerIndex].lockedOnEnemyMinusDisplacementClone;
 
 	static float lastStun[4][2] = {};
 	static float lastDisplacement[4][2] = {};
@@ -4889,16 +4892,16 @@ void CalculateLockedOnEnemyLastStunDisplacementValue(byte8* actorBaseAddr) {
 	static std::chrono::steady_clock::time_point lastCheck[4][2] = {};
 
 	auto now = std::chrono::steady_clock::now();
-	if (now - lastCheck[playerIndex][entityIdx] < std::chrono::milliseconds(200)) {
+	if (now - lastCheck[playerIndex][entityIndex] < std::chrono::milliseconds(200)) {
 		return;
 	}
-	lastCheck[playerIndex][entityIdx] = now;
+	lastCheck[playerIndex][entityIndex] = now;
 
 	float currentStun = lockedOnEnemyStun;
 	float currentDisplacement = lockedOnEnemyDisplacement;
 
-	float stunDiff = lastStun[playerIndex][entityIdx] - currentStun;
-	float displacementDiff = lastDisplacement[playerIndex][entityIdx] - currentDisplacement;
+	float stunDiff = lastStun[playerIndex][entityIndex] - currentStun;
+	float displacementDiff = lastDisplacement[playerIndex][entityIndex] - currentDisplacement;
 
 	if (stunDiff > 0.0f) {
 		lockedOnEnemyMinusStun = stunDiff;
@@ -4907,8 +4910,8 @@ void CalculateLockedOnEnemyLastStunDisplacementValue(byte8* actorBaseAddr) {
 		lockedOnEnemyMinusDisplacement = displacementDiff;
 	}
 
-	lastStun[playerIndex][entityIdx] = currentStun;
-	lastDisplacement[playerIndex][entityIdx] = currentDisplacement;
+	lastStun[playerIndex][entityIndex] = currentStun;
+	lastDisplacement[playerIndex][entityIndex] = currentDisplacement;
 }
 
 void GetLockedOnEnemyShield(byte8* actorBaseAddr) {
@@ -4916,9 +4919,10 @@ void GetLockedOnEnemyShield(byte8* actorBaseAddr) {
 		return;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-	auto playerIndex = actorData.newPlayerIndex;
-	auto& lockedOnEnemyShield = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyShield : crimsonPlayer[playerIndex].lockedOnEnemyShieldClone;
-	auto& lockedOnEnemyMaxShield = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxShield : crimsonPlayer[playerIndex].lockedOnEnemyMaxShieldClone;
+	uint8 playerIndex = activeConfig.Actor.enable ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = activeConfig.Actor.enable ? actorData.newEntityIndex : 0;
+	auto& lockedOnEnemyShield = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyShield : crimsonPlayer[playerIndex].lockedOnEnemyShieldClone;
+	auto& lockedOnEnemyMaxShield = (entityIndex == 0) ? crimsonPlayer[playerIndex].lockedOnEnemyMaxShield : crimsonPlayer[playerIndex].lockedOnEnemyMaxShieldClone;
 
     if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 
