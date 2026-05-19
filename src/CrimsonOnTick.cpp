@@ -633,14 +633,23 @@ void StyleMeterMultiplayer() {
 	float highestStyleQuotient = 0.0f;
 
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		auto& playerData = GetPlayerData(playerIndex);
-		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-
-		if (!newActorData.baseAddr) {
-			continue;
+		PlayerActorData* actorDataPtr = nullptr;
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData 
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; 
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		else {
+			// Vanilla route: GetVanillaPlayerActor
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
+		}
+		auto& actorData = *actorDataPtr;
 		auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
 
 		if (actorData.styleData.rank > highestStyleRank) {
