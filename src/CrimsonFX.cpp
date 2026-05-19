@@ -59,6 +59,19 @@ void DTReadySFX() {
     }
 }
 
+void ComputeLockOnScreenData(PlayerActorData& actorData, const CameraData& cameraData, uint8 playerIndex) {
+	// Compute locked enemy screen position
+	auto lockedEnemyScreenPositionDD = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
+	crimsonPlayer[playerIndex].lockedEnemyScreenPosition = lockedEnemyScreenPositionDD;
+
+	// Compute camera-to-locked-enemy distance and clamped value
+	glm::vec3 lockedEnemyPosition = { actorData.lockOnData.targetPosition.x, actorData.lockOnData.targetPosition.y, actorData.lockOnData.targetPosition.z };
+	glm::vec3 cameraPosition = { cameraData.data[0].x, cameraData.data[0].y, cameraData.data[0].z };
+	crimsonPlayer[playerIndex].cameraLockedEnemyDistance = glm::distance(lockedEnemyPosition, cameraPosition);
+	int distanceLockedEnemy = (int)crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20;
+	crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped = glm::clamp(distanceLockedEnemy, 0, 255);
+}
+
 void CalculateViewProperties(byte8* actorBaseAddr) {
 	if (!actorBaseAddr) return;
 
@@ -73,7 +86,7 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
 	if (!pool_4449 || !pool_4449[147]) return;
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
-	
+
 	auto pool_11962 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
 	if (!pool_11962 || !pool_11962[8]) return;
 	auto& eventData = *reinterpret_cast<EventData*>(pool_11962[8]);
@@ -88,18 +101,16 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 	glm::vec3 clonePosition = { cloneActorData.position.x, cloneActorData.position.y, cloneActorData.position.z };
 	glm::vec3 mainActorPosition = { mainActorData.position.x, mainActorData.position.y, mainActorData.position.z };
 	glm::vec3 cameraPosition = { cameraData.data[0].x, cameraData.data[0].y, cameraData.data[0].z };
-	glm::vec3 lockedEnemyPosition = { actorData.lockOnData.targetPosition.x, actorData.lockOnData.targetPosition.y, actorData.lockOnData.targetPosition.z };
 	glm::vec3 cloneLockedEnemyPosition = { cloneActorData.lockOnData.targetPosition.x, cloneActorData.lockOnData.targetPosition.y, cloneActorData.lockOnData.targetPosition.z };
 
 	auto& playerTo1PDistance = crimsonPlayer[playerIndex].playerTo1PDistance;
 	auto& cloneTo1PDistance = crimsonPlayer[playerIndex].cloneTo1PDistance;
 	auto& playerScreenPosition = crimsonPlayer[playerIndex].playerScreenPosition;
 	auto& cloneScreenPosition = crimsonPlayer[playerIndex].cloneScreenPosition;
-	auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
+
 	auto& cloneLockedEnemyScreenPosition = crimsonPlayer[playerIndex].cloneLockedEnemyScreenPosition;
     auto& cameraPlayerDistance = crimsonPlayer[playerIndex].cameraPlayerDistance;
 	auto& cameraCloneDistance = crimsonPlayer[playerIndex].cameraCloneDistance;
-	auto& cameraLockedEnemyDistance = crimsonPlayer[playerIndex].cameraLockedEnemyDistance;
 	auto& cameraCloneLockedEnemyDistance = crimsonPlayer[playerIndex].cameraCloneLockedEnemyDistance;
 	auto& playerOutOfView = crimsonPlayer[playerIndex].playerOutOfView;
 	auto& cloneOutOfView = crimsonPlayer[playerIndex].cloneOutOfView;
@@ -111,7 +122,6 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 
 	playerScreenPosition = debug_draw_world_to_screen((const float*)&actorData.position, 1.0f);
 	cloneScreenPosition = debug_draw_world_to_screen((const float*)&cloneActorData.position, 1.0f);
-	//lockedEnemyScreenPosition = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
 	cloneLockedEnemyScreenPosition = debug_draw_world_to_screen((const float*)&cloneActorData.lockOnData.targetPosition, 1.0f);
 
 	g_plEntityScreenPositions[indexToAssign] = playerScreenPosition;
@@ -126,10 +136,6 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 	int distanceClone = (int)cameraCloneDistance / 20;
 	crimsonPlayer[playerIndex].cameraCloneDistanceClamped = glm::clamp(distanceClone, 0, 255);
 	g_plEntityCameraDistances[cloneIndexToAssign] = cameraCloneDistance;
-
-// 	cameraLockedEnemyDistance = glm::distance(lockedEnemyPosition, cameraPosition);
-// 	int distanceLockedEnemy = (int)cameraLockedEnemyDistance / 20;
-// 	crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped = glm::clamp(distanceLockedEnemy, 0, 255);
 
 	cameraCloneLockedEnemyDistance = glm::distance(cloneLockedEnemyPosition, cameraPosition);
 	int distanceCloneLockedEnemy = (int)cameraCloneLockedEnemyDistance / 20;

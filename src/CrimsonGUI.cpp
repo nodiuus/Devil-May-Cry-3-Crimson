@@ -9726,8 +9726,6 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			if (GUI_Checkbox2("Lock-On", activeCrimsonConfig.CrimsonHudAddons.lockOn, queuedCrimsonConfig.CrimsonHudAddons.lockOn)) {
 				CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.CrimsonHudAddons.lockOn);
 				if (!activeCrimsonConfig.CrimsonHudAddons.lockOn) {
-					activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud = false;
-					queuedCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud = false;
 					activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance = false;
 					queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance = false;
 				}
@@ -9737,17 +9735,20 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
 			GUI_Checkbox2("Scale Lock-On Enemy Distance", activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance, queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance);
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Scales the Lock-On Display size based on how distant the Enemy is from the Camera.");
-			GUI_PopDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
+			GUI_Checkbox2("Stun/Displacement Lock-On", activeCrimsonConfig.CrimsonHudAddons.lockOnStunDisplacement,
+				queuedCrimsonConfig.CrimsonHudAddons.lockOnStunDisplacement);
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+
+			ImGui::TableNextColumn();
 
 			if (GUI_Checkbox2("Stun/Displacement Numeric HUD", activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud, queuedCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud)) {
 				if (activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud) {
@@ -9762,6 +9763,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			TooltipHelper("(?)", "Show numerical stun and displacement values on lock-on (Hells enemies only).\nLast Move minus value updates each 200ms. Requires CrimsonHUD's Lock-On.");
 
 			ImGui::TableNextColumn();
+
+			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
 
 			GUI_Checkbox2("Lock On Colors on Characters", activeCrimsonConfig.CrimsonHudAddons.lockOnColorsCharacter, 
 				queuedCrimsonConfig.CrimsonHudAddons.lockOnColorsCharacter);

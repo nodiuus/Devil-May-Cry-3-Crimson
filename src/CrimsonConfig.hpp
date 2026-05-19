@@ -171,6 +171,7 @@ struct CrimsonConfig {
 		bool stylishPtsCounter = true;
 		uint8 missionTimerDisplay = MISSIONTIMERDISPLAY::ONLY_IN_BP;
 		bool lockOn = true;
+		bool lockOnStunDisplacement = true;
 		bool scaleLockOnEnemyDistance = false;
 		bool stunDisplacementNumericHud = false;
 		bool lockOnColorsCharacter = true;
@@ -188,6 +189,7 @@ struct CrimsonConfig {
 				std::make_pair("missionTimerDisplay", &CrimsonHudAddons::missionTimerDisplay),
 				std::make_pair("stylishPtsCounter", &CrimsonHudAddons::stylishPtsCounter),
                 std::make_pair("lockOn", &CrimsonHudAddons::lockOn),
+				std::make_pair("lockOnStunDisplacement", &CrimsonHudAddons::lockOnStunDisplacement),
 				std::make_pair("scaleLockOnEnemyDistance", &CrimsonHudAddons::scaleLockOnEnemyDistance),
 				std::make_pair("stunDisplacementNumericHud", &CrimsonHudAddons::stunDisplacementNumericHud),
 				std::make_pair("lockOnColorsCharacter", &CrimsonHudAddons::lockOnColorsCharacter),

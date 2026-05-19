@@ -6,6 +6,7 @@ namespace CrimsonFX {
 
 #pragma region GeneralFX
 void DTReadySFX();
+void ComputeLockOnScreenData(PlayerActorData& actorData, const CameraData& cameraData, uint8 playerIndex);
 void CalculateViewProperties(byte8* actorBaseAddr);
 void DTExplosionFXController(byte8* actorBaseAddr);
 void StyleRankHudFadeoutController();

@@ -43,6 +43,7 @@
 #include "CrimsonFileHandling.hpp"
 #include "CrimsonHUD.hpp"
 #include "CrimsonGameplay.hpp"
+#include "CrimsonFX.hpp"
 #include "DebugDrawDX11.hpp"
 #define DEBUG_DRAW_EXPLICIT_CONTEXT
 #include "debug_draw.hpp"
@@ -1693,6 +1694,7 @@ void LockOnWindows() {
 		// Keep angle in [0, 2*PI]
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
 
+		// Compute lock-on screen position, camera distance, and clamped distance
 		auto lockedEnemyScreenPositionDD = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
 		lockedEnemyScreenPosition = lockedEnemyScreenPositionDD;
@@ -1848,10 +1850,17 @@ void StunDisplacementLockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = -0.12f; // slow spin
 
-	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+	if (!activeConfig.Actor.enable) {
 		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
+
+	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
+	if (!pool_4449 || !pool_4449[147]) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
+		return;
+	}
+	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
 	// Loop through player data
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
@@ -1872,6 +1881,8 @@ void StunDisplacementLockOnWindows() {
 
 		// Keep angle in [0, 2*PI]
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
+
+		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 
 		auto distanceClamped = crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped;
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
@@ -2175,6 +2186,13 @@ void ShieldLockOnWindows() {
 		return;
 	}
 
+	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
+	if (!pool_4449 || !pool_4449[147]) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
+		return;
+	}
+	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
+
 	// Loop through player data
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
 		auto& playerData = GetPlayerData(playerIndex);
@@ -2194,6 +2212,8 @@ void ShieldLockOnWindows() {
 
 		// Keep angle in [0, 2*PI]
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
+
+		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 
 		auto distanceClamped = crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped;
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
