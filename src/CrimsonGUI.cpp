@@ -9726,14 +9726,14 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			if (GUI_Checkbox2("Lock-On", activeCrimsonConfig.CrimsonHudAddons.lockOn, queuedCrimsonConfig.CrimsonHudAddons.lockOn)) {
 				CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.CrimsonHudAddons.lockOn);
 				if (!activeCrimsonConfig.CrimsonHudAddons.lockOn) {
-					activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance = false;
-					queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance = false;
+					activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance = false;
+					queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance = false;
 				}
 			}
 
 			ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Scale Lock-On Enemy Distance", activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance, queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance);
+			GUI_Checkbox2("Scale Lock-On Enemy Distance", activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance, queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance);
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Scales the Lock-On Display size based on how distant the Enemy is from the Camera.");
 

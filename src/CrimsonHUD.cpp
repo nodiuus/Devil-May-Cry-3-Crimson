@@ -1638,6 +1638,29 @@ void CheatHotkeysPopUpWindow() {
 	ImGui::End();
 }
 
+
+// Smoothed lock-on distance helper — continuous float with exponential
+// smoothing to eliminate stepping from integer quantization in
+// ComputeLockOnScreenData.  Capped at capDistance so the lock-on icon
+// never grows beyond ~14 % above the default (non-scaling) size.
+
+static float g_smoothLockOnDist[PLAYER_COUNT] = { 0.0f };
+static bool  g_smoothLockOnDistInit[PLAYER_COUNT] = { false };
+
+inline float GetSmoothedLockOnDist(uint8 playerIndex, float rawDist, float deltaTime) {
+	if (!g_smoothLockOnDistInit[playerIndex]) {
+		g_smoothLockOnDist[playerIndex] = rawDist;
+		g_smoothLockOnDistInit[playerIndex] = true;
+		return rawDist;
+	}
+	const float smoothSpeed = 6.0f; // lower == smoother; but more lag
+	g_smoothLockOnDist[playerIndex] = SmoothLerp(
+		g_smoothLockOnDist[playerIndex], rawDist, smoothSpeed, deltaTime);
+	return g_smoothLockOnDist[playerIndex];
+}
+
+const float g_capDistance = 29.0f; // max size cap distance for the lockOns
+
 void LockOnWindows() {
 	static float lockOnAngle[PLAYER_COUNT] = { 0.0f };
 	static FadeState lockOnFade[PLAYER_COUNT];
@@ -1710,14 +1733,15 @@ void LockOnWindows() {
 		// Compute lock-on screen position, camera distance, and clamped distance
 		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
+		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance;
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
+		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
-		float minDistance = 5.0f;
-		float safeDistance = (std::max)((float)crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped, minDistance);
+		float rawDist = crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20.0f;
+		float smoothDist = GetSmoothedLockOnDist(playerIndex, rawDist, ImGui::GetIO().DeltaTime);
+		float safeDistance = (std::max)(smoothDist, g_capDistance);  // capped to prevent oversized icons when close
 
 		ImVec2 sizeDistance = {
 			(textureBaseSizeX * (1.0f / (safeDistance / 40))),
@@ -1899,16 +1923,16 @@ void StunDisplacementLockOnWindows() {
 
 		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 
-		auto distanceClamped = crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped;
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
+		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance;
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
+		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
-		float minDistance = 5.0f;
-		float safeDistance = (std::max)((float)crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped, minDistance);
+		float rawDist = crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20.0f;
+		float smoothDist = GetSmoothedLockOnDist(playerIndex, rawDist, ImGui::GetIO().DeltaTime);
+		float safeDistance = (std::max)(smoothDist, g_capDistance);  // capped to prevent oversized icons when close
 
 		// DISPLACEMENT LOCK-ON (OUTER DARKER CIRCLE)
 
@@ -2240,18 +2264,18 @@ void ShieldLockOnWindows() {
 
 		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 
-		auto distanceClamped = crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped;
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
+		// Adjusts size dynamically based on the distance between Camera and Player
+		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance;
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
+		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
-		float minDistance = 5.0f;
-		float safeDistance = (std::max)((float)crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped, minDistance);
+		float rawDist = crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20.0f;
+		float smoothDist = GetSmoothedLockOnDist(playerIndex, rawDist, ImGui::GetIO().DeltaTime);
+		float safeDistance = (std::max)(smoothDist, g_capDistance);  // capped to prevent oversized icons when close
 
 		ImVec2 sizeDistance = {
 			(textureBaseSizeX * (1.0f / (safeDistance / 40))),
