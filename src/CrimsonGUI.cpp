@@ -13457,11 +13457,11 @@ void TrainingWindow() {
 	static std::chrono::steady_clock::time_point trainingOpenedTime;
 	static bool trainingCooldownActive = false;
 
-	if (!g_showTraining) {
+	//if (!g_showTraining) {
 		run = false;
 		trainingCooldownActive = false;
 		return;
-	}
+	//}
 	auto& io = ImGui::GetIO();
 
 	auto missionDataPtr = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
@@ -13520,7 +13520,7 @@ void TrainingWindow() {
 		if (GUI_Button("Close")) {
 			if (!trainingCooldownActive) {
 				//CloseShop();
-				run = false;s
+				run = false;
 				trainingCooldownActive = false;
 			}
 		}
@@ -13599,7 +13599,7 @@ void TrainingWindow() {
 				}
 				ImGui::TableNextColumn();
 				//GUI_Checkbox("turn on void - debug, variable might be removed", CrimsonTrainingRoom::trainingRoomEnabled);
-				CrimsonTrainingRoom::DrawShopWidget();
+				//CrimsonTrainingRoom::DrawShopWidget();
 
 				if (activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters) {
 					ImGui::TableNextColumn();
@@ -13631,7 +13631,7 @@ void TrainingWindow() {
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("Room Settings");
 			ImGui::PopFont();
-			CrimsonTrainingRoom::DrawRoomSelect();
+			//CrimsonTrainingRoom::DrawRoomSelect();
 
 			ImGui::TableNextColumn();
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
@@ -13639,7 +13639,7 @@ void TrainingWindow() {
 			ImGui::PopFont();
 			if (GUI_Button("Holy Water"))
 			{
-				UseHolyWater();
+				//UseHolyWater();
 			}
 			EnemySpawnerToolSection();
 			ImGui::EndTable();
