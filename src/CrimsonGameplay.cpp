@@ -52,6 +52,9 @@ bool IsActiveCharacterActor(byte8* actorBaseAddr) {
 		return false;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!activeConfig.Actor.enable) { // If Vanilla Mode is on instead of CCS, then we don't have to check for active actors.
+		return true;
+	}
 	auto& newActorData = GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, actorData.newEntityIndex);
 	if (actorData.newIsClone && newActorData.visibility == 2) { // If you're a clone and invisible, you can't be an active character.
 		return false;
