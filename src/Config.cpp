@@ -560,10 +560,10 @@ void CreateMembers(Config& config_) {
     Create<bool>(member, "showCredits", config.showCredits);
 
     {
-        auto& member = CreateArray<struct_t, 3>(crimsonConfigRoot, "keyData");
+        auto& member = CreateArray<struct_t, HOTKEY_COUNT>(crimsonConfigRoot, "keyData");
         auto& config = config_.keyData;
 
-        for_all(index, 3) {
+        for_all(index, HOTKEY_COUNT) {
             auto& member2 = member[index];
             auto& config2 = config[index];
 
@@ -874,7 +874,7 @@ void ToJSON(Config& config_) {
     Set<bool>(member["showCredits"], config.showCredits);
 
 
-    for_all(index, 3) {
+    for_all(index, HOTKEY_COUNT) {
         ToJSON_KeyData(member["keyData"][index], config.keyData[index]);
     }
 
@@ -1193,7 +1193,7 @@ void ToConfig(Config& config_) {
     config.showCredits             = Get<bool>(member["showCredits"]);
 
 
-    for_all(index, 3) {
+    for_all(index, HOTKEY_COUNT) {
         ToConfig_KeyData(config.keyData[index], member["keyData"][index]);
     }
 

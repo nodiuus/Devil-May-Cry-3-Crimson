@@ -223,7 +223,7 @@ struct Config {
 
     bool showCredits = (debug) ? false : true;
 
-	KeyData keyData[5] = {
+	KeyData keyData[HOTKEY_COUNT] = {
 	    { { DI8::KEY::DELETE }, 1, false },
 		{ { DI8::KEY::F1 }, 1, true },
 		{ { DI8::KEY::F3 }, 1, true },
