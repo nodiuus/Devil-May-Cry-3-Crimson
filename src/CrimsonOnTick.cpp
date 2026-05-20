@@ -609,8 +609,11 @@ void UpdateMainPlayerMotionArchives() {
 	}
 	// We apply this to only Vanilla Mode to fix
 	// the animation bug caused by the CrimsonPatches::M6CrashFix
-
 	NewUpdateMotionArchives(mainActorData);
+	if (mainActorData.cloneActorBaseAddr) {
+		PlayerActorData& doppelgangerActorData = *reinterpret_cast<PlayerActorData*>(mainActorData.cloneActorBaseAddr);
+		NewUpdateMotionArchives(doppelgangerActorData);
+	}
 }
 
 void StyleMeterMultiplayer() {
