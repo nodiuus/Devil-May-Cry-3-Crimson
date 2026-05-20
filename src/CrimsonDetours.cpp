@@ -677,9 +677,9 @@ bool CheckAirTauntRisingSunEnabled() {
 
 uint16 ActorCameraDirectionToEnemyCameraDirection(PlayerActorData& actorData) {
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return actorData.actorCameraDirection;
-	if (!activeConfig.Actor.enable) return actorData.actorCameraDirection;
-	auto playerIndex = actorData.newPlayerIndex;
-	auto& rotationTowardsEnemy = (actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].rotationCloneTowardsEnemy : crimsonPlayer[playerIndex].rotationTowardsEnemy;
+	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
+	auto& rotationTowardsEnemy = (entityIndex == 1) ? crimsonPlayer[playerIndex].rotationCloneTowardsEnemy : crimsonPlayer[playerIndex].rotationTowardsEnemy;
 
 	auto enemyCameraDirection = rotationTowardsEnemy - actorData.cameraDirection;
 	return enemyCameraDirection;

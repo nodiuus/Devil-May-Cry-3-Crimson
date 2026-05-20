@@ -31,6 +31,7 @@
 #include "CrimsonCameraController.hpp"
 #include "CrimsonHighFPSFixes.hpp"
 #include "HUD.hpp"
+#include "CrimsonGameplay.hpp"
 
 
 namespace CrimsonOnTick {
@@ -2045,9 +2046,30 @@ void ControlMenuFadeouts() {
 	}
 }
 
+void CallGameplayFuncs() {
+	// Here we will call gameplay functions that need to work for both CCS and Vanilla.
+
+	if (activeConfig.Actor.enable) {
+		ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8, uint8, uint8) {
+			CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor);
+		});
+	}
+	else {
+		PlayerActorData* playerActorDataPtr = GetVanillaPlayerActor();
+		if (!playerActorDataPtr) {
+			return;
+		} 
+		auto& playerActor = *playerActorDataPtr;
+
+		CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor);
+		CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor.cloneActorBaseAddr);
+	}
+}
 
 void TriggerOnTickFuncs() {
 	// These functions run OnTick globally (in game and in menus) through Game Thread
+
+	CallGameplayFuncs();
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
 	ControlMenuFadeouts();
@@ -2059,6 +2081,7 @@ void TriggerOnTickFuncs() {
 	CrimsonOnTick::WeaponProgressionTracking();
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();
 	CrimsonOnTick::FixM7DevilTriggerUnlocking();
+	CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
 	CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
 	CrimsonDetours::ToggleEnsureAirRisingDragonLaunch(activeConfig.Actor.enable && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR] && activeCrimsonGameplay.Gameplay.General.extramoves);
 	CrimsonOnTick::UpdateMainPlayerMotionArchives();

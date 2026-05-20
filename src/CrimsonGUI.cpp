@@ -11440,7 +11440,6 @@ void GeneralGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("DMC4/5 Lock On Direction",
 				activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection,
 				queuedCrimsonGameplay.Gameplay.General.dmc4LockOnDirection,
@@ -11448,10 +11447,7 @@ void GeneralGameplayOptions() {
 				CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
 			}
 			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
 			TooltipHelper("(?)", "Directional moves take enemy camera direction instead of player camera direction.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
 

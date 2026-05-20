@@ -1675,9 +1675,10 @@ uint16 GetRotationTowardsEnemy(byte8* actorBaseAddr) {
 		return 0;
 	}
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-	auto playerIndex = actorData.newPlayerIndex;
+	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
 
-	if (actorData.newEntityIndex == ENTITY::CLONE) {
+	if (entityIndex == ENTITY::CLONE) {
 		return crimsonPlayer[playerIndex].rotationCloneTowardsEnemy;
 	}
 	return crimsonPlayer[playerIndex].rotationTowardsEnemy;
@@ -4609,8 +4610,9 @@ void CalculateRotationTowardsEnemy(byte8* actorBaseAddr) {
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
     if(actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
-	auto playerIndex = actorData.newPlayerIndex;
-	auto& rotationTowardsEnemy = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].rotationTowardsEnemy : crimsonPlayer[playerIndex].rotationCloneTowardsEnemy;
+	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
+	auto& rotationTowardsEnemy = (entityIndex == 0) ? crimsonPlayer[playerIndex].rotationTowardsEnemy : crimsonPlayer[playerIndex].rotationCloneTowardsEnemy;
 
 	uint16 currentRotation = actorData.rotation;
 	uint16 rotationUncalculated = actorData.lockOnData.rotationTowardsTarget;

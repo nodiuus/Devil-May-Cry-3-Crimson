@@ -8407,9 +8407,6 @@ void UpdateActorSpeed(byte8* baseAddr) {
 
 		CrimsonGameplay::SkyLaunchAirTauntController(actorData);
 		CrimsonGameplay::SkyLaunchAirTauntController(cloneActorData);
-        
-        CrimsonGameplay::CalculateRotationTowardsEnemy(actorData);
-        CrimsonGameplay::CalculateRotationTowardsEnemy(cloneActorData);
 	}
 
     
@@ -13978,10 +13975,7 @@ void SceneGame() {
     } 
 
     Actor::Toggle(activeConfig.Actor.enable);
-    CrimsonDetours::ToggleHoldToCrazyCombo(activeConfig.Actor.enable && activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
-    CrimsonDetours::ToggleDMC4LockOnDirection(activeConfig.Actor.enable && activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
     CrimsonDetours::ToggleFreeformSoftLockHelper(activeConfig.Actor.enable && activeCrimsonGameplay.Gameplay.General.freeformSoftLock);
-
 }
 
 }; // namespace Actor
