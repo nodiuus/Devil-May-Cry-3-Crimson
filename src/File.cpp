@@ -622,6 +622,30 @@ bool File_Init() {
         auto& file19 = newTauntVergilAnims2_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims2Filename);
 		auto& file20 = newCrimsonHUD1_0_id_100 = File_staticFiles.Push(newCrimsonHUD1_0_id_100Filename);
 		auto& file21 = newCrimsonHUD1_0_id_100V = File_staticFiles.Push(newCrimsonHUD1_0_id_100VFilename);
+
+        // Log load status for every pushed file
+        Log("File load: %s — %s", filename,                  file  ? "OK" : "FAILED");
+        Log("File load: %s — %s", vergilYamatoFilename,      file2 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newRisingStarYamatoFilename,     file3 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newYamatoHighTimeFilename,       file4 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newBaseDanteAnimsFilename,       file5 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newBaseVergilAnimsFilename,      file6 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newStyleSwitching01Filename,     file7 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newStyleSwitching02Filename,     file8 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newJudgementCutFilename,         file9 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newJudgementCutAirFilename,      file10 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newJudgementCutAirJFFilename,    file11 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newDrivePart1Filename,           file12 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newDrivePart2Filename,           file13 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newDrivePart3Filename,           file14 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newBackslideFilename,            file15 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntDanteAnims1Filename,     file16 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntDanteAnims2Filename,     file17 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntVergilAnims1Filename,    file18 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntVergilAnims2Filename,    file19 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newCrimsonHUD1_0_id_100Filename, file20 ? "OK" : "FAILED — will fall back to originals");
+        Log("File load: %s — %s", newCrimsonHUD1_0_id_100VFilename,file21 ? "OK" : "FAILED — will fall back to originals");
+
         if (!file) {
             return;
         }

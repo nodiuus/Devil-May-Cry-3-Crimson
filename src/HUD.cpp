@@ -50,8 +50,8 @@ void InitIcons(const std::string& selectedHUD) {
 	byte8* id100VArch = nullptr;
 
 	if (selectedHUD == "Crimson HUD") {
-		id100Arch  = newCrimsonHUD1_0_id_100;
-		id100VArch = newCrimsonHUD1_0_id_100V;
+		id100Arch  = newCrimsonHUD1_0_id_100 ? newCrimsonHUD1_0_id_100 : (byte8*)File_staticFiles[id100];
+		id100VArch = newCrimsonHUD1_0_id_100V ? newCrimsonHUD1_0_id_100V : (byte8*)File_staticFiles[id100V];
 	} else if (selectedHUD == "Classic HUD") {
 		id100Arch  = (byte8*)File_staticFiles[id100];
 		id100VArch = (byte8*)File_staticFiles[id100V];
