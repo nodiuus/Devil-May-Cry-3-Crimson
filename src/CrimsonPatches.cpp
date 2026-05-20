@@ -1838,117 +1838,94 @@ void ToggleTempFixHighFPSEnigmaShls(bool enable) {
 void MenuScrollTapSpeedFix(bool enable) {
 	// From ProcessMenuInput_sub_14032CDE0:
 	// dmc3.exe+32CE31 - 45 8D 67 02           - lea r12d,[r15+02] { scroll speed }
+	//   Step immediate byte at +3 (0x32CE34)
 	// dmc3.exe+32CE92 - C7 43 08 00001E00     - mov [rbx+08],001E0000 { (2035) } -- Dpad
+	//   32-bit delay immediate at +3 (0x32CE95)
 	// dmc3.exe+32CF18 - C7 40 08 00001E00     - mov [rax+08],001E0000 { (2035) } -- Analog
+	//   32-bit delay immediate at +3 (0x32CF1B)
 
-	static float smoothedFPS = 60.0f;
-	static float lastAppliedScale = -1.0f;
+	// Operand addresses — just the immediate values within their instructions
+	auto addrStep        = (byte8*)(appBaseAddr + 0x32CE34);
+	auto addrDelayDpad   = (byte8*)(appBaseAddr + 0x32CE95);
+	auto addrDelayAnalog = (byte8*)(appBaseAddr + 0x32CF1B);
+
+	static bool backedUp = false;
 	static bool lastEnable = false;
 	static double lastUpdateTime = 0.0;
-	static int lastQuantizedFPS = 60;
+	static int lastQuantizedFPS = 0; // sentinel: forces initial patch
+	static bool firstEnable = true;
+
+	// One-time backup of original bytes (so Restore() always reverts to true originals)
+	if (!backedUp) {
+		backupHelper.Save(addrStep, 1);
+		backupHelper.Save(addrDelayDpad, 4);
+		backupHelper.Save(addrDelayAnalog, 4);
+		backedUp = true;
+	}
 
 	if (!enable) {
-		// Restore defaults (60 FPS behavior)
-
-		_patch((char*)appBaseAddr + 0x32CE31, (char*)"\x45\x8D\x67\x05", 4);
-
-		char delayPatch1[7] = { 0xC7, 0x43, 0x08, 0x00, 0x00, 0x1E, 0x00 };
-		char delayPatch2[7] = { 0xC7, 0x40, 0x08, 0x00, 0x00, 0x1E, 0x00 };
-
-		_patch((char*)appBaseAddr + 0x32CE92, delayPatch1, 7);
-		_patch((char*)appBaseAddr + 0x32CF18, delayPatch2, 7);
+		backupHelper.Restore(addrStep);
+		backupHelper.Restore(addrDelayDpad);
+		backupHelper.Restore(addrDelayAnalog);
 
 		lastEnable = false;
-		lastAppliedScale = -1.0f;
 		lastUpdateTime = 0.0;
-		lastQuantizedFPS = 60;
+		lastQuantizedFPS = 0;
+		firstEnable = true;
 		return;
 	}
 
-	// -------------------------
-	// FPS Smoothing
-	// -------------------------
+
+	// FPS Smoothing (EMA)
+	static float smoothedFPS = 60.0f;
 	const float alpha = 0.02f;
 	smoothedFPS = smoothedFPS + alpha * (g_FrameRate - smoothedFPS);
 
-	// -------------------------
-	// 30 FPS quantization
-	// -------------------------
-	int quantizedFPS;
 
-	// snap to nearest multiple of 30
-	quantizedFPS = (int)(smoothedFPS / 20.0f) * 20;
+	// Quantization: round to nearest 30
+	int quantizedFPS = (int)((smoothedFPS + 15.0f) / 30.0f) * 30;
 
-	// clamp to safe bounds
-	if (quantizedFPS <= 30)
-		quantizedFPS = 30;
+	if (quantizedFPS < 30)  quantizedFPS = 30;
+	if (quantizedFPS > 600) quantizedFPS = 600;
 
-	if (quantizedFPS > 600)
-		quantizedFPS = 600;
+	float scale = (float)quantizedFPS / 60.0f;
 
-	// avoid 0 or weird edge cases
-	if (quantizedFPS == 0)
-		quantizedFPS = 30;
 
-	float scale = quantizedFPS / 60.0f;
-
-	// -------------------------
-	// TIME GATE (100ms update window)
-	// -------------------------
+	// TIME GATE (100ms) — unconditional
 	double now = ImGui::GetTime();
-
-	if (lastEnable && (now - lastUpdateTime) < 0.1)
+	if ((now - lastUpdateTime) < 0.1)
 		return;
 
-	// -------------------------
-	// FPS CHANGE GATE 
-	// Only update if FPS meaningfully changed
-	// -------------------------
-	if (abs(quantizedFPS - lastQuantizedFPS) < 10)
+	// FPS CHANGE GATE (30 FPS hysteresis)
+	// Skip on first enable so we always apply initial values immediately.
+	if (!firstEnable && (abs(quantizedFPS - lastQuantizedFPS) < 30))
 		return;
+	firstEnable = false;
 
-	// -------------------------
-	// Scale scroll step 
-	// -------------------------
+
+	// Scale scroll step
 	int step = (int)(5.0f * scale);
-
-	if (step < 1) step = 1;
+	if (step < 1)   step = 1;
 	if (step > 127) step = 127;
 
-	char stepPatch[4] = { 0x45, 0x8D, 0x67, (char)step };
-	_patch((char*)appBaseAddr + 0x32CE31, stepPatch, 4);
 
-	// -------------------------
-	// Scale delay (1E0000 base)
-	// -------------------------
+	// Scale delay (0x1E0000 base)
 	int delay = (int)(0x1E0000 * scale);
-
-	if (delay < 0x1000) delay = 0x1000;
+	if (delay < 0x1000)     delay = 0x1000;
 	if (delay > 0x7FFFFFFF) delay = 0x7FFFFFFF;
 
-	char delayPatch1[7] = {
-		0xC7, 0x43, 0x08,
-		(char)(delay & 0xFF),
-		(char)((delay >> 8) & 0xFF),
-		(char)((delay >> 16) & 0xFF),
-		(char)((delay >> 24) & 0xFF)
-	};
 
-	char delayPatch2[7] = {
-		0xC7, 0x40, 0x08,
-		(char)(delay & 0xFF),
-		(char)((delay >> 8) & 0xFF),
-		(char)((delay >> 16) & 0xFF),
-		(char)((delay >> 24) & 0xFF)
-	};
+	// Apply patches — Write<T> writes only the immediate operand (1 or 4 bytes)
+	Write<uint8>(addrStep, (uint8)step);
+	Write<uint32>(addrDelayDpad, (uint32)delay);
+	Write<uint32>(addrDelayAnalog, (uint32)delay);
 
-	_patch((char*)appBaseAddr + 0x32CE92, delayPatch1, 7);
-	_patch((char*)appBaseAddr + 0x32CF18, delayPatch2, 7);
+	// Flush instruction cache so stale bytes are never fetched
+	FlushInstructionCache(GetCurrentProcess(), addrStep, 1);
+	FlushInstructionCache(GetCurrentProcess(), addrDelayDpad, 4);
+	FlushInstructionCache(GetCurrentProcess(), addrDelayAnalog, 4);
 
-	// -------------------------
 	// commit state
-	// -------------------------
-	lastAppliedScale = scale;
 	lastEnable = true;
 	lastUpdateTime = now;
 	lastQuantizedFPS = quantizedFPS;
