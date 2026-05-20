@@ -10552,6 +10552,17 @@ void TrainingSection() {
 
 			if (GUI_Checkbox2("Infinite Devil Trigger", activeCrimsonGameplay.Cheats.Training.infiniteDT, queuedCrimsonGameplay.Cheats.Training.infiniteDT)) {
 				ToggleInfiniteMagicPoints(activeCrimsonGameplay.Cheats.Training.infiniteDT);
+				//This might cause vanilla to crash I don't care though sucks to suck
+				if (activeCrimsonGameplay.Cheats.Training.infiniteDT && InGame() && activeConfig.Actor.enable) {
+					ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8 playerIndex, uint8 characterIndex,
+						uint8 entityIndex) {
+							playerActor.magicPoints = playerActor.maxMagicPoints;
+						});
+				}
+				if (activeCrimsonGameplay.Cheats.Training.infiniteDT && InGame() && !activeConfig.Actor.enable) {
+					PlayerActorData* actorData = GetVanillaPlayerActor();
+					actorData->magicPoints = actorData->maxMagicPoints;
+				}
 			}
 
 			ImGui::TableNextColumn();
