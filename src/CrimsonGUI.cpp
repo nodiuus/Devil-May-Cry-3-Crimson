@@ -5607,7 +5607,7 @@ void CustomDamageSection() {
 
 					if (!toggled) {
 						toggled = true;
-						activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 100.0f;
+						activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 9999.0f;
 					}
 					else {
 						toggled = false;
@@ -13207,12 +13207,15 @@ void FreezeEnemies() {
 	if (activeCrimsonGameplay.Cheats.Speed.enemy != 0.0f) {
 		activeCrimsonGameplay.Cheats.General.customSpeed = true;
 		activeCrimsonGameplay.Cheats.Speed.enemy = 0.0f;
+		cheatsPopUp.cheatText = "Toggled Freeze Enemies On";
 	}
 	else {
 		activeCrimsonGameplay.Cheats.General.customSpeed = queuedCrimsonGameplay.Cheats.General.customSpeed;
 		activeCrimsonGameplay.Cheats.Speed.enemy = queuedCrimsonGameplay.Cheats.Speed.enemy;
+		cheatsPopUp.cheatText = "Toggled Freeze Enemies Off";
 	}
-
+	if (activeCrimsonConfig.GUI.sounds) FMOD_PlaySound(0, 25);
+	cheatsPopUp.showPopUp = true;
 }
 
 
@@ -13299,12 +13302,12 @@ void ToggleInfiniteHealth() {
 }
 
 void ToggleOneHitKill() {
-	static bool toggled = activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult == 100.0f ? true : false;
+	static bool toggled = activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult == 9999.0f ? true : false;
 
 	if (!toggled) {
 		toggled = true;
 		activeCrimsonGameplay.Cheats.General.customDamage = true;
-		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 100.0f;
+		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 9999.0f;
 		cheatsPopUp.cheatText = "Toggled One Hit Kill On";
 	} else {
 		toggled = false;
