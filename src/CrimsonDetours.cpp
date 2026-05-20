@@ -415,8 +415,8 @@ void* g_CItemOrbPickupAllPlayersCheckCall;
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
     using namespace ACTION_DANTE;
 
-    auto playerIndex = CrimsonUtil::GetPlayerIndexFromAddr((uintptr_t)actorData.baseAddr); // simply using actorData.newPlayerIndex also works here.
-	auto entityIndex = actorData.newEntityIndex;
+	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
