@@ -13200,6 +13200,21 @@ void ReloadRoom() {
     eventData.event = EVENT::TELEPORT;
 }
 
+void FreezeEnemies() {
+	if (!InGame()) {
+		return;
+	}
+	if (activeCrimsonGameplay.Cheats.Speed.enemy != 0.0f) {
+		activeCrimsonGameplay.Cheats.General.customSpeed = true;
+		activeCrimsonGameplay.Cheats.Speed.enemy = 0.0f;
+	}
+	else {
+		activeCrimsonGameplay.Cheats.General.customSpeed = queuedCrimsonGameplay.Cheats.General.customSpeed;
+		activeCrimsonGameplay.Cheats.Speed.enemy = queuedCrimsonGameplay.Cheats.Speed.enemy;
+	}
+
+}
+
 
 void MoveToMainActor() {
     if (!activeConfig.Actor.enable || !InGame()) {
@@ -13362,6 +13377,8 @@ std::vector<KeyBinding> keyBindings = {
 	{"Toggle One Hit Kill", activeConfig.keyData[2], queuedConfig.keyData[2], defaultConfig.keyData[2], ToggleOneHitKill},
     {"Reload Room", activeConfig.keyData[3], queuedConfig.keyData[3], defaultConfig.keyData[3], ReloadRoom},
     {"Move To Main Character", activeConfig.keyData[4], queuedConfig.keyData[4], defaultConfig.keyData[4], MoveToMainActor},
+	{"Freeze Enemies", activeConfig.keyData[5], queuedConfig.keyData[5], defaultConfig.keyData[5], FreezeEnemies},
+	
 };
 
 void HotkeysSection() {
