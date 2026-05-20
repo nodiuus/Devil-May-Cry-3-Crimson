@@ -4787,87 +4787,100 @@ void GetLockedOnEnemyStunDisplacement(byte8* actorBaseAddr) {
 	if (!enemyActorData) {
 		return;
 	}
-
-	// Validate stun/displacement data pointer
-	uintptr_t stunDisplacementDataAddr = reinterpret_cast<uintptr_t>(enemyActorData->stunDisplacementDataAddr);
-	if (!enemyActorData->stunDisplacementDataAddr ||
-		stunDisplacementDataAddr == 0xFFFFFFFFFFFFFFFF ||
-		stunDisplacementDataAddr == 0xFFFFFFFFFFFFFFEF ||
-		stunDisplacementDataAddr == 0xFFFFFFFF ||
-		stunDisplacementDataAddr < 0x10000) {
-		return;
-	}
-
-	StunDisplacementData* stunDisplacementData = reinterpret_cast<StunDisplacementData*>(stunDisplacementDataAddr);
-	if (!stunDisplacementData) {
-		return;
-	}
-
 	auto& enemyId = enemyActorData->enemy;
 	bool isHell = (enemyId >= ENEMY::PRIDE_1 && enemyId <= ENEMY::HELL_VANGUARD);
+	bool isArachne = (enemyId == ENEMY::ARACHNE);
+	bool isEnigma = (enemyId == ENEMY::ENIGMA);
+	bool isFallen = (enemyId == ENEMY::THE_FALLEN);
+	bool isBloodgoyle = (enemyId == ENEMY::BLOOD_GOYLE);
+	bool isSoulEater = (enemyId == ENEMY::SOUL_EATER);
+	bool isJester = (enemyId == ENEMY::JESTER);
+	bool isBeowulf = (enemyId == ENEMY::BEOWULF);
+	
+	// Shield the triple pointer fetch with SEH to prevent crashes from invalid enemy types
+	void* stunDisplacementPtr = nullptr;
+	void* maxStunDisplacementPtr = nullptr;
 
-	// Assign max values based on specific enemy type
-	if (enemyId >= ENEMY::PRIDE_1 && enemyId <= ENEMY::PRIDE_2) {
+	__try {
+		uintptr_t CDamageAddr = reinterpret_cast<uintptr_t>(enemyActorData->CDamageAddr);
+		if (!CDamageAddr) __leave;
+		CDamage& cDamage = *reinterpret_cast<CDamage*>(CDamageAddr);
+
+		uintptr_t cDamageCalcAddr = reinterpret_cast<uintptr_t>(cDamage.CDamageCalcAddr);
+		if (!cDamageCalcAddr) __leave;
+		CDamageCalc& cDamageCalc = *reinterpret_cast<CDamageCalc*>(cDamageCalcAddr);
+
+		// Fetch current stun/displacement pointer
+		void* rawPtr = cDamageCalc.stunDisplacementData;
+		uintptr_t ptrValue = reinterpret_cast<uintptr_t>(rawPtr);
+		if (rawPtr &&
+			ptrValue != 0xFFFFFFFFFFFFFFFF &&
+			ptrValue != 0xFFFFFFFFFFFFFFEF &&
+			ptrValue > 0x10000) {
+			stunDisplacementPtr = rawPtr;
+		}
+
+		// Fetch max stun/displacement pointer (CDamageCalc + 0x08)
+		void* rawMaxPtr = cDamageCalc.maxStunDisplacementData;
+		uintptr_t maxPtrValue = reinterpret_cast<uintptr_t>(rawMaxPtr);
+		if (rawMaxPtr &&
+			maxPtrValue != 0xFFFFFFFFFFFFFFFF &&
+			maxPtrValue != 0xFFFFFFFFFFFFFFEF &&
+			maxPtrValue > 0x10000) {
+			maxStunDisplacementPtr = rawMaxPtr;
+		}
+	}
+	__except (EXCEPTION_EXECUTE_HANDLER) {
+		stunDisplacementPtr = nullptr;
+		maxStunDisplacementPtr = nullptr;
+	}
+	
+	// Buggy enemies: use hardcoded max values instead of memory-based approach
+	if (isArachne) {
+		lockedOnEnemyMaxStun = 400.0f;
+		lockedOnEnemyMaxDisplacement = 1000.0f;
+	}
+	else if (isFallen) {
+		lockedOnEnemyMaxStun = 800.0f;
+		lockedOnEnemyMaxDisplacement = 200.0f;
+	}
+	else if (isJester) {
 		lockedOnEnemyMaxStun = 30.0f;
-		lockedOnEnemyMaxDisplacement = 30.0f;
-	} else if (enemyId >= ENEMY::GLUTTONY_1 && enemyId <= ENEMY::GLUTTONY_4) {
-		lockedOnEnemyMaxStun = 20.0f;
-		lockedOnEnemyMaxDisplacement = 60.0f;
-	} else if (enemyId >= ENEMY::LUST_1 && enemyId <= ENEMY::LUST_4) {
+		lockedOnEnemyMaxDisplacement = 1000.0f;
+	}
+	else if (isBeowulf) {
 		lockedOnEnemyMaxStun = 60.0f;
-		lockedOnEnemyMaxDisplacement = 60.0f;
-	} else if (enemyId >= ENEMY::SLOTH_1 && enemyId <= ENEMY::SLOTH_4) {
-		lockedOnEnemyMaxStun = 60.0f;
-		lockedOnEnemyMaxDisplacement = 60.0f;
-	} else if (enemyId >= ENEMY::WRATH_1 && enemyId <= ENEMY::WRATH_4) {
-		lockedOnEnemyMaxStun = 100000.0f;
-		lockedOnEnemyMaxDisplacement = 100000.0f;
-	} else if (enemyId >= ENEMY::GREED_1 && enemyId <= ENEMY::GREED_4) {
-		lockedOnEnemyMaxStun = 100000.0f;
-		lockedOnEnemyMaxDisplacement = 100000.0f;
-	} else if (enemyId == ENEMY::ABYSS) {
-		lockedOnEnemyMaxStun = 60.0f;
-		lockedOnEnemyMaxDisplacement = 60.0f;
-	} else if (enemyId == ENEMY::ENVY) {
-		lockedOnEnemyMaxStun = 60.0f;
-		lockedOnEnemyMaxDisplacement = 300.0f;
-	} else if (enemyId == ENEMY::HELL_VANGUARD) {
+		lockedOnEnemyMaxDisplacement = 150.0f;
+	}
+	else if (enemyId == ENEMY::HELL_VANGUARD) {
 		lockedOnEnemyMaxStun = 300.0f;
 		lockedOnEnemyMaxDisplacement = 1000.0f;
-	} else {
+	}
+	// For all other enemies, read max values from game memory
+	else if (maxStunDisplacementPtr) {
+		__try {
+			auto* safeMaxPtr = static_cast<StunDisplacementMaxData*>(maxStunDisplacementPtr);
+			lockedOnEnemyMaxStun = safeMaxPtr->maxStun;
+			lockedOnEnemyMaxDisplacement = safeMaxPtr->maxDisplacement;
+		}
+		__except (EXCEPTION_EXECUTE_HANDLER) {
+			// Fallback: keep whatever values were set at the top of the function
+		}
+	}
+	else {
 		lockedOnEnemyMaxStun = 1.0f;
 		lockedOnEnemyMaxDisplacement = 1.0f;
 	}
 
-	// Apply updated values
-	lockedOnEnemyStun = lockedOnEnemyMaxStun;
-	lockedOnEnemyDisplacement = lockedOnEnemyMaxDisplacement;
-
-	// If enemy is a "Hell" type, attempt to read additional data
-	if (isHell) {
-		void* stunDisplacementHellsPtr = nullptr;
-
-		// Try to access the pointer safely
+	// Read actual stun/displacement values if we have a valid pointer
+	if (stunDisplacementPtr) {
 		__try {
-			stunDisplacementHellsPtr = stunDisplacementData->stunDisplacementHells;
-		} __except (EXCEPTION_EXECUTE_HANDLER) {
-			stunDisplacementHellsPtr = nullptr;
+			auto* safePtr = static_cast<StunDisplacementData*>(stunDisplacementPtr);
+			lockedOnEnemyStun = safePtr->stun;
+			lockedOnEnemyDisplacement = safePtr->displacement;
 		}
-
-		uintptr_t ptrValue = reinterpret_cast<uintptr_t>(stunDisplacementHellsPtr);
-		if (stunDisplacementHellsPtr &&
-			ptrValue != 0xFFFFFFFFFFFFFFFF &&
-			ptrValue != 0xFFFFFFFFFFFFFFEF &&
-			ptrValue > 0x10000) {
-
-			// Try reading actual stun/displacement values
-			__try {
-				auto* safeHellsPtr = static_cast<decltype(stunDisplacementData->stunDisplacementHells)>(stunDisplacementHellsPtr);
-				lockedOnEnemyStun = safeHellsPtr->stun;
-				lockedOnEnemyDisplacement = safeHellsPtr->displacement;
-			} __except (EXCEPTION_EXECUTE_HANDLER) {
-				// If this fails, fallback to earlier values
-			}
+		__except (EXCEPTION_EXECUTE_HANDLER) {
+			// Fallback to max values already set at the top of the function
 		}
 	}
 }

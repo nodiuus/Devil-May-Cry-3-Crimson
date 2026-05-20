@@ -4501,7 +4501,9 @@ static_assert(sizeof(CPl021Shl02Actor) == 0x1578);
 // 39F0 is envy targetPos
 
 struct EnemyActorData : ActorDataBase {
-	_(248);
+	_(152);
+    byte8* CDamageAddr; // 0x160
+    _(88);
     vec4 targetPositionDullahan; // 0x1C0
     _(104);
 	float maxHitPointsDullahan; // 0x238
@@ -4537,7 +4539,9 @@ struct EnemyActorData : ActorDataBase {
 	float hitPointsChess; // 0x1318
 	_(380);
 	float hitPointsBloodgoyle; // 0x1498
-	_(876);
+	_(52);
+    byte8* bloodgoyleCDamageCalcAddr; // 0x14D0
+    _(816);
 	float hitPointsTheFallen; // 0x1808
 	_(52);
 	float maxHitPointsTheFallen; // 0x1840
@@ -4555,12 +4559,13 @@ struct EnemyActorData : ActorDataBase {
 	_(44);
 	float hitPointsHells; // 0x2E5C
 	_(1208);
-	byte8* stunDisplacementDataAddr; // 0x3318 // +10 from this addr is the stun displacement hells Struct
+	byte8* hellsCDamageCalcAddr; // 0x3318 // +10 from this addr is the stun displacement hells Struct
     _(1592);
 	float hitPointsEnigma; // 0x3958
 	_(36);
 	vec4 targetPosition; // 0x3980 - needs to sum with 60 from ActorDataBase
-	_(16);
+    byte8* enigmaCDamageCalcAddr; // 0x3990
+	_(8);
 	vec4 targetPositionGreed; // 0x39A0
     _(64);
 	vec4 targetPositionEnvy; // 0x39F0
@@ -4574,7 +4579,9 @@ struct EnemyActorData : ActorDataBase {
     float hitPointsArachne; // 0x4170
 	_(452);
 	float hitPointsBeowulf; // 0x4338
-	_(692);
+	_(396);
+	byte8* arachneCDamageCalcAddr; // 0x44C8 
+    _(288);
 	float maxHitPointsBeowulf; // 0x45F0
 	_(4452);
 	float hitPointsLady; // 0x5758
@@ -4618,6 +4625,7 @@ struct EnemyActorData : ActorDataBase {
 	float maxHitPointsLeviathan; // 0x388884
 };
 
+static_assert(offsetof(EnemyActorData, CDamageAddr) == 0x160);
 static_assert(offsetof(EnemyActorData, targetPositionDullahan) == 0x1C0);
 static_assert(offsetof(EnemyActorData, maxHitPointsDullahan) == 0x238);
 static_assert(offsetof(EnemyActorData, maxHitPointsChess) == 0x530);
@@ -4636,6 +4644,7 @@ static_assert(offsetof(EnemyActorData, hitPointsAgniRudra) == 0x101C);
 static_assert(offsetof(EnemyActorData, maxHitPointsArkhamLeech) == 0x12A0);
 static_assert(offsetof(EnemyActorData, hitPointsChess) == 0x1318);
 static_assert(offsetof(EnemyActorData, hitPointsBloodgoyle) == 0x1498);
+static_assert(offsetof(EnemyActorData, bloodgoyleCDamageCalcAddr) == 0x14D0);
 static_assert(offsetof(EnemyActorData, hitPointsTheFallen) == 0x1808);
 static_assert(offsetof(EnemyActorData, maxHitPointsTheFallen) == 0x1840);
 static_assert(offsetof(EnemyActorData, hitPointsSoulEater) == 0x1A18);
@@ -4645,10 +4654,11 @@ static_assert(offsetof(EnemyActorData, maxHitPointsArkham) == 0x2788);
 static_assert(offsetof(EnemyActorData, healthGateHitPointsArkham) == 0x278C);
 //const bool x = (offsetof(EnemyActorData, maxHitPointsHells) == 0x2E2C);
 static_assert(offsetof(EnemyActorData, maxHitPointsHells) == 0x2E2C);
-static_assert(offsetof(EnemyActorData, stunDisplacementDataAddr) == 0x3318); 
 static_assert(offsetof(EnemyActorData, hitPointsHells) == 0x2E5C);
+static_assert(offsetof(EnemyActorData, hellsCDamageCalcAddr) == 0x3318); 
 static_assert(offsetof(EnemyActorData, hitPointsEnigma) == 0x3958);
 static_assert(offsetof(EnemyActorData, targetPosition) == 0x3980);
+static_assert(offsetof(EnemyActorData, enigmaCDamageCalcAddr) == 0x3990);
 static_assert(offsetof(EnemyActorData, targetPositionGreed) == 0x39A0);
 static_assert(offsetof(EnemyActorData, targetPositionEnvy) == 0x39F0);
 static_assert(offsetof(EnemyActorData, targetPositionAbyss) == 0x3A10);
@@ -4656,6 +4666,7 @@ static_assert(offsetof(EnemyActorData, maxHitPointsEnigma) == 0x3B14);
 static_assert(offsetof(EnemyActorData, maxHitPointsArachne) == 0x40EC);
 static_assert(offsetof(EnemyActorData, hitPointsArachne) == 0x4170);
 static_assert(offsetof(EnemyActorData, hitPointsBeowulf) == 0x4338);
+static_assert(offsetof(EnemyActorData, arachneCDamageCalcAddr) == 0x44C8);
 static_assert(offsetof(EnemyActorData, maxHitPointsBeowulf) == 0x45F0);
 static_assert(offsetof(EnemyActorData, hitPointsLady) == 0x5758);
 static_assert(offsetof(EnemyActorData, maxHitPointsLady) == 0x5950);
@@ -4680,21 +4691,41 @@ static_assert(offsetof(EnemyActorData, maxHitPointsCerberusTotal) == 0x352C84);
 static_assert(offsetof(EnemyActorData, maxHitPointsCerberusPart1) == 0x3637D0);
 static_assert(offsetof(EnemyActorData, maxHitPointsLeviathan) == 0x388884);
 
-struct StunDisplacementHells {
+struct StunDisplacementData {
 	_(12);
 	float displacement; // 0xC
 	float stun; // 0x10
 };
 
-static_assert(offsetof(StunDisplacementHells, displacement) == 0xC);
-static_assert(offsetof(StunDisplacementHells, stun) == 0x10);
+static_assert(offsetof(StunDisplacementData, displacement) == 0xC);
+static_assert(offsetof(StunDisplacementData, stun) == 0x10);
 
-struct StunDisplacementData {
-    _(16);
-    StunDisplacementHells* stunDisplacementHells; // 0x10
+class StunDisplacementMaxData {
+public:
+	char pad_0000[48]; 
+	float maxStun; //0x0030
+	float maxDisplacement; //0x0034
+}; //Size: 0x0038
+
+static_assert(offsetof(StunDisplacementMaxData, maxStun) == 0x30);
+static_assert(offsetof(StunDisplacementMaxData, maxDisplacement) == 0x34);
+
+class CDamage {
+public:
+	char pad_0000[40]; 
+	byte8* CDamageCalcAddr; //0x0028
+}; //Size: 0x0030
+
+static_assert(offsetof(CDamage, CDamageCalcAddr) == 0x28);
+
+struct CDamageCalc {
+    _(8);
+    StunDisplacementMaxData* maxStunDisplacementData; // 0x08
+    StunDisplacementData* stunDisplacementData; // 0x10
 };
 
-static_assert(offsetof(StunDisplacementData, stunDisplacementHells) == 0x10);
+static_assert(offsetof(CDamageCalc, maxStunDisplacementData) == 0x08);
+static_assert(offsetof(CDamageCalc, stunDisplacementData) == 0x10);
 
 
 struct ShieldedNevanData {

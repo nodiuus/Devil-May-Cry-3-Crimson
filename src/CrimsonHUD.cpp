@@ -2145,10 +2145,7 @@ void StunDisplacementLockOnWindows() {
 
 				// STUN / DISPLACEMENT NUMERIC HUD
 
-				auto& enemyId = enemyActorData.enemy;
-				bool isHell = (enemyId >= ENEMY::PRIDE_1 && enemyId <= ENEMY::HELL_VANGUARD);
-
-				if (isHell && activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud) {
+				if (activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud) {
 					CrimsonGameplay::CalculateLockedOnEnemyLastStunDisplacementValue(actorData);
 					ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
 					ImVec4 fadedTextColor = textColor;
