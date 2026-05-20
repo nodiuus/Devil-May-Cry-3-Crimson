@@ -12,6 +12,7 @@
 #include "Core/DebugSwitch.hpp"
 #include "Config.hpp"
 #include "Actor.hpp"
+#include "CrimsonFileHandling.hpp"
 
 struct HUDIconHelper {
     byte8* modelFile;
@@ -50,6 +51,19 @@ void InitIcons(const std::string& selectedHUD) {
 	byte8* id100VArch = nullptr;
 
 	if (selectedHUD == "Crimson HUD") {
+		// Load dynamically if not already loaded; moved out of File_Init static loading
+		if (!newCrimsonHUD1_0_id_100) {
+			std::string hudPath = std::string(Paths::gameMods) + "\\newCrimsonHUD1_0_id_100.pac";
+			if (!CrimsonFiles::LoadSinglePAC(hudPath, newCrimsonHUD1_0_id_100)) {
+				Log("InitIcons: Failed to load newCrimsonHUD1_0_id_100.pac dynamically, falling back to originals");
+			}
+		}
+		if (!newCrimsonHUD1_0_id_100V) {
+			std::string hudPath = std::string(Paths::gameMods) + "\\newCrimsonHUD1_0_id_100V.pac";
+			if (!CrimsonFiles::LoadSinglePAC(hudPath, newCrimsonHUD1_0_id_100V)) {
+				Log("InitIcons: Failed to load newCrimsonHUD1_0_id_100V.pac dynamically, falling back to originals");
+			}
+		}
 		id100Arch  = newCrimsonHUD1_0_id_100 ? newCrimsonHUD1_0_id_100 : (byte8*)File_staticFiles[id100];
 		id100VArch = newCrimsonHUD1_0_id_100V ? newCrimsonHUD1_0_id_100V : (byte8*)File_staticFiles[id100V];
 	} else if (selectedHUD == "Classic HUD") {

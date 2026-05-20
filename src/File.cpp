@@ -599,8 +599,6 @@ bool File_Init() {
         const char* newTauntDanteAnims2Filename = "newTauntDanteAnims2_pl000_00_2.pac";
         const char* newTauntVergilAnims1Filename = "newTauntVergilAnims1_pl021_00_2.pac";
         const char* newTauntVergilAnims2Filename = "newTauntVergilAnims2_pl021_00_2.pac";
-		const char* newCrimsonHUD1_0_id_100Filename = "newCrimsonHUD1_0_id_100.pac";
-		const char* newCrimsonHUD1_0_id_100VFilename = "newCrimsonHUD1_0_id_100V.pac";
         auto& file = demo_pl000_00_3 = File_staticFiles.Push(filename);
         auto& file2 = vergil_pl021_00_3 = File_staticFiles.Push(vergilYamatoFilename);
         auto& file3 = newRisingStar_pl021_00_4 = File_staticFiles.Push(newRisingStarYamatoFilename);
@@ -620,8 +618,6 @@ bool File_Init() {
         auto& file17 = newTauntDanteAnims2_pl000_00_2 = File_staticFiles.Push(newTauntDanteAnims2Filename);
         auto& file18 = newTauntVergilAnims1_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims1Filename);
         auto& file19 = newTauntVergilAnims2_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims2Filename);
-		auto& file20 = newCrimsonHUD1_0_id_100 = File_staticFiles.Push(newCrimsonHUD1_0_id_100Filename);
-		auto& file21 = newCrimsonHUD1_0_id_100V = File_staticFiles.Push(newCrimsonHUD1_0_id_100VFilename);
 
         // Log load status for every pushed file
         Log("File load: %s — %s", filename,                  file  ? "OK" : "FAILED");
@@ -643,8 +639,6 @@ bool File_Init() {
         Log("File load: %s — %s", newTauntDanteAnims2Filename,     file17 ? "OK" : "FAILED");
         Log("File load: %s — %s", newTauntVergilAnims1Filename,    file18 ? "OK" : "FAILED");
         Log("File load: %s — %s", newTauntVergilAnims2Filename,    file19 ? "OK" : "FAILED");
-        Log("File load: %s — %s", newCrimsonHUD1_0_id_100Filename, file20 ? "OK" : "FAILED — will fall back to originals");
-        Log("File load: %s — %s", newCrimsonHUD1_0_id_100VFilename,file21 ? "OK" : "FAILED — will fall back to originals");
 
         if (!file) {
             return;
@@ -672,8 +666,6 @@ bool File_Init() {
         AdjustPointers(file17);
         AdjustPointers(file18);
         AdjustPointers(file19);
-		AdjustPointers(file20);
-		AdjustPointers(file21);
     }();
 
 

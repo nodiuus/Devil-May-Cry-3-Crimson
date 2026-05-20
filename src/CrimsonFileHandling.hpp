@@ -1,4 +1,5 @@
 #include <vector>
+#include "Core/DataTypes.hpp"
 
 #ifndef PATHS_H  
 #define PATHS_H
@@ -15,17 +16,19 @@ namespace Paths {
 }
 
 namespace CrimsonFiles {
-extern std::vector<std::string> HUDdirectories;
-extern std::vector<std::string> StyleRanksdirectories;
-extern std::vector<std::string> StyleRanksAccoladesdirectories;
+	extern std::vector<std::string> HUDdirectories;
+	extern std::vector<std::string> StyleRanksdirectories;
+	extern std::vector<std::string> StyleRanksAccoladesdirectories;
+
+	std::vector<std::string> GetDirectories(std::string path);
+	std::vector<std::string> GetFiles(const std::string& path);
+	void GetHUDsDirectories();
+	void GetStyleRanksDirectories();
+	void GetStyleRanksAccoladesDirectories();
+	void CopyHUDFilePactoGameFolder();
+	void FreeDynamicHUD();
+	bool ApplySelectedHUD(const std::string& hudName);
+	bool LoadSinglePAC(const std::string& filePath, byte8*& outPtr);
+}
 
 #endif
-std::vector<std::string> GetDirectories(std::string path);
-std::vector<std::string> GetFiles(const std::string& path);
-void GetHUDsDirectories();
-void GetStyleRanksDirectories();
-void GetStyleRanksAccoladesDirectories();
-void CopyHUDFilePactoGameFolder();
-void FreeDynamicHUD();
-bool ApplySelectedHUD(const std::string& hudName);
-}
