@@ -14202,7 +14202,8 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 			auto descriptionVanilla =
 				u8"• No Style Switching\n"
-				u8"• Weapons Slots Restricted (2-Slots).\n";
+				u8"• Weapons Slots Restricted (2-Slots).\n"
+				u8"• Small Quality of Life changes (like DMC4/5 Lock On Direction).\n";
 			
 			auto descriptionStyleSwitcher =
 				u8"• Style Switching\n"

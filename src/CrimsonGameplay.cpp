@@ -4607,8 +4607,8 @@ void CalculateRotationTowardsEnemy(byte8* actorBaseAddr) {
 	if (!actorBaseAddr || (uintptr_t)actorBaseAddr >= 0xFFFFFFFFFF) {
 		return;
 	}
-
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
     if(actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return;
 	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
 	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
