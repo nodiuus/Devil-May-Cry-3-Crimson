@@ -1314,7 +1314,8 @@ uintptr_t CheckPlayerClosestToOrb(uintptr_t playerAddr, vec4* orbPos) {
 	uintptr_t closestAddr = playerAddr;
 	float closestDist = FLT_MAX;
 
-	ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8, uint8, uint8) {
+	ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8 playerIndex, uint8 characterIndex, 
+		uint8 entityIndex) {
 		float dist = CrimsonReversedCalls::CalcDistanceVec4_sub_14032E5F0(&playerActor.position, orbPos);
 		if (dist < closestDist) {
 			closestDist = dist;

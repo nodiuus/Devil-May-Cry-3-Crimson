@@ -5,6 +5,7 @@
 #include "../ThirdParty/SDL2/SDL_gamecontroller.h"
 #include "../ThirdParty/glm/glm.hpp"
 #include "CrimsonGUI.hpp"
+#include "CrimsonLicense.hpp"
 #include "Core/Core.hpp"
 #include "CrimsonGameplay.hpp"
 #include "Camera.hpp"
@@ -697,10 +698,10 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 			// Middle footer section
 			{
 				constexpr auto BACKGROUND_FADED_TEXT = u8"C•Team";
-				constexpr auto CREDIT_TEXT = u8"Berthrage • SSSiyan • deepdarkkapustka • Darkness • Charlie • The Hitchhiker • RaccMoon • Lenam ";
+				constexpr auto CREDIT_TEXT = u8"Berthrage • SSSiyan • deepdarkkapustka • Darkness • Charlie • The Hitchhiker • RaccMoon • Lenam • Airdragon • ZippoIG • Vainiuss1 ";
 				constexpr auto ABOUT_BUTTON_TEXT = "ABOUT";
 
-				ImGui::PushFont(g_ImGuiFont_Roboto[g_UIContext.DefaultFontSize]);
+				ImGui::PushFont(g_ImGuiFont_Roboto[g_UIContext.DefaultFontSize * 0.85f]);
 
 				float creditTextWidth = ImGui::CalcTextSize((const char*)CREDIT_TEXT).x;
 				float aboutButtonWidth = ImGui::CalcTextSize(ABOUT_BUTTON_TEXT).x + style.FramePadding.x * 2.0f;
@@ -15173,7 +15174,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.8f)]);
 					{
-						ImGui::Text("Project Director, Lead Programmer, Artist, Reverse Engineering");
+						ImGui::Text("Project Director, Lead Programmer, Game Design, Reverse Engineering");
 					}
 					ImGui::PopFont();
 
@@ -15247,14 +15248,26 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 					ImGui::SameLine();
 
-					const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+
+					const float socialIconSize = ImGui::GetFontSize();
+					const float kofiBtnWidth = ImGui::CalcTextSize("KO-FI").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+					const float totalBtnWidth = socialIconSize + 4.0f + kofiBtnWidth + 4.0f;
 					const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
 
-					ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+					ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - totalBtnWidth, currentCursorPos.y });
 
-					if (fnDrawSocialButton("sarahtwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+					if (fnDrawSocialButton("sarahtwitter", SocialsIcons::ID_Twitter, ImVec2{ socialIconSize, socialIconSize })) {
 						ShellExecute(0, 0, "https://twitter.com/SSSiyan", 0, 0, SW_SHOW);
 					}
+
+					ImGui::SameLine(0.0f, 0.0f);
+
+					if (ImGui::Button("KO-FI", ImVec2{ kofiBtnWidth, socialIconSize + 4.0f })) {
+						ShellExecute(0, 0, "https://ko-fi.com/sssiyan", 0, 0, SW_SHOW);
+					}
+
+					ImGui::PopFont();
 				}
 
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
@@ -15329,11 +15342,13 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
 				// Charlie
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("Community Manager, Testing, Q&A, Game Design Assistant");
+						ImGui::Text("Community Manager, Testing, Q&A, Game Design");
 					}
 					ImGui::PopFont();
 
@@ -15363,14 +15378,14 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.7f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 
 				// Hitchhiker
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("General Programmer, Reverse Engineering");
+						ImGui::Text("General Programmer, Reverse Engineering, Game Design");
 					}
 					ImGui::PopFont();
 
@@ -15408,7 +15423,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.7f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 				// RaccMoon
 				{
@@ -15436,13 +15451,14 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					if (fnDrawSocialButton("raccyoutube", SocialsIcons::ID_YouTube, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 						ShellExecute(0, 0, "https://www.youtube.com/@rakunuki3565", 0, 0, SW_SHOW);
 					}
-
 				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("Artist");
+						ImGui::Text("Lead 2D Artist");
 					}
 					ImGui::PopFont();
 
@@ -15450,10 +15466,109 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
 					{
-						ImGui::Text("And Lenam was there too");
+						ImGui::Text("Lenam Lorbington");
 					}
 					ImGui::PopFont();
 
+				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+				{
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+					{
+						ImGui::Text("3D & 2D Artist, Animation, Programmer");
+					}
+					ImGui::PopFont();
+
+					ImGui::Separator();
+
+					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+					{
+						ImGui::Text("Airdragon");
+
+						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+						if (fnDrawSocialButton("airdragongithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://github.com/Airdragon50", 0, 0, SW_SHOW);
+						}
+
+						ImGui::SameLine();
+
+						if (fnDrawSocialButton("airdragonnexus", SocialsIcons::ID_Nexusmods, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://www.nexusmods.com/profile/Airdragon50/mods", 0, 0, SW_SHOW);
+						}
+					}
+					ImGui::PopFont();
+				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+				{
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+					{
+						ImGui::Text("Lead VFX Artist");
+					}
+					ImGui::PopFont();
+
+					ImGui::Separator();
+
+					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+					{
+						ImGui::Text("ZippoIG");
+
+						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+						if (fnDrawSocialButton("zippoigtwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://x.com/ZippoIG", 0, 0, SW_SHOW);
+						}
+					}
+					ImGui::PopFont();
+				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+				{
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+					{
+						ImGui::Text("3D & 2D Artist, Animation");
+					}
+					ImGui::PopFont();
+
+					ImGui::Separator();
+
+					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+					{
+						ImGui::Text("Vainiuss1");
+
+						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+						if (fnDrawSocialButton("vainiusstwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://x.com/vainiuss1", 0, 0, SW_SHOW);
+						}
+
+						ImGui::SameLine();
+
+						if (fnDrawSocialButton("vainiussnexus", SocialsIcons::ID_Nexusmods, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://www.nexusmods.com/profile/vainiuss1/mods", 0, 0, SW_SHOW);
+						}
+					}
+					ImGui::PopFont();
 				}
 
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.7f);
@@ -15471,7 +15586,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 						{
-							ImGui::Text("Video Producer, Promoter");
+							ImGui::Text("Video Producer, Promoter, Consultant");
 						}
 						ImGui::PopFont();
 
@@ -15482,6 +15597,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 							ImGui::Text("Dany Sterkhov");
 
 							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
 
 							if (fnDrawSocialButton("danycuhrayzeeyoutube", SocialsIcons::ID_YouTube, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://www.youtube.com/@Cuhrayzee", 0, 0, SW_SHOW);
@@ -15497,6 +15617,54 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Animation Work, Mod Tooling, Consultant");
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+						{
+							ImGui::Text("Che");
+						}
+						ImGui::PopFont();
+					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Artist");
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+						{
+							ImGui::Text("Garlic Goblin");
+
+							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+							if (fnDrawSocialButton("garlicgoblinlinktree", socialsBluesky, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+								ShellExecute(0, 0, "https://linktr.ee/thegarlicgoblin", 0, 0, SW_SHOW);
+							}
+						}
+						ImGui::PopFont();
+					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15513,12 +15681,19 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 							ImGui::SameLine();
 
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 							if (fnDrawSocialButton("cynumatwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://x.com/Cynumaa", 0, 0, SW_SHOW);
 							}
 						}
 						ImGui::PopFont();
 					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15537,43 +15712,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					{
-						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
-						{
-							ImGui::Text("Mod Tooling");
-						}
-						ImGui::PopFont();
-
-						ImGui::Separator();
-
-						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
-						{
-							ImGui::Text("Che");
-						}
-						ImGui::PopFont();
-					}
-
-					{
-						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
-						{
-							ImGui::Text("Artist");
-						}
-						ImGui::PopFont();
-
-						ImGui::Separator();
-
-						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
-						{
-							ImGui::Text("Vainiuss1");
-
-							ImGui::SameLine();
-
-							if (fnDrawSocialButton("vainiusstwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
-								ShellExecute(0, 0, "https://x.com/vainiuss1", 0, 0, SW_SHOW);
-							}
-						}
-						ImGui::PopFont();
-					}
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15590,6 +15729,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 							ImGui::SameLine();
 
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 							if (fnDrawSocialButton("adilgithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://github.com/adilahmeddev", 0, 0, SW_SHOW);
 							}
@@ -15597,27 +15741,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					{
-						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
-						{
-							ImGui::Text("Programmer");
-						}
-						ImGui::PopFont();
-
-						ImGui::Separator();
-
-						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
-						{
-							ImGui::Text("Airdragon");
-
-							ImGui::SameLine();
-
-							if (fnDrawSocialButton("airdragongithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
-								ShellExecute(0, 0, "https://github.com/Airdragon50", 0, 0, SW_SHOW);
-							}
-						}
-						ImGui::PopFont();
-					}
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15633,6 +15757,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 							ImGui::Text("Tihan");
 
 							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
 
 							if (fnDrawSocialButton("tihantwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://x.com/t1h4n", 0, 0, SW_SHOW);
@@ -15660,6 +15789,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 						ImGui::SameLine();
 
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 						if (fnDrawSocialButton("serpgithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 							ShellExecute(0, 0, "https://github.com/serpentiem", 0, 0, SW_SHOW);
 						}
@@ -15667,7 +15801,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				// Serp
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+				// Lyall
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 1.2f)]);
 					{
@@ -15682,6 +15818,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::Text("Lyall");
 
 						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
 
 						if (fnDrawSocialButton("lyallgithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 							ShellExecute(0, 0, "https://github.com/serpentiem", 0, 0, SW_SHOW);
@@ -15876,7 +16017,8 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				auto window = ImGui::GetCurrentWindow();
 				constexpr const char* THX_TEXT = "Thank you all for playing and supporting the project!";
 				constexpr const char* LICENSE_BUTTON_TEXT = "LICENSE";
-				constexpr const char* COPYRIGHT_TEXT = "Copyright (c) 2025 Berthrage";
+				constexpr const char* COPYRIGHT_TEXT = "Copyright (c) 2026 Berthrage";
+				static bool showLicense = false;
 
 				{
 					const float thxTextWidth = ImGui::CalcTextSize(THX_TEXT).x;
@@ -15889,10 +16031,65 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 					ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
 					ImGui::SetCursorScreenPos(ImVec2{ areaMin.x + (areaSize.x - licenseButtonWidth) * 0.5f, areaMin.y + scaledFontSize * 2.0f });
-					UI::InfoButton(LICENSE_BUTTON_TEXT);
+					if (ImGui::Button(LICENSE_BUTTON_TEXT)) {
+						showLicense = !showLicense;
+					}
 					ImGui::PopStyleVar();
 				}
 				ImGui::PopFont();
+
+				// License popup window
+				if (showLicense) {
+					const float licenseScaleFactor = (scaleFactorY + (ImGui::GetIO().DisplaySize.x / 1920.0f)) * 0.5f;
+					const float licW = 650.0f * licenseScaleFactor;
+					const float licH = 500.0f * licenseScaleFactor;
+					const float licCenterX = (g_renderSize.x - licW) * 0.5f;
+					const float licCenterY = (g_renderSize.y - licH) * 0.5f;
+
+					ImGui::SetNextWindowSize(ImVec2(licW, licH));
+					ImGui::SetNextWindowPos(ImVec2(licCenterX, licCenterY));
+
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f * licenseScaleFactor, 20.0f * licenseScaleFactor));
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * licenseScaleFactor);
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
+
+					if (ImGui::Begin("LicenseWindow", &showLicense, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+						ImGui::SetWindowFontScale(licenseScaleFactor);
+
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[context.DefaultFontSize * 1.2f]);
+						ImGui::Text("LICENSE");
+						ImGui::SameLine();
+
+						const float xBtnSize = 24.0f * licenseScaleFactor;
+						ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - xBtnSize);
+						if (ImGui::Button("X", ImVec2(xBtnSize, xBtnSize))) {
+							showLicense = false;
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[context.DefaultFontSize * 0.85f]);
+
+						ImVec2 childSize = ImGui::GetContentRegionAvail();
+						ImGui::BeginChild("LicenseTextArea", childSize, false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+						ImGui::SetWindowFontScale(licenseScaleFactor);
+
+						ImGui::PushTextWrapPos(0.0f);
+						ImGui::TextUnformatted(g_LicenseText);
+						ImGui::PopTextWrapPos();
+
+						ImGui::EndChild();
+						ImGui::PopFont();
+					}
+					ImGui::End();
+
+					ImGui::PopStyleColor();
+					ImGui::PopStyleVar(4);
+				}
 
 				ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 0.8f)]);
 				{

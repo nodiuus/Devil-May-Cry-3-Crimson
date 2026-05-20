@@ -178,6 +178,7 @@ file(GLOB MAIN_SRC
     CrimsonGameplay.hpp
     CrimsonGUI.cpp
     CrimsonGUI.hpp
+    CrimsonLicense.hpp
     CrimsonHighFPSFixes.cpp
     CrimsonHighFPSFixes.hpp
     CrimsonHUD.cpp
