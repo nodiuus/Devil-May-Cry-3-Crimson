@@ -10543,7 +10543,7 @@ void TrainingSection() {
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Infinite Hit Points", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
+			if (GUI_Checkbox2("Disable All Damage", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
 				ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
 			}
 
@@ -13289,16 +13289,19 @@ void MoveToMainActor() {
 
 void ToggleInfiniteHealth() {
 
-    if (activeCrimsonGameplay.Cheats.Training.infiniteHP) {
-		activeCrimsonGameplay.Cheats.Training.infiniteHP = false;
+    if (activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable || activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable) {
+		//activeCrimsonGameplay.Cheats.Training.infiniteHP = false;
+		activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = false;
+		activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable = false;
 		cheatsPopUp.cheatText = "Toggled Infinite HP Off";
     } else {
-		activeCrimsonGameplay.Cheats.Training.infiniteHP = true;
+		activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable = true;
+		activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = true;
 		cheatsPopUp.cheatText = "Toggled Infinite HP On";
     }
 	if (activeCrimsonConfig.GUI.sounds) FMOD_PlaySound(0, 25); 
 
-    ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
+    //ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
 	cheatsPopUp.showPopUp = true;
 }
 
@@ -13309,11 +13312,20 @@ void ToggleOneHitKill() {
 		toggled = true;
 		activeCrimsonGameplay.Cheats.General.customDamage = true;
 		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 9999.0f;
+		activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = false;
 		cheatsPopUp.cheatText = "Toggled One Hit Kill On";
 	} else {
 		toggled = false;
 		activeCrimsonGameplay.Cheats.General.customDamage = queuedCrimsonGameplay.Gameplay.General.multiplayerDamageScaling;
 		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = defaultCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult;
+		//if it's on in the trainer GUI, this should toggle it back on.
+		if (queuedCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable) {
+			activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = true;
+		}
+		//this should trigger only when the hotkey for inf hp is set.
+		if (!queuedCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable && activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable)
+			activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = true;
+		
 		cheatsPopUp.cheatText = "Toggled One Hit Kill Off";
 	}
 	if (activeCrimsonConfig.GUI.sounds) FMOD_PlaySound(0, 25); 
