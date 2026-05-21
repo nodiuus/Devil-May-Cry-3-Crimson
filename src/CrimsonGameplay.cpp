@@ -5245,7 +5245,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
 
     // Triggering the Drive Level Timer
-    if ((actorData.action == REBELLION_DRIVE_1) &&
+    if ((actorData.action == REBELLION_DRIVE_1) && !drive.inQuickDrive &&
         (actorData.motionData[0].index == 17 || actorData.motionData[0].index == 18)) {
         drive.runLevelTimer = true;
 	} else if (actorData.action != REBELLION_DRIVE_1) {
@@ -5260,6 +5260,22 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		drive.level3EffectPlayed = false;
 		drive.inPart2 = false;
 		drive.inPart3 = false;
+
+		// Reset QuickDrive charge state
+		drive.quickChargeTimer = 0.0f;
+		drive.quickChargeComplete = false;
+		drive.quickLevelUpEffectPlayed = false;
+		drive.quickChargeSfxPlayed = false;
+		drive.quickDriveEffectPlayed = false;
+		drive.quickMeleePressedForOverdrive = false;
+		drive.quickPart2Played = false;
+		drive.quickPart3Played = false;
+		drive.quickInPart2 = false;
+		drive.quickInPart3 = false;
+		if (drive.quickChargeVfxPlaying) {
+			CrimsonEfk::StopEffect(drive.quickChargeVfxHandle);
+			drive.quickChargeVfxPlaying = false;
+		}
     }
 
 	// Incrementing level timer
@@ -5280,6 +5296,15 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		CrimsonEfk::StopEffect(drive.chargeEffectHandle);
 	}
 
+	// Stop QuickDrive looping VFX when charge completes, swing starts, or action changes
+	if (drive.quickChargeVfxPlaying && (drive.quickChargeComplete || 
+		actorData.motionData[0].index == 19 ||
+		actorData.action != REBELLION_DRIVE_1 || actorData.eventData[0].event != ACTOR_EVENT::ATTACK)) {
+
+		CrimsonEfk::StopEffect(drive.quickChargeVfxHandle);
+		drive.quickChargeVfxPlaying = false;
+	}
+
 	// Interrupting SFX. What a pain to get right as well.
 	if ((actorData.motionData[0].index != 17
 		&& actorData.motionData[0].index != 18 && ((drive.motion19Timer >= (drive.effectInterruptTime - 0.1f)) ||
@@ -5288,8 +5313,9 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		CrimsonSDL::InterruptDriveSFX(playerIndex, entityIndex);
 	}
 
-	// Buffering input for Overdrive
-	if (actorData.action == REBELLION_DRIVE_1 &&
+	// Buffering input for Overdrive (requires OverDrive unlock)
+	if (ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_OVERDRIVE] &&
+		actorData.action == REBELLION_DRIVE_1 &&
 		actorData.motionData[0].index == 19 &&
 		!drive.inQuickDrive && 
 		motionTimer >= 0.25f &&
@@ -5300,8 +5326,9 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		}
 	}
 
-	// Triggering Overdrive (Drive Part 2 & Part 3)
-	if (actorData.action == REBELLION_DRIVE_1 &&
+	// Triggering Overdrive (Drive Part 2 & Part 3) (requires OverDrive unlock)
+	if (ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_OVERDRIVE] &&
+		actorData.action == REBELLION_DRIVE_1 &&
 		actorData.motionData[0].index == 19 && 
 		!drive.inQuickDrive) {
 	
@@ -5330,27 +5357,123 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		}
 	}
 
-	if (actorData.action == 1) {
-		drive.quickDriveEffectPlayed = false;
+	// ── QuickDrive OverDrive Buffering ── (requires OverDrive unlock)
+	if (ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_OVERDRIVE] &&
+		actorData.action == REBELLION_DRIVE_1 &&
+		actorData.motionData[0].index == 19 &&
+		drive.inQuickDrive && drive.quickChargeComplete &&
+		motionTimer >= 0.25f &&
+		motionTimer <= 0.59f) {
+
+		if (meleePressed) {
+			drive.quickMeleePressedForOverdrive = true;
+		}
 	}
 
-    // Setting Quick Drive Damage
+	// ── QuickDrive OverDrive Triggering (Part 2 & Part 3) ── (requires OverDrive unlock)
+	if (ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_OVERDRIVE] &&
+		actorData.action == REBELLION_DRIVE_1 &&
+		actorData.motionData[0].index == 19 && 
+		drive.inQuickDrive && drive.quickChargeComplete) {
+
+		if (drive.quickMeleePressedForOverdrive && !drive.quickPart2Played && motionTimer >= 0.55f && motionTimer <= 0.79f) {
+			CrimsonGameplay::ToggleRebellionHoldDrive(false);
+			drive.resetMotion19Timer = false;
+			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = newDrivePart2_pl000_00_3;
+			actorData.action = REBELLION_DRIVE_1;
+			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+			actorData.rotation = GetRotationTowardsEnemy(actorData);
+			drive.quickInPart2 = true;
+			drive.quickPart2Played = true;
+		}
+		else if (drive.quickPart2Played && !drive.quickPart3Played && motionTimer >= 0.41f) {
+			CrimsonGameplay::ToggleRebellionHoldDrive(false);
+			drive.resetMotion19Timer = false;
+			actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = newDrivePart3_pl000_00_3;
+			actorData.action = REBELLION_DRIVE_1;
+			func_1E0800_TriggerEvent(actorBaseAddr, 17, 0, 0);
+			actorData.rotation = GetRotationTowardsEnemy(actorData);
+			drive.quickInPart3 = true;
+			drive.quickPart3Played = true;
+		}
+	}
+
+	if (actorData.action == 1) {
+		drive.quickDriveEffectPlayed = false;
+		drive.quickChargeTimer = 0.0f;
+		drive.quickChargeComplete = false;
+		drive.quickLevelUpEffectPlayed = false;
+		drive.quickChargeSfxPlayed = false;
+		drive.quickMeleePressedForOverdrive = false;
+		drive.quickPart2Played = false;
+		drive.quickPart3Played = false;
+		drive.quickInPart2 = false;
+		drive.quickInPart3 = false;
+		if (drive.quickChargeVfxPlaying) {
+			CrimsonEfk::StopEffect(drive.quickChargeVfxHandle);
+			drive.quickChargeVfxPlaying = false;
+		}
+	}
+
+    // ── QuickDrive Damage & Charging Logic ──
     if ((actorData.action == REBELLION_DRIVE_1) && drive.inQuickDrive && actorData.eventData[0].event == 17) {
 
-        *(float*)(drivePhysicalDamageAddr)   = 60.0f;
-        *(float*)(driveProjectileDamageAddr) = 200.0f;
+		// If in QuickDrive OverDrive (Part 2 or Part 3), use 80 damage per projectile
+		if (drive.quickInPart2 || drive.quickInPart3) {
+			*(float*)(drivePhysicalDamageAddr)   = 60.0f;
+			*(float*)(driveProjectileDamageAddr) = 80.0f;
+		} else {
+			// Initial QuickDrive damage stays at 200.0f
+			*(float*)(drivePhysicalDamageAddr)   = 60.0f;
+			*(float*)(driveProjectileDamageAddr) = 200.0f;
+
+			// Always play the original QuickDrive spark effect once when QuickDrive fires (regardless of OverDrive unlock)
+			if (!drive.quickDriveEffectPlayed) {
+				CrimsonEfkPreload::drive_QuickCharge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_QuickCharge_Handle, CrimsonEfkPreload::drive_QuickCharge_Path, 1.0f);
+				drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_QuickCharge_Handle, swordMatrix[0].matrix2, actorData);
+				drive.quickDriveEffectPlayed = true;
+			}
+
+			// Only run QuickDrive charging if OverDrive unlock is owned
+			bool hasOverDrive = ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_OVERDRIVE];
+			if (hasOverDrive) {
+				// QuickDrive charge timer: runs during charging (not in motion 19 swing)
+				if (actorData.motionData[0].index != 19 && !drive.quickChargeComplete) {
+					drive.quickChargeTimer += ImGui::GetIO().DeltaTime * (actorData.speed / g_FrameRateTimeMultiplier);
+
+					// Start looping VFX (regular Drive's charge VFX)
+					if (!drive.quickChargeVfxPlaying) {
+						CrimsonEfkPreload::drive_Charge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Charge_Handle, CrimsonEfkPreload::drive_Charge_Path, 1.0f);
+						drive.quickChargeVfxHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Charge_Handle, swordMatrix[0].matrix2, actorData);
+						drive.quickChargeVfxPlaying = true;
+					}
+
+					// Charge complete at 1.0s — only once
+					if (drive.quickChargeTimer >= 1.0f && !drive.quickChargeComplete) {
+						drive.quickChargeComplete = true;
+
+						// Stop looping VFX
+						CrimsonEfk::StopEffect(drive.quickChargeVfxHandle);
+						drive.quickChargeVfxPlaying = false;
+
+						// Play level-up VFX (like regular Drive level 2)
+						if (!drive.quickLevelUpEffectPlayed) {
+							CrimsonEfkPreload::drive_Level2_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level2_Handle, CrimsonEfkPreload::drive_Level2_Path, 1.0f);
+							drive.level2EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level2_Handle, swordMatrix[0].matrix2, actorData);
+							drive.quickLevelUpEffectPlayed = true;
+						}
+
+						// Play JDC Charge SFX (only after charge is complete)
+						if (!drive.quickChargeSfxPlayed) {
+							CrimsonSDL::PlayJDCCharge(playerIndex);
+							drive.quickChargeSfxPlayed = true;
+						}
+					}
+				}
+			}
+		}
 
 		drive.chargeEffectPlayed = false;
-
-		if (!drive.quickDriveEffectPlayed) {
-			
-			CrimsonEfkPreload::drive_QuickCharge_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_QuickCharge_Handle, CrimsonEfkPreload::drive_QuickCharge_Path, 1.0f);
-			drive.quickDriveChargeEffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_QuickCharge_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
-
-			CrimsonSDL::PlayJDCCharge(playerIndex); // Charge sound
-
-			drive.quickDriveEffectPlayed = true;
-		}
     }
 
     // Regular Drive Logic Starts here

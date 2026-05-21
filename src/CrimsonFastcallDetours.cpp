@@ -256,6 +256,18 @@ namespace CrimsonFastcallDetours{
 		 }
 	 }
 
+	 // DRIVE & OVERDRIVE (REWORK)
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.driveShl) && activeCrimsonGameplay.Gameplay.Dante.driveRework) {
+		 auto& shlActorData = *reinterpret_cast<CPl000Shl02Actor*>(actorAddr60 - 0x60);
+		 auto& playerActorDataShl = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+		 auto playerIndexShl = playerActorDataShl.newPlayerIndex;
+		 auto entityIndexShl = playerActorDataShl.newEntityIndex;
+		 auto& drive = (entityIndexShl == 0) ? crimsonPlayer[playerIndexShl].drive :
+			 crimsonPlayer[playerIndexShl].driveClone;
+
+
+	 }
+
 	 // JUDGEMENT CUT (REWORK)
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.jdcShl) &&
 		 activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework && ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1]) {

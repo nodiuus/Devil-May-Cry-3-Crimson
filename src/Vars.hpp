@@ -80,6 +80,9 @@ enum {
     //Backslide
     GUNSLINGER_MODDED_MOVES,
 
+    //Requires REBELLION_DRIVE — enables OverDrive (Part 2 & Part 3) for both Regular Drive and QuickDrive
+    REBELLION_OVERDRIVE,
+
     MOD_COUNT,
 };
 };
@@ -4334,8 +4337,7 @@ static_assert(offsetof(CGenerator, position) == 0xB0);
 static_assert(offsetof(CGenerator, matrixPtr) == 0xC0);
 static_assert(offsetof(CGenerator, color) == 0xE0);
 
-class CPl021Shl02Actor
-{
+class CPl021Shl02Actor { // JDCShl
 public:
 	uint8_t aliveStatus; //0x0008
 	char pad_0009[11]; //0x0009
@@ -4425,82 +4427,34 @@ static_assert(offsetof(CPl021Shl02Actor, delay) == 0x528);
 static_assert(offsetof(CPl021Shl02Actor, playerActorAddr) == 0x530);
 static_assert(sizeof(CPl021Shl02Actor) == 0x1578);
 
+class CPl000Shl02Actor { // DriveShl 
+public:
+	_(8);
+    uint8_t aliveStatus; //0x0008
+    char pad_0009[11]; 
+    float speed; //0x0014
+    float speedMultiplier; //0x0018
+    char pad_001C[44]; 
+    uintptr_t itselfBaseAddr; //0x0048
+    char pad_0048[16];
+    uintptr_t shlVfTable; //0x0060
+    char pad_0070[24];
+    vec4 position; //0x0080
+    char pad_0090[20];
+	uint8 damageLevel; //0x00A4 -- Reserved from Crimson
+    char pad_00A5[1179];
+	uintptr_t playerActorAddr; //0x0540
+};
 
-// float maxHitPointsDullahan; // 0x238
-// float hitPointsDullahan; // 0x2478
-// 
-// float maxHitPointsChess; //0x530
-// float hitPointsChess; // 0x1318
-// 
-// float maxHitPointsTheFallen; // 0x1840
-// float hitPointsTheFallen; // 0x1808
-// 
-// float maxHitPointsBloodgoyle; // 0x643
-// float hitPointsBloodgoyle; // 0x1498
-// 
-// float maxHitPointsSoulEater; // 0x628
-// float hitPointsSoulEater; // 0x1A18
-// 
-// float maxHitPointsEnigma; // 0x3B14
-// float hitPointsEnigma; // 0x3958
-// 
-// float maxHitPointsArachne; // 0x40EC
-// float hitPointsArachne; // 0x4170
-// 
-// // BOSSES
-// 
-// float hitPointsCerberusPart1; // 0xE230 -- max cerberus part1 hp is always 2400
-// float hitPointsCerberusPart2Head1Red; // 0xE234
-// float hitPointsCerberusPart2Head2Green; // 0xE238
-// float hitPointsCerberusPart2Head3Blue; // 0xE23C
-// float hitPointsCerberusTotal; // 0xE240 -- max cerberus hp is always 7200
-// float maxHitPointsCerberusTotal; // 0x352C84
-// float maxHitPointsCerberusPart1; // 0x3637D0 // or dmc3.exe + 5728F0
-// 
-// float maxHitPointsAgniRudra; // 0xFEC
-// float hitPointsAgniRudra; // 0x101C
-// 
-// float maxHitPointsVergil; // 0xED20
-// float hitPointsVergil; // 0xEB28
-// 
-// float maxHitPointsNevan; // 0x69C0
-// float hitPointsNevan; // 0x68D8
-// 
-// float maxHitPointsJester; // 0x61E0
-// float hitPointsJester; // 0x5F98
-// 
-// float maxHitPointsGeryon; // 0xFB0
-// float hitPointsGeryon; // 0xFC8
-// float maxHitPointsGeryonCarriage; // 0x16484
-// float hitPointsGeryonCarriage; // 0x1648C // detect whether aiming at carriage or horse by checking if this is 0
-// 
-// float maxHitPointsBeowulf; // 0x45F0
-// float hitPointsBeowulf; // 0x4338
-// 
-// float maxHitPointsLady; // 0x5950 
-// float hitPointsLady; // 0x5758
-// 
-// float maxHitPointsDoppelganger; // 0x81C
-// float hitPointsDoppelganger; // 0x84C
-// 
-// float maxHitPointsLeviathan; // 0x388884
-// float hitPointsLeviathan; // 0xAF4
-// 
-// float hitPointsLeviathanOther; // 0xA78 // left one max HP is 2000 and right one max hp is 1500, couldn't find a good addr that works for both
-// 
-// float maxHitPointsArkham; // 0x2788
-// float hitPointsArkham; // 0x1AF4
-// 
-// float hitPointsArkhamLeech; // 0xE68
-// float maxHitPointsArkhamLeech; // 0x12A0
-// 
-// float maxHitPointsGigapede; // 0x9584
-// float hitPointsGigapede; // 0x9BC0
-// byte32 gigapedePartAddr; // 0xF68 // check if this is null, if isn't then it's a gigapede part and we must fetch using +95E4 / +9B60 from the gigapedePartAddr
+static_assert(offsetof(CPl000Shl02Actor, aliveStatus) == 0x8);
+static_assert(offsetof(CPl000Shl02Actor, speed) == 0x14);
+static_assert(offsetof(CPl000Shl02Actor, speedMultiplier) == 0x18);
+static_assert(offsetof(CPl000Shl02Actor, itselfBaseAddr) == 0x48);
+static_assert(offsetof(CPl000Shl02Actor, shlVfTable) == 0x60);
+static_assert(offsetof(CPl000Shl02Actor, position) == 0x80);
+static_assert(offsetof(CPl000Shl02Actor, damageLevel) == 0xA4);
+static_assert(offsetof(CPl000Shl02Actor, playerActorAddr) == 0x540);
 
-//39A0 is greed TargetPos
-// 3A10 is abyss targetPos
-// 39F0 is envy targetPos
 
 struct EnemyActorData : ActorDataBase {
 	_(152);
@@ -5619,6 +5573,21 @@ struct DanteDriveRework {
     bool resetMotion19Timer = false;
     float effectInterruptTime = 8.0f;
     bool sfxLooped = false;
+
+    // QuickDrive charging (new)
+    float quickChargeTimer = 0.0f;
+    bool quickChargeComplete = false;
+    bool quickChargeVfxPlaying = false;
+    EffekseerHandle quickChargeVfxHandle;
+    bool quickLevelUpEffectPlayed = false;
+    bool quickChargeSfxPlayed = false;
+
+    // QuickDrive OverDrive (new)
+    bool quickMeleePressedForOverdrive = false;
+    bool quickPart2Played = false;
+    bool quickPart3Played = false;
+    bool quickInPart2 = false;
+    bool quickInPart3 = false;
 };
 ;
 

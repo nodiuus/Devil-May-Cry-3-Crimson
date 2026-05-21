@@ -9630,7 +9630,8 @@ void SetAction(byte8* actorBaseAddr) {
 
             drive.inQuickDrive = true;
 
-            CrimsonGameplay::ToggleRebellionHoldDrive(false);
+            // Only enable hold for QuickDrive charging if OverDrive is unlocked; otherwise fire immediately (original behavior)
+            CrimsonGameplay::ToggleRebellionHoldDrive(ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_OVERDRIVE]);
             actorData.motionArchives[MOTION_GROUP_DANTE::REBELLION] = demo_pl000_00_3;
 
             actorData.newQuickDrive = true;
