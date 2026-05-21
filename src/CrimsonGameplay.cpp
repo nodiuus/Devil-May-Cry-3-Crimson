@@ -5214,11 +5214,9 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     int vfxBank = 3;
     int vfxId = 144;
 
-    // 	drive physical hit damage dmc3.exe + 5C6D2C, 70.0f
-    // 	drive projectile damage dmc3.exe + 5CB1EC, 300.0f
-    uintptr_t drivePhysicalDamageAddr   = (uintptr_t)appBaseAddr + 0x5C6D2C;
-    uintptr_t driveProjectileDamageAddr = (uintptr_t)appBaseAddr + 0x5CB1EC;
-	auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
+    // Drive damage is now handled per-instance in ApplyDamageCalc_sub_140088190
+    // using the shlActorData.damageLevel cache (see CrimsonFastcallDetours.cpp). - Berthrage
+    auto& motionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
 	auto gamepad = GetGamepad(actorData.newGamepad);
 
 	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
@@ -5415,17 +5413,14 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 		}
 	}
 
-    // ── QuickDrive Damage & Charging Logic ──
+    // ── QuickDrive VFX & Charging Logic ──
     if ((actorData.action == REBELLION_DRIVE_1) && drive.inQuickDrive && actorData.eventData[0].event == 17) {
 
-		// If in QuickDrive OverDrive (Part 2 or Part 3), use 80 damage per projectile
+		// OverDrive transitioned 
 		if (drive.quickInPart2 || drive.quickInPart3) {
-			*(float*)(drivePhysicalDamageAddr)   = 60.0f;
-			*(float*)(driveProjectileDamageAddr) = 80.0f;
+			// Damage handled in ApplyDamageCalc detour via shlActorData.damageLevel
 		} else {
-			// Initial QuickDrive damage stays at 200.0f
-			*(float*)(drivePhysicalDamageAddr)   = 60.0f;
-			*(float*)(driveProjectileDamageAddr) = 200.0f;
+			// Initial QuickDrive
 
 			// Always play the original QuickDrive spark effect once when QuickDrive fires (regardless of OverDrive unlock)
 			if (!drive.quickDriveEffectPlayed) {
@@ -5503,31 +5498,8 @@ void DanteDriveRework(byte8* actorBaseAddr) {
 
         uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[0]);
 
-
-//         if (drive.levelTimer >= 1.1f) {
-//             if (!drive.level1EffectPlayed) {
-// 
-//                 //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1, true, vfxColor, 0.8f);
-// 				driveLevel1ParticleRef = CrimsonEfk::ReloadEffect(driveLevel1ParticleRef, driveLevel1ParticlePath, 1.0f);
-// 				drive.level1EffectHandle = CrimsonEfk::PlayEffectAtMatrix(driveLevel1ParticleRef, swordMatrix[0].matrix2, actorData); // using sword bone 2
-// 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex); // Level up sound
-// 
-//                 drive.level1EffectPlayed = true;
-//             }
-//         }
-
-        if (drive.levelTimer < 2.0) {
-            *(float*)(drivePhysicalDamageAddr)   = 70.0f;
-            *(float*)(driveProjectileDamageAddr) = 200.0f;
-        }
-
         if (drive.levelTimer >= 2.0 && drive.levelTimer < 5.0) {
-            *(float*)(drivePhysicalDamageAddr)   = 70.0f;
-            *(float*)(driveProjectileDamageAddr) = 300.0f;
-
             if (!drive.level2EffectPlayed) {
-
-                //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
 				CrimsonEfkPreload::drive_Level2_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level2_Handle, CrimsonEfkPreload::drive_Level2_Path, 1.0f);
 				drive.level2EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level2_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex);
@@ -5536,12 +5508,7 @@ void DanteDriveRework(byte8* actorBaseAddr) {
         }
 
         if (drive.levelTimer >= 5.0) {
-            *(float*)(drivePhysicalDamageAddr)   = 70.0f;
-            *(float*)(driveProjectileDamageAddr) = 700.0f;
-
             if (!drive.level3EffectPlayed) {
-
-                //CrimsonDetours::CreateEffectDetour(actorBaseAddr, vfxBank, vfxId, 1,true, vfxColor, 0.8f);
 				CrimsonEfkPreload::drive_Level3_Handle = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::drive_Level3_Handle, CrimsonEfkPreload::drive_Level3_Path, 1.0f);
 				drive.level3EffectHandle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::drive_Level3_Handle, swordMatrix[0].matrix2, actorData); // using sword bone 2
 				CrimsonSDL::PlayDriveLevelUp(playerIndex, entityIndex);

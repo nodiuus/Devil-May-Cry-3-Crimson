@@ -256,7 +256,7 @@ namespace CrimsonFastcallDetours{
 		 }
 	 }
 
-	 // DRIVE & OVERDRIVE (REWORK)
+	 // DRIVE & OVERDRIVE SHL (REWORK)
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.driveShl) && activeCrimsonGameplay.Gameplay.Dante.driveRework) {
 		 auto& shlActorData = *reinterpret_cast<CPl000Shl02Actor*>(actorAddr60 - 0x60);
 		 auto& playerActorDataShl = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
@@ -265,7 +265,48 @@ namespace CrimsonFastcallDetours{
 		 auto& drive = (entityIndexShl == 0) ? crimsonPlayer[playerIndexShl].drive :
 			 crimsonPlayer[playerIndexShl].driveClone;
 
+		 // Cache the damage level on first hit so subsequent hits on the same projectile
+		 // reuse the cached value. damageLevel == 0 means uninitialized.
+		 // damageLevel mapping:
+		 //   1 = Level 1          (timer < 2.0s)  -> projectile 200, physical 70
+		 //   2 = Level 2          (timer >= 2.0s)  -> projectile 300, physical 70
+		 //   3 = Level 3          (timer >= 5.0s)  -> projectile 700, physical 70
+		 //   4 = QuickDrive       (no OverDrive)  -> projectile 200, physical 60
+		 //   5 = QuickDrive+OD    (Part 2/3)      -> projectile  80, physical 60
+		 if (shlActorData.damageLevel == 0) {
+			 if (drive.quickInPart2 || drive.quickInPart3)
+				 shlActorData.damageLevel = 5; // QuickDrive + OverDrive
+			 else if (drive.inQuickDrive)
+				 shlActorData.damageLevel = 4; // QuickDrive no OverDrive
+			 else if (drive.levelTimer >= 5.0f)
+				 shlActorData.damageLevel = 3; // Level 3
+			 else if (drive.levelTimer >= 2.0f)
+				 shlActorData.damageLevel = 2; // Level 2
+			 else
+				 shlActorData.damageLevel = 1; // Level 1
+		 }
 
+		 // Apply damage based on cached level
+		 switch (shlActorData.damageLevel) {
+		 case 5: newDmgData.dmgValue = 80.0f;  break;
+		 case 4: newDmgData.dmgValue = 200.0f; break;
+		 case 3: newDmgData.dmgValue = 700.0f; break;
+		 case 2: newDmgData.dmgValue = 300.0f; break;
+		 default: newDmgData.dmgValue = 200.0f; break; // Level 1
+		 }
+		 modified = true;
+	 }
+
+	 // DRIVE PHYSICAL HIT (DRIVE REWORK)
+	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.drivePhysicalHit) && activeCrimsonGameplay.Gameplay.Dante.driveRework) {
+		 auto& playerDataPhys = *reinterpret_cast<PlayerActorData*>(actorAddr60 - 0x60);
+		 auto playerIndexPhys = playerDataPhys.newPlayerIndex;
+		 auto entityIndexPhys = playerDataPhys.newEntityIndex;
+		 auto& drivePhys = (entityIndexPhys == 0) ? crimsonPlayer[playerIndexPhys].drive :
+			 crimsonPlayer[playerIndexPhys].driveClone;
+
+		 newDmgData.dmgValue = drivePhys.inQuickDrive ? 60.0f : 70.0f;
+		 modified = true;
 	 }
 
 	 // JUDGEMENT CUT (REWORK)
