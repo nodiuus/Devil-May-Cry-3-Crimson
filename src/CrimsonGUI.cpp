@@ -115,7 +115,7 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 	// Todo: move to context
 	static bool uiElementsInitialized = false;
 	if (!uiElementsInitialized) {
-		g_Image_CrimsonHeaderLogo.ResizeByRatioW(size_t(g_UIContext.DefaultFontSize * 16.23f));
+		g_Image_CrimsonHeaderLogo.ResizeByRatioW(size_t(g_UIContext.DefaultFontSize * 13.23f));
 
 		uiElementsInitialized = true;
 	}

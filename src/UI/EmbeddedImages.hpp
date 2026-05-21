@@ -50,8 +50,8 @@ public:
 	{}
 
 protected:
-	static constexpr uint32_t	m_CompressedWidth{ 1598 };
-	static constexpr uint32_t	m_CompressedHeight{ 256 };
+	static constexpr uint32_t	m_CompressedWidth{ 968 };
+	static constexpr uint32_t	m_CompressedHeight{ 198 };
 	static constexpr uint32_t	m_ImageCompressedSize{ 314079 };
 	static			 uint32_t	m_ImageCompressedData[314080 / 4];
 };
