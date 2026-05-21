@@ -6458,6 +6458,7 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 
 
 void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMissionActorData, ActiveMissionActorData& activeMissionActorData, bool unlockDevilTrigger) {
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 	for (int itemHelperIndex = 0; itemHelperIndex < sizeof(itemHelpers) / sizeof(ShopItemHelper); ++itemHelperIndex) {
 		auto& itemHelper = itemHelpers[itemHelperIndex];
 
@@ -6467,7 +6468,10 @@ void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMission
 		if ((itemHelper.itemIndex == ITEM::PURPLE_ORB || itemHelper.itemIndex == ITEM::DEVIL_STAR) && !unlockDevilTrigger) {
 			continue;
 		}
-
+		if (itemHelper.itemIndex == ITEM::GOLD_ORB && !sessionData.useGoldOrb)
+			continue;
+		if (itemHelper.itemIndex == ITEM::YELLOW_ORB && sessionData.useGoldOrb)
+			continue;
 		uint32 price = GetItemPrice(itemHelper, buyCount);
 
 		if (GUI_Button(itemNames[itemHelper.itemIndex], ImVec2(500.0f * scaleFactorY, 80.0f * scaleFactorY))) {
