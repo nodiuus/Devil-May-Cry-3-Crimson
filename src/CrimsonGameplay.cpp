@@ -5429,6 +5429,135 @@ void DanteDriveRework(byte8* actorBaseAddr) {
     }
 }
 
+static constexpr uintptr_t SHOTGUN_SHL_FIRE_OFFSET() { return 0x1CA390; }
+
+using ShotgunShlFire_t = void(__fastcall*)(PlayerActorData* actorData, vec4* pos, vec4* pos2, uint8 mode, uint16 shotType);
+
+static void CallShotgunShlFire(PlayerActorData& actorData, vec4& pos, vec4& pos2, uint8 mode = 0, uint16 shotType = 8) {
+	// This func fires only the projectiles, without muzzle flash or sound effects. 
+	auto shotgunShlFire = reinterpret_cast<ShotgunShlFire_t>(appBaseAddr + SHOTGUN_SHL_FIRE_OFFSET());
+	if (!shotgunShlFire) {
+		return;
+	}
+
+	shotgunShlFire(&actorData, &pos, &pos2, mode, shotType);
+}
+
+
+static constexpr uintptr_t REVIVE_PLAYER_OFFSET() { return 0x1E1510; }
+
+using RevivePlayer_t = void(__fastcall*)(PlayerActorData* actorData, uint8 gorb);
+
+static void CallRevivePlayer(PlayerActorData& actorData, uint8 isGorb) {
+	// Fire Mode 8 is Charged Shot, Fire Mode is 0 is normal shot
+	auto revivePlayer = reinterpret_cast<RevivePlayer_t>(appBaseAddr + REVIVE_PLAYER_OFFSET());
+	if (!revivePlayer) {
+		return;
+	}
+	revivePlayer(&actorData, isGorb);
+}
+
+bool CanBeRevived(uint8 playerIndex) {
+	if (!InGame())
+		return false;
+
+	auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_6975) {
+		return false;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
+
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+
+	if (!activeNewActorData.baseAddr) {
+		return false;
+	}
+	auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+
+	//Can't revive cuz no gorb.
+	if (!(missionData.itemCounts[ITEM::GOLD_ORB] > 0))
+		return false;
+
+	return activeActorData.dead;
+}
+
+void RevivePlayer(uint8 playerIndex, bool ignoreGorbCost) {
+
+	auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_6975) {
+		return;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
+
+	Log("Calling Revive Player");
+	if (!InGame())
+		return;
+	if (!(activeConfig.Actor.playerCount > playerIndex)) {
+		DebugLog("%s playercount %u is lower than targeted player %u", FUNC_NAME, activeConfig.Actor.playerCount, playerIndex);
+		return;
+	}
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& mainNewActorData = GetNewActorData(0, 0, ENTITY::MAIN);
+	auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+	if (!activeNewActorData.baseAddr) {
+		Log("Invalid actor base address");
+		return;
+	}
+
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+
+	if (missionData.itemCounts[ITEM::GOLD_ORB] > 0 || ignoreGorbCost) {
+		Log("Calling revive function!");
+		CrimsonGameplay::CallRevivePlayer(actorData, 1);
+
+		//subtract gorb if not ignoring
+		if (missionData.itemCounts[ITEM::GOLD_ORB] > 0 && !ignoreGorbCost)
+			missionData.itemCounts[ITEM::GOLD_ORB] = missionData.itemCounts[ITEM::GOLD_ORB] - 1;
+	}
+	else {
+		Log("Not enough gorb");
+	}
+
+}
+
+void UpdateRevivePlayer(byte8* actorBaseAddr) {
+	if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1])) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+	if (!IsActiveCharacterActor(actorData)) return;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
+	auto& playerData = GetPlayerData(playerIndex);
+	auto& characterData = playerData.characterData[playerData.activeCharacterIndex];
+
+	auto& gamepad = GetGamepad(playerIndex);
+	bool startDown = (gamepad.buttons[0] & GAMEPAD::START) != 0;
+
+	if (startDown && entityIndex == 0) {
+		if (CanBeRevived(playerIndex)) {
+			RevivePlayer(playerIndex,false);
+		}
+		Log("Player %u start down", playerIndex);
+	}
+}
+
+static constexpr uintptr_t SHOTGUN_FIRE_OFFSET() { return 0x217FF0; }
+
+using ShotgunFire_t = void(__fastcall*)(PlayerActorData* actorData, uint8 mode, uint32 unk3);
+
+static void CallShotgunFire(PlayerActorData& actorData, uint8 mode=8, uint32 unk3=0) {
+	// Fire Mode 8 is Charged Shot, Fire Mode is 0 is normal shot
+	auto shotgunFire = reinterpret_cast<ShotgunFire_t>(appBaseAddr + SHOTGUN_FIRE_OFFSET());
+	if (!shotgunFire) {
+		return;
+	}
+
+	shotgunFire(&actorData, mode, unk3);
+}
+
+
 void DanteShotgunBackslide(byte8* actorBaseAddr) {
 	using namespace ACTION_DANTE;
 	if (!actorBaseAddr) {

@@ -4208,6 +4208,7 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     //if ((ImGui::GetFrameCount() % 220) == 0) {
     //    EffekseerHandle particle = EffekseerPlayEffect(particleHandle, actorData.position, actorData);
     //}
+    CrimsonGameplay::UpdateRevivePlayer(actorBaseAddr);
 	UpdateStyleSwitchAnimations();
 	StyleSwitchController(actorBaseAddr);
     CharacterSwitchController();

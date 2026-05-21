@@ -491,6 +491,48 @@ void PreparePlayersDataBeforeSpawn() {
 	}
 }
 
+bool CheckAllDead() {
+	if (!InGame())
+		return false;
+
+	bool alldead = true;
+	old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
+		auto& playerData = GetPlayerData(playerIndex);
+		auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+		if (activeNewActorData.baseAddr == nullptr) {
+			alldead = alldead && false;
+			continue;
+		}
+		auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+		if (activeActorData.eventData[0].event == ACTOR_EVENT::DEATH && activeActorData.recoverState[0] == 0x2) {
+			alldead = alldead && true;
+		}
+		else {
+			alldead = alldead && false;
+		}
+	}
+	return alldead;
+}
+
+void ManageDeathScreen() {
+	if (!InGame())
+		return;
+	auto pool_10371 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_10371 || !pool_10371[8]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_10371[8]);
+	if (g_scene != SCENE::GAME) {
+		return;
+	}
+	if (eventData.event == EVENT::MAIN) {
+		if (CheckAllDead()) {
+			eventData.event = EVENT::DEATH;
+		}
+
+	}
+}
+
 void CrimsonMissionClearSong() {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
@@ -2095,6 +2137,8 @@ void TriggerOnTickFuncs() {
 	CrimsonGameModes::TrackCheats();
 	CrimsonGameModes::TrackMissionResultGameMode();
     CrimsonOnTick::CrimsonMissionClearSong();
+	//Not ready yet.
+	//CrimsonOnTick::ManageDeathScreen();
 	CrimsonOnTick::DivinityStatueSong();
 	CrimsonOnTick::CameraShakeController();
 	CrimsonPatches::MenuScrollTapSpeedFix(true);
