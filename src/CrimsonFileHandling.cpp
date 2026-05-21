@@ -1,5 +1,6 @@
 #include <iostream>
 #include <vector>
+#include <algorithm>
 #include <filesystem>
 #include "Vars.hpp"
 #include "Config.hpp"
@@ -140,31 +141,23 @@ bool ApplySelectedHUD(const std::string& hudName) {
 
 void CopyHUDFilePactoGameFolder() {
 	std::string hudName = activeCrimsonConfig.HudOptions.selectedHUD;
-	std::string hudPath = Paths::huds + (std::string)"\\" + hudName;
-	std::vector<std::string> files = GetFiles(hudPath);
 
-	// Determine destination naming based on HUD category
-	struct RenameRule {
-		std::string sourceName;
-		std::string destName;
+	struct CopyTask {
+		std::string srcDir;
+		std::string srcName;
+		std::string dstName;
 	};
 
-	std::vector<RenameRule> rules;
+	std::vector<CopyTask> tasks;
 
-	if (hudName == "Crimson HUD") {
-		// Crimson HUD 1.0 keeps its dedicated filenames
-		rules = {
-			{"id100.pac",  "newCrimsonHUD1_0_id_100.pac"},
-			{"id100V.pac", "newCrimsonHUD1_0_id_100V.pac"},
-		};
-	} else if (hudName == "Classic HUD") {
-		// Classic HUD restores the original game files (overwrites)
-		rules = {
-			{"id100.pac",  "id100.pac"},
-			{"id100V.pac", "id100V.pac"},
-		};
-	} else {
-		// Other HUDs get unique names to sit alongside originals
+	// Always copy both Crimson HUD and Classic HUD files into the game folder
+	tasks.push_back({std::string(Paths::huds) + "\\Crimson HUD", "id100.pac",  "newCrimsonHUD1_0_id_100.pac"});
+	tasks.push_back({std::string(Paths::huds) + "\\Crimson HUD", "id100V.pac", "newCrimsonHUD1_0_id_100V.pac"});
+	tasks.push_back({std::string(Paths::huds) + "\\Classic HUD", "id100.pac",  "id100.pac"});
+	tasks.push_back({std::string(Paths::huds) + "\\Classic HUD", "id100V.pac", "id100V.pac"});
+
+	// If a custom HUD is selected, also copy its files alongside the official ones
+	if (hudName != "Crimson HUD" && hudName != "Classic HUD") {
 		std::string safeName = hudName;
 		for (auto& c : safeName) {
 			if (c == ' ' || c == '\\' || c == '/' || c == ':' ||
@@ -174,21 +167,33 @@ void CopyHUDFilePactoGameFolder() {
 			}
 		}
 		std::string prefix = "newCustomHUD_" + safeName;
-		rules = {
-			{"id100.pac",  prefix + "_id_100.pac"},
-			{"id100V.pac", prefix + "_id_100V.pac"},
-		};
+		tasks.push_back({std::string(Paths::huds) + "\\" + hudName, "id100.pac",  prefix + "_id_100.pac"});
+		tasks.push_back({std::string(Paths::huds) + "\\" + hudName, "id100V.pac", prefix + "_id_100V.pac"});
 	}
 
-	for (const auto& rule : rules) {
-		if (std::find(files.begin(), files.end(), rule.sourceName) != files.end()) {
-			fs::path sourceFile = hudPath + "\\" + rule.sourceName;
-			fs::path destinationFile = std::string(Paths::gameMods) + "\\" + rule.destName;
+	for (const auto& task : tasks) {
+		std::vector<std::string> srcFiles = GetFiles(task.srcDir);
+
+		// Case-insensitive filename matching
+		auto it = std::find_if(srcFiles.begin(), srcFiles.end(),
+			[&](const std::string& file) {
+				if (file.size() != task.srcName.size()) return false;
+				return std::equal(file.begin(), file.end(), task.srcName.begin(),
+					[](char a, char b) {
+						return std::tolower(static_cast<unsigned char>(a)) ==
+						       std::tolower(static_cast<unsigned char>(b));
+					});
+			});
+
+		if (it != srcFiles.end()) {
+			// Use the actual filename from disk for the source path
+			fs::path sourceFile = task.srcDir + "\\" + *it;
+			fs::path destinationFile = std::string(Paths::gameMods) + "\\" + task.dstName;
 
 			try {
 				fs::copy_file(sourceFile, destinationFile, fs::copy_options::overwrite_existing);
 
-				std::cout << "HUD File copied successfully! " << "(" << rule.destName << ")" << std::endl;
+				std::cout << "HUD File copied successfully! " << "(" << task.dstName << ")" << std::endl;
 			} catch (const fs::filesystem_error& e) {
 				std::cerr << "Filesystem error: " << e.what() << std::endl;
 				std::cerr << "Error code: " << e.code() << std::endl;
