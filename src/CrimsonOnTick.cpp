@@ -2106,7 +2106,7 @@ void CallGameplayFuncs() {
 			return;
 		} 
 		auto& playerActor = *playerActorDataPtr;
-
+		CrimsonDetours::ToggleDisableDriveHold(false);
 		CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor);
 		CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor.cloneActorBaseAddr);
 	}
