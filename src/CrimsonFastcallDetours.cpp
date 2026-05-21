@@ -232,7 +232,7 @@ namespace CrimsonFastcallDetours{
 	 // BACKSLIDE 
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.shotgunShl)) {
 		 if (backslide.performing) {
-			 newDmgData.displacement = 30.0f; // default is 7.0f
+			 newDmgData.displacement = 27.0f; // default is 7.0f
 			 newDmgData.dmgValue = 20.0f; // default is 5.0f
 			 modified = true;
 		 }
@@ -249,7 +249,8 @@ namespace CrimsonFastcallDetours{
 	 // SKY LAUNCH
 	 if ((uintptr_t)dmgData == (uintptr_t)(appBaseAddr + damageDataOffsets.goldRoyalRelease)) {
 		 if (skyLaunch.executing) {
-			 newDmgData.stun = 100.0f; // default is 600.0f
+			 newDmgData.hitStopDuration = 7.0f;
+			 newDmgData.stun = 80.0f; // default is 600.0f
 			 newDmgData.displacement = 60.0f; // default is 60.0f
 			 modified = true;
 		 }
