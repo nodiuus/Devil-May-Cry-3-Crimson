@@ -4861,6 +4861,10 @@ void GetLockedOnEnemyStunDisplacement(byte8* actorBaseAddr) {
 		lockedOnEnemyMaxStun = 300.0f;
 		lockedOnEnemyMaxDisplacement = 1000.0f;
 	}
+	else if (enemyId >= ENEMY::GLUTTONY_1 && enemyId <= ENEMY::GLUTTONY_4) {
+		lockedOnEnemyMaxStun = 20.0f;
+		lockedOnEnemyMaxDisplacement = 60.0f;
+	}
 	// For all other enemies, read max values from game memory
 	else if (maxStunDisplacementPtr) {
 		__try {
