@@ -10955,7 +10955,7 @@ void VisualSection(size_t defaultFontSize) {
 	ImGui::Text("");
 
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
-    GUI_Checkbox2("STYLE SWITCH TEXT", activeCrimsonConfig.StyleSwitchFX.Text.enable, queuedCrimsonConfig.StyleSwitchFX.Text.enable);
+    GUI_Checkbox2("STYLE SWITCH TEXT", activeCrimsonConfig.StyleSwitchFX.Text.textEnabled, queuedCrimsonConfig.StyleSwitchFX.Text.textEnabled);
 	ImGui::PopFont();
 
 	for (int style = 0; style < 9; style++) {

@@ -3404,7 +3404,7 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
         CrimsonSDL::PlayStyleChangeVO(playerIndex, style, actorData.doppelganger);
     }
 
-    if (activeCrimsonConfig.StyleSwitchFX.Text.enable) {
+    if (activeCrimsonConfig.StyleSwitchFX.Text.textEnabled) {
         CrimsonFX::SetStyleSwitchDrawTextTime(style, actorBaseAddr);
     }
 

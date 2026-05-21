@@ -311,7 +311,7 @@ struct CrimsonConfig {
 		} Flux;
 
 		struct Text {
-			bool enable = true;
+			bool textEnabled = false;
 			float maxAlpha = 0.9f;
 			float size = 1.0f;
 
@@ -330,7 +330,7 @@ struct CrimsonConfig {
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
-					std::make_pair("enable", &StyleSwitchFX::Text::enable),
+					std::make_pair("textEnabled", &StyleSwitchFX::Text::textEnabled),
 					std::make_pair("maxAlpha", &StyleSwitchFX::Text::maxAlpha),
 					std::make_pair("size", &StyleSwitchFX::Text::size),
                     std::make_pair("color", &StyleSwitchFX::Text::color)
