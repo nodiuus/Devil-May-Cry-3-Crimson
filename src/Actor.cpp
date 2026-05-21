@@ -3893,7 +3893,28 @@ template <typename T> void AnalogMeleeWeaponSwitchController(T& actorData) {
 
         back = true;
     };
+    auto& playerData = GetPlayerData(actorData);
+    {
+        bool condition = (actorData.buttons[0] & playerData.switchButton);
 
+        if (actorData.newEntityIndex == ENTITY::MAIN) {
+            if (condition) {
+                //if(gamepad.buttons[2] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))
+                    //activeCrimsonConfig.WeaponWheel.hide = true;
+                return;
+            }
+            else {
+                //if (gamepad.buttons[2] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))
+                   // activeCrimsonConfig.WeaponWheel.hide = queuedCrimsonConfig.WeaponWheel.hide;
+            }
+        }
+        else {
+            if (!condition) {
+                
+                return;
+            }
+        }
+    }
     if (activeCrimsonConfig.WeaponWheel.analogSwitching || playerIndex != 0) {
         if ((gamepad.buttons[0] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))) {
 			if (activeCrimsonConfig.WeaponWheel.disableCameraRotation && playerIndex == 0) {
