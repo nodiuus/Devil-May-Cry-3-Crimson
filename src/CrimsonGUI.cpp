@@ -115,7 +115,7 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 	// Todo: move to context
 	static bool uiElementsInitialized = false;
 	if (!uiElementsInitialized) {
-		g_Image_CrimsonHeaderLogo.ResizeByRatioW(size_t(g_UIContext.DefaultFontSize * 12.23f));
+		g_Image_CrimsonHeaderLogo.ResizeByRatioW(size_t(g_UIContext.DefaultFontSize * 16.23f));
 
 		uiElementsInitialized = true;
 	}
@@ -12800,8 +12800,8 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMouseInputs;
 
 
-	auto logoWidth = (logo.GetWidth() * 0.6f) * scaleFactorY;
-	auto logoHeight = (logo.GetHeight() * 0.6f) * scaleFactorY;
+	auto logoWidth = (logo.GetWidth() * 0.68f) * scaleFactorY;
+	auto logoHeight = (logo.GetHeight() * 0.68f) * scaleFactorY;
 	ImVec2 logoWindowSize = ImVec2(logoWidth + 50.0f, logoHeight + 50.0f);
 	ImVec2 logoWindowPos = ImVec2((g_renderSize.x - (logoWidth)) * 0.5f, 310.0 * scaleFactorY);
 	auto logoSize = ImVec2(logoWindowPos.x + logoWidth, logoWindowPos.y + logoHeight);
@@ -14214,7 +14214,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 			auto descriptionVanilla =
 				u8"• No Style Switching\n"
 				u8"• Weapons Slots Restricted (2-Slots).\n"
-				u8"• Small Quality of Life changes (like DMC4/5 Lock On Direction).\n";
+				u8"• Small Quality of Life Changes (like DMC4/5 Lock On Direction).\n";
 			
 			auto descriptionStyleSwitcher =
 				u8"• Style Switching\n"
