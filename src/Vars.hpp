@@ -3359,6 +3359,7 @@ struct DamageDataAddrOffsets {
     uintptr_t shotgunPointBlankShl2 = 0x5CBEB0; // subsequent shots
     uintptr_t shotgunGunStingerShl = 0x5CB6E0;
     uintptr_t shotgunGunStingerShl2 = 0x5CB690;
+    uintptr_t goldRoyalRelease = 0x5CAA10; // Sky Launch uses it
 
 	// --- Vergil ---
 	uintptr_t jdcShl = 0x5CDF40;
