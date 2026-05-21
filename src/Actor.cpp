@@ -20,6 +20,7 @@
 #include "debug_draw.hpp"
 #include "CrimsonUtil.hpp"
 #include "DMC3Input.hpp"
+#include "Global.hpp"
 #include "ActorBase.hpp"
 #include "ActorRelocations.hpp"
 #include "Exp.hpp"
@@ -4184,6 +4185,117 @@ template <typename T> void AnalogRangedWeaponSwitchController(T& actorData) {
     }
 }
 
+// Keyboard-specific direct weapon select — bypasses the linear cycling buttons.
+// Checks raw DI8 key state against directWeaponKeybinds[] and jumps directly to the target slot.
+template <typename T> void DirectWeaponSwitchKeyboardController(T& actorData) {
+    auto& characterData = GetCharacterData(actorData);
+    const auto& ks       = keyboard.state.keys;
+    const uint32* dwBinds = activeCrimsonConfig.System.KeyboardConfig.directWeaponKeybinds;
+
+    // Edge-detection state: true = key was down last frame, so we ignore it this frame.
+    static bool s_prevDown_melee[5] = {};
+    static bool s_prevDown_ranged[5] = {};
+
+    bool switched = false;
+    bool wasMelee = false;
+
+    // --- Melee weapon binds (indices 0-4) ---
+    if (!switched) {
+        for (int i = 0; i < 5; i++) {
+            uint32 key = dwBinds[i];
+            if (key == 0 || key >= 256) {
+                s_prevDown_melee[i] = false;
+                continue;
+            }
+            bool down = (ks[key] & 0x80) != 0;
+            if (down) {
+                bool wasDown = s_prevDown_melee[i];
+                s_prevDown_melee[i] = true;
+                if (!wasDown) {
+                    bool validSlot = (i < characterData.meleeWeaponCount) && (characterData.meleeWeapons[i] != WEAPON::VOID);
+                    if (validSlot && characterData.meleeWeaponIndex != static_cast<uint8>(i)) {
+                        characterData.meleeWeaponIndex = static_cast<uint8>(i);
+                        switched = true;
+                        wasMelee = true;
+                        break;
+                    }
+                }
+            } else {
+                s_prevDown_melee[i] = false;
+            }
+        }
+    }
+
+    // --- Ranged weapon binds (indices 5-9) ---
+    if (!switched) {
+        for (int i = 0; i < 5; i++) {
+            uint32 key = dwBinds[5 + i];
+            if (key == 0 || key >= 256) {
+                s_prevDown_ranged[i] = false;
+                continue;
+            }
+            bool down = (ks[key] & 0x80) != 0;
+            if (down) {
+                bool wasDown = s_prevDown_ranged[i];
+                s_prevDown_ranged[i] = true;
+                if (!wasDown) {
+                    bool validSlot = (i < characterData.rangedWeaponCount) && (characterData.rangedWeapons[i] != WEAPON::VOID);
+                    if (validSlot && characterData.rangedWeaponIndex != static_cast<uint8>(i)) {
+                        characterData.rangedWeaponIndex = static_cast<uint8>(i);
+                        switched = true;
+                        wasMelee = false;
+                        break;
+                    }
+                }
+            } else {
+                s_prevDown_ranged[i] = false;
+            }
+        }
+    }
+
+    if (!switched) return;
+
+    actorData.meleeWeaponSwitchTimeout = activeCrimsonGameplay.Gameplay.General.vanillaWeaponSwitchDelay;
+
+    UpdateMeleeWeapon(actorData);
+    UpdateRangedWeapon(actorData);
+    UpdateForm(actorData);
+
+    // Play the appropriate sound based on what kind of switch happened
+    if (wasMelee) {
+        if (activeConfig.Actor.playerCount <= 1) {
+            if (activeCrimsonConfig.SFX.changeDevilArmNew == 1) {
+                CrimsonSDL::PlayChangeDevilArm();
+            } else {
+                FMOD_PlaySound(0, 12);
+            }
+        } else {
+            if (activeCrimsonConfig.SFX.changeDevilArmNew == 1) {
+                CrimsonSDL::PlayChangeDevilArmMP();
+            } else {
+                CrimsonSDL::PlayChangeWeaponDMC3MP();
+            }
+        }
+    } else {
+        // Ranged switch — only for Dante (Vergil has no ranged)
+        if constexpr (TypeMatch<T, PlayerActorDataDante>::value) {
+            if (activeConfig.Actor.playerCount <= 1) {
+                if (activeCrimsonConfig.SFX.changeGunNew == 1) {
+                    CrimsonSDL::PlayChangeGun();
+                } else {
+                    FMOD_PlaySound(0, 12);
+                }
+            } else {
+                if (activeCrimsonConfig.SFX.changeDevilArmNew == 1) {
+                    CrimsonSDL::PlayChangeGunMP();
+                } else {
+                    CrimsonSDL::PlayChangeWeaponDMC3MP();
+                }
+            }
+        }
+    }
+}
+
 template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
     if (!actorBaseAddr || (actorBaseAddr == g_playerActorBaseAddrs[0]) || (actorBaseAddr == g_playerActorBaseAddrs[1]) || InCutscene()) {
         return true;
@@ -4269,6 +4381,8 @@ template <typename T> bool WeaponSwitchController(byte8* actorBaseAddr) {
 
     if ((actorData.newCharacterIndex == playerData.activeCharacterIndex) &&
         (actorData.newEntityIndex == ENTITY::MAIN)) {
+
+        DirectWeaponSwitchKeyboardController(actorData);
 
         if (actorData.newPlayerIndex == 0) {
             g_disableCameraRotation = false;

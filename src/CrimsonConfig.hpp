@@ -13,6 +13,7 @@
 
 #define NUM_GAMEPADBINDS 16
 #define NUM_KEYBINDS 24
+#define NUM_DIRECT_WEAPON_BINDS 10
 
 namespace HUDELEMENTSCALESTATE {
 enum {
@@ -571,14 +572,14 @@ struct CrimsonConfig {
 			uint32 keybinds[NUM_KEYBINDS] = {
 				DI8::KEY::LEFT_SHIFT, // keyboard_0(HDCdefault: 54) - SELECT / TAUNT - dmc3.exe+5611A0
 				DI8::KEY::U, // keyboard_1(HDCdefault: 49) - LB / DEVIL TRIGGER - dmc3.exe+5611A4
-				DI8::KEY::C, // keyboard_2(HDCdefault: 46) - LS / CHANGE TARGET - dmc3.exe + 5611A8
+				DI8::KEY::T, // keyboard_2(HDCdefault: 46) - LS / CHANGE TARGET - dmc3.exe + 5611A8
 				DI8::KEY::ONE, // keyboard_3(HDCdefault: 2) - DPAD UP - dmc3.exe + 5611AC
 				DI8::KEY::TWO, // keyboard_4(HDCdefault: 3) - DPAD RIGHT - dmc3.exe + 5611B0
 				DI8::KEY::FOUR, // keyboard_5(HDCdefault: 5) - DPAD DOWN - dmc3.exe + 5611B4
 				DI8::KEY::THREE, // keyboard_6(HDCdefault: 4) - DPAD LEFT - dmc3.exe + 5611B8
 				DI8::KEY::M, // keyboard_7(HDCdefault: 50) - START - dmc3.exe + 5611BC
 				DI8::KEY::SPACE, // keyboard_8(HDCdefault: 57) - RB / LOCK ON - dmc3.exe + 5611C0
-				DI8::KEY::F, // keyboard_9(HDCdefault: 33) - RS / DEFAULT CAMERA - dmc3.exe + 5611C4
+				DI8::KEY::R, // keyboard_9(HDCdefault: 33) - RS / DEFAULT CAMERA - dmc3.exe + 5611C4
 				DI8::KEY::I, // keyboard_10(HDCdefault: 23) - Y / MELEE ATK - dmc3.exe + 5611C8
 				DI8::KEY::L, // keyboard_11(HDCdefault: 38) - B / STYLE - dmc3.exe + 5611CC
 				DI8::KEY::K, // keyboard_12(HDCdefault: 37) - A / JUMP - dmc3.exe + 5611D0
@@ -595,9 +596,23 @@ struct CrimsonConfig {
 				DI8::KEY::E, // keyboard_23(HDCdefault: 18) - RT / CHANGE DEVIL ARM - dmc3.exe + 5611FC
 			};
 
+			uint32 directWeaponKeybinds[NUM_DIRECT_WEAPON_BINDS] = {
+				DI8::KEY::F, // MELEE SLOT 1
+				DI8::KEY::V, // MELEE SLOT 2
+				DI8::KEY::C, // MELEE SLOT 3
+				DI8::KEY::X, // MELEE SLOT 4
+				DI8::KEY::Z, // MELEE SLOT 5
+				DI8::KEY::G, // GUN SLOT 1
+				DI8::KEY::H, // GUN SLOT 2
+				DI8::KEY::Y, // GUN SLOT 3
+				DI8::KEY::B, // GUN SLOT 4
+				DI8::KEY::N, // GUN SLOT 5
+			};
+
 			static constexpr auto Metadata() {
 				return std::make_tuple(
-					std::make_pair("keybinds", &KeyboardConfig::keybinds)
+					std::make_pair("keybinds", &KeyboardConfig::keybinds),
+					std::make_pair("directWeaponKeybinds", &KeyboardConfig::directWeaponKeybinds)
 				);
 			}
 

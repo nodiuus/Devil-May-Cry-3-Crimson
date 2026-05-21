@@ -442,15 +442,61 @@ static const char* s_keybindActionNames[NUM_KEYBINDS] = {
     "RT / CHANGE DEVIL ARM",
 };
 
+static const char* s_directWeaponActionNames[NUM_DIRECT_WEAPON_BINDS] = {
+    "MELEE SLOT 1",
+    "MELEE SLOT 2",
+    "MELEE SLOT 3",
+    "MELEE SLOT 4",
+    "MELEE SLOT 5",
+    "GUN SLOT 1",
+    "GUN SLOT 2",
+    "GUN SLOT 3",
+    "GUN SLOT 4",
+    "GUN SLOT 5",
+};
+
 struct KBCaptureState {
     bool   open        = false;
     int    index       = -1;
     uint32 previewKey  = 0;
     bool   executes[256] = {};
+    bool   isDirectWeapon = false;
+    bool   hasConflict = false;
+    char   conflictText[96] = {};
 };
 
 static KBCaptureState s_kbCapture;
 bool g_showKeyboardConfig = false;
+
+static bool FindKeyboardBindConflict(uint32 key, bool isDirectWeapon, int index, const char** outName) {
+    if (key == 0 || key >= 256) {
+        return false;
+    }
+
+    const uint32* keybinds = activeCrimsonConfig.System.KeyboardConfig.keybinds;
+    for (int i = 0; i < NUM_KEYBINDS; i++) {
+        if (!isDirectWeapon && i == index) {
+            continue;
+        }
+        if (keybinds[i] == key) {
+            *outName = s_keybindActionNames[i];
+            return true;
+        }
+    }
+
+    const uint32* directBinds = activeCrimsonConfig.System.KeyboardConfig.directWeaponKeybinds;
+    for (int i = 0; i < NUM_DIRECT_WEAPON_BINDS; i++) {
+        if (isDirectWeapon && i == index) {
+            continue;
+        }
+        if (directBinds[i] == key) {
+            *outName = s_directWeaponActionNames[i];
+            return true;
+        }
+    }
+
+    return false;
+}
 
 void ShowButtonConfigWindow() {
 	if (!g_control_ui && !g_showControllerRemap && !g_showKeyboardConfig) {
@@ -617,22 +663,63 @@ void ShowButtonConfigWindow() {
 			uint32* queuedKeybinds  = queuedCrimsonConfig.System.KeyboardConfig.keybinds;
 			uint32* defaultKeybinds = defaultCrimsonConfig.System.KeyboardConfig.keybinds;
 
-			ImGui::BeginChild("##kb_scroll", ImVec2(0, height - 140.0f * scaleY), false); {
-				for (int i = 0; i < NUM_KEYBINDS; i++) {
-					ImGui::PushID(i);
-					ImGui::Text(s_keybindActionNames[i]);
-					ImGui::SameLine(260.0f * scaleY);
-					const char* keyName = (activeKeybinds[i] < 256) ? DI8::keyNames[activeKeybinds[i]] : "???";
-					if (GUI_Button(keyName, ImVec2(160.0f * scaleY, 0))) {
-						s_kbCapture.open       = true;
-						s_kbCapture.index      = i;
-						s_kbCapture.previewKey = activeKeybinds[i];
-						memset(s_kbCapture.executes, 0, sizeof(s_kbCapture.executes));
-					}
-					ImGui::PopID();
-				}
-			}
-			ImGui::EndChild();
+            uint32* dwActiveKeybinds = activeCrimsonConfig.System.KeyboardConfig.directWeaponKeybinds;
+            uint32* dwQueuedKeybinds = queuedCrimsonConfig.System.KeyboardConfig.directWeaponKeybinds;
+
+            const float kbRowLabelX = 210.0f * scaleY;
+            const float kbButtonW   = 150.0f * scaleY;
+            const float kbListHeight = height - 230.0f * scaleY;
+
+            if (ImGui::BeginTable("##kb_table", 2)) {
+                ImGui::TableSetupColumn("KeyboardBinds", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableSetupColumn("DirectWeaponBinds", ImGuiTableColumnFlags_WidthStretch);
+                ImGui::TableNextRow();
+
+                ImGui::TableNextColumn();
+                ImGui::BeginChild("##kb_scroll", ImVec2(0, kbListHeight), false); {
+                    for (int i = 0; i < NUM_KEYBINDS; i++) {
+                        ImGui::PushID(i);
+                        ImGui::Text(s_keybindActionNames[i]);
+                        ImGui::SameLine(kbRowLabelX);
+                        const char* keyName = (activeKeybinds[i] < 256) ? DI8::keyNames[activeKeybinds[i]] : "???";
+                        if (GUI_Button(keyName, ImVec2(kbButtonW, 0))) {
+                            s_kbCapture.open       = true;
+                            s_kbCapture.index      = i;
+                            s_kbCapture.previewKey = activeKeybinds[i];
+                            s_kbCapture.hasConflict = false;
+                            s_kbCapture.conflictText[0] = '\0';
+                            memset(s_kbCapture.executes, 0, sizeof(s_kbCapture.executes));
+                        }
+                        ImGui::PopID();
+                    }
+                }
+                ImGui::EndChild();
+
+                ImGui::TableNextColumn();
+                ImGui::BeginChild("##dw_scroll", ImVec2(0, kbListHeight), false); {
+                    ImGui::Text("DIRECT WEAPON SELECTION");
+                    ImGui::Separator();
+                    for (int i = 0; i < NUM_DIRECT_WEAPON_BINDS; i++) {
+                        ImGui::PushID(1000 + i);
+                        ImGui::Text(s_directWeaponActionNames[i]);
+                        ImGui::SameLine(kbRowLabelX);
+                        const char* keyName = (dwActiveKeybinds[i] > 0 && dwActiveKeybinds[i] < 256) ? DI8::keyNames[dwActiveKeybinds[i]] : "UNBOUND";
+                        if (GUI_Button(keyName, ImVec2(kbButtonW, 0))) {
+                            s_kbCapture.open          = true;
+                            s_kbCapture.index         = i;
+                            s_kbCapture.isDirectWeapon = true;
+                            s_kbCapture.previewKey    = dwActiveKeybinds[i];
+                            s_kbCapture.hasConflict = false;
+                            s_kbCapture.conflictText[0] = '\0';
+                            memset(s_kbCapture.executes, 0, sizeof(s_kbCapture.executes));
+                        }
+                        ImGui::PopID();
+                    }
+                }
+                ImGui::EndChild();
+
+                ImGui::EndTable();
+            }
 
 			ImGui::Separator();
 
@@ -645,6 +732,8 @@ void ShowButtonConfigWindow() {
 					*(uint32_t*)(baseAddr + (i * 4)) = defaultKeybinds[i];
 				}
 				protectionHelper.Pop();
+				memset(dwActiveKeybinds, 0, sizeof(uint32) * NUM_DIRECT_WEAPON_BINDS);
+				memset(dwQueuedKeybinds, 0, sizeof(uint32) * NUM_DIRECT_WEAPON_BINDS);
 				GUI::save = true;
 			}
 			ImGui::SameLine();
@@ -686,11 +775,15 @@ void ShowButtonConfigWindow() {
 
 			auto kbFontSize = UI::g_UIContext.DefaultFontSize;
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[kbFontSize * 1.2f]);
-			ImGui::Text("Rebinding: %s", s_keybindActionNames[s_kbCapture.index]);
+			const char* rebindName = s_kbCapture.isDirectWeapon
+				? s_directWeaponActionNames[s_kbCapture.index]
+				: s_keybindActionNames[s_kbCapture.index];
+			ImGui::Text("Rebinding: %s", rebindName);
 			ImGui::SameLine();
 			if (GUI_CloseX()) {
-				s_kbCapture.open  = false;
-				s_kbCapture.index = -1;
+				s_kbCapture.open          = false;
+				s_kbCapture.index         = -1;
+				s_kbCapture.isDirectWeapon = false;
 			}
 			ImGui::PopFont();
 
@@ -702,6 +795,11 @@ void ShowButtonConfigWindow() {
 			CenterText(previewName);
 			ImGui::PopFont();
 
+            if (s_kbCapture.hasConflict) {
+                ImGui::Text("");
+                ImGui::TextColored(ImVec4(1.0f, 0.35f, 0.35f, 1.0f), "%s", s_kbCapture.conflictText);
+            }
+
 			ImGui::Text("");
 			ImGui::Text("");
 
@@ -712,8 +810,9 @@ void ShowButtonConfigWindow() {
 		ImGui::PopStyleVar(4);
 
 		if (!popupOpen) {
-			s_kbCapture.open  = false;
-			s_kbCapture.index = -1;
+			s_kbCapture.open          = false;
+			s_kbCapture.index         = -1;
+			s_kbCapture.isDirectWeapon = false;
 		}
 	}
 
@@ -848,8 +947,11 @@ void UpdateKeyboardConfigCapture(byte8* state) {
     if (state[DI8::KEY::ESCAPE] & 0x80) {
         if (exec[DI8::KEY::ESCAPE]) {
             exec[DI8::KEY::ESCAPE] = false;
-            s_kbCapture.open  = false;
-            s_kbCapture.index = -1;
+            s_kbCapture.open          = false;
+            s_kbCapture.index         = -1;
+            s_kbCapture.isDirectWeapon = false;
+            s_kbCapture.hasConflict = false;
+            s_kbCapture.conflictText[0] = '\0';
         }
     } else {
         exec[DI8::KEY::ESCAPE] = true;
@@ -859,16 +961,33 @@ void UpdateKeyboardConfigCapture(byte8* state) {
     if (state[DI8::KEY::ENTER] & 0x80) {
         if (exec[DI8::KEY::ENTER] && preview != 0) {
             exec[DI8::KEY::ENTER] = false;
-            activeCrimsonConfig.System.KeyboardConfig.keybinds[s_kbCapture.index] = preview;
-            queuedCrimsonConfig.System.KeyboardConfig.keybinds[s_kbCapture.index] = preview;
 
-            byte8* currentAddr = (appBaseAddr + 0x5611A0) + (s_kbCapture.index * 4);
-            protectionHelper.Push(currentAddr, 4);
-            *(uint32_t*)currentAddr = preview;
-            protectionHelper.Pop();
+            const char* conflictName = nullptr;
+            if (FindKeyboardBindConflict(preview, s_kbCapture.isDirectWeapon, s_kbCapture.index, &conflictName)) {
+                s_kbCapture.hasConflict = true;
+                snprintf(s_kbCapture.conflictText, sizeof(s_kbCapture.conflictText),
+                    "Keybind already assigned to %s", conflictName);
+                return;
+            }
+
+            if (s_kbCapture.isDirectWeapon) {
+                activeCrimsonConfig.System.KeyboardConfig.directWeaponKeybinds[s_kbCapture.index] = preview;
+                queuedCrimsonConfig.System.KeyboardConfig.directWeaponKeybinds[s_kbCapture.index] = preview;
+            } else {
+                activeCrimsonConfig.System.KeyboardConfig.keybinds[s_kbCapture.index] = preview;
+                queuedCrimsonConfig.System.KeyboardConfig.keybinds[s_kbCapture.index] = preview;
+
+                byte8* currentAddr = (appBaseAddr + 0x5611A0) + (s_kbCapture.index * 4);
+                protectionHelper.Push(currentAddr, 4);
+                *(uint32_t*)currentAddr = preview;
+                protectionHelper.Pop();
+            }
 
             s_kbCapture.open  = false;
             s_kbCapture.index = -1;
+            s_kbCapture.isDirectWeapon = false;
+            s_kbCapture.hasConflict = false;
+            s_kbCapture.conflictText[0] = '\0';
             GUI::save = true;
         }
     } else {
@@ -884,6 +1003,8 @@ void UpdateKeyboardConfigCapture(byte8* state) {
             if (exec[i]) {
                 exec[i]  = false;
                 preview  = static_cast<uint32>(i);
+                s_kbCapture.hasConflict = false;
+                s_kbCapture.conflictText[0] = '\0';
             }
         } else {
             exec[i] = true;
