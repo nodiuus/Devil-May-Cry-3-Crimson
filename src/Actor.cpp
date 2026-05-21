@@ -3115,6 +3115,7 @@ void ActivateDoppelganger(PlayerActorData& actorData) {
     if (cloneActorData.character == CHARACTER::DANTE) {
         cloneActorData.meleeWeaponIndex  = actorData.meleeWeaponIndex;
         cloneActorData.rangedWeaponIndex = actorData.rangedWeaponIndex;
+        crimsonPlayer[cloneActorData.newPlayerIndex].lockCloneStyle = false;
     } else if (cloneActorData.character == CHARACTER::VERGIL) {
         cloneActorData.queuedMeleeWeaponIndex = (weapon - WEAPON::YAMATO_VERGIL);
     }
@@ -3172,6 +3173,17 @@ void DeactivateDoppelganger(PlayerActorData& actorData) {
 
     if (!actorData.cloneActorBaseAddr) {
         return;
+    }
+    //special permission that allows dante to not decommision if he's holding style neutral.
+    if (actorData.character == CHARACTER::DANTE){
+        auto& gamepad = GetGamepad(actorData.newGamepad);
+        //checks if lockon held
+        bool lockOnDown = (gamepad.buttons[0] & GetBinding(BINDING::LOCK_ON)) != 0;
+        //the cloneStatus check makes sure this is a dante decomission vs cutscene decomission.
+        if (!lockOnDown && actorData.cloneStatus != CLONE_STATUS::ACTIVE) {
+            actorData.cloneStatus = CLONE_STATUS::ACTIVE;
+            return;
+        }
     }
     auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
 
@@ -3306,6 +3318,26 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
 	auto& hudData = *reinterpret_cast<HUDData*>(name_80);
 	auto& styleSwitchVFX = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].styleSwitchVFX : 
         crimsonPlayer[playerIndex].styleSwitchVFXClone;
+
+    auto& gamepad = GetGamepad(actorData.newGamepad);
+    bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) != 0;
+    if (actorData.character == CHARACTER::DANTE && actorData.style == STYLE::DOPPELGANGER) {
+        if (styleDown && actorData.newEntityIndex == ENTITY::MAIN) {
+            crimsonPlayer[playerIndex].lockCloneStyle = true;
+            return;
+        }
+    }
+    
+    if (actorData.character == CHARACTER::DANTE && actorData.newEntityIndex != ENTITY::MAIN) {
+        auto& mainActorData = *reinterpret_cast<PlayerActorData*>(GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, ENTITY::MAIN).baseAddr);
+        //if lockCloneStyle set only allow switch if main actor is currently in doppelganger style
+        if (mainActorData == nullptr) return;
+        if (crimsonPlayer[playerIndex].lockCloneStyle && (mainActorData.style != STYLE::DOPPELGANGER || !styleDown)) {
+            return;
+        }
+    }
+
+
 
     actorData.style = style; // Changes the style.
 

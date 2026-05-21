@@ -5929,6 +5929,8 @@ struct CrimsonPlayerData {
 	VergilRisingStarInput risingStarInput;
     BulletMagnetism bulletMagnetism;
     uint8 bufferRoyal = 0;
+    //this isn't a value mirrored between player & doppelganger, it's only for the player and it effects doppelganger behavior.
+    bool lockCloneStyle = false;
 
     uintptr_t clonePtr;
     uint8 actionClone     = 0;
