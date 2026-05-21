@@ -3446,6 +3446,7 @@ void CharacterSection(size_t defaultFontSize) {
 
 	GUI_PopDisable(actorCondition);
 	ImGui::PopStyleColor();
+	//
 	//ImGui::PopItemWidth();
 	//ImGui::PopFont();
 }
@@ -4561,7 +4562,23 @@ void RenderMultiplayerBar(
 		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[18.0f]);
 		ImGui::Text("  ");
 		ImGui::SameLine();
+		//grabbing mission data real quick
+		auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+		if (!name_6975) {
+			return;
+		}
+		auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
 		//ImGui::SameLine();
+		if (actorData.dead && missionData.itemCounts[ITEM::GOLD_ORB] > 0) {
+			ImGui::Text("Hold start to revive");
+			ImGui::Text("  ");
+			ImGui::SameLine();
+			ImGui::Text("Gold orbs left: %u", missionData.itemCounts[ITEM::GOLD_ORB]);
+		}else
+		if (actorData.dead) {
+			ImGui::Text("Gold orbs left: %u", missionData.itemCounts[ITEM::GOLD_ORB]);
+		}
+		else
 		if (actorData.character == CHARACTER::DANTE || actorData.character == CHARACTER::VERGIL) {
 
 			if (actorData.character == CHARACTER::DANTE) {
@@ -7662,6 +7679,22 @@ void DebugSection() {
 
 		GUI_Checkbox2("Show Hitboxes", activeCrimsonGameplay.Debug.showHitboxes, queuedCrimsonGameplay.Debug.showHitboxes);
 
+		bool condition = (!InGame() || activeConfig.Actor.playerCount == 1);
+		GUI_PushDisable(condition);
+		for_each(players, 1, activeConfig.Actor.playerCount) {
+			bool isDead = CrimsonGameplay::CanBeRevived(players);
+			//GUI_PushDisable(!isDead);
+			std::string inputLabel = "Revive Player " + std::to_string(players + 1) + "##playerReviveLabel";
+			if (GUI_Button(inputLabel.c_str())) {
+				CrimsonGameplay::RevivePlayer(players);
+			}
+
+			//GUI_PopDisable(!isDead);
+		}
+
+
+
+		GUI_PopDisable(condition);
 		if (ImGui::Button("heheh")) {
 			CrimsonDetours::SampleModDetour1();
 		}
@@ -8568,6 +8601,11 @@ void MiscCheatsSection() {
 			auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
 			ImGui::PushItemWidth(200);
 			GUI_Input<uint32>("Red Orbs", missionData.redOrbs, 1000, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Gold Orbs", missionData.itemCounts[ITEM::GOLD_ORB], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Vital Stars Small", missionData.itemCounts[ITEM::VITAL_STAR_SMALL], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Vital Stars Large", missionData.itemCounts[ITEM::VITAL_STAR_LARGE], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Devil Stars", missionData.itemCounts[ITEM::DEVIL_STAR], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Holy Waters", missionData.itemCounts[ITEM::HOLY_WATER], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
 			ImGui::PopItemWidth();
 		}
 
