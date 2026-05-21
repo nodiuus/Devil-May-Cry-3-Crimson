@@ -46,6 +46,7 @@ void SaveExp();
 void LoadExp();
 void InitExp();
 
+void RefundMoveExpertise(uint8 charId, int unlock);
 void SavePlayerActorExp();
 
 void UpdatePlayerActorExp(byte8* actorBaseAddr);

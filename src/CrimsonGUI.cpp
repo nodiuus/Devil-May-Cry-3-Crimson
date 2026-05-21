@@ -5845,7 +5845,7 @@ enum {
 };
 
 // Function Declarations
-void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData,uint64 baseMoveCount);
+void ShowExperienceTab(int charID,ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData,uint64 baseMoveCount);
 void ShowExperienceStyleTab(ExpConfig::ExpData& expData,ShopExperienceStyleHelper* styleHelpers, new_size_t styleHelperCount, MissionData& missionData, uint8 character);
 
 void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMissionActorData, ActiveMissionActorData& activeMissionActorData, bool unlockDevilTrigger);
@@ -5979,19 +5979,19 @@ void ShopWindow() {
 
 					switch (tabIndex) {
 					case TAB::DANTE_DEVILARM:
-						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDante, sizeof(shopHelpersDante) / sizeof(ShopExperienceHelper), missionData,UNLOCK_DANTE::COUNT);
+						ShowExperienceTab(CHARACTER::DANTE,ExpConfig::missionExpDataDante, shopHelpersDante, sizeof(shopHelpersDante) / sizeof(ShopExperienceHelper), missionData,UNLOCK_DANTE::COUNT);
 						break;
 					case TAB::DANTE_GUN:
-						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDanteGuns, sizeof(shopHelpersDanteGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_DANTE::COUNT);
+						ShowExperienceTab(CHARACTER::DANTE, ExpConfig::missionExpDataDante, shopHelpersDanteGuns, sizeof(shopHelpersDanteGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_DANTE::COUNT);
 						break;
 					case TAB::DANTE_STYLE:
 						ShowExperienceStyleTab(ExpConfig::missionExpDataDante, shopHelpersDanteStyle, sizeof(shopHelpersDanteStyle) / sizeof(ShopExperienceStyleHelper), missionData, CHARACTER::DANTE);
 						break;
 					case TAB::VERGIL_DEVILARM:
-						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergil, sizeof(shopHelpersVergil) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
+						ShowExperienceTab(CHARACTER::VERGIL, ExpConfig::missionExpDataVergil, shopHelpersVergil, sizeof(shopHelpersVergil) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
 						break;
 					case TAB::VERGIL_GUN:
-						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergilGuns, sizeof(shopHelpersVergilGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
+						ShowExperienceTab(CHARACTER::VERGIL, ExpConfig::missionExpDataVergil, shopHelpersVergilGuns, sizeof(shopHelpersVergilGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
 						break;
 					case TAB::VERGIL_STYLE:
 						ShowExperienceStyleTab(ExpConfig::missionExpDataVergil, shopHelpersVergilStyle, sizeof(shopHelpersVergilStyle) / sizeof(ShopExperienceStyleHelper), missionData, CHARACTER::VERGIL);
@@ -6049,7 +6049,7 @@ void ShowStyleLevelsTab(ExpConfig::ExpData& expData, MissionData& missionData) {
 }
 
 
-void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData, uint64 baseMoveCount) {
+void ShowExperienceTab(int charID, ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData, uint64 baseMoveCount) {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
 	const float columnWidth = 0.48f * queuedConfig.globalScale;
@@ -6065,7 +6065,6 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 		//ImGui::TableSetupColumn("Col2", 0, columnWidth * 2.0f);
 		//ImGui::TableSetupColumn("SellCol2", 0, columnWidth * 2.0f);
 		ImGui::TableNextRow(0, rowHeight);
-
 
 		for (size_t helperIndex = 0; helperIndex < helperCount; ++helperIndex) {
 			auto& helper = helpers[helperIndex];
@@ -6104,6 +6103,9 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 				missionData.redOrbs += helper.price;
 				FMOD_PlaySound(0, 18);
 				expData.unlocks[helper.id] = false;
+				//only refund move expertise if it's not a modded move.
+				//if (helper.id < baseMoveCount)
+					//ExpConfig::RefundMoveExpertise(charID, helper.id);
 				//Make sure everything relying on this move is properly disabled
 				if (helper.next > -1)
 					expData.unlocks[helper.next] = false;

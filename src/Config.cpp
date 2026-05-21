@@ -1657,6 +1657,23 @@ std::vector<byte32> originalExpertise = {
 };
 
 
+void RefundMoveExpertise(uint8 charId, int unlock)
+{
+    auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+    if (charId == CHARACTER::DANTE) {
+        const ExpertiseHelper& helper = expertiseHelpersDante[unlock];
+        sessionData.expertise[helper.index] &= ~helper.flags;
+        
+    }
+    else if (charId == CHARACTER::VERGIL) {
+        const ExpertiseHelper& helper = expertiseHelpersVergil[unlock];
+        sessionData.expertise[helper.index] &= ~helper.flags;
+    }
+    else {
+        return;
+    }
+}
+
 void SavePlayerActorExp() {
     if (!Enable() || Max()) {
         return;
@@ -2208,7 +2225,7 @@ void MaintainUnlockAndExpertiseParity() {
 				if (sessionData.expertise[helper.index] & helper.flags && !sessionExpDataDante.unlocks[index]) {
 
 					// Set the corresponding unlock flag to true
-					sessionExpDataDante.unlocks[index] = true;
+					//sessionExpDataDante.unlocks[index] = true;
 				}
 			}
 
@@ -2226,7 +2243,7 @@ void MaintainUnlockAndExpertiseParity() {
 
                 // Check if the current weapon level matches the helper's level
                 if (sessionData.rangedWeaponLevels[(helper.index - 5)] >= weaponLevel  && !sessionExpDataDante.unlocks[index]) {
-                    sessionExpDataDante.unlocks[index] = true;
+                    //sessionExpDataDante.unlocks[index] = true;
                 }
             }
 
