@@ -10923,6 +10923,13 @@ void SoundSection(size_t defaultFontSize) {
 	ImGui::SameLine();
 	TooltipHelper("(?)", "Override the Mission Start song with the Divinity Statue song while in the Customize menu.");
 
+	GUI_Checkbox2("Crimson Mode Changes Music", activeCrimsonConfig.Sound.crimsonModeChangesMusic, queuedCrimsonConfig.Sound.crimsonModeChangesMusic);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Only changes Mission Results screen music.");
+	}
+	ImGui::SameLine();
+	GUI_CCSRequirementButton();
+
 	ImGui::Text("");
 
 	ImGui::PopFont();

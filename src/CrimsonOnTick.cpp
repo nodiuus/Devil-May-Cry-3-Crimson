@@ -535,6 +535,9 @@ void ManageDeathScreen() {
 
 void CrimsonMissionClearSong() {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	if (!activeCrimsonConfig.Sound.crimsonModeChangesMusic) {
+		return;
+	}
 
 	// Complement inTotalResultsScreen detection
 	if (g_scene != SCENE::MISSION_RESULT && g_inTotalResultsScreen) {
