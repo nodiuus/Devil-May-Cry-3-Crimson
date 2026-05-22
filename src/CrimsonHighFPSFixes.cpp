@@ -316,6 +316,14 @@ void ClothPhysicsEnhancementFixes(bool enable) {
 }
 
 void ClothPhysicsFixesController() {
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	if (g_scene == SCENE::CUTSCENE && sessionData.mission == 1) { // We disable it at the cutscene at mission 1 to prevent coat clipping through Dante's head.
+		ClothPhysicsFixes(false);
+		g_ClothPhysicsEnhancementEnabled = 0;
+		ClothPhysicsEnhancementFixes(false);
+		return;
+	}
+
 	// Always enable base cloth physics FPS fixes (detours 1-11) when above the 60 FPS range
 	if (g_FrameRate >= 65) {
 		ClothPhysicsFixes(true);
@@ -324,11 +332,13 @@ void ClothPhysicsFixesController() {
 		ClothPhysicsFixes(false); // We disable it below the range because it makes cloth physics stiffen at lower frame rates.
 	}
 
+	const bool clothEnhancementEnabled = activeCrimsonConfig.Visual.clothPhysicsEnhancement;
+
 	// Set the flag for Detour11's velocity computation
-	g_ClothPhysicsEnhancementEnabled = activeCrimsonConfig.Visual.clothPhysicsEnhancement ? 1 : 0;
+	g_ClothPhysicsEnhancementEnabled = clothEnhancementEnabled ? 1 : 0;
 
 	// Toggle per-particle relaxation detours (12-14) based on config setting
-	ClothPhysicsEnhancementFixes(activeCrimsonConfig.Visual.clothPhysicsEnhancement);
+	ClothPhysicsEnhancementFixes(clothEnhancementEnabled);
 }
 
 void LookAtBossCamFixes(bool enable) {
