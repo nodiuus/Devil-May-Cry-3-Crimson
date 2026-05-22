@@ -60,6 +60,15 @@ bool IsActiveCharacterActor(byte8* actorBaseAddr) {
 		return false;
 	}
 	auto& playerData = GetPlayerData(actorData.newPlayerIndex);
+	if (actorData.newIsClone) {
+		auto& mainActorDataRef = GetNewActorData(actorData.newPlayerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+		if (mainActorDataRef.baseAddr) {
+			auto& mainActorData = *reinterpret_cast<PlayerActorData*>(mainActorDataRef.baseAddr);
+			if (mainActorData.doppelganger) {
+				return true;
+			}
+		}
+	}
 	return (actorData.newCharacterIndex == playerData.activeCharacterIndex);
 }
 
@@ -2292,8 +2301,14 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 	auto& playerData = GetPlayerData(playerIndex);
 	auto& characterData = playerData.characterData[playerData.activeCharacterIndex];
 
-	if (characterData[ENTITY::MAIN].character != CHARACTER::VERGIL) {
-		return; // Ensure the character is currently using Vergil
+	if (actorData.newEntityIndex == ENTITY::MAIN) {
+		if (characterData[ENTITY::MAIN].character != CHARACTER::VERGIL) {
+			return; // Ensure the character is currently using Vergil
+		}
+	} else {
+		if (characterData[ENTITY::CLONE].character != CHARACTER::VERGIL) {
+			return;
+		}
 	}
 	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto& actionTimer = (actorData.newEntityIndex == 0) ? crimsonPlayer[playerIndex].actionTimer :

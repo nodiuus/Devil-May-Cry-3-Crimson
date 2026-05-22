@@ -3118,7 +3118,14 @@ void ActivateDoppelganger(PlayerActorData& actorData) {
         cloneActorData.rangedWeaponIndex = actorData.rangedWeaponIndex;
         crimsonPlayer[cloneActorData.newPlayerIndex].lockCloneStyle = false;
     } else if (cloneActorData.character == CHARACTER::VERGIL) {
-        cloneActorData.queuedMeleeWeaponIndex = (weapon - WEAPON::YAMATO_VERGIL);
+        cloneCharacterData.meleeWeaponCount = 3;
+        cloneCharacterData.meleeWeapons[0] = WEAPON::YAMATO_VERGIL;
+        cloneCharacterData.meleeWeapons[1] = WEAPON::BEOWULF_VERGIL;
+        cloneCharacterData.meleeWeapons[2] = WEAPON::YAMATO_FORCE_EDGE;
+        cloneCharacterData.meleeWeaponIndex = 0;
+
+        cloneActorData.queuedMeleeWeaponIndex = 0;
+        cloneActorData.activeMeleeWeaponIndex = 0;
     }
     cloneActorData.hitPoints = 20000;
     cloneActorData.dead = 0;
