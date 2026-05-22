@@ -1809,7 +1809,6 @@ void LockOnWindows() {
 		// Compute lock-on screen position, camera distance, and clamped distance
 		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance;
 
 		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
@@ -1824,8 +1823,8 @@ void LockOnWindows() {
 			(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 		};
 
-		float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.25f : sizeDistance.x * 0.25f;
-		float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.25f : sizeDistance.y * 0.25f;
+		float textureWidth = sizeDistance.x * 0.25f;
+		float textureHeight = sizeDistance.y * 0.25f;
 
 		ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700.0f * scaleFactorY);
 		float edgeOffsetX = 350.0f * scaleFactorY;
@@ -1896,14 +1895,9 @@ void LockOnWindows() {
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();
-		ImVec2 centeredTexturePos = !scaleLockOnEnemyDistance ? 
-			ImVec2(
-				windowContentPos.x + (windowSize.x - textureWidth) * (0.5f - (0.010f * playerIndex)),
-				windowContentPos.y + (windowSize.y - textureHeight) * (0.47f - (0.010f * playerIndex))) 
-			:
-			ImVec2(
+		ImVec2 centeredTexturePos = ImVec2(
 			windowContentPos.x + (windowSize.x - textureWidth) * (0.5f - ((0.010f * (sizeDistance.x / 400.0f)) * playerIndex)),
-			windowContentPos.y + (windowSize.y - textureHeight) * (0.47f - ((0.010f  * (sizeDistance.y / 400.0f)) * playerIndex))
+			windowContentPos.y + (windowSize.y - textureHeight) * (0.47f - ((0.010f * (sizeDistance.y / 400.0f)) * playerIndex))
 		);
 
 		if (lockOnFade[playerIndex].alpha > 0.01f) {
@@ -2000,7 +1994,6 @@ void StunDisplacementLockOnWindows() {
 		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance;
 
 		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
@@ -2017,8 +2010,8 @@ void StunDisplacementLockOnWindows() {
 			(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 		};
 
-		float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.x * 0.18f;
-		float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.y * 0.18f;
+		float textureWidth = sizeDistance.x * 0.18f;
+		float textureHeight = sizeDistance.y * 0.18f;
 
 		ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700.0f * scaleFactorY);
 		float edgeOffsetX = 350.0f * scaleFactorY;
@@ -2120,8 +2113,8 @@ void StunDisplacementLockOnWindows() {
 					(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 				};
 
-				float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.x * 0.18f;
-				float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.y * 0.18f;
+				float textureWidth = sizeDistance.x * 0.18f;
+				float textureHeight = sizeDistance.y * 0.18f;
 
 				ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700 * scaleFactorY);
 				float edgeOffsetX = 350.0f * scaleFactorY;
@@ -2340,9 +2333,6 @@ void ShieldLockOnWindows() {
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
 
 		// Adjusts size dynamically based on the distance between Camera and Player
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnWithEnemyDistance;
-
-		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
@@ -2355,8 +2345,8 @@ void ShieldLockOnWindows() {
 			(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 		};
 
-		float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.x * 0.18f;
-		float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.y * 0.18f;
+		float textureWidth = sizeDistance.x * 0.18f;
+		float textureHeight = sizeDistance.y * 0.18f;
 
 		ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700.0f * scaleFactorY);
 		float edgeOffsetX = 350.0f * scaleFactorY;
