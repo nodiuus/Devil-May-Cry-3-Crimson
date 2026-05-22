@@ -4471,12 +4471,15 @@ void SprintAbility(byte8* actorBaseAddr) {
             }
 
             // FX
-            if (!sprintData.SFXPlayed) {
-                CrimsonSDL::PlaySprint(playerIndex);
-                sprintData.SFXPlayed = true;
-				actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = newBaseDanteAnims_pl000_00_0; // Change Sprint Animation
-				PlayAnimation_1EFB90(actorData, 0, 20, 20.0f, 0, 0, -1); // Play the anim
-            }
+			if (!sprintData.SFXPlayed) {
+				CrimsonSDL::PlaySprint(playerIndex);
+				sprintData.SFXPlayed = true;
+				if (actorData.character == CHARACTER::DANTE ||
+					(actorData.character == CHARACTER::VERGIL && !actorData.neroAngelo)) {
+					actorData.motionArchives[MOTION_GROUP_DANTE::BASE] = newBaseDanteAnims_pl000_00_0; // Change Sprint Animation
+					PlayAnimation_1EFB90(actorData, 0, 20, 20.0f, 0, 0, -1); // Play the anim
+				}
+			}
 
 
             if (!sprintData.VFXPlayed) {
