@@ -4268,6 +4268,9 @@ template <typename T> void DirectWeaponSwitchKeyboardController(T& actorData) {
     UpdateRangedWeapon(actorData);
     UpdateForm(actorData);
 
+    characterData.lastMeleeWeaponIndex = characterData.meleeWeaponIndex;
+    characterData.lastRangedWeaponIndex = characterData.rangedWeaponIndex;
+
     // Play the appropriate sound based on what kind of switch happened
     if (wasMelee) {
         if (activeConfig.Actor.playerCount <= 1) {
