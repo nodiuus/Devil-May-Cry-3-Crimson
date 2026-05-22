@@ -1754,6 +1754,16 @@ constexpr uint8 stylesDisplayStateMap[3] = {
 	STYLESDISPLAY::NO_BROKEN_GLASS,
 };
 
+const char* styleNamesTextureSetNames[] = {
+	"Crimson",
+	"DMC3 Switch",
+};
+
+constexpr uint8 styleNamesTextureSetMap[2] = {
+	STYLENAMESSET::CRIMSON,
+	STYLENAMESSET::DMC3_SWITCH,
+};
+
 const char* missionTimerDisplayStateNames[] = {
 	"Off",
 	"Only in BP",
@@ -9700,25 +9710,23 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			ImGui::TableNextColumn();
 
-			if (UI::ComboMapValue2("Styles Display", stylesDisplayStateNames, stylesDisplayStateMap,
+			UI::ComboMapValue2("Styles Display", stylesDisplayStateNames, stylesDisplayStateMap,
 				activeCrimsonConfig.CrimsonHudAddons.stylesDisplay,
-				queuedCrimsonConfig.CrimsonHudAddons.stylesDisplay)) {
-				if (activeCrimsonConfig.CrimsonHudAddons.stylesDisplay == 0) {
-					activeCrimsonConfig.CrimsonHudAddons.displayStyleNames = false;
-					queuedCrimsonConfig.CrimsonHudAddons.displayStyleNames = false;
-				} else {
-					activeCrimsonConfig.CrimsonHudAddons.displayStyleNames = true;
-					queuedCrimsonConfig.CrimsonHudAddons.displayStyleNames = true;
-				}
-			}
+				queuedCrimsonConfig.CrimsonHudAddons.stylesDisplay);
+				
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.stylesDisplay);
-
 			GUI_Checkbox2("Show Style Names", activeCrimsonConfig.CrimsonHudAddons.displayStyleNames, queuedCrimsonConfig.CrimsonHudAddons.displayStyleNames);
 
-			GUI_PopDisable(!activeCrimsonConfig.CrimsonHudAddons.stylesDisplay);
+			ImGui::TableNextColumn();
+
+			if (UI::ComboMapValue2("Style Names Set", styleNamesTextureSetNames, styleNamesTextureSetMap,
+				activeCrimsonConfig.CrimsonHudAddons.styleNamesSet,
+				queuedCrimsonConfig.CrimsonHudAddons.styleNamesSet)) {
+				activeCrimsonConfig.CrimsonHudAddons.styleNamesSet = queuedCrimsonConfig.CrimsonHudAddons.styleNamesSet;
+				CrimsonHUD::InitStyleNameTextures(pDevice);
+			}
 
 			ImGui::TableNextColumn();
 

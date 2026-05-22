@@ -15,6 +15,7 @@ struct VisualStyleTracking {
 	bool positionings = true;
 	bool redOrbCounter = true;
 	uint8 stylesDisplay = STYLESDISPLAY::WITH_BROKEN_GLASS;
+	uint8 styleNamesSet = STYLENAMESSET::CRIMSON;
 	bool displayStyleNames = true;
 	bool styleRanksMeter = true;
 	bool stylishPtsCounter = true;
@@ -26,6 +27,7 @@ struct VisualStyleTracking {
 			std::make_pair("positionings", &VisualStyleTracking::positionings),
 			std::make_pair("redOrbCounter", &VisualStyleTracking::redOrbCounter),
 			std::make_pair("stylesDisplay", &VisualStyleTracking::stylesDisplay),
+			std::make_pair("styleNamesSet", &VisualStyleTracking::styleNamesSet),
 			std::make_pair("displayStyleNames", &VisualStyleTracking::displayStyleNames),
 			std::make_pair("styleRanksMeter", &VisualStyleTracking::styleRanksMeter),
 			std::make_pair("stylishPtsCounter", &VisualStyleTracking::stylishPtsCounter),

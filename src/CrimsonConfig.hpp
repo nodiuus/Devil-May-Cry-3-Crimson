@@ -38,6 +38,13 @@ enum {
 };
 }
 
+namespace STYLENAMESSET {
+enum {
+	CRIMSON,
+	DMC3_SWITCH,
+};
+}
+
 namespace MISSIONTIMERDISPLAY {
 enum {
 	OFF,
@@ -166,6 +173,7 @@ struct CrimsonConfig {
 		bool positionings = true;
 		uint8 stylesDisplay = STYLESDISPLAY::WITH_BROKEN_GLASS;
 		bool displayStyleNames = true;
+		uint8 styleNamesSet = STYLENAMESSET::CRIMSON;
 		bool redOrbCounter = true;
 		bool royalGauge = true;
 		bool styleRanksMeter = true;
@@ -184,6 +192,7 @@ struct CrimsonConfig {
 				std::make_pair("positionings", &CrimsonHudAddons::positionings),
 				std::make_pair("stylesDisplay", &CrimsonHudAddons::stylesDisplay),
 				std::make_pair("displayStyleNames", &CrimsonHudAddons::displayStyleNames),
+				std::make_pair("styleNamesSet", &CrimsonHudAddons::styleNamesSet),
                 std::make_pair("redOrbCounter", &CrimsonHudAddons::redOrbCounter),
                 std::make_pair("royalGauge", &CrimsonHudAddons::royalGauge),
                 std::make_pair("styleRanksMeter", &CrimsonHudAddons::styleRanksMeter),

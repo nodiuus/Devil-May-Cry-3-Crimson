@@ -325,19 +325,6 @@ void InitStyleGlassTextures(ID3D11Device* pd3dDevice) {
 	tricksterGlass = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\styles\\trickster-glass.png").c_str(), pd3dDevice);
 	tricksterBadge = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\styles\\trickster-badge.png").c_str(), pd3dDevice);
 
-	doppelgangerText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\doppelganger.png").c_str(), pd3dDevice);
-	doppelgangerTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\doppelganger-blur.png").c_str(), pd3dDevice);
-	gunslingerText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\gunslinger.png").c_str(), pd3dDevice);
-	gunslingerTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\gunslinger-blur.png").c_str(), pd3dDevice);
-	quicksilverText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\quicksilver.png").c_str(), pd3dDevice);
-	quicksilverTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\quicksilver-blur.png").c_str(), pd3dDevice);
-	royalguardText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\royalguard.png").c_str(), pd3dDevice);
-	royalguardTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\royalguard-blur.png").c_str(), pd3dDevice);
-	swordmasterText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\swordmaster.png").c_str(), pd3dDevice);
-	swordmasterTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\swordmaster-blur.png").c_str(), pd3dDevice);
-	tricksterText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\trickster.png").c_str(), pd3dDevice);
-	tricksterTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\trickster-blur.png").c_str(), pd3dDevice);
-
 	styleExpBarBorder = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\exp\\style-exp-border.png").c_str(), pd3dDevice);
 	styleExpBarBorderVergil = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\exp\\style-exp-border-vergil.png").c_str(), pd3dDevice);
 	styleExpBarFill = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\exp\\style-exp-inside.png").c_str(), pd3dDevice);
@@ -374,10 +361,8 @@ void InitStyleGlassTextures(ID3D11Device* pd3dDevice) {
 	assert(swordmasterBadge);
 	assert(tricksterGlass);
 	assert(tricksterBadge);
-	assert(doppelgangerText);
-	assert(doppelgangerTextBlur);
-	assert(gunslingerText);
-	assert(gunslingerTextBlur);
+
+	InitStyleNameTextures(pd3dDevice);
 	assert(quicksilverText);
 	assert(quicksilverTextBlur);
 	assert(royalguardText);
@@ -391,6 +376,44 @@ void InitStyleGlassTextures(ID3D11Device* pd3dDevice) {
 	assert(styleExpBarFill);
 	assert(styleLevelDiamond);
 	assert(royalGaugeCircle);
+}
+
+static std::string GetStyleNamesBasePath() {
+	if (activeCrimsonConfig.CrimsonHudAddons.styleNamesSet == STYLENAMESSET::DMC3_SWITCH) {
+		return (std::string)Paths::assets + "\\crimsonhud\\stylenames_switch";
+	}
+
+	return (std::string)Paths::assets + "\\crimsonhud\\stylenames_crimson";
+}
+
+void InitStyleNameTextures(ID3D11Device* pd3dDevice) {
+	std::string styleNamesPath = GetStyleNamesBasePath();
+
+	doppelgangerText = new Texture2DD3D11(((std::string)styleNamesPath + "\\doppelganger.png").c_str(), pd3dDevice);
+	doppelgangerTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\doppelganger-blur.png").c_str(), pd3dDevice);
+	gunslingerText = new Texture2DD3D11(((std::string)styleNamesPath + "\\gunslinger.png").c_str(), pd3dDevice);
+	gunslingerTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\gunslinger-blur.png").c_str(), pd3dDevice);
+	quicksilverText = new Texture2DD3D11(((std::string)styleNamesPath + "\\quicksilver.png").c_str(), pd3dDevice);
+	quicksilverTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\quicksilver-blur.png").c_str(), pd3dDevice);
+	royalguardText = new Texture2DD3D11(((std::string)styleNamesPath + "\\royalguard.png").c_str(), pd3dDevice);
+	royalguardTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\royalguard-blur.png").c_str(), pd3dDevice);
+	swordmasterText = new Texture2DD3D11(((std::string)styleNamesPath + "\\swordmaster.png").c_str(), pd3dDevice);
+	swordmasterTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\swordmaster-blur.png").c_str(), pd3dDevice);
+	tricksterText = new Texture2DD3D11(((std::string)styleNamesPath + "\\trickster.png").c_str(), pd3dDevice);
+	tricksterTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\trickster-blur.png").c_str(), pd3dDevice);
+
+	assert(doppelgangerText);
+	assert(doppelgangerTextBlur);
+	assert(gunslingerText);
+	assert(gunslingerTextBlur);
+	assert(quicksilverText);
+	assert(quicksilverTextBlur);
+	assert(royalguardText);
+	assert(royalguardTextBlur);
+	assert(swordmasterText);
+	assert(swordmasterTextBlur);
+	assert(tricksterText);
+	assert(tricksterTextBlur);
 }
 
 void InitMirageGaugeTextures(ID3D11Device* pd3dDevice) {
@@ -498,6 +521,10 @@ void RenderExpWithFill(ImTextureID texture, ImVec2 pos, ImVec2 size, float fillR
 		uvs[0], uvs[1], uvs[2], uvs[3],
 		color
 	);
+}
+
+inline float StyleHudHybridPositioningOffsetX() {
+	return (440.0f - 395.0f) * scaleFactorY;
 }
 
 void RenderTexture(ImTextureID texture, ImVec2 pos, ImVec2 size, ImColor color, float angle = 0.0f) {
@@ -630,6 +657,10 @@ struct StyleMeterAnimState {
 
 // Global previous style rank for entrance animation logic
 static int prevGlobalStyleRank = -1;
+static constexpr float kStyleMeterScale = 0.76f;
+static float g_styleMeterOutOfCombatTimer = 0.0f;
+static bool g_styleMeterForceHidden = false;
+static float g_stylishPtsOutOfCombatTimer = 0.0f;
 
 void StyleMeterWindowRank(
 	int currentRank,
@@ -676,6 +707,12 @@ void StyleMeterWindowRank(
 		}
 	}
 
+	if (g_styleMeterForceHidden) {
+		active = false;
+		fillRatio = 0.0f;
+		state.animating = false;
+	}
+
 	if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.mustStyleMode > 0) {
 		if (currentRank < activeCrimsonGameplay.Gameplay.ExtraDifficulty.mustStyleMode) {
 			auraColor = 0xccccccFF;
@@ -719,7 +756,10 @@ void StyleMeterWindowRank(
 	if (state.fade.alpha <= 0.01f && !state.animating)
 		return;
 
-	ImVec2 meterSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+	windowPos.x += 50.0f * scaleFactorY;
+
+	ImVec2 baseMeterSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+	ImVec2 meterSize = ImVec2(baseMeterSize.x * kStyleMeterScale, baseMeterSize.y * kStyleMeterScale);
 	ImColor white = { 1.0f, 1.0f, 1.0f, state.fade.alpha };
 	ImVec4 colorHex = ImGui::ColorConvertU32ToFloat4(UI::SwapColorEndianness(auraColor));
 	ImColor color = (colorHex);
@@ -815,10 +855,10 @@ void StyleMeterWindowRank(
 	ImVec2 renderPosExtraLeft = ImVec2(renderPos.x + extraLeft, renderPos.y);
 	ImVec2 actualRenderPos = renderPosExtraLeft;
 
-	ImVec2 renderPosSSStyle = ImVec2(renderPos.x - (50.0f * scaleFactorY), renderPos.y + (50.0f * scaleFactorY));
+	ImVec2 renderPosSSStyle = ImVec2(renderPos.x - (50.0f * scaleFactorY * kStyleMeterScale), renderPos.y + (50.0f * scaleFactorY * kStyleMeterScale));
 	ImVec2 renderPosSSStyleExtraLeft = ImVec2(renderPosSSStyle.x + extraLeft, renderPosSSStyle.y);
 	ImVec2 actualRenderPosSSStyle = renderPosSSStyleExtraLeft;
-	ImVec2 renderPosSSSStyle = ImVec2(renderPos.x - (100.0f * scaleFactorY), renderPos.y + (20.0f * scaleFactorY));
+	ImVec2 renderPosSSSStyle = ImVec2(renderPos.x - (100.0f * scaleFactorY * kStyleMeterScale), renderPos.y + (20.0f * scaleFactorY * kStyleMeterScale));
 	ImVec2 renderPosSSSStyleExtraLeft = ImVec2(renderPosSSSStyle.x + extraLeft, renderPosSSSStyle.y);
 	ImVec2 actualRenderPosSSSStyle = renderPosSSSStyleExtraLeft;
 
@@ -850,8 +890,8 @@ void StyleMeterWindowRank(
 	ImGui::End();
 
 	// --- Text Animation: delayed, ease in-out, straight ---
-	ImVec2 textSize = ImVec2(1000.0f * scaleFactorY * 0.55f, 243.0f * scaleFactorY * 0.55f);
-	ImVec2 textWindowPos = ImVec2(windowPos.x + (194.0f * scaleFactorY), windowPos.y + (125.0f * scaleFactorY));
+	ImVec2 textSize = ImVec2(1000.0f * scaleFactorY * 0.55f * kStyleMeterScale, 243.0f * scaleFactorY * 0.55f * kStyleMeterScale);
+	ImVec2 textWindowPos = ImVec2(windowPos.x + (194.0f * scaleFactorY * kStyleMeterScale), windowPos.y + (125.0f * scaleFactorY * kStyleMeterScale));
 	ImVec4 textColorHex = ImGui::ColorConvertU32ToFloat4(UI::SwapColorEndianness(textColor));
 	ImColor textColorC = (textColorHex);
 	float hT, sT, vT;
@@ -897,6 +937,18 @@ void StyleMeterWindows() {
 
 	if (activeCrimsonConfig.HudOptions.hideStyleMeter) {
 		return;
+	}
+
+	float deltaTime = ImGui::GetIO().DeltaTime;
+	if (!InGame() || g_inGameCutscene) {
+		g_styleMeterOutOfCombatTimer = 0.0f;
+		g_styleMeterForceHidden = false;
+	} else if (g_inCombat) {
+		g_styleMeterOutOfCombatTimer = 0.0f;
+		g_styleMeterForceHidden = false;
+	} else {
+		g_styleMeterOutOfCombatTimer += deltaTime;
+		g_styleMeterForceHidden = g_styleMeterOutOfCombatTimer >= 3.0f;
 	}
 
 	CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.CrimsonHudAddons.styleRanksMeter); // Hide the original style rank HUD
@@ -1033,10 +1085,12 @@ void StylishPointsWindow() {
 	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
 	if (!(pool_10222 && pool_10222[3])) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
-	ImVec2 windowPos = ImVec2(g_renderSize.x - (340.0 * scaleFactorY), 465.0f * scaleFactorY);
-	ImVec2 windowSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+	ImVec2 windowPos = ImVec2(g_renderSize.x - (320.0f * scaleFactorY), 395.0f * scaleFactorY);
+	ImVec2 windowPosClassic = ImVec2(g_renderSize.x - (415.0f * scaleFactorY), 290.0f * scaleFactorY);
+	ImVec2 windowSize = ImVec2(301.0f * 0.95f, 303.0f * scaleFactorY * 0.95f);
 	float extraLeft = (g_renderSize.y - 100.0f * scaleFactorY);
-	ImVec2 adjustedWindowPos = ImVec2(windowPos.x, windowPos.y);
+	ImVec2 adjustedWindowPos = !activeCrimsonConfig.CrimsonHudAddons.styleRanksMeter ? ImVec2(windowPosClassic.x, windowPosClassic.y) 
+		: ImVec2(windowPos.x, windowPos.y);
 	ImVec2 adjustedWindowSize = windowSize + ImVec2(g_renderSize.x, g_renderSize.y); 
 
 	auto stylePoints = (mainActorData.styleData.quotient * 100.0f);
@@ -1046,6 +1100,28 @@ void StylishPointsWindow() {
 	static bool animating = false;
 	static bool wasVisible = false;
 	static float prevStylePoints = 0.0f;
+
+	float deltaTime = ImGui::GetIO().DeltaTime;
+	if (!InGame() || g_inGameCutscene) {
+		g_stylishPtsOutOfCombatTimer = 0.0f;
+	} else if (g_inCombat) {
+		g_stylishPtsOutOfCombatTimer = 0.0f;
+	} else {
+		g_stylishPtsOutOfCombatTimer += deltaTime;
+	}
+	const float stylishPtsStayDuration = 3.5f;
+	const float stylishPtsFadeDuration = 2.0f;
+	float stylishPtsFadeAlpha = 1.0f;
+	if (g_stylishPtsOutOfCombatTimer > stylishPtsStayDuration) {
+		float fadeT = (g_stylishPtsOutOfCombatTimer - stylishPtsStayDuration) / stylishPtsFadeDuration;
+		stylishPtsFadeAlpha = ImClamp(1.0f - fadeT, 0.0f, 1.0f);
+	}
+	if (g_stylishPtsOutOfCombatTimer >= stylishPtsStayDuration + stylishPtsFadeDuration) {
+		wasVisible = false;
+		animTimer = 0.0f;
+		animating = true;
+		return;
+	}
 
 	if (mainActorData.styleData.rank <= 0 || stylePoints <= 0 
 		|| !InGame() || g_inGameCutscene || !activeCrimsonConfig.CrimsonHudAddons.stylishPtsCounter) {
@@ -1131,8 +1207,8 @@ void StylishPointsWindow() {
 	
 	// Draw red outline 
 	const char* stylishText = "Stylish PTS: ";
-	ImU32 outlineColor = ImColor(0.49f, 0.0f, 0.0f, 1.0f); // #7f0000; 
-	ImU32 textColor = IM_COL32(255, 255, 255, 255); 
+	ImU32 outlineColor = ImColor(0.49f, 0.0f, 0.0f, stylishPtsFadeAlpha); // #7f0000; 
+	ImU32 textColor = ImColor(1.0f, 1.0f, 1.0f, stylishPtsFadeAlpha); 
 	float outlineThickness = 1.0f;
 	
 	// Draw outline by rendering text multiple times with slight offsets
@@ -2476,8 +2552,17 @@ void StyleDisplayWindow() {
 		-120.0f * scaleFactorY
 	);
 
+	ImVec2 styleCompassHybridWindowPos = ImVec2(
+		screenCenterX - (395.0f * scaleFactorY),
+		-120.0f * scaleFactorY
+	);
+
+	ImVec2 styleCompassWindowPos = activeCrimsonConfig.CrimsonHudAddons.positionings ?
+		styleGlassWindowPos :
+		styleCompassHybridWindowPos;
+
 	ImGui::SetNextWindowSize(styleGlassWindowSize);
-	ImGui::SetNextWindowPos(styleGlassWindowPos);
+	ImGui::SetNextWindowPos(styleCompassWindowPos);
 
 	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -2640,7 +2725,7 @@ void StyleDisplayWindow() {
 	ImGui::End(); // End StyleCompassWindow
 
 	ImGui::SetNextWindowSize(styleGlassWindowSize);
-	ImGui::SetNextWindowPos(styleGlassWindowPos);
+	ImGui::SetNextWindowPos(styleCompassWindowPos);
 
 	// STYLE BADGE
 	ImGui::Begin("StyleBadgeWindow", nullptr, windowFlags);
@@ -2876,7 +2961,7 @@ void StyleTextDisplayWindow() {
 	if (!(InGame() && !g_inGameCutscene)) {
 		return;
 	}
-	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.stylesDisplay || g_inCredits) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || g_inCredits) {
 		return;
 	}
 	auto& character = mainActorData.character;
@@ -2900,8 +2985,12 @@ void StyleTextDisplayWindow() {
 		screenCenterX - (200.0f * scaleFactorY),
 		-47.0f * scaleFactorY);
 
+	ImVec2 styleTextHybridWindowPos = ImVec2(
+		screenCenterX - (200.0f * scaleFactorY),
+		-20.0f * scaleFactorY);
+
 	ImGui::SetNextWindowSize(styleTextWindowSize);
-	ImGui::SetNextWindowPos(styleTextWindowPos);
+	ImGui::SetNextWindowPos(activeCrimsonConfig.CrimsonHudAddons.positionings ? styleTextWindowPos : styleTextHybridWindowPos);
 
 	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -3065,9 +3154,15 @@ void StyleEXPDisplayWindow() {
 	float screenCenterY = ImGui::GetIO().DisplaySize.y * 0.5f - styleExpDispWindowSize.y;
 
 	// Apply your negative offset from center
-	ImVec2 styleExpDispWindowPos = ImVec2(
+	ImVec2 styleExpDispWindowPosDefault = ImVec2(
 		screenCenterX - (830.0f * scaleFactorY),
 		180 * scaleFactorY);
+
+	const float styleHudHyrbidPositioningOffsetX = StyleHudHybridPositioningOffsetX();
+	ImVec2 styleExpDispWindowPos = styleExpDispWindowPosDefault;
+	if (!activeCrimsonConfig.CrimsonHudAddons.positionings) {
+		styleExpDispWindowPos.x += styleHudHyrbidPositioningOffsetX;
+	}
 
 	ImGui::SetNextWindowSize(styleExpDispWindowSize);
 	ImGui::SetNextWindowPos(styleExpDispWindowPos);
@@ -3190,13 +3285,19 @@ void StyleLvlDispWindow() {
 	float screenCenterX = ImGui::GetIO().DisplaySize.x * 0.5f;
 	float screenCenterY = ImGui::GetIO().DisplaySize.y * 0.5f;
 
-	ImVec2 styleLvlDispWindowPos = character == CHARACTER::DANTE ? 
+	ImVec2 styleLvlDispWindowPosDefault = character == CHARACTER::DANTE ? 
 		ImVec2(
 		screenCenterX - (896.0f * scaleFactorY),
 		67.0f * scaleFactorY) : 
 		ImVec2(
 		screenCenterX - (858.0f * scaleFactorY),
 		37.0f * scaleFactorY);
+
+	const float styleHudHyrbidPositioningOffsetX = StyleHudHybridPositioningOffsetX();
+	ImVec2 styleLvlDispWindowPos = styleLvlDispWindowPosDefault;
+	if (!activeCrimsonConfig.CrimsonHudAddons.positionings) {
+		styleLvlDispWindowPos.x += styleHudHyrbidPositioningOffsetX;
+	}
 
 	ImGui::SetNextWindowSize(styleLvlDispWindowSize);
 	ImGui::SetNextWindowPos(styleLvlDispWindowPos);
@@ -3285,10 +3386,16 @@ void RoyalGaugeDispWindow() {
 	float screenCenterX = ImGui::GetIO().DisplaySize.x * 0.5f;
 	float screenCenterY = ImGui::GetIO().DisplaySize.y * 0.5f;
 
-	ImVec2 royalGaugeWindowPos =
+	ImVec2 royalGaugeWindowPosDefault =
 		ImVec2(
 			screenCenterX - (845.0f * scaleFactorY),
 			83.0f * scaleFactorY);
+
+	const float styleHudHyrbidPositioningOffsetX = StyleHudHybridPositioningOffsetX();
+	ImVec2 royalGaugeWindowPos = royalGaugeWindowPosDefault;
+	if (!activeCrimsonConfig.CrimsonHudAddons.positionings) {
+		royalGaugeWindowPos.x += styleHudHyrbidPositioningOffsetX;
+	}
 
 	ImGui::SetNextWindowSize(royalGaugeWindowSize);
 	ImGui::SetNextWindowPos(royalGaugeWindowPos);

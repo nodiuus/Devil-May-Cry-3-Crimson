@@ -5,6 +5,7 @@
 #include "CrimsonHUD.hpp"
 #include "HUD.hpp"
 #include "Core/Macros.h"
+#include "Global.hpp"
 
 namespace CrimsonVisualStyle {
 
@@ -16,6 +17,7 @@ static const VisualStyleTracking CLASSIC_TRACKING = []() {
 	t.positionings       = false;
 	t.redOrbCounter      = true;
 	t.stylesDisplay      = STYLESDISPLAY::OFF;
+	t.styleNamesSet		 = STYLENAMESSET::DMC3_SWITCH;
 	t.displayStyleNames  = false;
 	t.styleRanksMeter    = false;
 	t.stylishPtsCounter  = false;
@@ -28,7 +30,8 @@ static const VisualStyleTracking HYBRID_TRACKING = []() {
 	VisualStyleTracking t;
 	t.positionings       = false;
 	t.redOrbCounter      = true;
-	t.stylesDisplay      = STYLESDISPLAY::NO_BROKEN_GLASS;
+	t.stylesDisplay      = STYLESDISPLAY::OFF;
+	t.styleNamesSet	     = STYLENAMESSET::DMC3_SWITCH;
 	t.displayStyleNames  = true;
 	t.styleRanksMeter    = true;
 	t.stylishPtsCounter  = true;
@@ -50,6 +53,7 @@ void PopulateTracking(VisualStyleTracking& t, const CrimsonConfig& c) {
 	t.positionings      = c.CrimsonHudAddons.positionings;
 	t.redOrbCounter     = c.CrimsonHudAddons.redOrbCounter;
 	t.stylesDisplay     = c.CrimsonHudAddons.stylesDisplay;
+	t.styleNamesSet     = c.CrimsonHudAddons.styleNamesSet;
 	t.displayStyleNames = c.CrimsonHudAddons.displayStyleNames;
 	t.styleRanksMeter   = c.CrimsonHudAddons.styleRanksMeter;
 	t.stylishPtsCounter = c.CrimsonHudAddons.stylishPtsCounter;
@@ -119,6 +123,7 @@ void SetVisualStylePreset(uint8 mode) {
 		cfg.CrimsonHudAddons.redOrbCounter      = chosen->redOrbCounter;
 		cfg.CrimsonHudAddons.stylesDisplay      = chosen->stylesDisplay;
 		cfg.CrimsonHudAddons.displayStyleNames  = chosen->displayStyleNames;
+		cfg.CrimsonHudAddons.styleNamesSet      = chosen->styleNamesSet;
 		cfg.CrimsonHudAddons.styleRanksMeter    = chosen->styleRanksMeter;
 		cfg.CrimsonHudAddons.stylishPtsCounter  = chosen->stylishPtsCounter;
 		cfg.CrimsonHudAddons.lockOn             = chosen->lockOn;
@@ -148,6 +153,9 @@ void UpdateHUDPostPreset() {
 	ToggleHideBossHUD(cfg.HudOptions.hideBossHUD);
 	ToggleForceVisibleHUD(cfg.HudOptions.forceVisibleHUD);
 	CrimsonDetours::ToggleStyleRankHudNoFadeout(cfg.HudOptions.disableStyleRankHudFadeout);
+	if (D3D11::device) {
+		CrimsonHUD::InitStyleNameTextures(D3D11::device);
+	}
 
 	// Refresh HUD files if selectedHUD changed
 	CrimsonFiles::CopyHUDFilePactoGameFolder();
