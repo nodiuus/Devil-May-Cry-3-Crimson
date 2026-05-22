@@ -2,8 +2,6 @@
 EXTERN g_FixSecretMissionTimerFPS_ReturnAddr:QWORD
 EXTERN g_FrameRateTimeMultiplier:DWORD
 EXTERN g_FrameRateTimeMultiplierRounded:DWORD
-EXTERN g_SecretMissionTimerScale:DWORD
-EXTERN g_SecretMissionTimerSubScale:DWORD
 
 ; From CUIDCockpit00_SetSecretMissionTimer_sub_14027C0A0:
 ; dmc3.exe+27C0DD - F3 0F 11 81 48 69 00 00   - movss [rcx+00006948],xmm0 { Setting secret mission timer }
