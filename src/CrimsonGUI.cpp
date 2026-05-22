@@ -15826,7 +15826,35 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						}
 						ImGui::PopFont();
 					}
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Programmer");
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+						{
+							ImGui::Text("mos9527");
+
+							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+							if (fnDrawSocialButton("mos9527github", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+								ShellExecute(0, 0, "https://github.com/mos9527", 0, 0, SW_SHOW);
+							}
+						}
+						ImGui::PopFont();
+					}
 				}
+
 
 				ImGui::Text("");
 
