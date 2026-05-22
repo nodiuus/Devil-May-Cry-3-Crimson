@@ -185,32 +185,8 @@ void ToggleFrameRateFixes(bool enable) {
 #pragma endregion
 
 #pragma region movsx r10d
-
-    {
-        auto addr             = (appBaseAddr + 0x27EF97);
-        constexpr uint64 size = 8;
-        /*
-        dmc3.exe+27EF97 - 44 0FBE 15 5E0CA100 - movsx r10d,byte ptr [dmc3.exe+C8FBFD]
-        dmc3.exe+27EF9F - 33 D2               - xor edx,edx
-        */
-
-        constexpr byte8 sect0[] = {
-            0x44, 0x8B, 0x15, 0x00, 0x00, 0x00, 0x00, // mov r10d,[]
-        };
-
-        if (!run) {
-            backupHelper.Save(addr, size);
-        }
-
-        if (enable) {
-            SetMemory(addr, 0x90, size, MemoryFlags_VirtualProtectDestination);
-            CopyMemory(addr, sect0, sizeof(sect0), MemoryFlags_VirtualProtectDestination);
-            WriteAddress(addr, frameRateAddr, 7);
-        } else {
-            backupHelper.Restore(addr);
-        }
-    }
-
+    // Serp was trying to fix Secret Mission timers here but it was not working. 
+    // We fix it through our detours instead (which are prolly not even needed).
 #pragma endregion
 
 

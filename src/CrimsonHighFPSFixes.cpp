@@ -141,6 +141,12 @@ extern "C" {
 	void FixSummonedSwordsInitialTravelDetour();
 	void FixSummonedSwordsInitialTravelDetour2();
 	void FixSummonedSwordsInitialTravelDetour3();
+
+	// FixSecretMissionTimerFPS
+	std::uint64_t g_FixSecretMissionTimerFPS_ReturnAddr;
+	void FixSecretMissionTimerFPSDetour();
+	std::uint64_t g_FixSecretMissionTimerFPS_ReturnAddr2;
+	void FixSecretMissionTimerFPSDetour2();
 }
 
 void BlendingEffectsSpeedFixes(bool enable) {
@@ -561,6 +567,32 @@ void FixCPl021Shl01SummonedSwordsInitialTravel(bool enable) {
 	run = enable;
 }
 
+void FixSecretMissionTimerFPS(bool enable) {
+	// This will untie the Secret Mission timer from FPS settings (ie no longer spawning with half the time when playing at 120 fps).
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// FixSecretMissionTimerFPS
+	// From CUIDCockpit00_SetSecretMissionTimer_sub_14027C0A0:
+	// dmc3.exe+27C0DD - F3 0F 11 81 48 69 00 00 - movss [rcx+00006948],xmm0 { Setting secret mission timer } // RCX is HUDPtr
+	static std::unique_ptr<Utility::Detour_t> FixSecretMissionTimerFPSHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x27C0DD, &FixSecretMissionTimerFPSDetour, 8);
+	g_FixSecretMissionTimerFPS_ReturnAddr = FixSecretMissionTimerFPSHook->GetReturnAddress();
+	FixSecretMissionTimerFPSHook->Toggle(false); // Uneeded we were just trying to fix Serp's mistake.
+
+	// From CUIDCockpit00_ControlSecretMissionTimer_sub_14027EEC0:
+	// dmc3.exe+27EF97 - 44 0F BE 15 5E 0C A1 00 - movsx r10d,byte ptr [dmc3.exe+C8FBFD] { (60) } // holds locked 60 fps value
+	static std::unique_ptr<Utility::Detour_t> FixSecretMissionTimerFPSHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x27EF97, &FixSecretMissionTimerFPSDetour2, 8);
+	g_FixSecretMissionTimerFPS_ReturnAddr2 = FixSecretMissionTimerFPSHook2->GetReturnAddress();
+	FixSecretMissionTimerFPSHook2->Toggle(enable); // Might not be needed but we do it anyway
+
+	run = enable;
+}
+
 void ToggleAllFixes(bool enable) {
 	BlendingEffectsSpeedFixes(enable);
 	BossCamFixes(enable);
@@ -571,6 +603,7 @@ void ToggleAllFixes(bool enable) {
 	FixCStaffRollCredits(enable);
 	FixCStageSetSeal(enable);
 	FixCPl021Shl01SummonedSwordsInitialTravel(enable);
+	FixSecretMissionTimerFPS(enable);
 }
 
 
