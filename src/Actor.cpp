@@ -3676,6 +3676,30 @@ void StyleSwitchController(byte8* actorBaseAddr) {
 	}
 }
 
+template <typename T>  bool GetDanteDoppelSwitchCondition(T& actorData) {
+    auto& gamepad = GetGamepad(actorData.newGamepad);
+    bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
+        || (gamepad.buttons[2] & GetBinding(BINDING::STYLE_ACTION));
+    if (!styleDown)
+        return false;
+    if (actorData.newEntityIndex != ENTITY::MAIN) {
+        auto& mainActorData = *reinterpret_cast<PlayerActorData*>(GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, ENTITY::MAIN).baseAddr);
+        //if lockCloneStyle set only allow switch if main actor is currently in doppelganger style
+        if (mainActorData == nullptr) return false;
+        if (mainActorData.character != CHARACTER::DANTE) return false;
+        if ((mainActorData.style == STYLE::DOPPELGANGER && styleDown)) {
+            return true;
+        }
+    }
+    if (actorData.newEntityIndex == ENTITY::MAIN) {
+        if (actorData.character != CHARACTER::DANTE) return false;
+        if ((actorData.style == STYLE::DOPPELGANGER && styleDown)) {
+            return true;
+        }
+    }
+    return false;
+};
+
 // @Todo: Update Nero Angelo fix.
 template <typename T> void LinearMeleeWeaponSwitchController(T& actorData) {
     auto& playerData    = GetPlayerData(actorData);
@@ -3690,13 +3714,14 @@ template <typename T> void LinearMeleeWeaponSwitchController(T& actorData) {
         bool condition = (actorData.buttons[0] & playerData.switchButton) ||
             (actorData.buttons[2] & playerData.switchButton);
 
+        bool dantecondition = GetDanteDoppelSwitchCondition(actorData);
         // Doppelganger Weapon Switch
         if (actorData.newEntityIndex == ENTITY::MAIN) {
-            if (condition) {
+            if (condition || dantecondition) {
                 return;
             }
         } else {
-            if (!condition) {
+            if (!(condition || dantecondition)) {
                 return;
             }
         }
@@ -3800,12 +3825,15 @@ template <typename T> void LinearRangedWeaponSwitchController(T& actorData) {
             (actorData.buttons[0] & playerData.switchButton) ||
             (actorData.buttons[2] & playerData.switchButton);
 
+        bool dantecondition = GetDanteDoppelSwitchCondition(actorData);
+        // Doppelganger Weapon Switch
         if (actorData.newEntityIndex == ENTITY::MAIN) {
-            if (condition) {
+            if (condition || dantecondition) {
                 return;
             }
-        } else {
-            if (!condition) {
+        }
+        else {
+            if (!(condition || dantecondition)) {
                 return;
             }
         }
@@ -3920,24 +3948,36 @@ template <typename T> void AnalogMeleeWeaponSwitchController(T& actorData) {
     {
         bool condition = (actorData.buttons[0] & playerData.switchButton) ||
             (actorData.buttons[2] & playerData.switchButton);
-
+        bool dantecondition = GetDanteDoppelSwitchCondition(actorData);
+        // Doppelganger Weapon Switch
         if (actorData.newEntityIndex == ENTITY::MAIN) {
-            if (condition) {
-                //if(gamepad.buttons[2] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))
-                    //activeCrimsonConfig.WeaponWheel.hide = true;
+            if (condition || dantecondition) {
                 return;
-            }
-            else {
-                //if (gamepad.buttons[2] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))
-                   // activeCrimsonConfig.WeaponWheel.hide = queuedCrimsonConfig.WeaponWheel.hide;
             }
         }
         else {
-            if (!condition) {
-                
+            if (!(condition || dantecondition)) {
                 return;
             }
         }
+
+        //if (actorData.newEntityIndex == ENTITY::MAIN) {
+        //    if (condition) {
+        //        //if(gamepad.buttons[2] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))
+        //            //activeCrimsonConfig.WeaponWheel.hide = true;
+        //        return;
+        //    }
+        //    else {
+        //        //if (gamepad.buttons[2] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))
+        //           // activeCrimsonConfig.WeaponWheel.hide = queuedCrimsonConfig.WeaponWheel.hide;
+        //    }
+        //}
+        //else {
+        //    if (!condition) {
+        //        
+        //        return;
+        //    }
+        //}
     }
     if (activeCrimsonConfig.WeaponWheel.analogSwitching || playerIndex != 0) {
         if ((gamepad.buttons[0] & GetBinding(BINDING::CHANGE_DEVIL_ARMS))) {
@@ -4110,16 +4150,27 @@ template <typename T> void AnalogRangedWeaponSwitchController(T& actorData) {
     {
         bool condition = (actorData.buttons[0] & playerData.switchButton) ||
             (actorData.buttons[2] & playerData.switchButton);
-
+        bool dantecondition = GetDanteDoppelSwitchCondition(actorData);
+        // Doppelganger Weapon Switch
         if (actorData.newEntityIndex == ENTITY::MAIN) {
-            if (condition) {
-                return;
-            }
-        } else {
-            if (!condition) {
+            if (condition || dantecondition) {
                 return;
             }
         }
+        else {
+            if (!(condition || dantecondition)) {
+                return;
+            }
+        }
+        //if (actorData.newEntityIndex == ENTITY::MAIN) {
+        //    if (condition) {
+        //        return;
+        //    }
+        //} else {
+        //    if (!condition) {
+        //        return;
+        //    }
+        //}
     }
 
     if (activeCrimsonConfig.WeaponWheel.analogSwitching || playerIndex != 0) {

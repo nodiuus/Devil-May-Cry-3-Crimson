@@ -2166,7 +2166,32 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	bool isSwitchingButtonDown = actorData.buttons[1] & GetBinding(isMelee ? BINDING::CHANGE_DEVIL_ARMS : BINDING::CHANGE_GUN);
 	bool isSwitchButtonDown = (actorData.buttons[0] & playerData.switchButton) ||
 		(actorData.buttons[2] & playerData.switchButton);
-	bool suppressWheel = isSwitchButtonDown && isSwitchingButtonDown;
+
+	auto GetDanteDoppelSwitchCondition = [](PlayerActorData& actorData) {
+		auto& gamepad = GetGamepad(actorData.newGamepad);
+		bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
+			|| (gamepad.buttons[2] & GetBinding(BINDING::STYLE_ACTION));
+		if (!styleDown)
+			return false;
+		if (actorData.newEntityIndex != ENTITY::MAIN) {
+			auto& mainActorData = *reinterpret_cast<PlayerActorData*>(GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, ENTITY::MAIN).baseAddr);
+			//if lockCloneStyle set only allow switch if main actor is currently in doppelganger style
+			if (mainActorData == nullptr) return false;
+			if (mainActorData.character != CHARACTER::DANTE) return false;
+			if ((mainActorData.style == STYLE::DOPPELGANGER && styleDown)) {
+				return true;
+			}
+		}
+		if (actorData.newEntityIndex == ENTITY::MAIN) {
+			if (actorData.character != CHARACTER::DANTE) return false;
+			if ((actorData.style == STYLE::DOPPELGANGER && styleDown)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	bool danteCondition = GetDanteDoppelSwitchCondition(actorData);
+	bool suppressWheel = (isSwitchButtonDown || danteCondition) && isSwitchingButtonDown;
 
 	if (suppressWheel) {
 		if (pWeaponWheel->GetAnalogSwitchingMode()) {
