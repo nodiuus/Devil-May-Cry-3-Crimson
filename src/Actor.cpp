@@ -2883,6 +2883,19 @@ byte8* SpawnActor(uint8 playerIndex, uint8 characterIndex, uint8 entityIndex, bo
         actorData.styleData.divisor = vanillaActorData.styleData.divisor;
     }
 
+    // Ensure HUD values (including style EXP) reflect the newly spawned actor immediately.
+    if (actorData.newEntityIndex == ENTITY::MAIN) {
+        UpdateStyle(actorData);
+        if (playerIndex == 0) {
+            HUD_UpdateStyleIcon(actorData.style, actorData.character);
+            HUD_UpdateHPBar(actorData.character);
+            HUD_UpdateLockOn(actorData.character);
+            HUD_UpdateDevilTriggerGauge(actorData.character);
+            HUD_UpdateDevilTriggerLightning(actorData.character);
+            HUD_UpdateDevilTriggerExplosion(actorData.character);
+        }
+    }
+
     return actorBaseAddr;
 }
 
