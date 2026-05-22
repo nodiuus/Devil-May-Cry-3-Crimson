@@ -4343,8 +4343,9 @@ void SprintAbility(byte8* actorBaseAddr) {
     auto playerIndex = actorData.newPlayerIndex;
     auto& sprintData = crimsonPlayer[playerIndex].sprint;
     auto& playerData = GetPlayerData(actorData);
+	if (!IsActiveCharacterActor(actorData))
+        return;
 
-    
     bool playerRunning = ((actorData.eventData[0].event == 3) && (actorData.motionData[0].index == 2 || actorData.motionData[0].index == 51 || actorData.motionData[0].index == 30));
 
     if ((actorData.newCharacterIndex == playerData.activeCharacterIndex) && (actorData.newEntityIndex == ENTITY::MAIN)) {

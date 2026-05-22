@@ -8866,7 +8866,10 @@ void UpdateActorSpeed(byte8* baseAddr) {
                 }
 
             Return:;
-                if (!crimsonPlayer[playerIndex].sprint.canSprint) {
+                bool isMainActiveSprintActor = crimsonPlayer[playerIndex].sprint.isSprinting &&
+                    (actorData.newCharacterIndex == playerData.activeCharacterIndex) &&
+                    (actorData.newEntityIndex == ENTITY::MAIN);
+                if (!isMainActiveSprintActor) {
                     actorData.speed = value * frameResponsiveMultiplier;
                 } else {
                     actorData.speed *= frameResponsiveMultiplier;
