@@ -3687,7 +3687,8 @@ template <typename T> void LinearMeleeWeaponSwitchController(T& actorData) {
     bool back    = false;
 
     {
-        bool condition = (actorData.buttons[0] & playerData.switchButton);
+        bool condition = (actorData.buttons[0] & playerData.switchButton) ||
+            (actorData.buttons[2] & playerData.switchButton);
 
         // Doppelganger Weapon Switch
         if (actorData.newEntityIndex == ENTITY::MAIN) {
@@ -3795,8 +3796,9 @@ template <typename T> void LinearRangedWeaponSwitchController(T& actorData) {
     bool update = false;
 
     {
-        bool condition = 
-            (actorData.buttons[0] & playerData.switchButton);
+        bool condition =
+            (actorData.buttons[0] & playerData.switchButton) ||
+            (actorData.buttons[2] & playerData.switchButton);
 
         if (actorData.newEntityIndex == ENTITY::MAIN) {
             if (condition) {
@@ -3916,7 +3918,8 @@ template <typename T> void AnalogMeleeWeaponSwitchController(T& actorData) {
     };
     auto& playerData = GetPlayerData(actorData);
     {
-        bool condition = (actorData.buttons[0] & playerData.switchButton);
+        bool condition = (actorData.buttons[0] & playerData.switchButton) ||
+            (actorData.buttons[2] & playerData.switchButton);
 
         if (actorData.newEntityIndex == ENTITY::MAIN) {
             if (condition) {
@@ -4102,6 +4105,22 @@ template <typename T> void AnalogRangedWeaponSwitchController(T& actorData) {
 
         back = true;
     };
+
+    auto& playerData = GetPlayerData(actorData);
+    {
+        bool condition = (actorData.buttons[0] & playerData.switchButton) ||
+            (actorData.buttons[2] & playerData.switchButton);
+
+        if (actorData.newEntityIndex == ENTITY::MAIN) {
+            if (condition) {
+                return;
+            }
+        } else {
+            if (!condition) {
+                return;
+            }
+        }
+    }
 
     if (activeCrimsonConfig.WeaponWheel.analogSwitching || playerIndex != 0) {
         if ((gamepad.buttons[0] & GetBinding(BINDING::CHANGE_GUN))) {

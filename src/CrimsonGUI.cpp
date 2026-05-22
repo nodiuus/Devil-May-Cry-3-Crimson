@@ -2164,6 +2164,19 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	pWeaponWheel->OnUpdate(deltaTimeGameSpeed);
 
 	bool isSwitchingButtonDown = actorData.buttons[1] & GetBinding(isMelee ? BINDING::CHANGE_DEVIL_ARMS : BINDING::CHANGE_GUN);
+	bool isSwitchButtonDown = (actorData.buttons[0] & playerData.switchButton) ||
+		(actorData.buttons[2] & playerData.switchButton);
+	bool suppressWheel = isSwitchButtonDown && isSwitchingButtonDown;
+
+	if (suppressWheel) {
+		if (pWeaponWheel->GetAnalogSwitchingMode()) {
+			pWeaponWheel->ToggleAnalogSwitchingUI(false);
+		}
+		if (pWeaponWheel->GetAlwaysVisible()) {
+			pWeaponWheel->ToggleAlwaysVisible(false);
+		}
+		isSwitchingButtonDown = false;
+	}
 	bool leftStick = (characterData.rangedWeaponSwitchStick == LEFT_STICK);
 	auto radius = (leftStick) ? gamepad.leftStickRadius : gamepad.rightStickRadius;
 	bool stickUsed = radius > RIGHT_STICK_DEADZONE ? true : false;
@@ -2202,6 +2215,10 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 
 	pWeaponWheel->UpdateSwitchButtonHeldEnough(isSwitchingButtonDown, 500);
 	pWeaponWheel->OnDraw();
+
+	if (suppressWheel) {
+		return false;
+	}
 
 	if (activeCrimsonConfig.WeaponWheel.hide && trackHide) {
 		return true;
