@@ -3201,7 +3201,7 @@ void DeactivateDoppelganger(PlayerActorData& actorData) {
         //checks if lockon held
         bool lockOnDown = (gamepad.buttons[0] & GetBinding(BINDING::LOCK_ON)) != 0;
         //the cloneStatus check makes sure this is a dante decomission vs cutscene decomission.
-        if (!lockOnDown && actorData.cloneStatus != CLONE_STATUS::ACTIVE) {
+        if (!lockOnDown && actorData.cloneStatus != CLONE_STATUS::ACTIVE && activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework) {
             actorData.cloneStatus = CLONE_STATUS::ACTIVE;
             return;
         }
@@ -3353,7 +3353,7 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
         auto& mainActorData = *reinterpret_cast<PlayerActorData*>(GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, ENTITY::MAIN).baseAddr);
         //if lockCloneStyle set only allow switch if main actor is currently in doppelganger style
         if (mainActorData == nullptr) return;
-        if (crimsonPlayer[playerIndex].lockCloneStyle && (mainActorData.style != STYLE::DOPPELGANGER || !styleDown)) {
+        if (crimsonPlayer[playerIndex].lockCloneStyle && (mainActorData.style != STYLE::DOPPELGANGER || !styleDown) && activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework) {
             return;
         }
     }
@@ -3678,6 +3678,8 @@ void StyleSwitchController(byte8* actorBaseAddr) {
 
 template <typename T>  bool GetDanteDoppelSwitchCondition(T& actorData) {
     auto& gamepad = GetGamepad(actorData.newGamepad);
+    if (!activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework)
+        return false;
     bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
         || (gamepad.buttons[2] & GetBinding(BINDING::STYLE_ACTION));
     if (!styleDown)

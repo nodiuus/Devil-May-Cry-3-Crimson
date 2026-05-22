@@ -2168,6 +2168,8 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 		(actorData.buttons[2] & playerData.switchButton);
 
 	auto GetDanteDoppelSwitchCondition = [](PlayerActorData& actorData) {
+		if (!activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework)
+			return false;
 		auto& gamepad = GetGamepad(actorData.newGamepad);
 		bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
 			|| (gamepad.buttons[2] & GetBinding(BINDING::STYLE_ACTION));
@@ -12080,7 +12082,16 @@ void DanteGameplayOptions() {
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Makes Charged Shots Shotgun lift enemies instead of knocking them back,"
 				"\nharkening to the old DMC1 days. Makes shotgun charge slightly faster.");
+			ImGui::TableNextColumn();
 
+			GUI_Checkbox2("Dante Doppelganger Rework",
+				activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework,
+				queuedCrimsonGameplay.Gameplay.Dante.doppelgangerRework,
+				activeCrimsonGameplayMask.Gameplay.Dante.doppelgangerRework);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Expands current doppelganger functionality."
+				"\nLock-on + Style to summon/unsummon doppelganger."
+				"\nWhile holding style in doppelganger, use the style, melee & ranged weapon switch buttons to adjust the doppelganger's loadout.");
 			ImGui::EndTable();
 		}
 	}
