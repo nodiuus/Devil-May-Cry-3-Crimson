@@ -231,10 +231,12 @@ struct CrimsonConfig {
 
 	struct VisualStyle {
 		uint8 preset = VISUALSTYLEPRESETS::MODERN;
+		bool tieVisualStyleToGameMode = false;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("preset", &VisualStyle::preset)
+				std::make_pair("preset", &VisualStyle::preset),
+				std::make_pair("tieVisualStyleToGameMode", &VisualStyle::tieVisualStyleToGameMode)
 			);
 		}
 	} VisualStyle;

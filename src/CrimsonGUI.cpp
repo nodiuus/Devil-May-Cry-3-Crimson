@@ -14276,8 +14276,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 			ImGui::SameLine();
 			ImGui::PushFont(UI::g_ImGuiFont_Roboto[baseFontSize]);
-			if (GUI_Checkbox("Tie Visual Style to Game Mode", tieVisualStyleToGameMode)) {
-				if (tieVisualStyleToGameMode) {
+			if (GUI_Checkbox2("Tie Visual Style to Game Mode", activeCrimsonConfig.VisualStyle.tieVisualStyleToGameMode, 
+				queuedCrimsonConfig.VisualStyle.tieVisualStyleToGameMode)) {
+				if (activeCrimsonConfig.VisualStyle.tieVisualStyleToGameMode) {
 					CrimsonVisualStyle::SetVisualStylePreset(activeCrimsonGameplay.GameMode.preset);
 					::GUI::save = true;
 				}
@@ -15207,7 +15208,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				}
 				ImGui::PopFont();
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				auto fnDrawSocialButton = [window](const void* id, const size_t socialID, const ImVec2 size, const char* tooltip = nullptr) -> bool {
 					const auto bbTuple = g_Image_SocialIcons.GetUVRect(socialID);
@@ -15355,7 +15356,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// Sarah
 				{
@@ -15397,7 +15398,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// Deep
 				{
@@ -15433,7 +15434,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// My smooth shiny bald ass
 				{
@@ -15469,7 +15470,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// Charlie
 				{
@@ -15505,7 +15506,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 
 				// Hitchhiker
@@ -15550,7 +15551,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// RaccMoon
 				{
@@ -15580,7 +15581,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15599,7 +15600,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15634,7 +15635,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15663,7 +15664,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15744,12 +15745,12 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 						{
-							ImGui::Text("Animation Work, Mod Tooling, Consultant");
+							ImGui::Text("Animation & Texturing Work, Mod Tooling, Consultant");
 						}
 						ImGui::PopFont();
 
@@ -15762,7 +15763,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15791,7 +15792,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15820,7 +15821,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15839,7 +15840,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15868,7 +15869,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15897,7 +15898,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -15926,12 +15927,14 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 						{
-							ImGui::Text("Thanks to Spritzkrieg for the permission to use and modify his Original PS2 Textures pack.");
+							ImGui::Text("Thanks to Spritzkrieg for the express permission\n"
+								"to airdragon50 to use and modify his Original PS2 \n"
+								"Textures pack.");
 						}
 						ImGui::PopFont();
 					}
@@ -15968,7 +15971,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// Lyall
 				{
