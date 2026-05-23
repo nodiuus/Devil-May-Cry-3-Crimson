@@ -3173,22 +3173,24 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 	};
 
 	if (actorData.character == CHARACTER::DANTE) {
+		auto weapon = actorData.newWeapons[actorData.meleeWeaponIndex];
+		auto rangedWeapon = actorData.newWeapons[actorData.rangedWeaponIndex];
 		// Consecutive Stinger level 2
 		triggerConsecutiveAttackWithReset(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == REBELLION_STINGER_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::REBELLION && actorData.action == REBELLION_STINGER_LEVEL_2,
 			0.78f,
 			REBELLION_STINGER_LEVEL_2,
 			stingerInput.meleeReleasedStinger);
 
 		// Consecutive Stinger level 1
 		triggerConsecutiveAttackWithReset(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == REBELLION_STINGER_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::REBELLION && actorData.action == REBELLION_STINGER_LEVEL_1,
 			0.38f,
 			REBELLION_STINGER_LEVEL_1,
 			stingerInput.meleeReleasedStinger);
 
 		// Override Serp's Stinger lvl 1 Intersperse
-		if (actorData.action == REBELLION_STINGER_LEVEL_1 && 
+		if (actorData.action == REBELLION_STINGER_LEVEL_1 && weapon == WEAPON::REBELLION &&
 			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2]) {
 			actorData.action = REBELLION_STINGER_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3197,24 +3199,24 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive High Times
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == REBELLION_HIGH_TIME,
+			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && weapon == WEAPON::REBELLION && actorData.action == REBELLION_HIGH_TIME,
 			0.5f,
 			REBELLION_HIGH_TIME);
 
 		// Consecutive Cerberus Revolver lvl 2
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == CERBERUS_REVOLVER_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::CERBERUS && actorData.action == CERBERUS_REVOLVER_LEVEL_2,
 			0.78f,
 			CERBERUS_REVOLVER_LEVEL_2);
 
 		// Consecutive Cerberus Revolver lvl 1
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == CERBERUS_REVOLVER_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::CERBERUS && actorData.action == CERBERUS_REVOLVER_LEVEL_1,
 			0.38f,
 			CERBERUS_REVOLVER_LEVEL_1);
 
 		// Override Serp's Cerberus Revolver lvl 1 Intersperse
-		if (actorData.action == CERBERUS_REVOLVER_LEVEL_1 &&
+		if (actorData.action == CERBERUS_REVOLVER_LEVEL_1 && weapon == WEAPON::CERBERUS &&
 			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::CERBERUS_REVOLVER_LEVEL_2]) {
 			actorData.action = CERBERUS_REVOLVER_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3222,37 +3224,37 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Cerberus Windmill
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == CERBERUS_WINDMILL,
+			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && weapon == WEAPON::CERBERUS && actorData.action == CERBERUS_WINDMILL,
 			0.78f,
 			CERBERUS_WINDMILL);
 
 		// Consecutive Agni Rudra Jet Stream level 3
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_3,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::AGNI_RUDRA && actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_3,
 			0.38f,
 			AGNI_RUDRA_JET_STREAM_LEVEL_3);
 
 		// Consecutive Agni Rudra Jet Stream level 2
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::AGNI_RUDRA && actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_2,
 			0.38f,
 			AGNI_RUDRA_JET_STREAM_LEVEL_2);
 
 		// Consecutive Agni Rudra Jet Stream level 1
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::AGNI_RUDRA && actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_1,
 			0.38f,
 			AGNI_RUDRA_JET_STREAM_LEVEL_1);
 
 		// Override Serp's Agni Rudra Jet Stream lvl 1 Intersperse
-		if (actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_1 &&
+		if (actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_1 && weapon == WEAPON::AGNI_RUDRA &&
 			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2]) {
 			actorData.action = AGNI_RUDRA_JET_STREAM_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
 		}
 
 		// Override Serp's Agni Rudra Jet Stream lvl 2 Intersperse
-		if (actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_2 &&
+		if (actorData.action == AGNI_RUDRA_JET_STREAM_LEVEL_2 && weapon == WEAPON::AGNI_RUDRA &&
 			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3]) {
 			actorData.action = AGNI_RUDRA_JET_STREAM_LEVEL_3;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3260,24 +3262,24 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Agni Rudra Whirlwind
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == AGNI_RUDRA_WHIRLWIND,
+			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && weapon == WEAPON::AGNI_RUDRA && actorData.action == AGNI_RUDRA_WHIRLWIND,
 			0.38f,
 			AGNI_RUDRA_WHIRLWIND);
 
 		// Consecutive Nevan Reverb Shock lvl 2
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == NEVAN_REVERB_SHOCK_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::NEVAN && actorData.action == NEVAN_REVERB_SHOCK_LEVEL_2,
 			0.38f,
 			NEVAN_REVERB_SHOCK_LEVEL_2);
 
 		// Consecutive Nevan Reverb Shock lvl 1
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == NEVAN_REVERB_SHOCK_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::NEVAN && actorData.action == NEVAN_REVERB_SHOCK_LEVEL_1,
 			0.38f,
 			NEVAN_REVERB_SHOCK_LEVEL_1);
 
 		// Override Serp's Nevan Reverb Shock lvl 1 Intersperse
-		if (actorData.action == NEVAN_REVERB_SHOCK_LEVEL_1 &&
+		if (actorData.action == NEVAN_REVERB_SHOCK_LEVEL_1 && weapon == WEAPON::NEVAN &&
 			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2]) {
 			actorData.action = NEVAN_REVERB_SHOCK_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3285,18 +3287,18 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Beowulf Straight lvl 2
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == BEOWULF_STRAIGHT_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::BEOWULF_DANTE && actorData.action == BEOWULF_STRAIGHT_LEVEL_2,
 			0.38f,
 			BEOWULF_STRAIGHT_LEVEL_2);
 
 		// Consecutive Beowulf Straight lvl 1
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == BEOWULF_STRAIGHT_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::BEOWULF_DANTE && actorData.action == BEOWULF_STRAIGHT_LEVEL_1,
 			0.38f,
 			BEOWULF_STRAIGHT_LEVEL_1);
 
 		// Override Serp's Beowulf Straight lvl 1 Intersperse
-		if (actorData.action == BEOWULF_STRAIGHT_LEVEL_1 &&
+		if (actorData.action == BEOWULF_STRAIGHT_LEVEL_1 && weapon == WEAPON::BEOWULF_DANTE &&
 			ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_STRAIGHT_LEVEL_2]) {
 			actorData.action = BEOWULF_STRAIGHT_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3304,28 +3306,29 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Shotgun Stinger
 		triggerConsecutiveStyleAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == SHOTGUN_GUN_STINGER,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && rangedWeapon == WEAPON::SHOTGUN && actorData.action == SHOTGUN_GUN_STINGER,
 			0.38f,
 			SHOTGUN_GUN_STINGER);
 
 	}
 	else if (actorData.character == CHARACTER::VERGIL) {
+		auto weapon = actorData.newWeapons[actorData.activeMeleeWeaponIndex];
 		// Consecutive Rapid Slash level 2
         triggerConsecutiveAttackWithReset(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_RAPID_SLASH_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::YAMATO_VERGIL && actorData.action == YAMATO_RAPID_SLASH_LEVEL_2,
 			0.78f,
 			YAMATO_RAPID_SLASH_LEVEL_2,
 			risingStarInput.meleeReleasedRisingStar);
 
 		// Consecutive Rapid Slash level 1
         triggerConsecutiveAttackWithReset(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_RAPID_SLASH_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::YAMATO_VERGIL && actorData.action == YAMATO_RAPID_SLASH_LEVEL_1,
 			0.38f,
 			YAMATO_RAPID_SLASH_LEVEL_1,
 			risingStarInput.meleeReleasedRisingStar);
 
 		// Override Serp's Rapid Slash lvl 1 Intersperse
-		if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 &&
+		if (actorData.action == YAMATO_RAPID_SLASH_LEVEL_1 && weapon == WEAPON::YAMATO_VERGIL &&
 			ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2]) {
 			actorData.action = YAMATO_RAPID_SLASH_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3334,20 +3337,20 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Force Edge Stinger level 2
 		triggerConsecutiveAttackWithReset(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::YAMATO_FORCE_EDGE && actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_2,
 			0.78f,
 			YAMATO_FORCE_EDGE_STINGER_LEVEL_2,
 			stingerInput.meleeReleasedStinger);
 
 		// Consecutive Force Edge Stinger level 1
 		triggerConsecutiveAttackWithReset(
-			lockOn && (tiltDirection == TILT_DIRECTION::UP) && actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1,
+			lockOn && (tiltDirection == TILT_DIRECTION::UP) && weapon == WEAPON::YAMATO_FORCE_EDGE && actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1,
 			0.38f,
 			YAMATO_FORCE_EDGE_STINGER_LEVEL_1,
 			stingerInput.meleeReleasedStinger);
 
 		// Override Serp's Force Edge Stinger lvl 1 Intersperse
-		if (actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 &&
+		if (actorData.action == YAMATO_FORCE_EDGE_STINGER_LEVEL_1 && weapon == WEAPON::YAMATO_FORCE_EDGE &&
 			ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2]) {
 			actorData.action = YAMATO_FORCE_EDGE_STINGER_LEVEL_2;
 			func_1E0800_TriggerEvent(actorData, ACTOR_EVENT::ATTACK, 0, 0);
@@ -3356,7 +3359,7 @@ void ConsecutiveDirectionalMoves(byte8* actorBaseAddr) {
 
 		// Consecutive Force Edge High Times
 		triggerConsecutiveAttack(
-			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME && !inYamatoHighTime,
+			lockOn && (tiltDirection == TILT_DIRECTION::DOWN) && weapon == WEAPON::YAMATO_FORCE_EDGE && actorData.action == YAMATO_FORCE_EDGE_HIGH_TIME && !inYamatoHighTime,
 			0.5f,
 			YAMATO_FORCE_EDGE_HIGH_TIME);
 
