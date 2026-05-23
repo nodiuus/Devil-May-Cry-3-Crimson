@@ -16,6 +16,7 @@
 #include "Global/GUIBase.hpp"
 #include "CrimsonUtil.hpp"
 #include "CrimsonFileHandling.hpp"
+#include "CrimsonOnboarding.hpp"
 #include "DMC3Input.hpp"
 #include "File.hpp"
 #include "ImGuiExtra.hpp"
@@ -16248,6 +16249,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     AdjustBackgroundColorAndTransparency();
 
     Welcome();
+	CrimsonOnboarding::Run(pSwapChain);
 	StoreHDCKeybinds();
 	OverrideHDCKeybinds();
     Main(pSwapChain);

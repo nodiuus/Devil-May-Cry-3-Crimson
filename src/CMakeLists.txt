@@ -179,6 +179,8 @@ file(GLOB MAIN_SRC
     CrimsonGUI.cpp
     CrimsonGUI.hpp
     CrimsonLicense.hpp
+    CrimsonOnboarding.cpp
+    CrimsonOnboarding.hpp
     CrimsonHighFPSFixes.cpp
     CrimsonHighFPSFixes.hpp
     CrimsonHUD.cpp

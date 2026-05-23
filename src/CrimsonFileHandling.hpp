@@ -11,6 +11,7 @@ namespace Paths {
 	extern const char* huds;
 	extern const char* styleRanks;
 	extern const char* visualStylesPreviews;
+	extern const char* cameraPreviews;
 	extern const char* weaponwheel;
 	extern const char* gameMods;
 }

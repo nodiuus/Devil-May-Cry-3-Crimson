@@ -781,6 +781,16 @@ struct CrimsonConfig {
 		}
 	} CachedSettings;
 
+	struct Onboarding {
+		uint8 welcomeStage = 0; // 0=text welcome, 1=game mode, 2=visual style, 3=camera, 4=done
+
+		static constexpr auto Metadata() {
+			return std::make_tuple(
+				std::make_pair("welcomeStage", &Onboarding::welcomeStage)
+			);
+		}
+	} Onboarding;
+
 	static constexpr auto Metadata() {
 		return std::make_tuple(
 			std::make_pair("MultiplayerBars2D", &CrimsonConfig::MultiplayerBars2D),
@@ -798,7 +808,8 @@ struct CrimsonConfig {
 			std::make_pair("Sound", &CrimsonConfig::Sound),
 			std::make_pair("PlayerProperties", &CrimsonConfig::PlayerProperties),
 			std::make_pair("System", &CrimsonConfig::System),
-			std::make_pair("CachedSettings", &CrimsonConfig::CachedSettings)
+			std::make_pair("CachedSettings", &CrimsonConfig::CachedSettings),
+			std::make_pair("Onboarding", &CrimsonConfig::Onboarding)
 		);
 	}
 };
