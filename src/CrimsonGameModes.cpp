@@ -99,6 +99,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	dante.swapArtemisMultiLockNormalShot = false;
 	dante.chargedShotgunLifts = false;
 	dante.doppelgangerSplitSync = false;
+	dante.quickGrapple = false;
 
 	// Vergil section
 	auto& vergil = preset.Gameplay.Vergil;
@@ -165,6 +166,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	//dante.swapDancePierceInputs = false;
 	dante.chargedShotgunLifts = false;
 	dante.doppelgangerSplitSync = false;
+	dante.quickGrapple = false;
 
 	// Vergil section
 	auto& vergil = preset.Gameplay.Vergil;

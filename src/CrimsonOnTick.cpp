@@ -2123,6 +2123,7 @@ void TriggerOnTickFuncs() {
 	MultiplayerDamageScaling();
 	ControlMenuFadeouts();
 	ReloadHUDController();
+	CrimsonPatches::DanteQuickGrapple(activeCrimsonGameplay.Gameplay.Dante.quickGrapple);
 	CrimsonHighFPSFixes::ClothPhysicsFixesController();
 	bool gigapedemoment = GetGigapedeMoment();
 	CrimsonHighFPSFixes::LookAtBossCamFixes(!gigapedemoment);

@@ -12093,7 +12093,17 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "(Dante Only) Doppelganger spawns fully synchronized with your current Style setup. \n"
 				"While in Doppelganger Style, press Lock-On + Style Action to summon or dismiss Doppelganger. \n"
 				"Pressing Style Action without Lock-On lets you change Weapons and Styles exclusively for Doppelganger,\n"
-				"causing it to desync from Dante’s current Style configuration until resummoned.");
+				"causing it to desync from Dante's current Style configuration until resummoned.");
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Quick Grapple",
+				activeCrimsonGameplay.Gameplay.Dante.quickGrapple,
+				queuedCrimsonGameplay.Gameplay.Dante.quickGrapple,
+				activeCrimsonGameplayMask.Gameplay.Dante.quickGrapple);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Makes Dante's Grapple skip the initial windup, firing faster.");
+
 			ImGui::EndTable();
 		}
 	}
@@ -15594,7 +15604,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("3D & 2D Artist, Animation, Programmer");
+						ImGui::Text("3D & 2D Artist, Animation");
 					}
 					ImGui::PopFont();
 
@@ -15887,6 +15897,8 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 						{
@@ -15910,6 +15922,16 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 							if (fnDrawSocialButton("mos9527github", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://github.com/mos9527", 0, 0, SW_SHOW);
 							}
+						}
+						ImGui::PopFont();
+					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Thanks to Spritzkrieg for the permission to use and modify his Original PS2 Textures pack.");
 						}
 						ImGui::PopFont();
 					}

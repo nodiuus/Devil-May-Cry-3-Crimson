@@ -60,6 +60,21 @@ namespace CrimsonPatches {
 		run = enable;
 	}
 
+	void DanteQuickGrapple(bool enable) {
+		static bool run = false;
+		if (run == enable) {
+			return;
+		}
+		// dmc3.exe+2064A6 - 74 E1                 - je dmc3.exe+206489
+		if (enable) {
+			_nop((char*)(appBaseAddr + 0x2064A6), 2);
+		}
+		else {
+			_patch((char*)(appBaseAddr + 0x2064A6), (char*)"\x74\xE1", 2);
+		}
+		run = enable;
+	}
+
 	/// <summary>
 	/// It's time for the clown to bow out. 
 	/// </summary>

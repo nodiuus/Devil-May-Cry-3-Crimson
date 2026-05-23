@@ -9,6 +9,7 @@ namespace CrimsonPatches {
 void PauseGameTime(bool enable);
 void DisableHeightRestriction(bool enable);
 void HoldToAutoFire(bool enable);
+void DanteQuickGrapple(bool enable);
 void EndBossFight(bool enable);
 void IncreasedJCSpheres(bool enable);
 void ImprovedBufferedReversals(bool enable);
