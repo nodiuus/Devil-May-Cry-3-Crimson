@@ -164,9 +164,9 @@ namespace UI {
 		} CurrentVersion;
 
 		struct {
-			uint32_t Day = 20;
+			uint32_t Day = 23;
 			uint32_t Month = 5;
-			uint32_t Year = 2025;
+			uint32_t Year = 2026;
 		} LatestUpdateDate;
 
 		std::string LatestVersionURL{};
