@@ -367,7 +367,97 @@ template <typename T> bool IsNeroAngelo(T& actorData) {
     return ((actorData.character == CHARACTER::VERGIL) && actorData.neroAngelo && actorData.devil);
 }
 
+template <typename T> bool IsArkham2Actor(T& actorData) {
+    return (actorData.newPlayerIndex == 1 && arkhamFightData.fightActive);
+}
+
 #pragma endregion
+
+// ---------------------------------------------------------------------------
+// ForEachSpawnedPlayerActor — iterate every Crimson-created actor registered
+// in g_playerActorBaseAddrs.  Two overloads:
+//   5-param: (PlayerActorData&, NewActorData&, playerIndex, characterIndex, entityIndex)
+//   4-param: (PlayerActorData&, playerIndex, characterIndex, entityIndex)
+// No slot‑grid dependency.  Use actorData.character / actorData.costume for
+// routing decisions — they are always authoritative unlike characterData.
+//
+// NOTE: g_playerActorBaseAddrs[0] and [1] are populated by vanilla game
+// events (EventCreateMainActor/EventCreateCloneActor).  We skip those by
+// requiring newActorData.baseAddr == actorBaseAddr — only Crimson actors
+// satisfy this (CreatePlayerActor sets both). -- Berthrage
+// ---------------------------------------------------------------------------
+template <typename F>
+void ForEachSpawnedPlayerActor(F&& callback) {
+    for (uint64 actorIndex = 0; actorIndex < g_playerActorBaseAddrs.count; ++actorIndex) {
+        auto actorBaseAddr = g_playerActorBaseAddrs[actorIndex];
+        if (!actorBaseAddr) continue;
+
+        auto& actorData      = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+        auto  playerIndex    = actorData.newPlayerIndex;
+        auto  characterIndex = actorData.newCharacterIndex;
+        auto  entityIndex    = actorData.newEntityIndex;
+
+        auto& newActorData = GetNewActorData(playerIndex, characterIndex, entityIndex);
+
+        // Skip vanilla actors (indices 0-1): their newActorData was set by
+        // CreatePlayerActor for the Crimson main actor, not themselves.
+        if (newActorData.baseAddr != actorBaseAddr) continue;
+
+        callback(actorData, newActorData, playerIndex, characterIndex, entityIndex);
+    }
+}
+
+// 4-param overload — delegates to the 5-param version, dropping newActorData.
+template <typename F,
+          typename = decltype(std::declval<F&>()(std::declval<PlayerActorData&>(), uint8{}, uint8{}, uint8{}))>
+void ForEachSpawnedPlayerActor(F&& callback) {
+    ForEachSpawnedPlayerActor([&](PlayerActorData& actorData, NewActorData&,
+                                   uint8 playerIndex, uint8 characterIndex, uint8 entityIndex) {
+        callback(actorData, playerIndex, characterIndex, entityIndex);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// ForEachVanillaPlayerActor — iterate the two vanilla actors (indices 0-1)
+// registered by EventCreateMainActor / EventCreateCloneActor.  These are
+// skipped by ForEachSpawnedPlayerActor.  Only provides (PlayerActorData&,
+// playerIndex, entityIndex) — NewActorData is not valid for vanilla actors.
+// THIS LOOP WILL ONLY WORK WITH CCS ENABLED, that's when g_playerActorBaseAddrs is populated.
+// -- Berthrage
+// ---------------------------------------------------------------------------
+template <typename F>
+void ForEachVanillaPlayerActor(F&& callback) {
+    for (uint64 actorIndex = 0; actorIndex < 2 && actorIndex < g_playerActorBaseAddrs.count; ++actorIndex) {
+        auto actorBaseAddr = g_playerActorBaseAddrs[actorIndex];
+        if (!actorBaseAddr) continue;
+
+        auto& actorData      = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+        auto  playerIndex    = actorData.newPlayerIndex;
+        auto  characterIndex = actorData.newCharacterIndex;
+        auto  entityIndex    = actorData.newEntityIndex;
+
+        auto& newActorData = GetNewActorData(playerIndex, characterIndex, entityIndex);
+
+        // Only yield if this is a vanilla actor (newActorData is NOT self-consistent)
+        if (newActorData.baseAddr == actorBaseAddr) continue;
+
+        callback(actorData, playerIndex, entityIndex);
+    }
+}
+
+// ---------------------------------------------------------------------------
+// GetVanillaPlayerActor — fetch the vanilla main actor via the game's own
+// actor pool (ie: dmc3.exe+1B6339: mov rax,[C90E28]; mov rcx,[rax+18]).
+// pool[3] (offset 0x18) always holds the currently active main player actor
+// regardless of whether the Crimson Actor module is enabled. -- Berthrage
+// ---------------------------------------------------------------------------
+inline PlayerActorData* GetVanillaPlayerActor() {
+    auto pool_C90E28 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+    if (!pool_C90E28 || !pool_C90E28[3]) {
+        return nullptr;
+    }
+    return reinterpret_cast<PlayerActorData*>(pool_C90E28[3]);
+}
 
 #pragma region Actor Management
 
@@ -389,8 +479,6 @@ void ToggleBossVergilFixes(bool enable);
 #pragma endregion
 
 #pragma region Speed
-
-void ToggleRebellionHoldDrive(bool enable);
 
 #pragma endregion
 

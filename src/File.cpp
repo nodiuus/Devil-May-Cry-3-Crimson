@@ -339,6 +339,24 @@ FileDataTypeData fileDataTypeData[CACHE_FILE_COUNT] = {};
 byte8* demo_pl000_00_3 = 0;
 byte8* vergil_pl021_00_3 = 0;
 byte8* newRisingStar_pl021_00_4 = 0;
+byte8* newYamatoHighTime_pl021_00_5 = 0;
+byte8* newBaseDanteAnims_pl000_00_0 = 0;
+byte8* newTauntDanteAnims1_pl000_00_2 = 0;
+byte8* newTauntDanteAnims2_pl000_00_2 = 0;
+byte8* newTauntVergilAnims2_pl021_00_2 = 0;
+byte8* newTauntVergilAnims1_pl021_00_2 = 0;
+byte8* newBaseVergilAnims_pl021_00_0 = 0;
+byte8* newStyleSwitching01_pl000_00_4 = 0;
+byte8* newStyleSwitching02_pl000_00_4 = 0;
+byte8* newJudgementCut_pl021_00_3 = 0;
+byte8* newJudgementCutAir_pl021_00_3 = 0;
+byte8* newJudgementCutAirJF_pl021_00_3 = 0;
+byte8* newDrivePart1_pl000_00_3 = 0;
+byte8* newDrivePart2_pl000_00_3 = 0;
+byte8* newDrivePart3_pl000_00_3 = 0;
+byte8* newBackslide_pl000_00_19 = 0;
+byte8* newCrimsonHUD1_0_id_100 = 0;
+byte8* newCrimsonHUD1_0_id_100V = 0;
 
 void File_UpdateFileData(FileData& fileData, uint16 cacheFileIndex) {
     SetMemory(&fileData, 0, sizeof(fileData));
@@ -559,15 +577,69 @@ bool File_Init() {
     }
 
 
-    // Demo Rebellion Motion File
+    // New Animation Files
     [&]() {
         const char* filename = "demo_pl000_00_3.pac";
+        
         const char* vergilYamatoFilename = "pl021_00_3.pac";
         const char* newRisingStarYamatoFilename = "newRisingStar_pl021_00_4.pac";
-
+		const char* newYamatoHighTimeFilename = "newYamatoHighTime_pl021_00_5.pac";
+		const char* newBaseDanteAnimsFilename = "newBaseDanteAnims_pl000_00_0.pac";
+		const char* newBaseVergilAnimsFilename = "newBaseVergilAnims_pl021_00_0.pac";
+		const char* newStyleSwitching01Filename = "newStyleSwitching01_pl000_00_4.pac";
+		const char* newStyleSwitching02Filename = "newStyleSwitching02_pl000_00_4.pac";
+		const char* newJudgementCutFilename = "newJudgementCut_pl021_00_3.pac";
+		const char* newJudgementCutAirFilename = "newJudgementCutAir_pl021_00_3.pac";
+		const char* newJudgementCutAirJFFilename = "newJudgementCutAirJF_pl021_00_3.pac";
+		const char* newDrivePart1Filename = "newDrivePart1_pl000_00_3.pac";
+		const char* newDrivePart2Filename = "newDrivePart2_pl000_00_3.pac";
+		const char* newDrivePart3Filename = "newDrivePart3_pl000_00_3.pac";
+		const char* newBackslideFilename = "newBackslide_pl000_00_19.pac";
+        const char* newTauntDanteAnims1Filename = "newTauntDanteAnims1_pl000_00_2.pac";
+        const char* newTauntDanteAnims2Filename = "newTauntDanteAnims2_pl000_00_2.pac";
+        const char* newTauntVergilAnims1Filename = "newTauntVergilAnims1_pl021_00_2.pac";
+        const char* newTauntVergilAnims2Filename = "newTauntVergilAnims2_pl021_00_2.pac";
         auto& file = demo_pl000_00_3 = File_staticFiles.Push(filename);
         auto& file2 = vergil_pl021_00_3 = File_staticFiles.Push(vergilYamatoFilename);
         auto& file3 = newRisingStar_pl021_00_4 = File_staticFiles.Push(newRisingStarYamatoFilename);
+		auto& file4 = newYamatoHighTime_pl021_00_5 = File_staticFiles.Push(newYamatoHighTimeFilename);
+		auto& file5 = newBaseDanteAnims_pl000_00_0 = File_staticFiles.Push(newBaseDanteAnimsFilename);
+		auto& file6 = newBaseVergilAnims_pl021_00_0 = File_staticFiles.Push(newBaseVergilAnimsFilename);
+		auto& file7 = newStyleSwitching01_pl000_00_4 = File_staticFiles.Push(newStyleSwitching01Filename);
+		auto& file8 = newStyleSwitching02_pl000_00_4 = File_staticFiles.Push(newStyleSwitching02Filename);
+		auto& file9 = newJudgementCut_pl021_00_3 = File_staticFiles.Push(newJudgementCutFilename);
+		auto& file10 = newJudgementCutAir_pl021_00_3 = File_staticFiles.Push(newJudgementCutAirFilename);
+		auto& file11 = newJudgementCutAirJF_pl021_00_3 = File_staticFiles.Push(newJudgementCutAirJFFilename);
+		auto& file12 = newDrivePart1_pl000_00_3 = File_staticFiles.Push(newDrivePart1Filename);
+		auto& file13 = newDrivePart2_pl000_00_3 = File_staticFiles.Push(newDrivePart2Filename);
+		auto& file14 = newDrivePart3_pl000_00_3 = File_staticFiles.Push(newDrivePart3Filename);
+		auto& file15 = newBackslide_pl000_00_19 = File_staticFiles.Push(newBackslideFilename);
+        auto& file16 = newTauntDanteAnims1_pl000_00_2 = File_staticFiles.Push(newTauntDanteAnims1Filename);
+        auto& file17 = newTauntDanteAnims2_pl000_00_2 = File_staticFiles.Push(newTauntDanteAnims2Filename);
+        auto& file18 = newTauntVergilAnims1_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims1Filename);
+        auto& file19 = newTauntVergilAnims2_pl021_00_2 = File_staticFiles.Push(newTauntVergilAnims2Filename);
+
+        // Log load status for every pushed file
+        Log("File load: %s — %s", filename,                  file  ? "OK" : "FAILED");
+        Log("File load: %s — %s", vergilYamatoFilename,      file2 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newRisingStarYamatoFilename,     file3 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newYamatoHighTimeFilename,       file4 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newBaseDanteAnimsFilename,       file5 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newBaseVergilAnimsFilename,      file6 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newStyleSwitching01Filename,     file7 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newStyleSwitching02Filename,     file8 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newJudgementCutFilename,         file9 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newJudgementCutAirFilename,      file10 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newJudgementCutAirJFFilename,    file11 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newDrivePart1Filename,           file12 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newDrivePart2Filename,           file13 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newDrivePart3Filename,           file14 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newBackslideFilename,            file15 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntDanteAnims1Filename,     file16 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntDanteAnims2Filename,     file17 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntVergilAnims1Filename,    file18 ? "OK" : "FAILED");
+        Log("File load: %s — %s", newTauntVergilAnims2Filename,    file19 ? "OK" : "FAILED");
+
         if (!file) {
             return;
         }
@@ -578,6 +650,22 @@ bool File_Init() {
         AdjustPointers(file);
         AdjustPointers(file2);
         AdjustPointers(file3);
+        AdjustPointers(file4);
+		AdjustPointers(file5);
+		AdjustPointers(file6);
+		AdjustPointers(file7);
+		AdjustPointers(file8);
+		AdjustPointers(file9);
+		AdjustPointers(file10);
+		AdjustPointers(file11);
+		AdjustPointers(file12);
+		AdjustPointers(file13);
+		AdjustPointers(file14);
+		AdjustPointers(file15);
+        AdjustPointers(file16);
+        AdjustPointers(file17);
+        AdjustPointers(file18);
+        AdjustPointers(file19);
     }();
 
 

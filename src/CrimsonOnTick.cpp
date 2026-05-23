@@ -29,6 +29,9 @@
 #include "DMC3Input.hpp"
 #include "CrimsonGameModes.hpp"
 #include "CrimsonCameraController.hpp"
+#include "CrimsonHighFPSFixes.hpp"
+#include "HUD.hpp"
+#include "CrimsonGameplay.hpp"
 
 
 namespace CrimsonOnTick {
@@ -43,16 +46,42 @@ extern "C" {
 
 bool inputtingFPS = false;
 
+CameraData* GetSafeCameraData();
+
 void FrameResponsiveGameSpeed() {
+	if (g_scene == SCENE::BOOT) {
+		return;
+	}
+
 	// Calculate Delta Time Manually
 	static double lastTime = ImGui::GetTime();
 	double currentTime = ImGui::GetTime();
 	float deltaTime = static_cast<float>(currentTime - lastTime);
+
+	if (deltaTime <= 0.0f) {
+		lastTime = currentTime;
+		return;
+	}
+
+	// Ignore hitch/pause frames before updating frame-rate responsive multipliers.
+	// This prevents stalled delta from contaminating speed math after resume.
+	float hitchThreshold = 0.06f;
+	if (deltaTime > hitchThreshold || g_inGUIPause) {
+		lastTime = currentTime;
+		return;
+	}
+
 	lastTime = currentTime;
 
-	// Compute frame rate and multiplier
-	g_FrameRate = 1.0f / deltaTime;
-	g_FrameRateTimeMultiplier = 60.0f / g_FrameRate;
+	g_deltaTime = deltaTime;
+
+  // Compute frame rate and multiplier.
+	// Use measured tick delta for speed math (authoritative for simulation pacing),
+	// while keeping ImGui framerate for UI/debug display.
+	float measuredFrameRate = 1.0f / deltaTime;
+	float imguiFrameRate = ImGui::GetIO().Framerate;
+	g_FrameRate = (imguiFrameRate > 1.0f) ? imguiFrameRate : measuredFrameRate;
+	g_FrameRateTimeMultiplier = 60.0f / measuredFrameRate;
 
 	// Exponential smoothing for the rounded multiplier stability
 	static float smoothedMultiplier = g_FrameRateTimeMultiplier;
@@ -63,53 +92,72 @@ void FrameResponsiveGameSpeed() {
 	float step = 0.05f;
 	g_FrameRateTimeMultiplierRounded = std::round(smoothedMultiplier / step) * step;
 
-	// Ignore deltaTime spikes that result from alt-tabbing, loading screens, etc.
-	float freezeThreshold = 1.0f / 50.0f; // Skips <50 FPS frames
-	if (deltaTime > freezeThreshold) {
+	// Frame responsive speed is always applied; global speed values are treated as user-facing base speeds.
+	// Effective runtime scaling is applied in Speed::Toggle using g_FrameRateTimeMultiplier.
+	UpdateFrameRate();
+
+
+	Speed::Toggle(true);
+	Speed::UpdateEffectiveSpeeds();
+	Speed::ApplyRuntimeGlobalSpeed();
+	
+}
+
+void LevelFullyLoadedDelay() {
+	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_10298 || !pool_10298[8]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
+
+	auto name_10723 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!name_10723) {
+		return;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
+
+	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+	if (!pool_10222 || !pool_10222[3]) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
+
+	if (g_inGameCutscene || !activeCrimsonConfig.GUI.pauseWhenOpened) {
 		return;
 	}
 
-	const float gameSpeedBase = g_scene != SCENE::CUTSCENE ? IsTurbo() ? 1.2f : 1.0f : 1.0f;
-	auto& activeValue = IsTurbo() ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	auto& queuedValue = IsTurbo() ? queuedConfig.Speed.turbo : queuedConfig.Speed.mainSpeed;
+	static float levelFullyLoadedTimer = 0.5f;
 
+	// We add this timer so we can safely (aka no crash) say when we can pause the game by setting speed to 0.
+	if (g_scene != SCENE::GAME || eventData.event != EVENT::MAIN) {
+		levelFullyLoadedTimer = 0.5f;
+		g_levelFullyLoadedDelay = false;
+		g_inGameDelayed = false;
+	} else {
+		g_inGameDelayed = true;
 
-	if (activeConfig.framerateResponsiveGameSpeed) {
-		// Cutscene audio is so timing sensitive that we can't truly sync the FPS to the game speed while in them.
-		// This would be properly solved if we had some method of audio stretching. Maybe: SDL_SetAudioStreamFrequencyRatio?
-		const float adjustedSpeed = g_scene != SCENE::CUTSCENE ? gameSpeedBase * g_FrameRateTimeMultiplier :
-			gameSpeedBase * g_FrameRateTimeMultiplierRounded;
-		if (g_scene == SCENE::CUTSCENE) Speed::Toggle(true);
-
-		activeConfig.Speed.turbo = adjustedSpeed;
-		activeConfig.Speed.mainSpeed = adjustedSpeed;
-		queuedConfig.Speed.turbo = adjustedSpeed;
-		queuedConfig.Speed.mainSpeed = adjustedSpeed;
-
-		UpdateFrameRate();
-
-		// === Throttled Speed::Toggle(true) ===
-		static double lastToggleTime = 0.0;
-		constexpr double toggleInterval = 0.25; // seconds 
-
-		if (currentTime - lastToggleTime >= toggleInterval) {
-			Speed::Toggle(true);
-			lastToggleTime = currentTime;
-		}
-
-		// === One-time enable/disable logic ===
-		static bool speedWasEnabled = false;
-		if (g_scene == SCENE::GAME && !speedWasEnabled) {
-			Speed::Toggle(true);
-			speedWasEnabled = true;
-		} else if (g_inGameCutscene && speedWasEnabled) {
-			speedWasEnabled = false;
+		if (levelFullyLoadedTimer > 0) {
+			levelFullyLoadedTimer -= ImGui::GetIO().DeltaTime;
 		}
 	}
+
 }
 
 void GameTrackDetection() {
 	g_gameTrackPlaying = (std::string)reinterpret_cast<char*>(appBaseAddr + 0xD23906);
+}
+
+static constexpr uintptr_t REGISTERMISSIONDATAUNLOCK_OFFSET() { return 0x1AA6E0; }
+
+using RegisterMissionDataUnlock_t = uintptr_t(__fastcall*)(uintptr_t CEventMissionAddr, uint32 index, uint32_t flags);
+
+static uintptr_t RegisterMissionDataUnlock_sub_1401AA6E0(uintptr_t CEventMissionAddr, uint32 index, uint32_t flags) {
+	RegisterMissionDataUnlock_t RegisterMissionDataUnlockFunc = reinterpret_cast<RegisterMissionDataUnlock_t>(appBaseAddr + REGISTERMISSIONDATAUNLOCK_OFFSET());
+	if (!RegisterMissionDataUnlockFunc) {
+		return NULL;
+	}
+
+	return RegisterMissionDataUnlockFunc(CEventMissionAddr, index, flags);
 }
 
 void FixWeaponUnlocksDante() {
@@ -238,21 +286,33 @@ void FixWeaponUnlocksDante() {
 
 	// If we saw the boss before and now they're gone, unlock the weapon
 	if (cerberusExists && !cerberusAlive && cerberusMissionContext) {
-		missionData.itemCounts[ITEM::CERBERUS] = 1;
+		if (missionData.itemCounts[ITEM::CERBERUS] < 1) {
+			Log("Unlocking Cerberus for Dante in CCS.");
+			missionData.itemCounts[ITEM::CERBERUS] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::CERBERUS, -1);
+		}
 		cerberusExists = false;
 	} else if (!cerberusMissionContext) {
 		cerberusExists = false; 
 	}
 
 	if (agniRudraExists && !agniRudraAlive && agniRudraMissionContext) {
-		missionData.itemCounts[ITEM::AGNI_RUDRA] = 1;
+		if (missionData.itemCounts[ITEM::AGNI_RUDRA] < 1) {
+			Log("Unlocking Agni & Rudra for Dante in CCS.");
+			missionData.itemCounts[ITEM::AGNI_RUDRA] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::AGNI_RUDRA, -1);
+		}
 		agniRudraExists = false; 
 	} else if (!agniRudraMissionContext) {
 		agniRudraExists = false;
 	}
 
 	if (nevanExists && !nevanAlive && nevanMissionContext) {
-		missionData.itemCounts[ITEM::NEVAN] = 1;
+		if (missionData.itemCounts[ITEM::NEVAN] < 1) {
+			Log("Unlocking Nevan for Dante in CCS.");
+			missionData.itemCounts[ITEM::NEVAN] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::NEVAN, -1);
+		}
 		nevanExists = false;
 	} else if (!nevanMissionContext) {
 		nevanExists = false;
@@ -266,7 +326,11 @@ void FixWeaponUnlocksDante() {
 	}
 
 	if (ladyExists && !ladyAlive && ladyMissionContext) {
-		missionData.itemCounts[ITEM::KALINA_ANN] = 1;
+		if (missionData.itemCounts[ITEM::KALINA_ANN] < 1) {
+			Log("Unlocking Kalina Ann for Dante in CCS.");
+			missionData.itemCounts[ITEM::KALINA_ANN] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::KALINA_ANN, -1);
+		}
 		ladyExists = false;
 	} else if (!ladyMissionContext) {
 		ladyExists = false;
@@ -277,7 +341,11 @@ void FixWeaponUnlocksDante() {
 		sessionData.mission == 14 &&
 		eventData.room == ROOM::LAIR_OF_JUDGEMENT_RUINS &&
 		missionData.itemCounts[ITEM::BEOWULF] != 1) {
-		missionData.itemCounts[ITEM::BEOWULF] = 1;
+		if (missionData.itemCounts[ITEM::BEOWULF] < 1) {
+			Log("Unlocking Beowulf for Dante in Vergil's Campaign in CCS.");
+			missionData.itemCounts[ITEM::BEOWULF] = 1;
+			RegisterMissionDataUnlock_sub_1401AA6E0(missionData.CEventMissionAddr, ITEM::BEOWULF, -1);
+		}
 	}
 
 	if (doppelExists && !doppelAlive && doppelMissionContext) {
@@ -392,7 +460,7 @@ void PreparePlayersDataBeforeSpawn() {
 	}
 
 
-	if (g_scene != SCENE::GAME || (g_scene == SCENE::GAME && eventData.event == EVENT::DEATH)) {
+	if ((g_scene != SCENE::GAME && g_scene != SCENE::CUTSCENE) || (g_scene == SCENE::GAME && eventData.event == EVENT::DEATH) && eventData.subevent == 1) {
 		for (int playerIndex = 0; playerIndex < PLAYER_COUNT; ++playerIndex) {
 			//write from active missiondata here instead of session so that we can use purchased but unsaved blorbs
 			crimsonPlayer[playerIndex].hitPoints = activeMissionActorData.hitPoints;
@@ -423,34 +491,62 @@ void PreparePlayersDataBeforeSpawn() {
 	}
 }
 
+bool CheckAllDead() {
+	if (!InGame())
+		return false;
+
+	bool alldead = true;
+	old_for_all(uint8, playerIndex, activeConfig.Actor.playerCount) {
+		auto& playerData = GetPlayerData(playerIndex);
+		auto& activeNewActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, ENTITY::MAIN);
+		if (activeNewActorData.baseAddr == nullptr) {
+			alldead = alldead && false;
+			continue;
+		}
+		auto& activeActorData = *reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+		if (activeActorData.eventData[0].event == ACTOR_EVENT::DEATH && activeActorData.recoverState[0] == 0x2) {
+			alldead = alldead && true;
+		}
+		else {
+			alldead = alldead && false;
+		}
+	}
+	return alldead;
+}
+
+void ManageDeathScreen() {
+	if (!InGame())
+		return;
+	auto pool_10371 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_10371 || !pool_10371[8]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<EventData*>(pool_10371[8]);
+	if (g_scene != SCENE::GAME) {
+		return;
+	}
+	if (eventData.event == EVENT::MAIN) {
+		if (CheckAllDead()) {
+			eventData.event = EVENT::DEATH;
+		}
+
+	}
+}
+
 void CrimsonMissionClearSong() {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
-
-	// We use this to identify whether or not we're in the exact Mission Result Screen
-	uint32 inMissionResultScreenInt = *reinterpret_cast<uint32*>(appBaseAddr + 0x5CF9A0);
-	bool inMissionResultScreen = inMissionResultScreenInt == 0x14FD80 ? true : false;
-// 	uint32 inSaveScreenInt = *reinterpret_cast<uint32*>(appBaseAddr + 0xCACA00);
-// 	bool inSaveScreen = inSaveScreenInt == 0 ? false : true;
-	static bool mission20HasPlayedOnce = false;
-	static bool mission20FadeInComplete = false;
-
-	// Only consider mission20Exception after fade-in is complete
-	auto mission20Exception = sessionData.mission == 20 && !inMissionResultScreen && mission20FadeInComplete;
-
-	// Track when Mission 20 fade-in completes
-	if (sessionData.mission == 20 && inMissionResultScreen && !mission20FadeInComplete) {
-		mission20FadeInComplete = true;
+	if (!activeCrimsonConfig.Sound.crimsonModeChangesMusic) {
+		return;
 	}
 
-	// Reset fade-in tracker when leaving Mission 20
-	if (g_scene != SCENE::MISSION_RESULT) {
-		mission20FadeInComplete = false;
+	// Complement inTotalResultsScreen detection
+	if (g_scene != SCENE::MISSION_RESULT && g_inTotalResultsScreen) {
+		g_inTotalResultsScreen = false;
 	}
 
-	if (g_scene == SCENE::MISSION_RESULT && !missionClearSongPlayed
-		&& (gameModeData.missionResultGameMode == GAMEMODEPRESETS::CRIMSON
-			|| gameModeData.missionResultGameMode == GAMEMODEPRESETS::CUSTOM) &&
-		!(mission20Exception && mission20HasPlayedOnce)) {
+	// Only play the song if we're in the mission result screen and not inside totalResultsScreen
+	if (g_scene == SCENE::MISSION_RESULT && !g_inTotalResultsScreen &&
+		!missionClearSongPlayed) {
 
 		// Mute Music Channel Volume
 		SetVolume(9, 0);
@@ -459,12 +555,7 @@ void CrimsonMissionClearSong() {
 		CrimsonSDL::PlayNewMissionClearSong();
 		missionClearSongPlayed = true;
 
-		// Mark that mission 20 has played once
-		if (sessionData.mission == 20) {
-			mission20HasPlayedOnce = true;
-		}
-	} else if ((g_scene != SCENE::MISSION_RESULT && missionClearSongPlayed) ||
-		(mission20Exception && missionClearSongPlayed)) {
+	} else if ((g_scene != SCENE::MISSION_RESULT || g_inTotalResultsScreen) && missionClearSongPlayed) {
 		// Fade it out
 		CrimsonSDL::FadeOutMusic(1000);
 
@@ -501,28 +592,35 @@ void DivinityStatueSong() {
 }
 
 void DisableBlendingEffectsController() {
-	// Disables PS2 Motion Blur among other PostProcessFX.
+	// Disables PS2 Ghosting among other PostProcessFX.
 
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
-	auto pool_10371 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10371 || !pool_10371[8]) {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
 		return;
 	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10371[8]);
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
 	if (g_scene != SCENE::GAME) {
 		return;
 	}
 
-	if (activeConfig.disableBlendingEffects) {
-		if (eventData.event == EVENT::MAIN || eventData.event == EVENT::PAUSE) {
-			CrimsonPatches::DisableBlendingEffects(true);
-		} else {
-			CrimsonPatches::DisableBlendingEffects(false);
-		}
-
-	} else {
-		CrimsonPatches::DisableBlendingEffects(false);
+	if (eventData.event == EVENT::INIT || eventData.event == EVENT::MAIN || eventData.event == EVENT::PAUSE ||
+		eventData.event == EVENT::ITEM || eventData.event == EVENT::DEATH || eventData.event == EVENT::MESSAGE) {
+		CrimsonPatches::DisableGhostingEffect(!activeCrimsonConfig.System.BlendingEffects.ghosting);
+		CrimsonPatches::DisableColorFilterEffect(!activeCrimsonConfig.System.BlendingEffects.colorFilter);
+		CrimsonPatches::DisableBloomEffect(!activeCrimsonConfig.System.BlendingEffects.bloom);
+		CrimsonPatches::DisableFogMistEffect(!activeCrimsonConfig.System.BlendingEffects.fogMist);
+		CrimsonPatches::DisableWarpingEffect(!activeCrimsonConfig.System.BlendingEffects.warp);
+		CrimsonPatches::DisableAllBlendingEffects(activeCrimsonConfig.System.BlendingEffects.disableAll);
+	}
+	else {
+		CrimsonPatches::DisableGhostingEffect(false);
+		CrimsonPatches::DisableColorFilterEffect(false);
+		CrimsonPatches::DisableBloomEffect(false);
+		CrimsonPatches::DisableFogMistEffect(false);
+		CrimsonPatches::DisableWarpingEffect(false);
+		CrimsonPatches::DisableAllBlendingEffects(false);
 	}
 }
 
@@ -557,8 +655,11 @@ void UpdateMainPlayerMotionArchives() {
 	}
 	// We apply this to only Vanilla Mode to fix
 	// the animation bug caused by the CrimsonPatches::M6CrashFix
-
 	NewUpdateMotionArchives(mainActorData);
+	if (mainActorData.cloneActorBaseAddr) {
+		PlayerActorData& doppelgangerActorData = *reinterpret_cast<PlayerActorData*>(mainActorData.cloneActorBaseAddr);
+		NewUpdateMotionArchives(doppelgangerActorData);
+	}
 }
 
 void StyleMeterMultiplayer() {
@@ -582,14 +683,23 @@ void StyleMeterMultiplayer() {
 	float highestStyleQuotient = 0.0f;
 
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		auto& playerData = GetPlayerData(playerIndex);
-		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-
-		if (!newActorData.baseAddr) {
-			return;
+		PlayerActorData* actorDataPtr = nullptr;
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData 
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; 
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		else {
+			// Vanilla route: GetVanillaPlayerActor
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
+		}
+		auto& actorData = *actorDataPtr;
 		auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
 
 		if (actorData.styleData.rank > highestStyleRank) {
@@ -665,7 +775,7 @@ void MultiplayerCameraPositioningController() {
 	g_customCameraPos[2] = 0.0f; // Z
 	g_customCameraPos[3] = 1.0f; // W
 
-	const float lerpFactorOutTransition = 0.2f;
+	const float lerpFactorOutTransition = 1.0f;
 	const float lerpFactorInTransition = 0.01f;
 	static float lerpFactor = lerpFactorOutTransition;
 	static std::chrono::time_point<std::chrono::steady_clock> transitionToMPStartTime;
@@ -674,7 +784,7 @@ void MultiplayerCameraPositioningController() {
 
 	int entityCount = 0; // Track valid entities for averaging
 	float playerWeight = 5.0f;  // Weight for playable characters
-	float enemyWeight = 5.0f;   // Weight for enemies
+	float enemyWeight = 3.5f;   // Lower weight for enemies to prevent heavy camera dragging
 	float totalWeight = 0.0f;
 	int alivePlayerCount = 0; // Track number of players still alive
 
@@ -707,10 +817,10 @@ void MultiplayerCameraPositioningController() {
 		inJitterState = false;
 	}
 
-	// If jitter state, increase smoothing (reduce lerp factor)
+	// If jitter state, snap the camera target instantly to avoid sticking it through walls (which is what usually causes the infinite zoom bug)
 	float jitterLerpFactor = lerpFactor;
 	if (inJitterState) {
-		jitterLerpFactor = 0.01f; // Very slow movement to smooth out jitter
+		jitterLerpFactor = 1.0f; // Snap to target to escape walls causing jitter
 		// Optionally, after a short time, exit jitter state to avoid getting stuck
 		auto now = std::chrono::steady_clock::now();
 		float jitterDuration = std::chrono::duration<float>(now - jitterStateStartTime).count();
@@ -727,25 +837,67 @@ void MultiplayerCameraPositioningController() {
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 
 		if (!newActorData.baseAddr) {
-			return;
+			continue;
 		}
 		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		auto& cloneActorData = *reinterpret_cast<PlayerActorData*>(actorData.cloneActorBaseAddr);
 		if (!actorData.dead) {
 			alivePlayerCount++;
 		}
-		// Apply player weight to their position
-		g_customCameraPos[0] += actorData.position.x * playerWeight;
-		g_customCameraPos[1] += actorData.position.y * playerWeight;
-		g_customCameraPos[2] += actorData.position.z * playerWeight;
+		// === Velocity Offset Prediction for Player ===
+		glm::vec3 currentPos = glm::vec3(actorData.position.x, actorData.position.y, actorData.position.z);
+		static std::array<glm::vec3, 8> previousPlayerPositions = {};
+		static std::array<glm::vec3, 8> smoothedVelocities = {};
+
+		glm::vec3 velocity = currentPos - previousPlayerPositions[playerIndex];
+		previousPlayerPositions[playerIndex] = currentPos;
+
+		// Smooth out velocity changes to prevent camera micro-studdering
+		float deltaTime = ImGui::GetIO().DeltaTime;
+		float velSmoothing = 1.0f - std::exp(-15.0f * deltaTime);
+		if (velSmoothing > 1.0f) velSmoothing = 1.0f;
+
+		smoothedVelocities[playerIndex].x = CrimsonUtil::lerp(smoothedVelocities[playerIndex].x, velocity.x, velSmoothing);
+		smoothedVelocities[playerIndex].y = CrimsonUtil::lerp(smoothedVelocities[playerIndex].y, velocity.y, velSmoothing);
+		smoothedVelocities[playerIndex].z = CrimsonUtil::lerp(smoothedVelocities[playerIndex].z, velocity.z, velSmoothing);
+
+		float predictionFactor = 15.0f; // Velocity lookahead multiplier
+		glm::vec3 predictedPos = currentPos + (smoothedVelocities[playerIndex] * predictionFactor);
+
+		// Ignore huge jumps (like map teleports or respawns)
+		if (glm::length(velocity) > 200.0f) {
+			predictedPos = currentPos;
+			smoothedVelocities[playerIndex] = glm::vec3(0.0f);
+		}
+
+		// Apply player weight to their PROIECTED position
+		g_customCameraPos[0] += predictedPos.x * playerWeight;
+		g_customCameraPos[1] += predictedPos.y * playerWeight;
+		g_customCameraPos[2] += predictedPos.z * playerWeight;
 		totalWeight += playerWeight;
 		entityCount++;
 
 		// Include the clone if it exists
 		if (actorData.doppelganger == 1) {
-			g_customCameraPos[0] += cloneActorData.position.x * playerWeight;
-			g_customCameraPos[1] += cloneActorData.position.y * playerWeight;
-			g_customCameraPos[2] += cloneActorData.position.z * playerWeight;
+			int cloneIdx = 4 + playerIndex;
+			glm::vec3 currentClonePos = glm::vec3(cloneActorData.position.x, cloneActorData.position.y, cloneActorData.position.z);
+			glm::vec3 cloneVelocity = currentClonePos - previousPlayerPositions[cloneIdx];
+			previousPlayerPositions[cloneIdx] = currentClonePos;
+
+			smoothedVelocities[cloneIdx].x = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].x, cloneVelocity.x, velSmoothing);
+			smoothedVelocities[cloneIdx].y = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].y, cloneVelocity.y, velSmoothing);
+			smoothedVelocities[cloneIdx].z = CrimsonUtil::lerp(smoothedVelocities[cloneIdx].z, cloneVelocity.z, velSmoothing);
+
+			glm::vec3 clonePredictedPos = currentClonePos + (smoothedVelocities[cloneIdx] * predictionFactor);
+
+			if (glm::length(cloneVelocity) > 200.0f) {
+				clonePredictedPos = currentClonePos;
+				smoothedVelocities[cloneIdx] = glm::vec3(0.0f);
+			}
+
+			g_customCameraPos[0] += clonePredictedPos.x * playerWeight;
+			g_customCameraPos[1] += clonePredictedPos.y * playerWeight;
+			g_customCameraPos[2] += clonePredictedPos.z * playerWeight;
 			totalWeight += playerWeight;
 			entityCount++;
 		}
@@ -783,7 +935,7 @@ void MultiplayerCameraPositioningController() {
 			}
 		}
 
-		// Only count enemy if it's within range of a player
+// 		// Only count enemy if it's within range of a player
 		if (isWithinRange) {
 			g_customCameraPos[0] += enemyData.position.x * enemyWeight;
 			g_customCameraPos[1] += enemyData.position.y * enemyWeight;
@@ -802,16 +954,29 @@ void MultiplayerCameraPositioningController() {
 	playerPos.y = mainActorData.position.y;
 	playerPos.z = mainActorData.position.z;
 
-	clonePos.x = cloneMainActorData.position.x;
-	clonePos.y = cloneMainActorData.position.y;
-	clonePos.z = cloneMainActorData.position.z;
+	//Prevents crash on debug mode cause by clonemainactordata being a nullptr
+	if (cloneMainActorData != nullptr) {
 
-	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 1900.0f;
+		clonePos.x = cloneMainActorData.position.x;
+		clonePos.y = cloneMainActorData.position.y;
+		clonePos.z = cloneMainActorData.position.z;
+
+	}
+	else {
+		clonePos.x = mainActorData.position.x;
+		clonePos.y = mainActorData.position.y;
+		clonePos.z = mainActorData.position.z;
+	}
+	//end of crash fix
+
+	float cameraDistanceMP = (eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) ? 2800.0f : 2200.0f;
+	float cameraDistanceMPEnable = cameraDistanceMP * (2.0f / 3.0f);
+	float cameraDistanceThreshold = g_isMPCamActive ? cameraDistanceMP : cameraDistanceMPEnable;
 
 	for (int i = 0; i < activeConfig.Actor.playerCount * 2; i++) {
 		float distanceTo1P = g_plEntityTo1PDistances[i];
 
-		if (distanceTo1P >= cameraDistanceMP) {
+		if (distanceTo1P >= cameraDistanceThreshold) {
 			triggerMPCam = false;
 		}
 	}
@@ -844,33 +1009,39 @@ void MultiplayerCameraPositioningController() {
 	// Only set triggerPanoramicCam to false if all enemies are far enough
 	triggerPanoramicCam = !allEnemiesFarAway && activeCrimsonConfig.Camera.panoramicCam;
 
-	// Camera behavior based on player count and trigger status
-	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1) {
+	static auto lastMPCamSwitchTime = std::chrono::steady_clock::now() - std::chrono::duration<float>(1.0f);
+	auto mpCamNow = std::chrono::steady_clock::now();
+	bool canSwitchMPCam = std::chrono::duration<float>(mpCamNow - lastMPCamSwitchTime).count() >= 1.0f;
+
+	// Camera behavior based on player count, doppelganger, or Arkham2 fight
+	if (activeConfig.Actor.playerCount > 1 || mainActorData.doppelganger == 1 || arkhamFightData.fightActive) {
 		// MULTIPLAYER
-
-		if (triggerMPCam) {
-			// MPCam mode: calculate average camera position
-			g_customCameraPos[0] /= totalWeight;
-			g_customCameraPos[1] /= totalWeight;
-			g_customCameraPos[2] /= totalWeight;
-
-			// If switching from normal cam to MPCam, initialize lerp transition
-			if (!g_isMPCamActive) {
-				g_isMPCamActive = true;
+		if (triggerMPCam != g_isMPCamActive && canSwitchMPCam) {
+			g_isMPCamActive = triggerMPCam;
+			lastMPCamSwitchTime = mpCamNow;
+			if (g_isMPCamActive) {
 				currentCameraPos = glm::vec3(mainActorData.position.x, mainActorData.position.y, mainActorData.position.z);
+			} else {
+				currentCameraPos = glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]);
 			}
+		}
 
+		if (g_isMPCamActive) {
+			// MPCam mode: calculate average camera position
+			if (totalWeight > 0.0f) {
+				g_customCameraPos[0] /= totalWeight;
+				g_customCameraPos[1] /= totalWeight;
+				g_customCameraPos[2] /= totalWeight;
+			} else {
+				g_customCameraPos[0] = mainActorData.position.x;
+				g_customCameraPos[1] = mainActorData.position.y;
+				g_customCameraPos[2] = mainActorData.position.z;
+			}
 		} else {
 			// Normal cam mode: focus on main actor position
 			g_customCameraPos[0] = mainActorData.position.x;
 			g_customCameraPos[1] = mainActorData.position.y;
 			g_customCameraPos[2] = mainActorData.position.z;
-
-			// If switching from MPCam to normal cam, initialize lerp transition
-			if (g_isMPCamActive) {
-				g_isMPCamActive = false;
-				currentCameraPos = glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]);
-			}
 		}
 
 		g_isParanoramicCamActive = false;
@@ -901,20 +1072,36 @@ void MultiplayerCameraPositioningController() {
 			// Use jitterLerpFactor if in jitter state, otherwise normal lerpFactor
 			float usedLerp = inJitterState ? jitterLerpFactor : lerpFactor;
 
-			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], usedLerp);
-			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], usedLerp);
-			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], usedLerp);
+			// Calculate a frame-rate independent exponential smoothing factor.
+			// This makes camera tracking butter-smooth and velocity-responsive over time.
+			float deltaTime = ImGui::GetIO().DeltaTime;
+			float smoothLerpXZ = 1.0f - std::exp(-usedLerp * 10.0f * deltaTime);
+			float smoothLerpY = 1.0f - std::exp(-usedLerp * 3.0f * deltaTime); // Heavily dampen Y-axis to prevent jump shudder
+
+			// In jitter state or immediate tracking, snap instantly to avoid wall sticking
+			if (usedLerp >= 1.0f) {
+				smoothLerpXZ = 1.0f;
+				smoothLerpY = 1.0f;
+			}
+
+			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], smoothLerpXZ);
+			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], smoothLerpY);
+			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], smoothLerpXZ);
 
 			float distanceLerp = glm::distance(currentCameraPos, currentCustomCamPos);
 
-			if (!guiPause.canPause) {
+			if (!g_levelFullyLoadedDelay) {
 				currentCameraPos = currentCustomCamPos; // disable lerp when level isn't fully loaded
 			}
 
-			// apply lerp
-			g_customCameraPos[0] = currentCameraPos.x;
-			g_customCameraPos[1] = currentCameraPos.y;
-			g_customCameraPos[2] = currentCameraPos.z;
+			// Add a deadzone (e.g. 5 units) so the camera doesn't micro-jitter when standing generally still.
+			if (distanceLerp > 5.0f || inJitterState) {
+				g_customCameraPos[0] = currentCameraPos.x;
+				g_customCameraPos[1] = currentCameraPos.y;
+				g_customCameraPos[2] = currentCameraPos.z;
+			} else {
+				currentCameraPos = currentCustomCamPos;
+			}
 
 		} else {
 			currentCameraPos = currentCustomCamPos;
@@ -959,14 +1146,25 @@ void MultiplayerCameraPositioningController() {
 
 		// Gradual transition between MPCam and normal cam (if a transition is occurring)
 		if (g_isParanoramicCamActive) {
-			float lerpFactorSP = inJitterState ? 0.01f : 0.05f;  // Use slow lerp if jittering
-			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], lerpFactorSP);
-			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], lerpFactorSP);
-			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], lerpFactorSP);
+			float deltaTime = ImGui::GetIO().DeltaTime;
+			float lerpFactorSP = inJitterState ? 1.0f : 0.05f;  // Snap to target if jittering to avoid wall sticking
 
-			g_customCameraPos[0] = currentCameraPos.x;
-			g_customCameraPos[1] = currentCameraPos.y;
-			g_customCameraPos[2] = currentCameraPos.z;
+			float smoothLerpSP_XZ = (lerpFactorSP >= 1.0f) ? 1.0f : (1.0f - std::exp(-lerpFactorSP * 60.0f * deltaTime));
+			float smoothLerpSP_Y = (lerpFactorSP >= 1.0f) ? 1.0f : (1.0f - std::exp(-lerpFactorSP * 20.0f * deltaTime)); // Slower Y tracking
+
+			currentCameraPos.x = CrimsonUtil::lerp(currentCameraPos.x, g_customCameraPos[0], smoothLerpSP_XZ);
+			currentCameraPos.y = CrimsonUtil::lerp(currentCameraPos.y, g_customCameraPos[1], smoothLerpSP_Y);
+			currentCameraPos.z = CrimsonUtil::lerp(currentCameraPos.z, g_customCameraPos[2], smoothLerpSP_XZ);
+
+			float distanceLerpSP = glm::distance(currentCameraPos, glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]));
+
+			if (distanceLerpSP > 5.0f || inJitterState) {
+				g_customCameraPos[0] = currentCameraPos.x;
+				g_customCameraPos[1] = currentCameraPos.y;
+				g_customCameraPos[2] = currentCameraPos.z;
+			} else {
+				currentCameraPos = glm::vec3(g_customCameraPos[0], g_customCameraPos[1], g_customCameraPos[2]);
+			}
 		} else {
 			g_customCameraPos[0] = mainActorData.position.x;
 			g_customCameraPos[1] = mainActorData.position.y;
@@ -1022,17 +1220,26 @@ CameraData* GetSafeCameraData() {
 //	return nextroom || currentroom;
 //}
 
+void CameraShakeController() {
+	if (activeCrimsonConfig.Camera.cameraShake == CAMERASHAKE::OFF) {
+		CrimsonPatches::DisableCameraShake(true);
+	} else if (activeCrimsonConfig.Camera.cameraShake == CAMERASHAKE::ALWAYS_ON) {
+		CrimsonPatches::DisableCameraShake(false);
+	} else if (activeCrimsonConfig.Camera.cameraShake == CAMERASHAKE::ONLY_IN_SINGLE_PLAYER_CAM) {
+		if (g_isMPCamActive) {
+			CrimsonPatches::DisableCameraShake(true);
+		} else {
+			CrimsonPatches::DisableCameraShake(false);
+		}
+	}
+}
+
 void ForceThirdPersonCameraController() {
 	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
 	if (!pool_10298 || !pool_10298[8]) {
 		return;
 	}
 	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
-
-	if ((eventData.event == EVENT::TELEPORT) || (eventData.event == EVENT::INIT)) {
-		CrimsonPatches::ForceThirdPersonCamera(true);
-	}
-
 
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
@@ -1235,11 +1442,11 @@ void ResetCameraToNearestSide(EventData& eventData, PlayerActorData& mainActorDa
 
 void GeneralCameraOptionsController() {
 	static bool setCamPos = false;
-	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10298 || !pool_10298[8]) {
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
 		return;
 	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
 	CameraData* cameraData = GetSafeCameraData();
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
 	if (!pool_4449) return;
@@ -1250,7 +1457,8 @@ void GeneralCameraOptionsController() {
 		return;
 	}
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
-	if (eventData.event != EVENT::MAIN && eventData.event != EVENT::PAUSE) {
+	if (eventData.event != EVENT::MAIN && eventData.event != EVENT::PAUSE && 
+		eventData.event != EVENT::MESSAGE && eventData.event != EVENT::ITEM) {
 		setCamPos = false;
 		return;
 	}
@@ -1277,6 +1485,75 @@ void GeneralCameraOptionsController() {
 
 	CrimsonPatches::ToggleLockedOffCamera(g_disableCameraRotation ? false : activeCrimsonConfig.Camera.lockedOff);
 	CrimsonPatches::CameraLockOnDistanceController();
+}
+
+void ReloadHUDController() {
+	// Tracks whether the HUD has already been reloaded for this game session entry.
+	// Reset only when leaving the game state, so the reload fires exactly once on re-entry.
+	static bool hudReloaded = false;
+
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+
+	// When outside valid gameplay events or in a cutscene, reset the flag and bail out.
+	// No HUD reload should happen in these states.
+	if ((eventData.event != EVENT::MAIN && eventData.event != EVENT::PAUSE &&
+		eventData.event != EVENT::MESSAGE && eventData.event != EVENT::ITEM) ||
+		g_inGameCutscene) {
+		hudReloaded = false;
+		return;
+	}
+
+	// Already reloaded this session — nothing to do.
+	if (hudReloaded) {
+		return;
+	}
+
+	// Fetch Player 1's currently active character.
+	// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+	// Vanilla route: GetVanillaPlayerActor — mirrors GetNewActorData for vanilla actors.
+	PlayerActorData* actorDataPtr = nullptr;
+	auto& playerData = GetPlayerData(0);
+
+	if (activeConfig.Actor.enable) {
+		auto& activeNewActorData = GetNewActorData(0, playerData.activeCharacterIndex, ENTITY::MAIN);
+		if (activeNewActorData.baseAddr) {
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(activeNewActorData.baseAddr);
+		}
+	}
+	else {
+		actorDataPtr = GetVanillaPlayerActor();
+	}
+	static bool actorNotFoundLogged = false;
+	if (!actorDataPtr) {
+		if (!actorNotFoundLogged) {
+			Log("Player actor not found, cannot reload HUD");
+			actorNotFoundLogged = true;
+		}
+		return;
+	}
+	actorNotFoundLogged = false;
+	auto& actorData = *actorDataPtr;
+	uint8 character = actorData.character;
+
+	// Re-apply style icons for all styles
+	HUD_UpdateStyleIcon(actorData.style, character);
+
+	// Re-apply HP bar frame and fill
+	HUD_UpdateHPBar(character);
+
+	// Re-apply DT gauge, lightning, and explosion
+	HUD_UpdateDevilTriggerGauge(character);
+	HUD_UpdateDevilTriggerLightning(character);
+	HUD_UpdateDevilTriggerExplosion(character);
+
+	// Re-apply lock-on icon
+	HUD_UpdateLockOn(character);
+
+	hudReloaded = true;
 }
 
 
@@ -1307,7 +1584,7 @@ void PauseSFXWhenPaused() {
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 
 		if (!newActorData.baseAddr) {
-			return;
+			continue;
 		}
 		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 
@@ -1752,7 +2029,8 @@ void ForceDifficultyController() {
 void MultiplayerDamageScaling() {
 
 	if (!activeCrimsonGameplay.Cheats.General.customDamage && 
-		activeCrimsonGameplay.Gameplay.General.multiplayerDamageScaling) {
+		activeCrimsonGameplay.Gameplay.General.multiplayerDamageScaling
+		&& activeConfig.Actor.enable) {
 
 		if (activeConfig.Actor.playerCount == 2) {
 			queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 0.7f;
@@ -1770,16 +2048,92 @@ void MultiplayerDamageScaling() {
 	}
 }
 
+bool GetGigapedeMoment() {
+	//get event & nextevent
+	if (!InGame())
+		return false;
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return false;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+
+	auto pool_12959 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_12959 || !pool_12959[12]) {
+		return false;
+	}
+	auto& nextEventData = *reinterpret_cast<NextEventData*>(pool_12959[12]);
+
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	if (&sessionData == nullptr || &eventData == nullptr)
+		return false;
+
+	bool condition = false;
+	condition = condition || (eventData.room == ROOM::GIANTWALKER_CHAMBER && sessionData.mission == 4);
+	condition = condition || (eventData.room == ROOM::GIANTWALKER_REBORN && sessionData.mission == 18);
+	return condition;
+}
+
+void ControlMenuFadeouts() {
+	if (g_scene != SCENE::GAME) {
+		CrimsonPatches::DisableScreenFadeOuts(activeCrimsonConfig.System.disableMenuFadeouts);
+	}
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+
+	if (g_scene == SCENE::GAME && 
+		eventData.event != EVENT::STATUS &&
+		eventData.event != EVENT::OPTIONS &&
+		eventData.event != EVENT::SAVE) {
+		CrimsonPatches::DisableScreenFadeOuts(false);
+	}
+	else {
+		CrimsonPatches::DisableScreenFadeOuts(activeCrimsonConfig.System.disableMenuFadeouts);
+	}
+}
+
+void CallGameplayFuncs() {
+	// Here we will call gameplay functions that need to work for both CCS and Vanilla.
+
+	if (activeConfig.Actor.enable) {
+		ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8, uint8, uint8) {
+			CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor);
+		});
+	}
+	else {
+		PlayerActorData* playerActorDataPtr = GetVanillaPlayerActor();
+		if (!playerActorDataPtr) {
+			return;
+		} 
+		auto& playerActor = *playerActorDataPtr;
+		CrimsonDetours::ToggleDisableDriveHold(false);
+		CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor);
+		CrimsonGameplay::CalculateRotationTowardsEnemy(playerActor.cloneActorBaseAddr);
+	}
+}
+
 void TriggerOnTickFuncs() {
 	// These functions run OnTick globally (in game and in menus) through Game Thread
+
+	CallGameplayFuncs();
 	ForceDifficultyController();
 	MultiplayerDamageScaling();
+	ControlMenuFadeouts();
+	ReloadHUDController();
+	CrimsonPatches::DanteQuickGrapple(activeCrimsonGameplay.Gameplay.Dante.quickGrapple);
+	CrimsonHighFPSFixes::ClothPhysicsFixesController();
+	bool gigapedemoment = GetGigapedeMoment();
+	CrimsonHighFPSFixes::LookAtBossCamFixes(!gigapedemoment);
 	CrimsonOnTick::InCreditsDetection();
 	CrimsonOnTick::WeaponProgressionTracking();
 	CrimsonOnTick::PreparePlayersDataBeforeSpawn();
 	CrimsonOnTick::FixM7DevilTriggerUnlocking();
+	CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
 	CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
-	CrimsonDetours::ToggleEnsureAirRisingDragonLaunch(activeConfig.Actor.enable && activeCrimsonGameplay.Gameplay.Dante.airRisingDragonLaunch);
+	CrimsonDetours::ToggleEnsureAirRisingDragonLaunch(activeConfig.Actor.enable && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR] && activeCrimsonGameplay.Gameplay.General.extramoves);
 	CrimsonOnTick::UpdateMainPlayerMotionArchives();
  	CrimsonOnTick::TrackMissionStyleLevels();
  	CrimsonOnTick::StyleMeterMultiplayer();
@@ -1788,7 +2142,11 @@ void TriggerOnTickFuncs() {
 	CrimsonGameModes::TrackCheats();
 	CrimsonGameModes::TrackMissionResultGameMode();
     CrimsonOnTick::CrimsonMissionClearSong();
+	//Not ready yet.
+	//CrimsonOnTick::ManageDeathScreen();
 	CrimsonOnTick::DivinityStatueSong();
+	CrimsonOnTick::CameraShakeController();
+	CrimsonPatches::MenuScrollTapSpeedFix(true);
 	CrimsonSDL::CheckAndOpenControllers();
 	CrimsonSDL::UpdateJoysticks();
 	Sound::UpdateVolumeTransition();

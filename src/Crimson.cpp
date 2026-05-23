@@ -3,6 +3,7 @@
 #include "Core/Core.hpp"
 #include "Core/Input.hpp"
 #include "CrimsonDetours.hpp"
+#include "CrimsonFastcallDetours.hpp"
 #include "DMC3Input.hpp"
 #include "CrimsonSDL.hpp"
 #include "File.hpp"
@@ -40,6 +41,7 @@
 #include "CrimsonFileHandling.hpp"
 #include "CrimsonGameModes.hpp"
 #include "UI/WeaponWheel.hpp"
+#include "CrimsonHighFPSFixes.hpp"
 
 
 
@@ -93,7 +95,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         ExpConfig::InitExp();
         ExpConfig::LoadExp();
 
-        CrimsonFiles::CopyHUDtoGame();
+        CrimsonFiles::CopyHUDFilePactoGameFolder();
 
         if (!Memory_Init()) {
             Log("Memory_Init failed.");
@@ -110,6 +112,9 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
 
             return 0;
         }
+
+        // Load the selected HUD dynamically before HUD_Init
+        CrimsonFiles::ApplySelectedHUD(activeCrimsonConfig.HudOptions.selectedHUD);
 
         if (!FMOD_Init()) {
             Log("FMOD_Init failed.");
@@ -185,6 +190,7 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         ToggleDamage(true);
 
         UpdateCrazyComboLevelMultiplier();
+        CrimsonHighFPSFixes::ToggleAllFixes(true);
 
         ToggleAirHikeCoreAbility(activeCrimsonGameplay.Gameplay.Dante.airHikeCoreAbility);
         CrimsonPatches::ToggleRoyalguardForceJustFrameRelease(activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease);
@@ -225,18 +231,19 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         HUD_Init();
 
         ToggleHideMainHUD(false);
-        ToggleHideMainHUD(activeConfig.hideMainHUD);
+        ToggleHideMainHUD(activeCrimsonConfig.HudOptions.hideMainHUD);
 
         CrimsonPatches::ToggleHideLockOn(false);
-        CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
+        CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
         CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.HudOptions.hideStyleMeter);
         CrimsonDetours::ToggleDTMustStyleArmor(true);
+        CrimsonDetours::ToggleAllDetours(true);
 
         ToggleHideBossHUD(false);
-        ToggleHideBossHUD(activeConfig.hideBossHUD);
+        ToggleHideBossHUD(activeCrimsonConfig.HudOptions.hideBossHUD);
 
         ToggleForceVisibleHUD(false);
-        ToggleForceVisibleHUD(activeConfig.forceVisibleHUD);
+        ToggleForceVisibleHUD(activeCrimsonConfig.HudOptions.forceVisibleHUD);
 
         // Overriding default additional player bars positions so as not to spawn them together in a mush initially.
         defaultConfig.barsData[1].pos = { 900, 60 };
@@ -268,14 +275,12 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         ToggleRebellionInfiniteShredder(false);
         ToggleRebellionInfiniteShredder(activeCrimsonGameplay.Cheats.Dante.infiniteShredder);
 
-        ToggleRebellionHoldDrive(false);
-        ToggleRebellionHoldDrive(activeConfig.rebellionHoldDrive);
-
         XI::new_Init("xinput9_1_0.dll");
 
         Hooks::Init();
 
         CrimsonDetours::InitDetours();
+        CrimsonFastcallDetours::InitDetours();
         if (activeConfig.Actor.enable) {
             CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
         }
@@ -293,29 +298,27 @@ uint32 DllMain(HINSTANCE instance, uint32 reason, LPVOID reserved) {
         
         CrimsonPatches::HoldToAutoFire(activeCrimsonGameplay.Gameplay.General.holdToShoot);
         CrimsonDetours::ToggleClassicHUDPositionings(!activeCrimsonConfig.CrimsonHudAddons.positionings);
-        CrimsonDetours::ToggleStyleRankHudNoFadeout(activeConfig.disableStyleRankHudFadeout);
+        CrimsonDetours::ToggleStyleRankHudNoFadeout(activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout);
         CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
-        CrimsonDetours::ToggleFasterTurnRate(activeCrimsonGameplay.Gameplay.General.fasterTurnRate);
+        CrimsonDetours::ToggleTurnRateFix(true);
         CrimsonPatches::ToggleIncreasedEnemyJuggleTime(activeCrimsonGameplay.Gameplay.General.increasedEnemyJuggleTime);
         //CrimsonPatches::SetEnemyDTMode(activeCrimsonGameplay.Gameplay.ExtraDifficulty.enemyDTMode);
+        CrimsonDetours::ToggleConfirmSetAction(true);
         CrimsonDetours::ToggleFixBallsHangHitSpeed(true);
-        CrimsonDetours::ToggleFixSecretMissionTimerFPS(true);
         CrimsonDetours::ToggleCerberusCrashFix(true);
         CrimsonDetours::ToggleVergilM3CrashFix(true);
         CrimsonDetours::ToggleMission5CrashFix(true);
         CrimsonPatches::ToggleM6CrashFix(true);
+        CrimsonPatches::ToggleTempFixHighFPSEnigmaShls(true);
         CrimsonDetours::ToggleArkhamPt2GrabCrashFix(true);
         CrimsonDetours::ToggleArkhamPt2DoppelCrashFix(true);
         CrimsonDetours::ToggleCerbDamageFix(true);
         CrimsonDetours::ToggleStyleLevellingCCSFix(true);
 		CrimsonEnemyAITarget::EnemyAIMultiplayerTargettingDetours(true);
         
-
-        CrimsonPatches::DisableBlendingEffects(false);
-        CrimsonPatches::DisableBlendingEffects(activeConfig.disableBlendingEffects);
         CrimsonDetours::ToggleGreenOrbsMPRegen(true);
 
-        // Load Weapon WHeel's Sprites Up Front
+        // Load Weapon Wheel's Sprites Up Front
         WW::LoadSpriteDescs();
 
         // Remove FMODGetCodecDescription Label

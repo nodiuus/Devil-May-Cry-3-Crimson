@@ -158,8 +158,9 @@ enum {
     R15,
     MAX_REGISTER,
 };
-
-extern byte8* appBaseAddr;
+extern "C" {
+    extern byte8* appBaseAddr;
+}
 extern uint32 appSize;
 extern HWND appWindow;
 

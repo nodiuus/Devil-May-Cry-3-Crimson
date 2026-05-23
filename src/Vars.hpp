@@ -1,12 +1,15 @@
 #pragma once
 
 #include <vector>
+#include <cstdint>
 
 #include "Core/Core.hpp"
 #include "ImGuiExtra.hpp"
 #include "Core/Macros.h"
 #include "DebugDrawDX11.hpp"
 #include <string>
+#include "Effekseer.h"
+#include "CrimsonEfk.hpp"
 
 #pragma push_macro("VOID")
 #pragma push_macro("IGNORE")
@@ -55,6 +58,32 @@ enum {
     KALINA_ANN_LEVEL_3,
 
     COUNT,
+    //Modded moves start
+    REBELLION_STINGER_AIR,
+
+    CERBERUS_REVOLVER_AIR,
+
+    AGNI_RUDRA_WHIRLWIND_AIR,
+
+    BEOWULF_RISING_DRAGON_AIR,
+    
+    //BEOWULF_TORNADO_AIR,
+    SWORDMASTER_MODDED_MOVES,
+    //GROUND_TRICK,
+    TRICKSTER_MODDED_MOVES,
+    //DT_ROYAL_GUARD,
+    ROYALGUARD_MODDED_MOVES,
+
+    SPRINT,
+    SKY_LAUNCH_AIR_TAUNT,
+
+    //Backslide
+    GUNSLINGER_MODDED_MOVES,
+
+    //Requires REBELLION_DRIVE — enables OverDrive (Part 2 & Part 3) for both Regular Drive and QuickDrive
+    REBELLION_OVERDRIVE,
+
+    MOD_COUNT,
 };
 };
 
@@ -79,6 +108,23 @@ enum {
     SPIRAL_SWORDS,
 
     COUNT,
+    //Modded moves start
+    BEOWULF_RISING_SUN_AIR,
+    BEOWULF_LUNAR_PHASE_AIR,
+
+    YAMATO_HIGH_TIME,
+    YAMATO_RISING_STAR,
+
+    YAMATO_FORCE_EDGE_STINGER_AIR,
+
+    DARK_SLAYER_MODDED_MOVES,
+
+    MIRAGE_TRIGGER,
+
+    SPRINT,
+    RISING_SUN_AIR_TAUNT,
+
+    MOD_COUNT,
 };
 };
 
@@ -129,6 +175,7 @@ enum {
     RANGED_WEAPON_COUNT_DANTE = 5,
     CREATE_ENEMY_COUNT        = 30,
     SAVE_COUNT                = 10,
+    HOTKEY_COUNT              = 6,
 };
 
 
@@ -655,6 +702,7 @@ enum {
     POLE_PLAY,
     ROYAL_BLOCK,
     ROYAL_AIR_BLOCK,
+    REBELLION_QUICK_DRIVE,
 };
 };
 
@@ -2236,6 +2284,8 @@ struct EventData {
     uint32 nextScreen; // 0x2C
 };
 
+using CSceneGameMain = EventData;
+
 static_assert(offsetof(EventData, room) == 0x18);
 static_assert(offsetof(EventData, position) == 0x1C);
 static_assert(offsetof(EventData, event) == 0x20);
@@ -2329,7 +2379,9 @@ static_assert(sizeof(SessionData) == 304);
 // $MissionDataStart
 
 struct MissionData {
-    _(56);
+	_(8);
+    uintptr_t CEventMissionAddr; // 0x8
+    _(40);
     uint32 redOrbs;       // 0x38
     uint8 itemCounts[62]; // 0x3C
     uint8 buyCounts[8];   // 0x7A
@@ -2342,6 +2394,9 @@ struct MissionData {
     _(4);
 };
 
+using CGameW = MissionData;
+
+static_assert(offsetof(MissionData, CEventMissionAddr) == 0x8);
 static_assert(offsetof(MissionData, redOrbs) == 0x38);
 static_assert(offsetof(MissionData, itemCounts) == 0x3C);
 static_assert(offsetof(MissionData, buyCounts) == 0x7A);
@@ -2438,31 +2493,71 @@ static_assert(sizeof(StyleData) == 352);
 
 // $StyleDataEnd
 
+struct Matrix44Ptr {
+	float matrix1[16]; //0x00
+	float matrix2[16];
+	float matrix3[16];
+	float matrix4[16];
+	float matrix5[16];
+	float matrix6[16];
+	float matrix7[16];
+	float matrix8[16];
+	float matrix9[16];
+	float matrix10[16];
+	float matrix11[16];
+	float matrix12[16];
+	float matrix13[16];
+	float matrix14[16];
+	float matrix15[16];
+	float matrix16[16];
+	float matrix17[16];
+	float matrix18[16];
+	float matrix19[16];
+	float matrix20[16];
+	float matrix21[16];
+	float matrix22[16];
+    float matrix23[16];
+};
+
+//static_assert(sizeof(Matrix44Ptr) == 0x40);
+
 // $CollisionDataMetadataStart
 
 struct CollisionDataMetadata {
-    _(48);
-    vec4 data[8]; // 0x30
+    _(12);
+    uint32 instanceId; //0xC
+    _(8);
+    float radiusCopy; // 0x18
+    _(4);
+    byte8* sourceMatrixAddr; // 0x20
+    _(8);
+    float matrix1[16]; // 0x30
+    float matrix2[16];
     _(32);
     void* collisionDataAddr; // 0xD0
     _(8);
-    vec4 data2[3];   // 0xE0
+    vec4 pos2[3];   // 0xE0
     byte8* files[2]; // 0x110
     uint32 mode;     // 0x120
     _(12);
-    vec4 data3;             // 0x130
-    float heightAdjustment; // 0x140
+    vec4 hitboxPos;             // 0x130
+    float hitboxRadius; // 0x140
+    _(460);
+    byte8* dmgDataAddr; // 0x310
 };
 
-static_assert(offsetof(CollisionDataMetadata, data) == 0x30);
+static_assert(offsetof(CollisionDataMetadata, instanceId) == 0xC);
+static_assert(offsetof(CollisionDataMetadata, radiusCopy) == 0x18);
+static_assert(offsetof(CollisionDataMetadata, sourceMatrixAddr) == 0x20);
+static_assert(offsetof(CollisionDataMetadata, matrix1) == 0x30);
 static_assert(offsetof(CollisionDataMetadata, collisionDataAddr) == 0xD0);
-static_assert(offsetof(CollisionDataMetadata, data2) == 0xE0);
+static_assert(offsetof(CollisionDataMetadata, pos2) == 0xE0);
 static_assert(offsetof(CollisionDataMetadata, files) == 0x110);
 static_assert(offsetof(CollisionDataMetadata, mode) == 0x120);
-static_assert(offsetof(CollisionDataMetadata, data3) == 0x130);
-static_assert(offsetof(CollisionDataMetadata, heightAdjustment) == 0x140);
+static_assert(offsetof(CollisionDataMetadata, hitboxPos) == 0x130);
+static_assert(offsetof(CollisionDataMetadata, hitboxRadius) == 0x140);
+static_assert(offsetof(CollisionDataMetadata, dmgDataAddr) == 0x310);
 
-static_assert(sizeof(CollisionDataMetadata) == 324);
 
 // $CollisionDataMetadataEnd
 
@@ -2479,6 +2574,8 @@ struct CollisionData {
     byte32 flags; // 0x140
     _(204);
     vec4 data[8]; // 0x210
+    _(272);
+	byte8* playerBaseAddr; // 0x3A0
 };
 
 static_assert(offsetof(CollisionData, group) == 4);
@@ -2486,8 +2583,22 @@ static_assert(offsetof(CollisionData, metadataAddr) == 0x88);
 static_assert(offsetof(CollisionData, baseAddr) == 0x130);
 static_assert(offsetof(CollisionData, flags) == 0x140);
 static_assert(offsetof(CollisionData, data) == 0x210);
+static_assert(offsetof(CollisionData, playerBaseAddr) == 0x3A0);
 
-static_assert(sizeof(CollisionData) == 656);
+struct CollisionDataActor {
+	_(4);
+	uint32 group; // 4
+	_(128);
+	CollisionDataMetadata* metadataAddr; // 0x88
+	_(160);
+	byte8* baseAddr; // 0x130
+	_(8);
+	byte32 flags; // 0x140
+	_(204);
+	vec4 data[8]; // 0x210
+};
+
+static_assert(sizeof(CollisionDataActor) == 656);
 
 // $CollisionDataEnd
 
@@ -2744,9 +2855,12 @@ struct ShadowData {
 static_assert(sizeof(ShadowData) == 0xC0);
 
 struct PhysicsData {
-    _(240);
+    _(0x30);
+    vec4 bonePosition; // 0x30
+    _(0xB0);
 };
 
+static_assert(offsetof(PhysicsData, bonePosition) == 0x30);
 static_assert(sizeof(PhysicsData) == 0xF0);
 
 struct PhysicsLinkData {
@@ -2783,6 +2897,19 @@ struct ModelPartitionData {
 
 static_assert(sizeof(ModelPartitionData) == 0x380);
 
+// class cDrawReverse
+// {
+// public:
+// 	_(24); //0x0000
+// 	uint8_t drawBool; //0x0018
+// 	_(495); //0x0019
+// 	Matrix44Ptr* bonesMatrixesPtr; //0x0208
+// 	_(1384); //0x0210
+// 	uint64_t end; //0x0778
+// }; //Size: 0x0780
+// 
+// static_assert(offsetof(cDrawReverse, bonesMatrixesPtr) == 0x208);
+
 struct ModelData {
     _(8);
     byte8** funcAddrs; // 8
@@ -2791,7 +2918,9 @@ struct ModelData {
     bool physics; // 0x19
     _(358);
     ModelPartitionData* modelPartitionData; // 0x180
-    _(888);
+    _(128);
+    Matrix44Ptr* bonesMatrixesPtr; // 0x208
+    _(752);
     struct {
         _(84);
         float duration[2]; // 0x554
@@ -2800,16 +2929,18 @@ struct ModelData {
         _(244);
         bool init; // 0x690
         _(35);
-        float timer[2]; // 0x6B4
+		float timer[2]; // 0x6B4 //upperBodyFrame and lowerBodyFrame are here
     } Motion;           // 0x500
     _(196);
 };
+
+using cDrawReverse = ModelData;
 
 static_assert(offsetof(ModelData, funcAddrs) == 8);
 static_assert(offsetof(ModelData, visible) == 0x18);
 static_assert(offsetof(ModelData, physics) == 0x19);
 static_assert(offsetof(ModelData, modelPartitionData) == 0x180);
-
+static_assert(offsetof(ModelData, bonesMatrixesPtr) == 0x208);
 static_assert(offsetof(ModelData, Motion.duration) == 0x554);
 static_assert(offsetof(ModelData, Motion.duration2) == 0x594);
 static_assert(offsetof(ModelData, Motion.init) == 0x690);
@@ -2921,20 +3052,31 @@ struct WeaponData {
     byte8* baseAddr; // 0x48
     _(194);
     uint8 weapon; // 0x112
-    _(5);
+    _(1);
+    uint8 playerBoneAttachment; // 0x114
+    uint8 sheathPlayerBoneAttachment; // 0x115
+    _(2);
     uint8 value; // 0x118
     _(7);
     byte8* actorBaseAddr; // 0x120
+	_(8);
+	ModelData* weaponCDraw; // 0x130
+	_(3384);
+	bool hideYamatoTip; // 0xE70
 };
 
 static_assert(offsetof(WeaponData, speed) == 0x14);
 static_assert(offsetof(WeaponData, speedMultiplier) == 0x18);
 static_assert(offsetof(WeaponData, baseAddr) == 0x48);
 static_assert(offsetof(WeaponData, weapon) == 0x112);
+static_assert(offsetof(WeaponData, playerBoneAttachment) == 0x114);
+static_assert(offsetof(WeaponData, sheathPlayerBoneAttachment) == 0x115);
 static_assert(offsetof(WeaponData, value) == 0x118);
 static_assert(offsetof(WeaponData, actorBaseAddr) == 0x120);
+static_assert(offsetof(WeaponData, weaponCDraw) == 0x130);
+static_assert(offsetof(WeaponData, hideYamatoTip) == 0xE70);
 
-static_assert(sizeof(WeaponData) == 296);
+using Sword = WeaponData;
 
 // $WeaponDataEnd
 
@@ -3112,6 +3254,129 @@ static_assert(offsetof(ActorDataBase, rotation) == 0xC0);*/
 
 // static_assert(sizeof(ActorDataBase) == 200);
 
+class CharSettings1 {
+public:
+	char pad_0000[276]; //0x0000
+	float raveHeightRestriction; //0x0114
+	char pad_0118[480]; //0x0118
+	float rainstormHeightRestriction; //0x02F8
+	float helmBreakerHeightRestriction; //0x02FC
+	char pad_0300[200]; //0x0300
+}; //Size: 0x03C8
+
+static_assert(offsetof(CharSettings1, raveHeightRestriction) == 0x114);
+static_assert(offsetof(CharSettings1, rainstormHeightRestriction) == 0x2F8);
+static_assert(offsetof(CharSettings1, helmBreakerHeightRestriction) == 0x2FC);
+
+class CharSettings2 {
+public:
+	float attackTurnSpeed; //0x0000
+	char pad_0004[72]; //0x0004
+	float bufferedAttackTurnSpeed; //0x004C
+	char pad_0050[60]; //0x0050
+	float millionStabDuration; //0x008C
+	char pad_0090[40]; //0x0090
+	float roundTripHitDelay; //0x00B8
+	float roundTripDuration; //0x00BC
+	char pad_00C0[112]; //0x00C0
+	float jdcRadius; //0x0130
+	float jdcDelay1; //0x0134
+	float jdcDelay2; //0x0138
+	char pad_013C[84]; //0x013C
+	float rainstormPop; //0x0190
+	char pad_0194[696]; //0x0194
+}; //Size: 0x044C
+
+static_assert(offsetof(CharSettings2, attackTurnSpeed) == 0x0);
+static_assert(offsetof(CharSettings2, bufferedAttackTurnSpeed) == 0x4C);
+static_assert(offsetof(CharSettings2, millionStabDuration) == 0x8C);
+static_assert(offsetof(CharSettings2, roundTripHitDelay) == 0xB8);
+static_assert(offsetof(CharSettings2, roundTripDuration) == 0xBC);
+static_assert(offsetof(CharSettings2, jdcRadius) == 0x130);
+static_assert(offsetof(CharSettings2, jdcDelay1) == 0x134);
+static_assert(offsetof(CharSettings2, jdcDelay2) == 0x138);
+static_assert(offsetof(CharSettings2, rainstormPop) == 0x190);
+
+class DamageData {
+public:
+	uint32_t knockbackAnimation; //0x0000
+	uint32_t attackReactionIdx; //0x0004
+	uint32_t enemyDefenseIdx; //0x0008
+	float dmgValue; //0x000C
+	float bonusStunDisplacementChance; //0x0010
+	float displacement; //0x0014
+	float angle; //0x0018
+	float stun; //0x001C
+	int32_t knockbackUnk2; //0x0020
+	float unk4Float; //0x0024
+	uint32_t unk5Uint32; //0x0028
+	float styleMeterIncrease; //0x002C
+	float knockbackUnk3; //0x0030
+	float hitStopDuration; //0x0034
+	float forceHit; //0x0038
+	uint16_t unk6Uint16; //0x003C
+	uint16_t unk7Uint16; //0x003E
+	float knockbackImpact; //0x0040
+	float unk5Float; //0x0044
+	float unk6Float; //0x0048
+	int32_t unk7StructEnd; //0x004C
+}; //Size: 0x0050
+
+
+static_assert(offsetof(DamageData, knockbackAnimation) == 0x0);
+static_assert(offsetof(DamageData, attackReactionIdx) == 0x4);
+static_assert(offsetof(DamageData, enemyDefenseIdx) == 0x8);
+static_assert(offsetof(DamageData, dmgValue) == 0xC);
+static_assert(offsetof(DamageData, bonusStunDisplacementChance) == 0x10);
+static_assert(offsetof(DamageData, displacement) == 0x14);
+static_assert(offsetof(DamageData, angle) == 0x18);
+static_assert(offsetof(DamageData, stun) == 0x1C);
+static_assert(offsetof(DamageData, knockbackUnk2) == 0x20);
+static_assert(offsetof(DamageData, unk4Float) == 0x24);
+static_assert(offsetof(DamageData, unk5Uint32) == 0x28);
+static_assert(offsetof(DamageData, styleMeterIncrease) == 0x2C);
+static_assert(offsetof(DamageData, hitStopDuration) == 0x34);
+static_assert(offsetof(DamageData, forceHit) == 0x38);
+static_assert(offsetof(DamageData, unk6Uint16) == 0x3C);
+static_assert(offsetof(DamageData, unk7Uint16) == 0x3E);
+static_assert(offsetof(DamageData, knockbackImpact) == 0x40);
+static_assert(offsetof(DamageData, unk5Float) == 0x44);
+static_assert(offsetof(DamageData, unk6Float) == 0x48);
+static_assert(offsetof(DamageData, unk7StructEnd) == 0x4C);
+
+static_assert(sizeof(DamageData) == 0x50);
+
+struct DamageDataAddrOffsets {
+    // All these offsets are added to AppBaseAddr
+    // --- Dante ---
+    uintptr_t rebellionStingerHit = 0x5C6C80;
+    uintptr_t rebellionHighTime = 0x5C6C30;
+	uintptr_t drivePhysicalHit = 0x5C6D20;
+	uintptr_t driveShl = 0x5CB1E0;
+    uintptr_t shotgunShl = 0x5CAE70;
+    uintptr_t shotgunShl2 = 0x5CB000;
+	uintptr_t shotgunChargedShl = 0x5CAF60;
+	uintptr_t shotgunChargedShl2 = 0x5CB0A0;
+    uintptr_t shotgunPointBlankSlide = 0x5CA600; // slide
+    uintptr_t shotgunPointBlankInitialShl = 0x5CBF00; // initial / faraway shot
+    uintptr_t shotgunPointBlankShl2 = 0x5CBEB0; // subsequent shots
+    uintptr_t shotgunGunStingerShl = 0x5CB6E0;
+    uintptr_t shotgunGunStingerShl2 = 0x5CB690;
+    uintptr_t goldRoyalRelease = 0x5CAA10; // Sky Launch uses it
+
+	// --- Vergil ---
+	uintptr_t jdcShl = 0x5CDF40;
+    uintptr_t yamatoUpperSlash1Hit = 0x5CCE10;
+    uintptr_t yamatoRave1Hit = 0x5CCF00;
+	uintptr_t yamatoRave2Hit = 0x5CCF50;
+    uintptr_t beowulfStarfallHit = 0x5CD130;
+	uintptr_t risingSunHit1 = 0x5CD360;
+    uintptr_t risingSunHit2 = 0x5CD3B0;
+    uintptr_t forceEdgeHighTimeHit = 0x5CD630;
+};
+extern DamageDataAddrOffsets damageDataOffsets;
+
+
 struct PlayerActorDataBase : ActorDataBase {
     _(80);
     uint8 id; // 0x118
@@ -3136,7 +3401,7 @@ struct PlayerActorDataBase : ActorDataBase {
     MotionData motionDataMirror[3]; // 0x39B4
     _(2);
     uint32 var_39BC;                    // 0x39BC
-    uint8 var_39C0[16];                 // 0x39C0
+    uint8 weaponMotionState[16];        // 0x39C0
     uint32 nextActionRequestPolicy[16]; // 0x39D0
     uint8 var_3A10[8];                  // 0x3A10
     uint32 shadow;                      // 0x3A18
@@ -3147,7 +3412,8 @@ struct PlayerActorDataBase : ActorDataBase {
     RecoveryData recoveryData[3]; // 0x3B00
     byte8 var_3C50[2];            // 0x3C50
     _(382);
-    byte8* actionData[6];        // 0x3DD0
+    byte8* actionData[6];        // 0x3DD0 // All Character Settings,
+	//CharSettings1 is 0x3DE8 which is index 2, CharSettings2 is 0x3DF8 which is index 4
     ActorEventData eventData[2]; // 0x3E00
     uint8 recoverState[32];          // 0x3E10
     _(4);
@@ -3287,7 +3553,7 @@ struct PlayerActorDataBase : ActorDataBase {
     _(36);
     BodyPartData bodyPartData[3][2]; // 0x6950
     _(576);
-    CollisionData collisionData; // 0x7250
+    CollisionDataActor collisionData; // 0x7250
     byte16 buttons[4];           // 0x74E0
     _(16);
     uint16 rightStickPosition; // 0x74F8
@@ -3317,7 +3583,7 @@ static_assert(offsetof(PlayerActorDataBase, motionArchives) == 0x38A0);
 static_assert(offsetof(PlayerActorDataBase, motionData) == 0x39B0);
 static_assert(offsetof(PlayerActorDataBase, motionDataMirror) == 0x39B4);
 static_assert(offsetof(PlayerActorDataBase, var_39BC) == 0x39BC);
-static_assert(offsetof(PlayerActorDataBase, var_39C0) == 0x39C0);
+static_assert(offsetof(PlayerActorDataBase, weaponMotionState) == 0x39C0);
 static_assert(offsetof(PlayerActorDataBase, nextActionRequestPolicy) == 0x39D0);
 static_assert(offsetof(PlayerActorDataBase, var_3A10) == 0x3A10);
 static_assert(offsetof(PlayerActorDataBase, shadow) == 0x3A18);
@@ -4010,85 +4276,190 @@ static_assert(offsetof(PlayerActorDataVergil, newAirRisingSunCount) == 0x1CAE4);
 static_assert(offsetof(PlayerActorDataVergil, newEffectIndices) == 0x1CAF0);
 static_assert(offsetof(PlayerActorDataVergil, newLastVar) == 0x1CB20);
 
+namespace CREATE_EFFECT_BONE_LOOKUP {
+constexpr uint32 BONES_PER_MODEL_VARIANT = 0x18;
+constexpr uint32 BASE_POOL_MODEL_VARIANTS = 4;
+constexpr uint32 NEW_POOL_MODEL_VARIANTS = 7;
+constexpr uint32 BASE_POOL_BONE_SLOTS = BASE_POOL_MODEL_VARIANTS * BONES_PER_MODEL_VARIANT;
+constexpr uint32 NEW_POOL_BONE_SLOTS = NEW_POOL_MODEL_VARIANTS * BONES_PER_MODEL_VARIANT;
 
-// float maxHitPointsDullahan; // 0x238
-// float hitPointsDullahan; // 0x2478
-// 
-// float maxHitPointsChess; //0x530
-// float hitPointsChess; // 0x1318
-// 
-// float maxHitPointsTheFallen; // 0x1840
-// float hitPointsTheFallen; // 0x1808
-// 
-// float maxHitPointsBloodgoyle; // 0x643
-// float hitPointsBloodgoyle; // 0x1498
-// 
-// float maxHitPointsSoulEater; // 0x628
-// float hitPointsSoulEater; // 0x1A18
-// 
-// float maxHitPointsEnigma; // 0x3B14
-// float hitPointsEnigma; // 0x3958
-// 
-// float maxHitPointsArachne; // 0x40EC
-// float hitPointsArachne; // 0x4170
-// 
-// // BOSSES
-// 
-// float hitPointsCerberusPart1; // 0xE230 -- max cerberus part1 hp is always 2400
-// float hitPointsCerberusPart2Head1Red; // 0xE234
-// float hitPointsCerberusPart2Head2Green; // 0xE238
-// float hitPointsCerberusPart2Head3Blue; // 0xE23C
-// float hitPointsCerberusTotal; // 0xE240 -- max cerberus hp is always 7200
-// float maxHitPointsCerberusTotal; // 0x352C84
-// float maxHitPointsCerberusPart1; // 0x3637D0 // or dmc3.exe + 5728F0
-// 
-// float maxHitPointsAgniRudra; // 0xFEC
-// float hitPointsAgniRudra; // 0x101C
-// 
-// float maxHitPointsVergil; // 0xED20
-// float hitPointsVergil; // 0xEB28
-// 
-// float maxHitPointsNevan; // 0x69C0
-// float hitPointsNevan; // 0x68D8
-// 
-// float maxHitPointsJester; // 0x61E0
-// float hitPointsJester; // 0x5F98
-// 
-// float maxHitPointsGeryon; // 0xFB0
-// float hitPointsGeryon; // 0xFC8
-// float maxHitPointsGeryonCarriage; // 0x16484
-// float hitPointsGeryonCarriage; // 0x1648C // detect whether aiming at carriage or horse by checking if this is 0
-// 
-// float maxHitPointsBeowulf; // 0x45F0
-// float hitPointsBeowulf; // 0x4338
-// 
-// float maxHitPointsLady; // 0x5950 
-// float hitPointsLady; // 0x5758
-// 
-// float maxHitPointsDoppelganger; // 0x81C
-// float hitPointsDoppelganger; // 0x84C
-// 
-// float maxHitPointsLeviathan; // 0x388884
-// float hitPointsLeviathan; // 0xAF4
-// 
-// float hitPointsLeviathanOther; // 0xA78 // left one max HP is 2000 and right one max hp is 1500, couldn't find a good addr that works for both
-// 
-// float maxHitPointsArkham; // 0x2788
-// float hitPointsArkham; // 0x1AF4
-// 
-// float hitPointsArkhamLeech; // 0xE68
-// float maxHitPointsArkhamLeech; // 0x12A0
-// 
-// float maxHitPointsGigapede; // 0x9584
-// float hitPointsGigapede; // 0x9BC0
-// byte32 gigapedePartAddr; // 0xF68 // check if this is null, if isn't then it's a gigapede part and we must fetch using +95E4 / +9B60 from the gigapedePartAddr
+inline uint32 GetCreateEffectBoneSlot(const PlayerActorData& actorData, uint32 effectBoneIdx) {
+    // Mirrors CreateEffect.asm logic:
+    // if devil trigger model or clone model is in use, offset by 0x18 * activeModelIndexMirror.
+    if (actorData.devil || actorData.newEntityIndex != ENTITY::MAIN) {
+        return effectBoneIdx + (BONES_PER_MODEL_VARIANT * actorData.activeModelIndexMirror);
+    }
 
-//39A0 is greed TargetPos
-// 3A10 is abyss targetPos
-// 39F0 is envy targetPos
+    return effectBoneIdx;
+}
+
+inline PhysicsMetadata* GetBoneMetadataFromBasePool(PlayerActorDataBase& actorDataBase, uint32 boneSlot) {
+    if (boneSlot >= BASE_POOL_BONE_SLOTS) {
+        return nullptr;
+    }
+
+    auto* flatPool = &actorDataBase.modelPhysicsMetadataPool[0][0];
+    return flatPool[boneSlot];
+}
+
+inline PhysicsMetadata* GetBoneMetadataFromNewPool(PlayerActorData& actorData, uint32 boneSlot) {
+    if (boneSlot >= NEW_POOL_BONE_SLOTS) {
+        return nullptr;
+    }
+
+    auto* flatPool = &actorData.newModelPhysicsMetadataPool[0][0];
+    return flatPool[boneSlot];
+}
+
+inline PhysicsData* GetBonePhysicsData(PhysicsMetadata* boneMetadata) {
+    // CreateEffect uses [boneMetadata + 0x110], which maps to PhysicsMetadata::physicsData.
+    return boneMetadata ? boneMetadata->physicsData : nullptr;
+}
+}
+
+class CGenerator {
+public:
+	char pad_0000[24]; //0x0000
+	float speed; //0x0018
+	char pad_001C[44]; //0x001C
+	uintptr_t itselfBaseAddr; //0x0048
+	char pad_0050[96]; //0x0050
+	vec4 position; //0x00B0
+	Matrix44Ptr* matrixPtr; //0x00C0
+	char pad_00C8[24]; //0x00C8
+	uint32_t color; //0x00E0
+	char pad_00E4[28]; //0x00E4
+}; //Size: 0x0100
+
+static_assert(offsetof(CGenerator, speed) == 0x18);
+static_assert(offsetof(CGenerator, itselfBaseAddr) == 0x48);
+static_assert(offsetof(CGenerator, position) == 0xB0);
+static_assert(offsetof(CGenerator, matrixPtr) == 0xC0);
+static_assert(offsetof(CGenerator, color) == 0xE0);
+
+class CPl021Shl02Actor { // JDCShl
+public:
+	uint8_t aliveStatus; //0x0008
+	char pad_0009[11]; //0x0009
+	float speed; //0x0014
+	float speedMultiplier; //0x0018
+	char pad_001C[44]; //0x001C
+	uintptr_t itselfBaseAddr; //0x0048
+	char pad_0048[16];
+	uintptr_t shlVfTable; //0x0060
+	char pad_0070[24];
+	vec4 position; //0x0080
+    char pad_0090[36];
+	float facingAngle; //0x00B4
+	char pad_00B8[8]; //0x00B8
+	uint16_t rotation; //0x00C0
+	char pad_00C2[30]; //0x00C2
+	bool justFrame; //0x00E0 -- Random ass offset I chose for this flag, deosn't break anything for JDCShl. -- Berthrage
+	char pad_00E1[95]; //0x00E1
+	vec3 direction; //0x0140
+	char pad_014C[84]; //0x014C
+	float matrix[16]; //0x01A0
+	CollisionDataActor collisionDataStart; //0x01E0
+	char pad_01E4[176]; //0x01E4
+	uintptr_t CGeneratorPtr; //0x0520
+	float delay; //0x0528
+	char pad_052C[4]; //0x052C
+	uintptr_t playerActorAddr; //0x0530
+	int8_t idk538; //0x0538
+	char pad_0539[4159]; //0x0539
+
+	virtual void DestroyJDC_sub_1401DC0C0();
+	virtual void UpdateJDC_sub_1401DC620(uintptr_t shlActorAddr);
+	virtual void Function2();
+	virtual void Function3();
+	virtual void Function4();
+	virtual void Function5();
+	virtual void Function6();
+	virtual void Function7();
+	virtual void Function8();
+	virtual void Function9();
+	virtual void Function10();
+	virtual void Function11();
+	virtual void Function12();
+	virtual void Function13();
+	virtual void Function14();
+	virtual void Function15();
+	virtual void Function16();
+	virtual void Function17();
+	virtual void Function18();
+	virtual void Function19();
+	virtual void Function20();
+	virtual void Function21();
+	virtual void Function22();
+	virtual void Function23();
+	virtual void Function24();
+	virtual void Function25();
+	virtual void Function26();
+	virtual void Function27();
+	virtual void Function28();
+	virtual void Function29();
+	virtual void Function30();
+	virtual void Function31();
+	virtual void Function32();
+	virtual void Function33();
+	virtual void Function34();
+	virtual void Function35();
+	virtual void Function36();
+	virtual void Function37();
+	virtual void SpawnJDCShl_sub_1401DC320(uintptr_t shlAddr);
+	virtual void DestroyJDCActor_sub_1401DC0A0();
+}; //Size: 0x1578
+
+static_assert(offsetof(CPl021Shl02Actor, aliveStatus) == 0x8);
+static_assert(offsetof(CPl021Shl02Actor, speed) == 0x14);
+static_assert(offsetof(CPl021Shl02Actor, speedMultiplier) == 0x18);
+static_assert(offsetof(CPl021Shl02Actor, itselfBaseAddr) == 0x48);
+static_assert(offsetof(CPl021Shl02Actor, shlVfTable) == 0x60);
+static_assert(offsetof(CPl021Shl02Actor, position) == 0x80);
+static_assert(offsetof(CPl021Shl02Actor, facingAngle) == 0xB4);
+static_assert(offsetof(CPl021Shl02Actor, rotation) == 0xC0);
+static_assert(offsetof(CPl021Shl02Actor, justFrame) == 0xE0);
+static_assert(offsetof(CPl021Shl02Actor, direction) == 0x140);
+static_assert(offsetof(CPl021Shl02Actor, matrix) == 0x1A0);
+static_assert(offsetof(CPl021Shl02Actor, collisionDataStart) == 0x1E0);
+static_assert(offsetof(CPl021Shl02Actor, CGeneratorPtr) == 0x520);
+static_assert(offsetof(CPl021Shl02Actor, delay) == 0x528);
+static_assert(offsetof(CPl021Shl02Actor, playerActorAddr) == 0x530);
+static_assert(sizeof(CPl021Shl02Actor) == 0x1578);
+
+class CPl000Shl02Actor { // DriveShl 
+public:
+	_(8);
+    uint8_t aliveStatus; //0x0008
+    char pad_0009[11]; 
+    float speed; //0x0014
+    float speedMultiplier; //0x0018
+    char pad_001C[44]; 
+    uintptr_t itselfBaseAddr; //0x0048
+    char pad_0048[16];
+    uintptr_t shlVfTable; //0x0060
+    char pad_0070[24];
+    vec4 position; //0x0080
+    char pad_0090[20];
+	uint8 damageLevel; //0x00A4 -- Reserved from Crimson
+    char pad_00A5[1179];
+	uintptr_t playerActorAddr; //0x0540
+};
+
+static_assert(offsetof(CPl000Shl02Actor, aliveStatus) == 0x8);
+static_assert(offsetof(CPl000Shl02Actor, speed) == 0x14);
+static_assert(offsetof(CPl000Shl02Actor, speedMultiplier) == 0x18);
+static_assert(offsetof(CPl000Shl02Actor, itselfBaseAddr) == 0x48);
+static_assert(offsetof(CPl000Shl02Actor, shlVfTable) == 0x60);
+static_assert(offsetof(CPl000Shl02Actor, position) == 0x80);
+static_assert(offsetof(CPl000Shl02Actor, damageLevel) == 0xA4);
+static_assert(offsetof(CPl000Shl02Actor, playerActorAddr) == 0x540);
+
 
 struct EnemyActorData : ActorDataBase {
-	_(248);
+	_(152);
+    byte8* CDamageAddr; // 0x160
+    _(88);
     vec4 targetPositionDullahan; // 0x1C0
     _(104);
 	float maxHitPointsDullahan; // 0x238
@@ -4124,7 +4495,9 @@ struct EnemyActorData : ActorDataBase {
 	float hitPointsChess; // 0x1318
 	_(380);
 	float hitPointsBloodgoyle; // 0x1498
-	_(876);
+	_(52);
+    byte8* bloodgoyleCDamageCalcAddr; // 0x14D0
+    _(816);
 	float hitPointsTheFallen; // 0x1808
 	_(52);
 	float maxHitPointsTheFallen; // 0x1840
@@ -4136,17 +4509,19 @@ struct EnemyActorData : ActorDataBase {
 	float hitPointsArkham; // 0x26A8
 	_(220);
 	float maxHitPointsArkham; // 0x2788
-	_(1696);
+    float healthGateHitPointsArkham; // 0x278C
+	_(1692);
 	float maxHitPointsHells; // 0x2E2C
 	_(44);
 	float hitPointsHells; // 0x2E5C
 	_(1208);
-	byte8* stunDisplacementDataAddr; // 0x3318 // +10 from this addr is the stun displacement hells Struct
+	byte8* hellsCDamageCalcAddr; // 0x3318 // +10 from this addr is the stun displacement hells Struct
     _(1592);
 	float hitPointsEnigma; // 0x3958
 	_(36);
 	vec4 targetPosition; // 0x3980 - needs to sum with 60 from ActorDataBase
-	_(16);
+    byte8* enigmaCDamageCalcAddr; // 0x3990
+	_(8);
 	vec4 targetPositionGreed; // 0x39A0
     _(64);
 	vec4 targetPositionEnvy; // 0x39F0
@@ -4160,7 +4535,9 @@ struct EnemyActorData : ActorDataBase {
     float hitPointsArachne; // 0x4170
 	_(452);
 	float hitPointsBeowulf; // 0x4338
-	_(692);
+	_(396);
+	byte8* arachneCDamageCalcAddr; // 0x44C8 
+    _(288);
 	float maxHitPointsBeowulf; // 0x45F0
 	_(4452);
 	float hitPointsLady; // 0x5758
@@ -4204,6 +4581,7 @@ struct EnemyActorData : ActorDataBase {
 	float maxHitPointsLeviathan; // 0x388884
 };
 
+static_assert(offsetof(EnemyActorData, CDamageAddr) == 0x160);
 static_assert(offsetof(EnemyActorData, targetPositionDullahan) == 0x1C0);
 static_assert(offsetof(EnemyActorData, maxHitPointsDullahan) == 0x238);
 static_assert(offsetof(EnemyActorData, maxHitPointsChess) == 0x530);
@@ -4222,17 +4600,21 @@ static_assert(offsetof(EnemyActorData, hitPointsAgniRudra) == 0x101C);
 static_assert(offsetof(EnemyActorData, maxHitPointsArkhamLeech) == 0x12A0);
 static_assert(offsetof(EnemyActorData, hitPointsChess) == 0x1318);
 static_assert(offsetof(EnemyActorData, hitPointsBloodgoyle) == 0x1498);
+static_assert(offsetof(EnemyActorData, bloodgoyleCDamageCalcAddr) == 0x14D0);
 static_assert(offsetof(EnemyActorData, hitPointsTheFallen) == 0x1808);
 static_assert(offsetof(EnemyActorData, maxHitPointsTheFallen) == 0x1840);
 static_assert(offsetof(EnemyActorData, hitPointsSoulEater) == 0x1A18);
 static_assert(offsetof(EnemyActorData, hitPointsDullahan) == 0x2478);
 static_assert(offsetof(EnemyActorData, hitPointsArkham) == 0x26A8);
 static_assert(offsetof(EnemyActorData, maxHitPointsArkham) == 0x2788);
+static_assert(offsetof(EnemyActorData, healthGateHitPointsArkham) == 0x278C);
+//const bool x = (offsetof(EnemyActorData, maxHitPointsHells) == 0x2E2C);
 static_assert(offsetof(EnemyActorData, maxHitPointsHells) == 0x2E2C);
-static_assert(offsetof(EnemyActorData, stunDisplacementDataAddr) == 0x3318); 
 static_assert(offsetof(EnemyActorData, hitPointsHells) == 0x2E5C);
+static_assert(offsetof(EnemyActorData, hellsCDamageCalcAddr) == 0x3318); 
 static_assert(offsetof(EnemyActorData, hitPointsEnigma) == 0x3958);
 static_assert(offsetof(EnemyActorData, targetPosition) == 0x3980);
+static_assert(offsetof(EnemyActorData, enigmaCDamageCalcAddr) == 0x3990);
 static_assert(offsetof(EnemyActorData, targetPositionGreed) == 0x39A0);
 static_assert(offsetof(EnemyActorData, targetPositionEnvy) == 0x39F0);
 static_assert(offsetof(EnemyActorData, targetPositionAbyss) == 0x3A10);
@@ -4240,6 +4622,7 @@ static_assert(offsetof(EnemyActorData, maxHitPointsEnigma) == 0x3B14);
 static_assert(offsetof(EnemyActorData, maxHitPointsArachne) == 0x40EC);
 static_assert(offsetof(EnemyActorData, hitPointsArachne) == 0x4170);
 static_assert(offsetof(EnemyActorData, hitPointsBeowulf) == 0x4338);
+static_assert(offsetof(EnemyActorData, arachneCDamageCalcAddr) == 0x44C8);
 static_assert(offsetof(EnemyActorData, maxHitPointsBeowulf) == 0x45F0);
 static_assert(offsetof(EnemyActorData, hitPointsLady) == 0x5758);
 static_assert(offsetof(EnemyActorData, maxHitPointsLady) == 0x5950);
@@ -4264,21 +4647,41 @@ static_assert(offsetof(EnemyActorData, maxHitPointsCerberusTotal) == 0x352C84);
 static_assert(offsetof(EnemyActorData, maxHitPointsCerberusPart1) == 0x3637D0);
 static_assert(offsetof(EnemyActorData, maxHitPointsLeviathan) == 0x388884);
 
-struct StunDisplacementHells {
+struct StunDisplacementData {
 	_(12);
 	float displacement; // 0xC
 	float stun; // 0x10
 };
 
-static_assert(offsetof(StunDisplacementHells, displacement) == 0xC);
-static_assert(offsetof(StunDisplacementHells, stun) == 0x10);
+static_assert(offsetof(StunDisplacementData, displacement) == 0xC);
+static_assert(offsetof(StunDisplacementData, stun) == 0x10);
 
-struct StunDisplacementData {
-    _(16);
-    StunDisplacementHells* stunDisplacementHells; // 0x10
+class StunDisplacementMaxData {
+public:
+	char pad_0000[48]; 
+	float maxStun; //0x0030
+	float maxDisplacement; //0x0034
+}; //Size: 0x0038
+
+static_assert(offsetof(StunDisplacementMaxData, maxStun) == 0x30);
+static_assert(offsetof(StunDisplacementMaxData, maxDisplacement) == 0x34);
+
+class CDamage {
+public:
+	char pad_0000[40]; 
+	byte8* CDamageCalcAddr; //0x0028
+}; //Size: 0x0030
+
+static_assert(offsetof(CDamage, CDamageCalcAddr) == 0x28);
+
+struct CDamageCalc {
+    _(8);
+    StunDisplacementMaxData* maxStunDisplacementData; // 0x08
+    StunDisplacementData* stunDisplacementData; // 0x10
 };
 
-static_assert(offsetof(StunDisplacementData, stunDisplacementHells) == 0x10);
+static_assert(offsetof(CDamageCalc, maxStunDisplacementData) == 0x08);
+static_assert(offsetof(CDamageCalc, stunDisplacementData) == 0x10);
 
 
 struct ShieldedNevanData {
@@ -4308,7 +4711,7 @@ static_assert(offsetof(EnemyActorDataPride, state) == 0x3A38);
 
 struct EnemyActorDataLady : ActorDataBase {
     _(21400);
-    CollisionData collisionData; // 0x5460
+    CollisionDataActor collisionData; // 0x5460
     _(104);
     float hitPoints; // 0x5758
     _(556);
@@ -4349,7 +4752,7 @@ struct EnemyActorDataVergil : ActorDataBase {
     _(272);
     float nextEventTimer; // 0x1D8
     _(58964);
-    CollisionData collisionData; // 0xE830
+    CollisionDataActor collisionData; // 0xE830
     _(104);
     float hitPoints; // 0xEB28
     _(584);
@@ -4438,21 +4841,49 @@ static_assert(offsetof(EnemyVectorData, nextMetadataAddr) == 0x1050);
 
 static_assert(sizeof(EnemyVectorData) == 4184);
 
-struct HUDData {
-	_(26904);
-	float topLeftAlphaTimer; // 0x6918
-    _(4);
-    uint8 topLeftAlpha; // 0x6920
-    _(23);
-    float orbsCountAlphaTimer; // 0x6938
-    uint8 orbsCountAlpha; // 0x693C
-};
+class CUIDCockpit00
+{
+public:
+	char pad_0000[1792]; //0x0000
+	ModelData CDrawUpperHPFrame; //0x0700
+    ModelData CDrawUpperHPBar; //0x0E80
+    ModelData CDrawUpperHPRed; //0x1600
+	ModelData CDrawLowerHPFrame; //0x1D80
+	ModelData CDrawLowerHPBar; //0x2500
+	ModelData CDrawLowerHPRed; //0x2C80
+	ModelData CDrawDTOrbs; //0x3400
+	ModelData CDrawStyleIcons; //0x3B80
+    ModelData CDrawRedOrbCounter; //0x4300
+    ModelData CDrawUnknown1; //0x4A80
+	ModelData CDrawUnknown2; //0x5200
+	ModelData CDrawDTFlux; //0x5980
+	ModelData CDrawDTExplosion; //0x6100
+	char pad_6880[152]; //0x6880
+	float topLeftAlphaTimer; //0x6918
+	char pad_691C[4]; //0x691C
+	uint8_t topLeftAlpha; //0x6920
+	char pad_6921[23]; //0x6921
+	float orbsCountAlphaTimer; //0x6938
+	uint8_t orbsCountAlpha; //0x693C
+	char pad_693D[1795]; //0x693D
+}; //Size: 0x7040
 
-static_assert(offsetof(HUDData, topLeftAlphaTimer) == 0x6918);
-static_assert(offsetof(HUDData, topLeftAlpha) == 0x6920);
-static_assert(offsetof(HUDData, orbsCountAlphaTimer) == 0x6938);
-static_assert(offsetof(HUDData, orbsCountAlpha) == 0x693C);
+using HUDData = CUIDCockpit00;
 
+static_assert(offsetof(CUIDCockpit00, topLeftAlphaTimer) == 0x6918);
+static_assert(offsetof(CUIDCockpit00, topLeftAlpha) == 0x6920);
+static_assert(offsetof(CUIDCockpit00, orbsCountAlphaTimer) == 0x6938);
+static_assert(offsetof(CUIDCockpit00, orbsCountAlpha) == 0x693C);
+
+class CUIDLockOnCursor
+{
+public:
+	char pad_0000[128]; //0x0000
+	ModelData CDrawStart; //0x0080 // 0x1E0 uiVisibility
+	char pad_0800[95]; //0x0800
+}; //Size: 0x085F
+
+static_assert(offsetof(CUIDLockOnCursor, CDrawStart) == 0x80);
 
 // $EnemyVectorDataEnd
 
@@ -4638,36 +5069,39 @@ struct BossHelper {
 
 struct ColorPresets {
     struct StyleSwitchFlux {
-		uint8 colorfulSubtle[7][4] = {
+		uint8 defaultColors[8][4] = {
 			// r   g  b  a 
-			{ 29, 29, 0, 255 }, //trick  
-			{ 26, 0, 0, 255 }, //sword  
-			{ 0, 8, 34, 255 }, //gun    
-			{ 0, 35, 6, 255 }, //royal  
-			{ 26, 0, 35, 255 }, //quick  
-			{ 30, 14, 0, 255 }, //doppel 
-            { 0, 25, 30, 255 } // vergil
+			{ 250, 237, 54, 255 }, //trick  
+			{ 252, 45, 45, 255 }, //sword  
+			{ 72, 49, 255, 255 }, //gun    
+			{ 47, 255, 72, 255 }, //royal  
+			{ 255, 55, 221, 255 }, //quick  
+			{ 255, 146, 65, 255 }, //doppel 
+            { 179, 65, 255, 255 }, //darkslayer 
+			{ 0, 25, 30, 255 } // vergil
 		};
 
-		uint8 dMC3Switch[7][4] = {
+		uint8 dMC3Switch[8][4] = {
 			// r   g  b  a 
-			{ 55, 58, 6, 255 }, //trick  
-			{ 58, 5, 5, 255 }, //sword  
-			{ 13, 5, 58, 255 }, //gun    
-			{ 5, 58, 12, 255 }, //royal  
-			{ 58, 5, 49, 255 }, //quick  
-			{ 58, 28, 5, 255 }, //doppel 
-            { 5, 57, 58, 255 }, //vergil
+			{ 240, 255, 0, 255 }, //trick  
+			{ 255, 0, 0, 255 }, //sword  
+			{ 28, 0, 255, 255 }, //gun    
+			{ 0, 255, 35, 255 }, //royal  
+			{ 255, 0, 215, 255 }, //quick  
+			{ 255, 109, 0, 255 }, //doppel 
+            { 153, 0, 254, 255 }, //darkslayer 
+			{ 0, 25, 30, 255 } // vergil
 		};
 
-		uint8 allRed[7][4] = {
+		uint8 allRed[8][4] = {
 			// r   g  b  a 
-			{ 29, 0, 0, 255 }, //trick  
-			{ 29, 0, 0, 255 }, //sword  
-			{ 29, 0, 0, 255 }, //gun    
-			{ 29, 0, 0, 255 }, //royal  
-			{ 29, 0, 0, 255 }, //quick  
-			{ 29, 0, 0, 255 }, //doppel 
+			{ 252, 43, 51, 255 }, //trick  
+            { 252, 43, 51, 255 }, //sword  
+            { 252, 43, 51, 255 }, //gun    
+            { 252, 43, 51, 255 }, //royal  
+            { 252, 43, 51, 255 }, //quick  
+            { 252, 43, 51, 255 }, //doppel 
+            { 252, 43, 51, 255 }, //darkslayer 
             { 0, 25, 30, 255 } // vergil
 		};
     } StyleSwitchFlux;
@@ -5008,10 +5442,16 @@ extern float doppDurationDT;
 
 struct StoredAirCounts {
 	uint8 trickUp = 0;
+    uint8 trickDown = 0;
+    uint8 airTrick = 0;
+    uint8 airRisingSun = 0;
+
     uint8 skyStar = 0;
     uint8 airHike = 0;
     uint8 airStinger = 0;
     uint8 airTornado = 0;
+    uint8 airSwordAttack = 0;
+    uint8 airGunAttack = 0;
     bool cancelTrackerRunning = false;
 };
 
@@ -5045,9 +5485,15 @@ extern bool inRapidSlash;
 extern bool styleChanged[6];
 
 extern float g_FrameRate;
+extern "C" float g_deltaTime;
 extern "C" float g_FrameRateTimeMultiplier;
 extern "C" float g_cerbDamageValue;
 extern "C" float g_FrameRateTimeMultiplierRounded;
+extern "C" float g_missionTimer;
+extern "C" bool g_screenBreakTriggered;
+extern "C" bool g_inMissionResultScreen;
+extern "C" bool g_inMissionResultBPScreen;
+extern "C" bool g_inTotalResultsScreen;
 extern bool g_inCombat;
 extern bool g_inBossfight;
 extern bool g_inCredits;
@@ -5055,6 +5501,8 @@ extern int g_bossQuantity;
 extern bool g_inGameDelayed;
 extern bool g_inGameCutscene;
 extern bool g_inMainMenu;
+extern bool g_inGUIPause;
+extern bool g_levelFullyLoadedDelay;
 extern bool g_allActorsSpawned;
 extern bool g_HudVisible;
 extern std::string g_gameTrackPlaying;
@@ -5090,7 +5538,7 @@ struct Sprint {
     bool VFXPlayed                  = false;
     float storedSpeedHuman          = 0;
     float storedSpeedDevilDante[6]  = {};
-    float storedSpeedDevilVergil[4] = {};
+    float storedSpeedDevilVergil[5] = {};
 };
 
 struct SprintVFX {
@@ -5102,12 +5550,44 @@ extern SprintVFX sprintVFX;
 
 extern int notHoldingMelee;
 
-struct Drive {
+struct DanteDriveRework {
+	EffekseerHandle chargeEffectHandle;
+    EffekseerHandle quickDriveChargeEffectHandle;
+	EffekseerHandle level1EffectHandle;
+	EffekseerHandle level2EffectHandle;
+    EffekseerHandle level3EffectHandle;
+    bool quickDriveEffectPlayed = false;
+    bool chargeEffectPlayed = false;
     bool level1EffectPlayed = false;
     bool level2EffectPlayed = false;
     bool level3EffectPlayed = false;
-    float timer             = 0;
-    bool runTimer           = false;
+    float levelTimer             = 0;
+    bool runLevelTimer           = false;
+    bool inQuickDrive = false;
+    bool part2Played = false;
+    bool part3Played = false;
+    bool inPart2 = false;
+    bool inPart3 = false;
+    bool meleePressedForOverdrive = false;
+    float motion19Timer = 0.0f;
+    bool resetMotion19Timer = false;
+    float effectInterruptTime = 8.0f;
+    bool sfxLooped = false;
+
+    // QuickDrive charging (new)
+    float quickChargeTimer = 0.0f;
+    bool quickChargeComplete = false;
+    bool quickChargeVfxPlaying = false;
+    EffekseerHandle quickChargeVfxHandle;
+    bool quickLevelUpEffectPlayed = false;
+    bool quickChargeSfxPlayed = false;
+
+    // QuickDrive OverDrive (new)
+    bool quickMeleePressedForOverdrive = false;
+    bool quickPart2Played = false;
+    bool quickPart3Played = false;
+    bool quickInPart2 = false;
+    bool quickInPart3 = false;
 };
 ;
 
@@ -5163,6 +5643,11 @@ struct BackToForward {
     bool forwardCommand          = false;
     float forwardDuration        = 0.2f;
     float forwardBuffer          = forwardDuration;
+};
+
+struct StyleSwitchVFX {
+    EffekseerHandle handles[10] = { 0 };
+    EffekseerHandle swooshHandles[10] = { 0 };
 };
 
 struct StyleSwitchText {
@@ -5228,10 +5713,7 @@ struct Inertia {
 
 struct VergilMoveAdjustments {
     float storedRisingSunPosY;
-    float storedLunarPhasePosY;
-    float storedLunarPhaseLv1PosY;
     bool startingRisingSunFromGround = false;
-    bool startingLunarPhaseFromGround = false;
 };
 
 struct DelayedComboFX {
@@ -5240,6 +5722,8 @@ struct DelayedComboFX {
 	uint8 weaponThatStartedMove = 20;
 	int bank = 3;
 	int id = 143;
+    bool transitioningToHyperFist = false;
+    EffekseerHandle efkHandle = 0;
 };
 
 constexpr float maxMiragePointsAmount = 10000;
@@ -5254,12 +5738,63 @@ struct VergilDoppelganger {
     bool drainStart = false;
 };
 
+namespace JDC_STATE {
+    enum {
+        NORMAL_GROUNDED,
+        NORMAL_AIR,
+        JUST_FRAME_GROUNDED,
+        JUST_FRAME_AIR,
+    };
+};
+
+struct VergilJudgementCut {
+    uint8 state = JDC_STATE::NORMAL_GROUNDED;
+    uint32 actionWhenChargeStarted = 100;
+    float meleeButtonHold = 0.0f;
+    float meleeHoldTime = 0.0f;
+    float meleeMaxHoldTime = 0.0f;
+    bool isJustFrameCharged = false;
+    bool isAfterJustFrameCharged = false;
+    bool inJustFrameJDC = false;
+    bool fireSound = true;
+    uint8 consecutiveJdcCount = 0;
+};
+
+struct DanteStingerInput {
+    float meleeButtonHold = 0.0f;
+    bool meleeReleasedStinger = false;
+};
+
+struct VergilRisingStarInput {
+    float meleeButtonHold = 0.0f;
+	bool meleeReleasedRisingStar = false;
+};
+
+struct DanteBackslide {
+    bool performing = false;
+    bool pendingFire = false;
+};
+
+struct BulletMagnetism {
+    float gunButtonTimer = 0;
+};
+
 extern bool inRoyalBlock;
 extern bool inGuardfly;
 extern float rainstormPull;
 
 extern float storedHP;
 extern float storedDT;
+
+namespace BUFFER_ROYAL {
+	enum {
+		NONE,
+        ROYAL_BLOCK,
+        ROYAL_RELEASE,
+		ROYAL_AIR_BLOCK,
+        ROYAL_AIR_RELEASE
+	};
+}
 
 
 struct CrimsonPlayerData {
@@ -5289,20 +5824,22 @@ struct CrimsonPlayerData {
     int currentAnim   = 0;
     float actionTimer = 0;
     float actionTimerNotEventChange = 0;
+    float actionTimerNotTrickChange = 0;
     float lastActionTime = 0;
-    float animTimer   = 0;
+    float motionTimer   = 0;
     float eventTimer = 0;
     float trickDashTimer = 0;
+    float eAndIShotTimer = 0;
     uint32 currentEvent = 0;
     bool active;
     bool inNewDrive   = false;
-    bool inQuickDrive = false;
     Sprint sprint;
-    Drive drive;
+    DanteDriveRework drive;
     std::vector<uint32> lastEvents{0};
     int lastLastEvent = 0;
     std::vector<byte32> lastStates{0};
     byte32 lastLastState = 0;
+    bool canRoyalMagnetism = true;
     float horizontalPull;
     VergilMoveAdjustments vergilMoves;
     Inertia inertia;
@@ -5310,6 +5847,7 @@ struct CrimsonPlayerData {
     RoyalRelease royalRelease;
     ImprovedCancels cancels;
     BackToForward b2F;
+    StyleSwitchVFX styleSwitchVFX;
     StyleSwitchText styleSwitchText;
     DTESFX dTESFX;
     DTEVFX dTEVFX;
@@ -5348,8 +5886,20 @@ struct CrimsonPlayerData {
     MoveGravityTweak lunarPhaseTweak;
     MoveGravityTweak airTauntRisingSunTweak;
     bool inRisingStar = false;
+    bool inYamatoHighTime = false;
     bool inAirTauntRisingSun = false;
     bool lastInAirTauntRisingSun = false;
+    bool inAirLunarPhase = false;
+    bool inAirTornado = false;
+    EffekseerHandle yamatoGroundedHighTimeHandle;
+    VergilJudgementCut jCut;
+    DanteBackslide backslide;
+    DanteStingerInput stingerInput;
+	VergilRisingStarInput risingStarInput;
+    BulletMagnetism bulletMagnetism;
+    uint8 bufferRoyal = 0;
+    //this isn't a value mirrored between player & doppelganger, it's only for the player and it effects doppelganger behavior.
+    bool lockCloneStyle = false;
 
     uintptr_t clonePtr;
     uint8 actionClone     = 0;
@@ -5364,22 +5914,28 @@ struct CrimsonPlayerData {
     int currentAnimClone   = 0;
     float actionTimerClone = 0;
 	float actionTimerNotEventChangeClone = 0;
+    float actionTimerNotTrickChangeClone = 0;
     float lastActionTimeClone = 0;
-    float animTimerClone   = 0;
+    float motionTimerClone   = 0;
     float eventTimerClone = 0;
     float trickDashTimerClone = 0;
+    float eAndIShotTimerClone = 0;
     uint32 currentEventClone = 0;
     std::vector<uint32> lastEventsClone{0};
     int lastLastEventClone = 0;
     std::vector<byte32> lastStatesClone{0};
     byte32 lastLastStateClone = 0;
+	bool canRoyalMagnetismClone = true;
     float horizontalPullClone;
+    DanteDriveRework driveClone;
     RoyalRelease royalReleaseClone;
     SkyLaunch skyLaunchClone;
+    StyleSwitchVFX styleSwitchVFXClone;
     VergilMoveAdjustments vergilMovesClone;
     ImprovedCancels cancelsClone;
     BackToForward b2FClone;
     Inertia inertiaClone;
+    DelayedComboFX delayedComboFXClone;
     float cameraCloneDistance = 0;
     float cameraCloneDistanceClamped = 0;
     float cloneTo1PDistance = 0;
@@ -5409,8 +5965,18 @@ struct CrimsonPlayerData {
     MoveGravityTweak lunarPhaseTweakClone;
     MoveGravityTweak airTauntRisingSunTweakClone;
     bool inRisingStarClone = false;
+	bool inYamatoHighTimeClone = false;
     bool inAirTauntRisingSunClone = false;
     bool lastInAirTauntRisingSunClone = false;
+	bool inAirTornadoClone = false;
+    bool inAirLunarPhaseClone = false;
+    EffekseerHandle yamatoGroundedHighTimeHandleClone;
+	VergilJudgementCut jCutClone;
+	DanteBackslide backslideClone;
+    DanteStingerInput stingerInputClone;
+	VergilRisingStarInput risingStarInputClone;
+    BulletMagnetism bulletMagnetismClone;
+	uint8 bufferRoyalClone = 0;
 };
 
 extern CrimsonPlayerData crimsonPlayer[20];
@@ -5427,17 +5993,33 @@ struct HeldStyleExpData {
 extern HeldStyleExpData heldStyleExpDataDante;
 extern HeldStyleExpData heldStyleExpDataVergil;
 
+namespace ARKHAM_MOD_FIGHT_PHASE {
+    enum {
+        PHASE_1, //arkham lobby 1
+        PHASE_2, //cerberus
+        PHASE_3,//arkham lobby 2
+        PHASE_4, //agni rudra
+        PHASE_5, //arkham lobby 3
+        PHASE_6, //beowulf
+        PHASE_7, //arkham lobby final
+        PHASE_VANILLA,
+    };
+}
+
+struct ArkhamFightData {
+    bool fightActive{ false };
+    bool fightEnding{ false };
+    bool dantePartner { false };
+    //current phase of the fight
+    int fightPhase = ARKHAM_MOD_FIGHT_PHASE::PHASE_1;
+    //the queued next phase of the fight.
+    //due to the flow logic being done on tic, we need this variable to make sure we don't accidentally skip phases.
+    int nextFightPhase = ARKHAM_MOD_FIGHT_PHASE::PHASE_1;
+};
+extern ArkhamFightData arkhamFightData;
 extern bool devilTriggerReadyPlayed;
 
 extern bool missionClearSongPlayed;
-
-struct GuiPause {
-    bool in       = false;
-    float timer   = 0.5f;
-    bool canPause = false;
-};
-
-extern GuiPause guiPause;
 
 extern float frameRateSpeedMultiplier;
 

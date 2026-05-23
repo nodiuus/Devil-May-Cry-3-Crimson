@@ -17,6 +17,7 @@
 #include "File.hpp"
 #include "Internal.hpp"
 #include "ActorBase.hpp"
+#include "Actor.hpp"
 #include "Core/Core.hpp"
 #include "Memory.hpp"
 #include "Model.hpp"
@@ -38,12 +39,12 @@
 #include "CrimsonPatches.hpp"
 #include "CrimsonTimers.hpp"
 #include "CrimsonUtil.hpp"
-#include "UI\Texture2DD3D11.hpp"
 #include "UI\EmbeddedImages.hpp"
 #include "CrimsonGUI.hpp"
 #include "CrimsonFileHandling.hpp"
 #include "CrimsonHUD.hpp"
 #include "CrimsonGameplay.hpp"
+#include "CrimsonFX.hpp"
 #include "DebugDrawDX11.hpp"
 #define DEBUG_DRAW_EXPLICIT_CONTEXT
 #include "debug_draw.hpp"
@@ -173,6 +174,7 @@ static Texture2DD3D11* royalGaugeCircle{ nullptr };
 static Texture2DD3D11* mirageGaugeDpadTexture{ nullptr };
 static Texture2DD3D11* mirageGaugeDpadActiveTexture{ nullptr };
 
+static Texture2DD3D11* crimsonTitleGradient{ nullptr };
 
 void InitRedOrbTexture(ID3D11Device* pd3dDevice) {
 	//RedOrbTexture = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "RedorbVanilla3.png").c_str(), pd3dDevice);
@@ -323,19 +325,6 @@ void InitStyleGlassTextures(ID3D11Device* pd3dDevice) {
 	tricksterGlass = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\styles\\trickster-glass.png").c_str(), pd3dDevice);
 	tricksterBadge = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\styles\\trickster-badge.png").c_str(), pd3dDevice);
 
-	doppelgangerText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\doppelganger.png").c_str(), pd3dDevice);
-	doppelgangerTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\doppelganger-blur.png").c_str(), pd3dDevice);
-	gunslingerText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\gunslinger.png").c_str(), pd3dDevice);
-	gunslingerTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\gunslinger-blur.png").c_str(), pd3dDevice);
-	quicksilverText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\quicksilver.png").c_str(), pd3dDevice);
-	quicksilverTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\quicksilver-blur.png").c_str(), pd3dDevice);
-	royalguardText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\royalguard.png").c_str(), pd3dDevice);
-	royalguardTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\royalguard-blur.png").c_str(), pd3dDevice);
-	swordmasterText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\swordmaster.png").c_str(), pd3dDevice);
-	swordmasterTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\swordmaster-blur.png").c_str(), pd3dDevice);
-	tricksterText = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\trickster.png").c_str(), pd3dDevice);
-	tricksterTextBlur = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\stylenames\\trickster-blur.png").c_str(), pd3dDevice);
-
 	styleExpBarBorder = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\exp\\style-exp-border.png").c_str(), pd3dDevice);
 	styleExpBarBorderVergil = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\exp\\style-exp-border-vergil.png").c_str(), pd3dDevice);
 	styleExpBarFill = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\exp\\style-exp-inside.png").c_str(), pd3dDevice);
@@ -372,10 +361,8 @@ void InitStyleGlassTextures(ID3D11Device* pd3dDevice) {
 	assert(swordmasterBadge);
 	assert(tricksterGlass);
 	assert(tricksterBadge);
-	assert(doppelgangerText);
-	assert(doppelgangerTextBlur);
-	assert(gunslingerText);
-	assert(gunslingerTextBlur);
+
+	InitStyleNameTextures(pd3dDevice);
 	assert(quicksilverText);
 	assert(quicksilverTextBlur);
 	assert(royalguardText);
@@ -391,11 +378,54 @@ void InitStyleGlassTextures(ID3D11Device* pd3dDevice) {
 	assert(royalGaugeCircle);
 }
 
+static std::string GetStyleNamesBasePath() {
+	if (activeCrimsonConfig.CrimsonHudAddons.styleNamesSet == STYLENAMESSET::DMC3_SWITCH) {
+		return (std::string)Paths::assets + "\\crimsonhud\\stylenames_switch";
+	}
+
+	return (std::string)Paths::assets + "\\crimsonhud\\stylenames_crimson";
+}
+
+void InitStyleNameTextures(ID3D11Device* pd3dDevice) {
+	std::string styleNamesPath = GetStyleNamesBasePath();
+
+	doppelgangerText = new Texture2DD3D11(((std::string)styleNamesPath + "\\doppelganger.png").c_str(), pd3dDevice);
+	doppelgangerTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\doppelganger-blur.png").c_str(), pd3dDevice);
+	gunslingerText = new Texture2DD3D11(((std::string)styleNamesPath + "\\gunslinger.png").c_str(), pd3dDevice);
+	gunslingerTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\gunslinger-blur.png").c_str(), pd3dDevice);
+	quicksilverText = new Texture2DD3D11(((std::string)styleNamesPath + "\\quicksilver.png").c_str(), pd3dDevice);
+	quicksilverTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\quicksilver-blur.png").c_str(), pd3dDevice);
+	royalguardText = new Texture2DD3D11(((std::string)styleNamesPath + "\\royalguard.png").c_str(), pd3dDevice);
+	royalguardTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\royalguard-blur.png").c_str(), pd3dDevice);
+	swordmasterText = new Texture2DD3D11(((std::string)styleNamesPath + "\\swordmaster.png").c_str(), pd3dDevice);
+	swordmasterTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\swordmaster-blur.png").c_str(), pd3dDevice);
+	tricksterText = new Texture2DD3D11(((std::string)styleNamesPath + "\\trickster.png").c_str(), pd3dDevice);
+	tricksterTextBlur = new Texture2DD3D11(((std::string)styleNamesPath + "\\trickster-blur.png").c_str(), pd3dDevice);
+
+	assert(doppelgangerText);
+	assert(doppelgangerTextBlur);
+	assert(gunslingerText);
+	assert(gunslingerTextBlur);
+	assert(quicksilverText);
+	assert(quicksilverTextBlur);
+	assert(royalguardText);
+	assert(royalguardTextBlur);
+	assert(swordmasterText);
+	assert(swordmasterTextBlur);
+	assert(tricksterText);
+	assert(tricksterTextBlur);
+}
+
 void InitMirageGaugeTextures(ID3D11Device* pd3dDevice) {
 	mirageGaugeDpadTexture = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\miragegauge\\dpad.png").c_str(), pd3dDevice);
 	mirageGaugeDpadActiveTexture = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "crimsonHud\\miragegauge\\dpad-active.png").c_str(), pd3dDevice);
 	assert(mirageGaugeDpadTexture);
 	assert(mirageGaugeDpadActiveTexture);
+}
+
+void InitGradientTextures(ID3D11Device* pd3dDevice) {
+	crimsonTitleGradient = new Texture2DD3D11(((std::string)Paths::assets + "\\" + "CrimsonGradient.png").c_str(), pd3dDevice);
+	assert(crimsonTitleGradient);
 }
 
 
@@ -491,6 +521,10 @@ void RenderExpWithFill(ImTextureID texture, ImVec2 pos, ImVec2 size, float fillR
 		uvs[0], uvs[1], uvs[2], uvs[3],
 		color
 	);
+}
+
+inline float StyleHudHybridPositioningOffsetX() {
+	return (440.0f - 395.0f) * scaleFactorY;
 }
 
 void RenderTexture(ImTextureID texture, ImVec2 pos, ImVec2 size, ImColor color, float angle = 0.0f) {
@@ -623,6 +657,10 @@ struct StyleMeterAnimState {
 
 // Global previous style rank for entrance animation logic
 static int prevGlobalStyleRank = -1;
+static constexpr float kStyleMeterScale = 0.76f;
+static float g_styleMeterOutOfCombatTimer = 0.0f;
+static bool g_styleMeterForceHidden = false;
+static float g_stylishPtsOutOfCombatTimer = 0.0f;
 
 void StyleMeterWindowRank(
 	int currentRank,
@@ -669,6 +707,12 @@ void StyleMeterWindowRank(
 		}
 	}
 
+	if (g_styleMeterForceHidden) {
+		active = false;
+		fillRatio = 0.0f;
+		state.animating = false;
+	}
+
 	if (activeCrimsonGameplay.Gameplay.ExtraDifficulty.mustStyleMode > 0) {
 		if (currentRank < activeCrimsonGameplay.Gameplay.ExtraDifficulty.mustStyleMode) {
 			auraColor = 0xccccccFF;
@@ -712,7 +756,10 @@ void StyleMeterWindowRank(
 	if (state.fade.alpha <= 0.01f && !state.animating)
 		return;
 
-	ImVec2 meterSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+	windowPos.x += 50.0f * scaleFactorY;
+
+	ImVec2 baseMeterSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+	ImVec2 meterSize = ImVec2(baseMeterSize.x * kStyleMeterScale, baseMeterSize.y * kStyleMeterScale);
 	ImColor white = { 1.0f, 1.0f, 1.0f, state.fade.alpha };
 	ImVec4 colorHex = ImGui::ColorConvertU32ToFloat4(UI::SwapColorEndianness(auraColor));
 	ImColor color = (colorHex);
@@ -808,10 +855,10 @@ void StyleMeterWindowRank(
 	ImVec2 renderPosExtraLeft = ImVec2(renderPos.x + extraLeft, renderPos.y);
 	ImVec2 actualRenderPos = renderPosExtraLeft;
 
-	ImVec2 renderPosSSStyle = ImVec2(renderPos.x - (50.0f * scaleFactorY), renderPos.y + (50.0f * scaleFactorY));
+	ImVec2 renderPosSSStyle = ImVec2(renderPos.x - (50.0f * scaleFactorY * kStyleMeterScale), renderPos.y + (50.0f * scaleFactorY * kStyleMeterScale));
 	ImVec2 renderPosSSStyleExtraLeft = ImVec2(renderPosSSStyle.x + extraLeft, renderPosSSStyle.y);
 	ImVec2 actualRenderPosSSStyle = renderPosSSStyleExtraLeft;
-	ImVec2 renderPosSSSStyle = ImVec2(renderPos.x - (100.0f * scaleFactorY), renderPos.y + (20.0f * scaleFactorY));
+	ImVec2 renderPosSSSStyle = ImVec2(renderPos.x - (100.0f * scaleFactorY * kStyleMeterScale), renderPos.y + (20.0f * scaleFactorY * kStyleMeterScale));
 	ImVec2 renderPosSSSStyleExtraLeft = ImVec2(renderPosSSSStyle.x + extraLeft, renderPosSSSStyle.y);
 	ImVec2 actualRenderPosSSSStyle = renderPosSSSStyleExtraLeft;
 
@@ -843,8 +890,8 @@ void StyleMeterWindowRank(
 	ImGui::End();
 
 	// --- Text Animation: delayed, ease in-out, straight ---
-	ImVec2 textSize = ImVec2(1000.0f * scaleFactorY * 0.55f, 243.0f * scaleFactorY * 0.55f);
-	ImVec2 textWindowPos = ImVec2(windowPos.x + (194.0f * scaleFactorY), windowPos.y + (125.0f * scaleFactorY));
+	ImVec2 textSize = ImVec2(1000.0f * scaleFactorY * 0.55f * kStyleMeterScale, 243.0f * scaleFactorY * 0.55f * kStyleMeterScale);
+	ImVec2 textWindowPos = ImVec2(windowPos.x + (194.0f * scaleFactorY * kStyleMeterScale), windowPos.y + (125.0f * scaleFactorY * kStyleMeterScale));
 	ImVec4 textColorHex = ImGui::ColorConvertU32ToFloat4(UI::SwapColorEndianness(textColor));
 	ImColor textColorC = (textColorHex);
 	float hT, sT, vT;
@@ -890,6 +937,18 @@ void StyleMeterWindows() {
 
 	if (activeCrimsonConfig.HudOptions.hideStyleMeter) {
 		return;
+	}
+
+	float deltaTime = ImGui::GetIO().DeltaTime;
+	if (!InGame() || g_inGameCutscene) {
+		g_styleMeterOutOfCombatTimer = 0.0f;
+		g_styleMeterForceHidden = false;
+	} else if (g_inCombat) {
+		g_styleMeterOutOfCombatTimer = 0.0f;
+		g_styleMeterForceHidden = false;
+	} else {
+		g_styleMeterOutOfCombatTimer += deltaTime;
+		g_styleMeterForceHidden = g_styleMeterOutOfCombatTimer >= 3.0f;
 	}
 
 	CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.CrimsonHudAddons.styleRanksMeter); // Hide the original style rank HUD
@@ -1026,10 +1085,12 @@ void StylishPointsWindow() {
 	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
 	if (!(pool_10222 && pool_10222[3])) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
-	ImVec2 windowPos = ImVec2(g_renderSize.x - (340.0 * scaleFactorY), 465.0f * scaleFactorY);
-	ImVec2 windowSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+	ImVec2 windowPos = ImVec2(g_renderSize.x - (320.0f * scaleFactorY), 395.0f * scaleFactorY);
+	ImVec2 windowPosClassic = ImVec2(g_renderSize.x - (415.0f * scaleFactorY), 290.0f * scaleFactorY);
+	ImVec2 windowSize = ImVec2(301.0f * 0.95f, 303.0f * scaleFactorY * 0.95f);
 	float extraLeft = (g_renderSize.y - 100.0f * scaleFactorY);
-	ImVec2 adjustedWindowPos = ImVec2(windowPos.x, windowPos.y);
+	ImVec2 adjustedWindowPos = !activeCrimsonConfig.CrimsonHudAddons.styleRanksMeter ? ImVec2(windowPosClassic.x, windowPosClassic.y) 
+		: ImVec2(windowPos.x, windowPos.y);
 	ImVec2 adjustedWindowSize = windowSize + ImVec2(g_renderSize.x, g_renderSize.y); 
 
 	auto stylePoints = (mainActorData.styleData.quotient * 100.0f);
@@ -1039,6 +1100,28 @@ void StylishPointsWindow() {
 	static bool animating = false;
 	static bool wasVisible = false;
 	static float prevStylePoints = 0.0f;
+
+	float deltaTime = ImGui::GetIO().DeltaTime;
+	if (!InGame() || g_inGameCutscene) {
+		g_stylishPtsOutOfCombatTimer = 0.0f;
+	} else if (g_inCombat) {
+		g_stylishPtsOutOfCombatTimer = 0.0f;
+	} else {
+		g_stylishPtsOutOfCombatTimer += deltaTime;
+	}
+	const float stylishPtsStayDuration = 3.5f;
+	const float stylishPtsFadeDuration = 2.0f;
+	float stylishPtsFadeAlpha = 1.0f;
+	if (g_stylishPtsOutOfCombatTimer > stylishPtsStayDuration) {
+		float fadeT = (g_stylishPtsOutOfCombatTimer - stylishPtsStayDuration) / stylishPtsFadeDuration;
+		stylishPtsFadeAlpha = ImClamp(1.0f - fadeT, 0.0f, 1.0f);
+	}
+	if (g_stylishPtsOutOfCombatTimer >= stylishPtsStayDuration + stylishPtsFadeDuration) {
+		wasVisible = false;
+		animTimer = 0.0f;
+		animating = true;
+		return;
+	}
 
 	if (mainActorData.styleData.rank <= 0 || stylePoints <= 0 
 		|| !InGame() || g_inGameCutscene || !activeCrimsonConfig.CrimsonHudAddons.stylishPtsCounter) {
@@ -1124,8 +1207,8 @@ void StylishPointsWindow() {
 	
 	// Draw red outline 
 	const char* stylishText = "Stylish PTS: ";
-	ImU32 outlineColor = ImColor(0.49f, 0.0f, 0.0f, 1.0f); // #7f0000; 
-	ImU32 textColor = IM_COL32(255, 255, 255, 255); 
+	ImU32 outlineColor = ImColor(0.49f, 0.0f, 0.0f, stylishPtsFadeAlpha); // #7f0000; 
+	ImU32 textColor = ImColor(1.0f, 1.0f, 1.0f, stylishPtsFadeAlpha); 
 	float outlineThickness = 1.0f;
 	
 	// Draw outline by rendering text multiple times with slight offsets
@@ -1174,27 +1257,6 @@ void MissionTimerDisplay() {
 	if (!pool_10298 || !pool_10298[8]) return;
 	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
-	ImVec2 windowPos = ImVec2(g_renderSize.x * 0.5f, 10.0f * scaleFactorY);
-	ImVec2 windowSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
-
-	// Timer logic using ImGui::DeltaTime, only resets when frameCount is reset
-	static float shownTimer = 0.0f;
-	float frameRate = ImGui::GetIO().Framerate;
-
-	// Reset shownTimer if frameCount is reset (new mission start)
-	if (missionData.frameCount <= 0) {
-		shownTimer = 0.0f;
-	}
-
-	// Always update timer if frameCount > 0 and not in cutscene and not paused
-	if (missionData.frameCount > 0 && eventData.event == EVENT::MAIN && !g_inGameCutscene) {
-		shownTimer += ImGui::GetIO().DeltaTime;
-	}
-
-	// Convert shownTimer to hours, minutes, seconds
-	unsigned int hours = (unsigned int)(shownTimer / 3600.0f);
-	unsigned int minutes = (unsigned int)(fmod(shownTimer, 3600.0f) / 60.0f);
-	unsigned int seconds = (unsigned int)fmod(shownTimer, 60.0f);
 
 	auto& config = activeCrimsonConfig.CrimsonHudAddons.missionTimerDisplay;
 
@@ -1205,6 +1267,14 @@ void MissionTimerDisplay() {
 		(config == MISSIONTIMERDISPLAY::ONLY_IN_BP && sessionData.mission != MISSION::BLOODY_PALACE)) {
 		return;
 	}
+
+	ImVec2 windowPos = ImVec2(g_renderSize.x * 0.5f, 10.0f * scaleFactorY);
+	ImVec2 windowSize = ImVec2(301.0f * scaleFactorY * 0.95f, 303.0f * scaleFactorY * 0.95f);
+
+	// Convert shown missionTimer to hours, minutes, seconds
+	unsigned int hours = (unsigned int)(g_missionTimer / 3600.0f);
+	unsigned int minutes = (unsigned int)(fmod(g_missionTimer, 3600.0f) / 60.0f);
+	unsigned int seconds = (unsigned int)fmod(g_missionTimer, 60.0f);
 
 	float fontSize = 44.0f;
 	ImGui::PushFont(UI::g_ImGuiFont_RedOrbRusso[fontSize * 0.9f]);
@@ -1217,7 +1287,6 @@ void MissionTimerDisplay() {
 
 	ImGui::SetNextWindowPos(adjustedWindowPos, ImGuiCond_Always);
 	ImGui::SetNextWindowSize(adjustedWindowSize, ImGuiCond_Always);
-	
 
 	ImGui::Begin("MissionTimerDisplayWindow", nullptr,
 		ImGuiWindowFlags_NoTitleBar |
@@ -1356,7 +1425,7 @@ void RedOrbCounterWindow() {
 // 		queuedCrimsonConfig.CrimsonHudAddons.redOrbCounter = true;
 // 	}
 
-	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.redOrbCounter) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.redOrbCounter) {
 		CrimsonDetours::RerouteRedOrbsCounterAlpha(false, crimsonHud.redOrbAlpha);
 		CrimsonPatches::SetRebOrbCounterDurationTillFadeOut(false, 90);
 		return;
@@ -1472,7 +1541,7 @@ void CheatsHUDIndicatorWindow() {
 	if (!(InGame() && !g_inGameCutscene)) {
 		return;
 	}
-	if (activeConfig.hideMainHUD) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD) {
 		return;
 	}
 
@@ -1645,19 +1714,47 @@ void CheatHotkeysPopUpWindow() {
 	ImGui::End();
 }
 
+
+// Smoothed lock-on distance helper — continuous float with exponential
+// smoothing to eliminate stepping from integer quantization in
+// ComputeLockOnScreenData.  Capped at capDistance so the lock-on icon
+// never grows beyond ~14 % above the default (non-scaling) size.
+
+static float g_smoothLockOnDist[PLAYER_COUNT] = { 0.0f };
+static bool  g_smoothLockOnDistInit[PLAYER_COUNT] = { false };
+
+inline float GetSmoothedLockOnDist(uint8 playerIndex, float rawDist, float deltaTime) {
+	if (!g_smoothLockOnDistInit[playerIndex]) {
+		g_smoothLockOnDist[playerIndex] = rawDist;
+		g_smoothLockOnDistInit[playerIndex] = true;
+		return rawDist;
+	}
+	const float smoothSpeed = 6.0f; // lower == smoother; but more lag
+	g_smoothLockOnDist[playerIndex] = SmoothLerp(
+		g_smoothLockOnDist[playerIndex], rawDist, smoothSpeed, deltaTime);
+	return g_smoothLockOnDist[playerIndex];
+}
+
+const float g_capDistance = 29.0f; // max size cap distance for the lockOns
+
 void LockOnWindows() {
 	static float lockOnAngle[PLAYER_COUNT] = { 0.0f };
 	static FadeState lockOnFade[PLAYER_COUNT];
 
 	assert(LockOnTexture);
 	if (!LockOnTexture->IsValid()) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	if (!(InGame() && !g_inGameCutscene)) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
-	if (!pool_4449 || !pool_4449[147]) return;
+	if (!pool_4449 || !pool_4449[147]) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
+		return;
+	}
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
 
@@ -1666,27 +1763,41 @@ void LockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = 0.08f; // slow spin
 
-	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
-		CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn);
+	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn ) {
+		CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn);
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
-	if (activeConfig.hideLockOn) {
+	if (activeCrimsonConfig.HudOptions.hideLockOn) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
 	CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.CrimsonHudAddons.lockOn);
 
-	// Loop through player data
-	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		auto& playerData = GetPlayerData(playerIndex);
-		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+	// Determine player count based on actor module state
+	uint8 playerCount = activeConfig.Actor.enable ? activeConfig.Actor.playerCount : 1;
 
-		if (!newActorData.baseAddr) {
-			continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+	// Loop through player data
+	for (uint8 playerIndex = 0; playerIndex < playerCount; ++playerIndex) {
+		PlayerActorData* actorDataPtr = nullptr;
+
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		} else {
+			// Vanilla route: GetVanillaPlayerActor — only playerIndex 0 is valid.
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		auto& actorData = *actorDataPtr;
 
 		// Update angle
 		float deltaTime = ImGui::GetIO().DeltaTime;
@@ -1695,30 +1806,25 @@ void LockOnWindows() {
 		// Keep angle in [0, 2*PI]
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
 
-		auto lockedEnemyScreenPositionDD = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
+		// Compute lock-on screen position, camera distance, and clamped distance
+		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		lockedEnemyScreenPosition = lockedEnemyScreenPositionDD;
-		glm::vec3 lockedEnemyPosition = { actorData.lockOnData.targetPosition.x, actorData.lockOnData.targetPosition.y, actorData.lockOnData.targetPosition.z };
-		glm::vec3 cameraPosition = { cameraData.data[0].x, cameraData.data[0].y, cameraData.data[0].z };
-		crimsonPlayer[playerIndex].cameraLockedEnemyDistance = glm::distance(lockedEnemyPosition, cameraPosition);
-		int distanceLockedEnemy = (int)crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20;
-		crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped = glm::clamp(distanceLockedEnemy, 0, 255);
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
+		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
-		float minDistance = 5.0f;
-		float safeDistance = (std::max)((float)crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped, minDistance);
+		float rawDist = crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20.0f;
+		float smoothDist = GetSmoothedLockOnDist(playerIndex, rawDist, ImGui::GetIO().DeltaTime);
+		float safeDistance = (std::max)(smoothDist, g_capDistance);  // capped to prevent oversized icons when close
 
 		ImVec2 sizeDistance = {
 			(textureBaseSizeX * (1.0f / (safeDistance / 40))),
 			(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 		};
 
-		float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.25f : sizeDistance.x * 0.25f;
-		float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.25f : sizeDistance.y * 0.25f;
+		float textureWidth = sizeDistance.x * 0.25f;
+		float textureHeight = sizeDistance.y * 0.25f;
 
 		ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700.0f * scaleFactorY);
 		float edgeOffsetX = 350.0f * scaleFactorY;
@@ -1783,20 +1889,15 @@ void LockOnWindows() {
 
 		bool lockOnActive = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON)) && actorData.lockOnData.targetBaseAddr60 != 0;
 
-		float fadeSpeed = 8.0f; // Higher = faster fade
-		float targetAlpha = lockOnActive ? 1.0f : 0.0f;
-		lockOnFade[playerIndex].alpha = SmoothLerp(lockOnFade[playerIndex].alpha, targetAlpha, fadeSpeed, ImGui::GetIO().DeltaTime);
+		const float fadeInDuration = 0.25f;
+		const float fadeOutDuration = 0.25f;
+		UpdateFade(lockOnFade[playerIndex], lockOnActive, fadeInDuration, fadeOutDuration, ImGui::GetIO().DeltaTime);
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();
-		ImVec2 centeredTexturePos = !scaleLockOnEnemyDistance ? 
-			ImVec2(
-				windowContentPos.x + (windowSize.x - textureWidth) * (0.5f - (0.010f * playerIndex)),
-				windowContentPos.y + (windowSize.y - textureHeight) * (0.47f - (0.010f * playerIndex))) 
-			:
-			ImVec2(
+		ImVec2 centeredTexturePos = ImVec2(
 			windowContentPos.x + (windowSize.x - textureWidth) * (0.5f - ((0.010f * (sizeDistance.x / 400.0f)) * playerIndex)),
-			windowContentPos.y + (windowSize.y - textureHeight) * (0.47f - ((0.010f  * (sizeDistance.y / 400.0f)) * playerIndex))
+			windowContentPos.y + (windowSize.y - textureHeight) * (0.47f - ((0.010f * (sizeDistance.y / 400.0f)) * playerIndex))
 		);
 
 		if (lockOnFade[playerIndex].alpha > 0.01f) {
@@ -1832,13 +1933,16 @@ void StunDisplacementLockOnWindows() {
 
 	assert(LockOnStunTexture);
 	if (!LockOnStunTexture->IsValid()) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	if (!(InGame() && !g_inGameCutscene)) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
-	if (activeConfig.hideLockOn) {
+	if (activeCrimsonConfig.HudOptions.hideLockOn) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -1847,20 +1951,36 @@ void StunDisplacementLockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = -0.12f; // slow spin
 
-	if (!activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
+	if (!pool_4449 || !pool_4449[147]) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
+	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
 	// Loop through player data
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
 		auto& playerData = GetPlayerData(playerIndex);
 		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
 		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+		PlayerActorData* actorDataPtr = nullptr;
 
-		if (!newActorData.baseAddr) {
-			continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		else {
+			// Vanilla route: GetVanillaPlayerActor — only playerIndex 0 is valid.
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
+		}
+		auto& actorData = *actorDataPtr;
 
 		if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) continue;
 
@@ -1871,16 +1991,17 @@ void StunDisplacementLockOnWindows() {
 		// Keep angle in [0, 2*PI]
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
 
-		auto distanceClamped = crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped;
-		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
+		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
+		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
+
+		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
-		float minDistance = 5.0f;
-		float safeDistance = (std::max)((float)crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped, minDistance);
+		float rawDist = crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20.0f;
+		float smoothDist = GetSmoothedLockOnDist(playerIndex, rawDist, ImGui::GetIO().DeltaTime);
+		float safeDistance = (std::max)(smoothDist, g_capDistance);  // capped to prevent oversized icons when close
 
 		// DISPLACEMENT LOCK-ON (OUTER DARKER CIRCLE)
 
@@ -1889,8 +2010,8 @@ void StunDisplacementLockOnWindows() {
 			(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 		};
 
-		float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.x * 0.18f;
-		float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.y * 0.18f;
+		float textureWidth = sizeDistance.x * 0.18f;
+		float textureHeight = sizeDistance.y * 0.18f;
 
 		ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700.0f * scaleFactorY);
 		float edgeOffsetX = 350.0f * scaleFactorY;
@@ -1950,9 +2071,9 @@ void StunDisplacementLockOnWindows() {
 
 		bool lockOnActive = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON)) && actorData.lockOnData.targetBaseAddr60 != 0;
 
-		float fadeSpeed = 8.0f; // Higher = faster fade
-		float targetAlpha = lockOnActive ? 1.0f : 0.0f;
-		lockOnFade[playerIndex].alpha = SmoothLerp(lockOnFade[playerIndex].alpha, targetAlpha, fadeSpeed, ImGui::GetIO().DeltaTime);
+		const float fadeInDuration = 0.25f;
+		const float fadeOutDuration = 0.25f;
+		UpdateFade(lockOnFade[playerIndex], lockOnActive, fadeInDuration, fadeOutDuration, ImGui::GetIO().DeltaTime);
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();
@@ -1992,8 +2113,8 @@ void StunDisplacementLockOnWindows() {
 					(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 				};
 
-				float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.x * 0.18f;
-				float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.y * 0.18f;
+				float textureWidth = sizeDistance.x * 0.18f;
+				float textureHeight = sizeDistance.y * 0.18f;
 
 				ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700 * scaleFactorY);
 				float edgeOffsetX = 350.0f * scaleFactorY;
@@ -2093,10 +2214,7 @@ void StunDisplacementLockOnWindows() {
 
 				// STUN / DISPLACEMENT NUMERIC HUD
 
-				auto& enemyId = enemyActorData.enemy;
-				bool isHell = (enemyId >= ENEMY::PRIDE_1 && enemyId <= ENEMY::HELL_VANGUARD);
-
-				if (isHell && activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud) {
+				if (activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud) {
 					CrimsonGameplay::CalculateLockedOnEnemyLastStunDisplacementValue(actorData);
 					ImVec4 textColor = ImGui::GetStyleColorVec4(ImGuiCol_Text);
 					ImVec4 fadedTextColor = textColor;
@@ -2155,9 +2273,11 @@ void ShieldLockOnWindows() {
 
 	assert(LockOnShieldTexture);
 	if (!LockOnShieldTexture->IsValid()) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 	if (!(InGame() && !g_inGameCutscene)) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
@@ -2166,20 +2286,38 @@ void ShieldLockOnWindows() {
 	// Spin speed in radians per second (adjust as needed)
 	const float spinSpeed = -0.12f; // slow spin
 
-	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn || !activeConfig.Actor.enable) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.lockOn) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
 		return;
 	}
 
+	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
+	if (!pool_4449 || !pool_4449[147]) {
+		for (int i = 0; i < PLAYER_COUNT; ++i) ForceFadeOut(lockOnFade[i]);
+		return;
+	}
+	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
+
 	// Loop through player data
 	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		auto& playerData = GetPlayerData(playerIndex);
-		auto& characterData = GetCharacterData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
-		auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+		PlayerActorData* actorDataPtr = nullptr;
 
-		if (!newActorData.baseAddr) {
-			continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+		if (activeConfig.Actor.enable) {
+			// CCS route: GetNewActorData — direct lookup via the Crimson config system.
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.characterIndex, ENTITY::MAIN);
+			if (!newActorData.baseAddr) {
+				continue; // FIX: Use continue instead of return to avoid mismatched Begin/End
+			}
+			actorDataPtr = reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
 		}
-		auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+		else {
+			// Vanilla route: GetVanillaPlayerActor — only playerIndex 0 is valid.
+			if (playerIndex > 0) continue;
+			actorDataPtr = GetVanillaPlayerActor();
+			if (!actorDataPtr) continue;
+		}
+		auto& actorData = *actorDataPtr;
 
 		if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) continue;
 
@@ -2190,26 +2328,25 @@ void ShieldLockOnWindows() {
 		// Keep angle in [0, 2*PI]
 		if (lockOnAngle[playerIndex] > IM_PI * 2.0f) lockOnAngle[playerIndex] -= IM_PI * 2.0f;
 
-		auto distanceClamped = crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped;
+		CrimsonFX::ComputeLockOnScreenData(actorData, cameraData, playerIndex);
+
 		auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
 
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
-		auto& scaleLockOnEnemyDistance = activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance;
-
-		// Adjusts size dynamically based on the distance between Camera and Playerfloat minDistance = 5.0f;
+		// Adjusts size dynamically based on the distance between Camera and Player
 		float textureBaseSizeX = 600.0f * scaleFactorY;
 		float textureBaseSizeY = 581.0f * scaleFactorY;
 
-		float minDistance = 5.0f;
-		float safeDistance = (std::max)((float)crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped, minDistance);
+		float rawDist = crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20.0f;
+		float smoothDist = GetSmoothedLockOnDist(playerIndex, rawDist, ImGui::GetIO().DeltaTime);
+		float safeDistance = (std::max)(smoothDist, g_capDistance);  // capped to prevent oversized icons when close
 
 		ImVec2 sizeDistance = {
 			(textureBaseSizeX * (1.0f / (safeDistance / 40))),
 			(textureBaseSizeY * (1.0f / (safeDistance / 40)))
 		};
 
-		float textureWidth = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.x * 0.18f;
-		float textureHeight = !scaleLockOnEnemyDistance ? textureBaseSizeX * 0.18f : sizeDistance.y * 0.18f;
+		float textureWidth = sizeDistance.x * 0.18f;
+		float textureHeight = sizeDistance.y * 0.18f;
 
 		ImVec2 windowSize = ImVec2(700.0f * scaleFactorY, 700.0f * scaleFactorY);
 		float edgeOffsetX = 350.0f * scaleFactorY;
@@ -2265,9 +2402,9 @@ void ShieldLockOnWindows() {
 
 		bool lockOnActive = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON)) && actorData.lockOnData.targetBaseAddr60 != 0;
 
-		float fadeSpeed = 8.0f; // Higher = faster fade
-		float targetAlpha = lockOnActive ? 1.0f : 0.0f;
-		lockOnFade[playerIndex].alpha = SmoothLerp(lockOnFade[playerIndex].alpha, targetAlpha, fadeSpeed, ImGui::GetIO().DeltaTime);
+		const float fadeInDuration = 0.25f;
+		const float fadeOutDuration = 0.25f;
+		UpdateFade(lockOnFade[playerIndex], lockOnActive, fadeInDuration, fadeOutDuration, ImGui::GetIO().DeltaTime);
 
 		// Calculate centered texture position within the window
 		ImVec2 windowContentPos = ImGui::GetWindowPos();
@@ -2405,8 +2542,17 @@ void StyleDisplayWindow() {
 		-120.0f * scaleFactorY
 	);
 
+	ImVec2 styleCompassHybridWindowPos = ImVec2(
+		screenCenterX - (395.0f * scaleFactorY),
+		-120.0f * scaleFactorY
+	);
+
+	ImVec2 styleCompassWindowPos = activeCrimsonConfig.CrimsonHudAddons.positionings ?
+		styleGlassWindowPos :
+		styleCompassHybridWindowPos;
+
 	ImGui::SetNextWindowSize(styleGlassWindowSize);
-	ImGui::SetNextWindowPos(styleGlassWindowPos);
+	ImGui::SetNextWindowPos(styleCompassWindowPos);
 
 	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -2569,7 +2715,7 @@ void StyleDisplayWindow() {
 	ImGui::End(); // End StyleCompassWindow
 
 	ImGui::SetNextWindowSize(styleGlassWindowSize);
-	ImGui::SetNextWindowPos(styleGlassWindowPos);
+	ImGui::SetNextWindowPos(styleCompassWindowPos);
 
 	// STYLE BADGE
 	ImGui::Begin("StyleBadgeWindow", nullptr, windowFlags);
@@ -2805,7 +2951,7 @@ void StyleTextDisplayWindow() {
 	if (!(InGame() && !g_inGameCutscene)) {
 		return;
 	}
-	if (activeConfig.hideMainHUD || !activeCrimsonConfig.CrimsonHudAddons.stylesDisplay || g_inCredits) {
+	if (activeCrimsonConfig.HudOptions.hideMainHUD || g_inCredits) {
 		return;
 	}
 	auto& character = mainActorData.character;
@@ -2829,8 +2975,12 @@ void StyleTextDisplayWindow() {
 		screenCenterX - (200.0f * scaleFactorY),
 		-47.0f * scaleFactorY);
 
+	ImVec2 styleTextHybridWindowPos = ImVec2(
+		screenCenterX - (200.0f * scaleFactorY),
+		-20.0f * scaleFactorY);
+
 	ImGui::SetNextWindowSize(styleTextWindowSize);
-	ImGui::SetNextWindowPos(styleTextWindowPos);
+	ImGui::SetNextWindowPos(activeCrimsonConfig.CrimsonHudAddons.positionings ? styleTextWindowPos : styleTextHybridWindowPos);
 
 	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
 		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
@@ -2994,9 +3144,15 @@ void StyleEXPDisplayWindow() {
 	float screenCenterY = ImGui::GetIO().DisplaySize.y * 0.5f - styleExpDispWindowSize.y;
 
 	// Apply your negative offset from center
-	ImVec2 styleExpDispWindowPos = ImVec2(
+	ImVec2 styleExpDispWindowPosDefault = ImVec2(
 		screenCenterX - (830.0f * scaleFactorY),
 		180 * scaleFactorY);
+
+	const float styleHudHyrbidPositioningOffsetX = StyleHudHybridPositioningOffsetX();
+	ImVec2 styleExpDispWindowPos = styleExpDispWindowPosDefault;
+	if (!activeCrimsonConfig.CrimsonHudAddons.positionings) {
+		styleExpDispWindowPos.x += styleHudHyrbidPositioningOffsetX;
+	}
 
 	ImGui::SetNextWindowSize(styleExpDispWindowSize);
 	ImGui::SetNextWindowPos(styleExpDispWindowPos);
@@ -3119,13 +3275,19 @@ void StyleLvlDispWindow() {
 	float screenCenterX = ImGui::GetIO().DisplaySize.x * 0.5f;
 	float screenCenterY = ImGui::GetIO().DisplaySize.y * 0.5f;
 
-	ImVec2 styleLvlDispWindowPos = character == CHARACTER::DANTE ? 
+	ImVec2 styleLvlDispWindowPosDefault = character == CHARACTER::DANTE ? 
 		ImVec2(
 		screenCenterX - (896.0f * scaleFactorY),
 		67.0f * scaleFactorY) : 
 		ImVec2(
 		screenCenterX - (858.0f * scaleFactorY),
 		37.0f * scaleFactorY);
+
+	const float styleHudHyrbidPositioningOffsetX = StyleHudHybridPositioningOffsetX();
+	ImVec2 styleLvlDispWindowPos = styleLvlDispWindowPosDefault;
+	if (!activeCrimsonConfig.CrimsonHudAddons.positionings) {
+		styleLvlDispWindowPos.x += styleHudHyrbidPositioningOffsetX;
+	}
 
 	ImGui::SetNextWindowSize(styleLvlDispWindowSize);
 	ImGui::SetNextWindowPos(styleLvlDispWindowPos);
@@ -3214,10 +3376,16 @@ void RoyalGaugeDispWindow() {
 	float screenCenterX = ImGui::GetIO().DisplaySize.x * 0.5f;
 	float screenCenterY = ImGui::GetIO().DisplaySize.y * 0.5f;
 
-	ImVec2 royalGaugeWindowPos =
+	ImVec2 royalGaugeWindowPosDefault =
 		ImVec2(
 			screenCenterX - (845.0f * scaleFactorY),
 			83.0f * scaleFactorY);
+
+	const float styleHudHyrbidPositioningOffsetX = StyleHudHybridPositioningOffsetX();
+	ImVec2 royalGaugeWindowPos = royalGaugeWindowPosDefault;
+	if (!activeCrimsonConfig.CrimsonHudAddons.positionings) {
+		royalGaugeWindowPos.x += styleHudHyrbidPositioningOffsetX;
+	}
 
 	ImGui::SetNextWindowSize(royalGaugeWindowSize);
 	ImGui::SetNextWindowPos(royalGaugeWindowPos);
@@ -3410,6 +3578,11 @@ void MirageGaugeMainPlayer() {
 	ImGui::End();
 }
 
+Texture2DD3D11 *getCrimsonGradient()
+{
+	return crimsonTitleGradient;
+}
+
 
 
 void InitTextures(ID3D11Device* pd3dDevice) {
@@ -3418,6 +3591,7 @@ void InitTextures(ID3D11Device* pd3dDevice) {
 	InitLockOnTexture(pd3dDevice);
 	InitStyleGlassTextures(pd3dDevice);
 	InitMirageGaugeTextures(pd3dDevice);
+	InitGradientTextures(pd3dDevice);
 }
 
 }

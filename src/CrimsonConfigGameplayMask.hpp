@@ -6,10 +6,12 @@ struct CrimsonConfigGameplayMask {
 	struct Gameplay {
 		struct General {
 			bool inertia = true;
+			bool extramoves = true;
 			bool sprint = true;
 			bool charHotswap = true;
 			bool freeformSoftLock = true;
 			bool bufferlessReversals = true;
+			bool reversalWindow = true;
 			bool dmc4LockOnDirection = true;
 			bool holdToCrazyCombo = true;
 			bool holdToShoot = true;
@@ -23,14 +25,17 @@ struct CrimsonConfigGameplayMask {
 			bool vanillaWeaponSwitchDelay = true;
 			bool disableSoulEaterInvis = true;
 			bool multiplayerDamageScaling = true;
+			bool consecutiveDirectionalMoves = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
 					std::make_pair("inertia", &General::inertia),
+					std::make_pair("extramoves", &General::extramoves),
 					std::make_pair("sprint", &General::sprint),
 					std::make_pair("charHotswap",&General::charHotswap),
 					std::make_pair("freeformSoftLock", &General::freeformSoftLock),
 					std::make_pair("bufferlessReversals", &General::bufferlessReversals),
+					std::make_pair("reversalWindow", &General::reversalWindow),
 					std::make_pair("dmc4LockOnDirection", &General::dmc4LockOnDirection),
 					std::make_pair("holdToCrazyCombo", &General::holdToCrazyCombo),
 					std::make_pair("holdToShoot", &General::holdToShoot),
@@ -43,7 +48,8 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("fasterTurnRate", &General::fasterTurnRate),
 					std::make_pair("vanillaWeaponSwitchDelay", &General::vanillaWeaponSwitchDelay),
 					std::make_pair("disableSoulEaterInvis", &General::disableSoulEaterInvis),
-					std::make_pair("multiplayerDamageScaling", &General::multiplayerDamageScaling)
+					std::make_pair("multiplayerDamageScaling", &General::multiplayerDamageScaling),
+					std::make_pair("consecutiveDirectionalMoves", &General::consecutiveDirectionalMoves)
 				);
 			}
 		} General;
@@ -57,7 +63,7 @@ struct CrimsonConfigGameplayMask {
 			bool aerialMovesTweaks = true;
 			bool downertiaD = true;
 			bool shotgunAirShotTweaks = true;
-			bool driveTweaks = true;
+			bool driveRework = true;
 			bool disableAirSlashKnockback = true;
 			bool airStinger = true;
 			bool airRevolver = true;
@@ -74,6 +80,9 @@ struct CrimsonConfigGameplayMask {
 			bool swapArtemisMultiLockNormalShot = true;
 			bool swapDancePierceInputs = true;
 			bool swapHammerVocalnoInputs = true;
+			bool chargedShotgunLifts = true;
+			bool doppelgangerSplitSync = true;
+			bool quickGrapple = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
@@ -85,7 +94,7 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("aerialMovesTweaks", &Dante::aerialMovesTweaks),
 					std::make_pair("downertiaD", &Dante::downertiaD),
 					std::make_pair("shotgunAirShotTweaks", &Dante::shotgunAirShotTweaks),
-					std::make_pair("driveTweaks", &Dante::driveTweaks),
+					std::make_pair("driveRework", &Dante::driveRework),
 					std::make_pair("disableAirSlashKnockback", &Dante::disableAirSlashKnockback),
 					std::make_pair("airStinger", &Dante::airStinger),
 					std::make_pair("airRevolver", &Dante::airRevolver),
@@ -101,7 +110,10 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("groundTrick", &Dante::groundTrick),
 					std::make_pair("swapArtemisMultiLockNormalShot", &Dante::swapArtemisMultiLockNormalShot),
 					std::make_pair("swapDancePierceInputs", &Dante::swapDancePierceInputs),
-					std::make_pair("swapHammerVocalnoInputs", &Dante::swapHammerVocalnoInputs)
+					std::make_pair("swapHammerVocalnoInputs", &Dante::swapHammerVocalnoInputs),
+					std::make_pair("chargedShotgunLifts", &Dante::chargedShotgunLifts),
+					std::make_pair("doppelgangerSplitSync", &Dante::doppelgangerSplitSync),
+					std::make_pair("quickGrapple", &Dante::quickGrapple)
 				);
 			}
 		} Dante;
@@ -113,14 +125,14 @@ struct CrimsonConfigGameplayMask {
 			bool airStinger = true;
 			bool airRisingSun = true;
 			bool airLunarPhase = true;
-			bool altJudgementCutInput = true;
+			bool judgementCutRework = true;
 			bool yamatoRisingStar = true;
 			bool yamatoHighTime = true;
 			bool airTauntRisingSun = true;
 			bool mirageTrigger = true;
 			bool downertia = true;
 			bool trickUpNoLockOn = true;
-			bool adjustLunarPhasePos = true;
+			bool noAirLunarPhaseLift = true;
 			
 
 			static constexpr auto Metadata() {
@@ -131,14 +143,14 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("airStinger", &Vergil::airStinger),
 					std::make_pair("airRisingSun", &Vergil::airRisingSun),
 					std::make_pair("airLunarPhase", &Vergil::airLunarPhase),
-					std::make_pair("altJudgementCutInput", &Vergil::altJudgementCutInput),
+					std::make_pair("judgementCutRework", &Vergil::judgementCutRework),
 					std::make_pair("yamatoRisingStar", &Vergil::yamatoRisingStar),
 					std::make_pair("yamatoHighTime", &Vergil::yamatoHighTime),
 					std::make_pair("airTauntRisingSun", &Vergil::airTauntRisingSun),
 					std::make_pair("mirageTrigger", &Vergil::mirageTrigger),
 					std::make_pair("downertia", &Vergil::downertia),
 					std::make_pair("trickUpNoLockOn", &Vergil::trickUpNoLockOn),
-					std::make_pair("adjustLunarPhasePos", &Vergil::adjustLunarPhasePos)
+					std::make_pair("noAirLunarPhaseLift", &Vergil::noAirLunarPhaseLift)
 				);
 			}
 		} Vergil;
@@ -147,6 +159,7 @@ struct CrimsonConfigGameplayMask {
 			bool ldkMode = true;
 			bool mustStyleMode = true;
 			bool enemyDTMode = true;
+			bool betterArkham2 = false;
 			bool forceDifficultyMode = true;
 
 			static constexpr auto Metadata() {
@@ -154,6 +167,7 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("ldkMode", &ExtraDifficulty::ldkMode),
 					std::make_pair("mustStyleMode", &ExtraDifficulty::mustStyleMode),
 					std::make_pair("enemyDTMode", &ExtraDifficulty::enemyDTMode),
+					std::make_pair("betterArkham2", &ExtraDifficulty::betterArkham2),
 					std::make_pair("forceDifficultyMode", &ExtraDifficulty::forceDifficultyMode)
 				);
 			}
@@ -213,16 +227,22 @@ struct CrimsonConfigGameplayMask {
 		struct Damage {
 			bool playerReceivedDmgMult = true;
 			bool enemyReceivedDmgMult = true;
+			bool playerReceiveDmgDisable = false;
+			bool enemyRecieveDmgDisable = false;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
 					std::make_pair("playerReceivedDmgMult", &Damage::playerReceivedDmgMult),
-					std::make_pair("enemyReceivedDmgMult", &Damage::enemyReceivedDmgMult)
+					std::make_pair("enemyReceivedDmgMult", &Damage::enemyReceivedDmgMult),
+					std::make_pair("playerReceiveDmgDisable", &Damage::playerReceiveDmgDisable),
+					std::make_pair("enemyRecieveDmgDisable", &Damage::enemyRecieveDmgDisable)
 				);
 			}
 		} Damage;
 
 		struct Speed {
+			bool defaultGame = true;
+			bool turboGame = true;
 			bool enemy = true;
 			bool human = true;
 			bool dTDante = true;
@@ -232,6 +252,8 @@ struct CrimsonConfigGameplayMask {
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
+					std::make_pair("defaultGame", &Speed::defaultGame),
+					std::make_pair("turboGame", &Speed::turboGame),
 					std::make_pair("enemy", &Speed::enemy),
 					std::make_pair("human", &Speed::human),
 					std::make_pair("dTDante", &Speed::dTDante),
@@ -334,10 +356,12 @@ struct CrimsonConfigGameplayMask {
 
 	struct Debug {
 		bool debugTools = true;
+		bool showHitboxes = true;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("debugTools", &Debug::debugTools)
+				std::make_pair("debugTools", &Debug::debugTools),
+				std::make_pair("showHitboxes", &Debug::showHitboxes)
 			);
 		}
 	} Debug;

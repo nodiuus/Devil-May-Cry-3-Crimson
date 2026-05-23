@@ -22,6 +22,24 @@
 
 namespace CrimsonPatches {
 
+	void PauseGameTime(bool enable) {
+		static bool run = false;
+
+		if (run == enable) {
+			return;
+		}
+
+		//dmc3.exe + 23B437 - E8 F4 1D 00 00 - call dmc3.exe + 23D230{ PlayGameTick ? }
+		if (enable) {
+			_nop((char*)(appBaseAddr + 0x23B437), 5);
+		}
+		else {
+			_patch((char*)(appBaseAddr + 0x23B437), (char*)"\xE8\xF4\x1D\x00\x00", 5);
+		} 
+
+		run = enable;
+	}
+
 	void HoldToAutoFire(bool enable) {
 		static bool run = false;
 
@@ -39,6 +57,21 @@ namespace CrimsonPatches {
 			_patch((char*)(appBaseAddr + 0x2053E8), (char*)"\xE4", 1);
 		}
 
+		run = enable;
+	}
+
+	void DanteQuickGrapple(bool enable) {
+		static bool run = false;
+		if (run == enable) {
+			return;
+		}
+		// dmc3.exe+2064A6 - 74 E1                 - je dmc3.exe+206489
+		if (enable) {
+			_nop((char*)(appBaseAddr + 0x2064A6), 2);
+		}
+		else {
+			_patch((char*)(appBaseAddr + 0x2064A6), (char*)"\x74\xE1", 2);
+		}
 		run = enable;
 	}
 
@@ -252,6 +285,25 @@ void RainstormLift(bool enable) {
 	run = enable;
 }
 
+void DriveProjectileThroughWalls(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1CBA20 - C6 02 05 - mov byte ptr [rdx],05 { DriveCollisionFile wallpenetrationflag }
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x1CBA20), (char*)"\xC6\x02\x03", 3);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x1CBA20), (char*)"\xC6\x02\x05", 3);
+	}
+
+	run = enable;
+}
+
 void ToggleIncreasedEnemyJuggleTime(bool enable) {
 	static bool run = false;
 
@@ -316,6 +368,50 @@ void ToggleIncreasedArtemisInstantChargeResponsiveness(bool enable) {
 	run = enable;
 }
 
+void ToggleKillPointBlankCCEffects(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// dmc3.exe+20EE2F - E8 6C 8E 0D 00 - call dmc3.exe+2E7CA0 { Point Blank CC effect CreateEffectA } -- VFX
+	// dmc3.exe+20EE82 - E8 99 A4 12 00 - call dmc3.exe+339320 { Point Blank CC Sound Effect } -- SFX
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x20EE2F), 5);
+		_nop((char*)(appBaseAddr + 0x20EE82), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x20EE2F), (char*)"\xE8\x6C\x8E\x0D\x00", 5);
+		_patch((char*)(appBaseAddr + 0x20EE82), (char*)"\xE8\x99\xA4\x12\x00", 5);
+	}
+	
+	run = enable;
+}
+
+void ToggleKillTornadoCCEffects(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+20B217 - E8 84CA0D00 - call dmc3.PlayVFX_sub_1402E7CA0 { Tornado's CC Effect CreateEffectA } -- VFX
+	// dmc3.exe+20B224 - 74 26 - je dmc3.exe+20B24C
+	// dmc3.exe+20B26C - E8 AF E0 12 00  - call dmc3.PlaySFXWithPos_sub_140339320 { Tornado's CC Sound Effect } -- SFX
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x20B217), 5);
+		_patch((char*)(appBaseAddr + 0x20B224), (char*)"\xEB\x26", 2); // change to jmp
+		_nop((char*)(appBaseAddr + 0x20B26C), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x20B217), (char*)"\xE8\x84\xCA\x0D\x00", 5);
+		_patch((char*)(appBaseAddr + 0x20B224), (char*)"\x74\x26", 2);
+		_patch((char*)(appBaseAddr + 0x20B26C), (char*)"\xE8\xAF\xE0\x12\x00", 5);
+	}
+	
+	run = enable;
+}
+
 #pragma endregion
 
 #pragma region CameraStuff
@@ -327,7 +423,7 @@ void CameraSensController() {
 	// dmc3.exe+4C642F - 3E 56                 - push rsi
 
 	// Function to patch memory with correct opcodes + float value
-	static float lastFrameRate = activeConfig.frameRate;
+	static float lastFrameRate = activeCrimsonConfig.System.fpsCap;
 	auto patchWithFloat = [](byte* address, const char* prefix, int prefixSize, float value) {
 		char patchBytes[10];
 		memcpy(patchBytes, prefix, prefixSize);
@@ -347,7 +443,7 @@ void CameraSensController() {
 	default: sensitivityValue = 0.0523599f * g_frameRateMultiplier; sensitivityEnum = 2;
 	}
 
-	if (toggle.cameraSensitivity == sensitivityEnum && lastFrameRate == activeConfig.frameRate) {
+	if (toggle.cameraSensitivity == sensitivityEnum && lastFrameRate == g_FrameRate) {
 		return;
 	}
 	
@@ -357,7 +453,7 @@ void CameraSensController() {
 	patchWithFloat(appBaseAddr + 0x4C6430, "", 0, sensitivityValue);
 
 	toggle.cameraSensitivity = sensitivityEnum;
-	lastFrameRate = activeConfig.frameRate;
+	lastFrameRate = g_FrameRate;
 }
 
 
@@ -365,6 +461,12 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 	auto pool_166 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
 	if (!pool_166 || !pool_166[3]) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
+
+	const float frameScale = (g_FrameRateTimeMultiplier > 0.0f) ? g_FrameRateTimeMultiplier : 1.0f;
+
+	if (cameraMetadata.fixedCameraAddr != 0) {
+		return; // Disable adjustment when a fixed camera is active
+	}
 
 	static std::chrono::time_point<std::chrono::steady_clock> lockOnStartTime;
 	static bool isLockOnTimerActive = false;
@@ -407,19 +509,19 @@ void CameraFollowUpSpeedController(CameraData& cameraData, CameraControlMetadata
 		};
 
 	if (activeConfig.Actor.playerCount > 1) {
-		return; // Disable follow-up speed adjustment when multiplayer camera is active
+     cameraData.cameraLag = 1000.0f / frameScale;
 	}
 	else {
 		if (cameraMetadata.fixedCameraAddr == 0) {
-			switch (activeCrimsonConfig.Camera.followUpSpeed) {
+			switch (activeCrimsonConfig.Camera.followUpSpd) {
 			case 0: // Low (Vanilla Default)
-				return;
+             cameraData.cameraLag = 1000.0f / frameScale;
 				break;
 			case 1: // Medium
-				dynamicCameraLag(500.0f, 2000.0f, 0.5f); // Apply lockOn behavior for medium follow-up speed
+                dynamicCameraLag(500.0f / frameScale, 2000.0f / frameScale, 0.5f); // Apply lockOn behavior for medium follow-up speed
 				break;
 			case 2: // High
-				dynamicCameraLag(330.0f, 3000.0f, 0.5f); // Apply lockOn behavior for high follow-up speed
+              dynamicCameraLag(330.0f / frameScale, 3000.0f / frameScale, 0.5f); // Apply lockOn behavior for high follow-up speed
 				break;
 			default:
 				break;
@@ -435,7 +537,7 @@ void HandleDynamicSPCameraDistance(float& cameraDistance, float groundDistance, 
 	if (!pool_166 || !pool_166[3]) return;
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
 
-	if (activeConfig.Actor.playerCount == 1 || !activeConfig.Actor.enable || mainActorData.mode >= ACTOR_MODE::MISSION_18) {
+	if (activeConfig.Actor.playerCount == 1 || !activeConfig.Actor.enable || mainActorData.mode >= ACTOR_MODE::MISSION_18 || !g_isMPCamActive) {
 		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
 	}
 
@@ -451,6 +553,10 @@ void HandleDynamicSPCameraDistance(float& cameraDistance, float groundDistance, 
 }
 
 void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance, float airDistance) {
+	if (!g_isMPCamActive) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+	}
+
 	static auto lastAdjustmentTime = std::chrono::steady_clock::now();
 	const auto timeThreshold = std::chrono::milliseconds(1000); // 1 second delay
 	static auto lastWallClearTime = std::chrono::steady_clock::now();
@@ -476,7 +582,7 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 	const float screenMarginForZoomIn = 115.0f * scaleFactorX;  // Safe margin for zooming in
 	const float screenMarginForZoomOut = 50.0f * scaleFactorX;
 
-	float maxDistance = (mainActorData.state & STATE::IN_AIR) ? 1000.0f : 780.0f; // Maximum allowed camera distance
+	float maxDistance = (mainActorData.state & STATE::IN_AIR) ? 680.0f : 480.0f; // Maximum allowed camera distance
 	bool needZoomOut = false;
 
 
@@ -495,8 +601,7 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 
 		// Check if the entity is close to the edges of the screen (buffer for zooming out)
 		if (screenPos.x <= screenMarginForZoomOut || screenPos.x >= (screenWidth - screenMarginForZoomOut) ||
-			screenPos.y <= screenMarginForZoomOut || screenPos.y >= (screenHeight - screenMarginForZoomOut) &&
-			g_cameraHittingWall == 1) {
+			screenPos.y <= screenMarginForZoomOut || screenPos.y >= (screenHeight - screenMarginForZoomOut)) {
 			needZoomOut = true;
 		}
 	}
@@ -559,20 +664,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 		if (now - lastWallClearTime > wallCooldown) {
 			if (g_inCombat) {
 				// Handle camera distance adjustment based on screen position
+				float deltaTime = ImGui::GetIO().DeltaTime;
 				if (needZoomOut) {
 					lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-					cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-					if (cameraDistance > maxDistance) {
-						cameraDistance = maxDistance; // Cap the distance
-					}
+					cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-10.0f * deltaTime));
 				} else {
 					auto currentTime = std::chrono::steady_clock::now();
 					auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 					// Adjust the camera back if all entities are in the center and cooldown time has passed
 					if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenter) {
-						if (cameraDistance > groundDistance) {
-							cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reduce distance
+						if (cameraDistance > groundDistance + 5.0f) { // Added Deadzone tolerance
+							cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-3.0f * deltaTime));
 							if (cameraDistance < groundDistance) {
 								cameraDistance = groundDistance; // Prevent going below default distance
 							}
@@ -582,23 +685,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 
 				// Zoom in if closest enemy is far away
 				if (closestEnemyDistance > 800.0f) {
-					cameraDistance -= 15.0f * g_frameRateMultiplier; // Decrease camera distance to zoom in
+					cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-2.0f * deltaTime));
 					if (cameraDistance < groundDistance) {
 						cameraDistance = groundDistance; // Prevent going below default distance
 					}
 				}
 			} else {
+				float deltaTime = ImGui::GetIO().DeltaTime;
 				// Smoothly reset to ground distance when out of combat or returning to the ground
-				if (cameraDistance > groundDistance) {
-					cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reset to ground distance
-					if (cameraDistance < groundDistance) {
-						cameraDistance = groundDistance; // Clamp to ground distance
-					}
-				} else if (cameraDistance < groundDistance) {
-					cameraDistance += 10.0f * g_frameRateMultiplier; // Gradually increase to ground distance if too low
-					if (cameraDistance > groundDistance) {
-						cameraDistance = groundDistance; // Clamp to ground distance
-					}
+				if (std::abs(cameraDistance - groundDistance) > 5.0f) { // Deadzone
+					cameraDistance += (groundDistance - cameraDistance) * (1.0f - std::exp(-3.0f * deltaTime));
+				} else {
+					cameraDistance = groundDistance;
 				}
 			}
 		}
@@ -606,20 +704,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 		// Not colliding, normal logic
 		if (g_inCombat) {
 			// Handle camera distance adjustment based on screen position
+			float deltaTime = ImGui::GetIO().DeltaTime;
 			if (needZoomOut) {
 				lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-				cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-				if (cameraDistance > maxDistance) {
-					cameraDistance = maxDistance; // Cap the distance
-				}
+				cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-10.0f * deltaTime));
 			} else {
 				auto currentTime = std::chrono::steady_clock::now();
 				auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 				// Adjust the camera back if all entities are in the center and cooldown time has passed
 				if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenter) {
-					if (cameraDistance > groundDistance) {
-						cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reduce distance
+					if (cameraDistance > groundDistance + 5.0f) { // Added Deadzone tolerance
+						cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-3.0f * deltaTime));
 						if (cameraDistance < groundDistance) {
 							cameraDistance = groundDistance; // Prevent going below default distance
 						}
@@ -629,23 +725,18 @@ void HandlePanoramicSPCameraDistance(float& cameraDistance, float groundDistance
 
 			// Zoom in if closest enemy is far away
 			if (closestEnemyDistance > 800.0f) {
-				cameraDistance -= 15.0f * g_frameRateMultiplier; // Decrease camera distance to zoom in
+				cameraDistance -= (cameraDistance - groundDistance) * (1.0f - std::exp(-2.0f * deltaTime));
 				if (cameraDistance < groundDistance) {
 					cameraDistance = groundDistance; // Prevent going below default distance
 				}
 			}
 		} else {
+			float deltaTime = ImGui::GetIO().DeltaTime;
 			// Smoothly reset to ground distance when out of combat or returning to the ground
-			if (cameraDistance > groundDistance) {
-				cameraDistance -= 10.0f * g_frameRateMultiplier; // Gradually reset to ground distance
-				if (cameraDistance < groundDistance) {
-					cameraDistance = groundDistance; // Clamp to ground distance
-				}
-			} else if (cameraDistance < groundDistance) {
-				cameraDistance += 10.0f * g_frameRateMultiplier; // Gradually increase to ground distance if too low
-				if (cameraDistance > groundDistance) {
-					cameraDistance = groundDistance; // Clamp to ground distance
-				}
+			if (std::abs(cameraDistance - groundDistance) > 5.0f) {
+				cameraDistance += (groundDistance - cameraDistance) * (1.0f - std::exp(-3.0f * deltaTime));
+			} else {
+				cameraDistance = groundDistance;
 			}
 		}
 	}
@@ -657,17 +748,17 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
 
 	static auto lastAdjustmentTime = std::chrono::steady_clock::now();
-	const auto timeThreshold = std::chrono::milliseconds(1000); // 1 second delay
+	const auto timeThreshold = std::chrono::milliseconds(2500); // 2.5 seconds delay
 	static auto lastWallClearTime = std::chrono::steady_clock::now();
 	const auto wallCooldown = std::chrono::milliseconds(800); // Cooldown after wall collision
 
 	static bool fovWasIncreased = false;
-	const float maxFovMultiplier = 2.0f;
-	const float fovIncreaseSpeed = 0.02f; // Per frame, adjust as needed
-	const float fovDecreaseSpeed = 0.02f; // Per frame, adjust as needed
+	const float maxFovMultiplier = 1.6f;
+	const float fovIncreaseSpeed = 0.035f; // Faster transition when entity goes off-screen
+	const float fovDecreaseSpeed = 0.12f; // Faster recovery to normal
 
 	static auto allInCenterStartTime = std::chrono::steady_clock::time_point{};
-	const auto allInCenterCooldown = std::chrono::milliseconds(400); // 400ms debounce
+	const auto allInCenterCooldown = std::chrono::milliseconds(1000); // 1000ms debounce
 
 	// Always restore FOV if this function is called but MPcam can't be used
 	if (!appBaseAddr) {
@@ -700,7 +791,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	const float screenMarginForZoomIn = 380.0f * scaleFactorX;  // Safe margin for zooming in
 	const float screenMarginForZoomOut = 300.0f * scaleFactorX;
 
-	float maxDistance = 2800.0f; // Maximum allowed camera distance
+	float maxDistance = 2200.0f; // Maximum allowed camera distance
 
 	// Check if all players are within multiplayer camera range
 	bool allPlayersWithinMPCam = true;
@@ -708,7 +799,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	for (int i = 0; i < activeConfig.Actor.playerCount * 2; i++) {
 		float distanceTo1P = g_plEntityTo1PDistances[i];
 		float cameraDistanceMP = ((eventData.room >= ROOM::BLOODY_PALACE_1 && eventData.room <= ROOM::BLOODY_PALACE_10) || eventData.room == ROOM::DAMNED_CHESS_BOARD ||
-			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 1900.0f;
+			eventData.room == ROOM::UNSACRED_HELLGATE) ? 2800.0f : 2200.0f;
 		if (distanceTo1P >= cameraDistanceMP) {
 			allPlayersWithinMPCam = false;
 			break;
@@ -718,8 +809,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 
 		// Check if the entity is close to the edges of the screen (buffer for zooming out)
 		if (screenPos.x <= screenMarginForZoomOut || screenPos.x >= (screenWidth - screenMarginForZoomOut) ||
-			screenPos.y <= screenMarginForZoomOut || screenPos.y >= (screenHeight - screenMarginForZoomOut) &&
-			g_cameraHittingWall == 1) {
+			screenPos.y <= screenMarginForZoomOut || screenPos.y >= (screenHeight - screenMarginForZoomOut)) {
 			needZoomOut = true;
 		}
 	}
@@ -728,6 +818,7 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	if (!allPlayersWithinMPCam) {
 		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
 		fovWasIncreased = false;
+		cameraDistance = groundDistanceSP; // Fallback snap to defaults
 		HandleDynamicSPCameraDistance(cameraDistance, groundDistanceSP, airDistanceSP);
 		return;
 	}
@@ -769,6 +860,18 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	// Gradual FOV adjustment logic
 	float& fovMultiplier = activeCrimsonConfig.Camera.fovMultiplier;
 	const float queuedFov = queuedCrimsonConfig.Camera.fovMultiplier;
+
+	// Dynamic minimum FOV floor that scales as the camera gets compressed into the wall
+	float dynamicMinFov = queuedFov;
+	if (cameraDistance < groundDistanceSP) {
+		float pushRatio = (groundDistanceSP - cameraDistance) / (groundDistanceSP - 100.0f); // 0.0 to 1.0
+		if (pushRatio > 1.0f) pushRatio = 1.0f;
+		if (pushRatio < 0.0f) pushRatio = 0.0f;
+
+		// If fully compressed against wall, retain a higher base FOV
+		dynamicMinFov = queuedFov + ((maxFovMultiplier - 0.2f) - queuedFov) * pushRatio; 
+	}
+
 	if ((g_cameraHittingWall > 0) && cameraDistance <= groundDistanceSP + 0.1f && anyPlayerNearEdge) {
 		// Save previous FOV only once when starting to increase
 		if (!fovWasIncreased) {
@@ -782,66 +885,69 @@ void HandleMultiplayerCameraDistance(float& cameraDistance, float groundDistance
 	} else {
 		// Only restore FOV if all players have been in the center for at least 400ms
 		if (fovWasIncreased && debounceActive && (now - allInCenterStartTime) > allInCenterCooldown) {
-			if (fovMultiplier > queuedFov) {
-				fovMultiplier -= fovDecreaseSpeed * g_frameRateMultiplier;
-				if (fovMultiplier < queuedFov) fovMultiplier = queuedFov;
+			if (fovMultiplier > dynamicMinFov) {
+				// Slower decrease to avoid jarring snap
+				fovMultiplier -= (fovDecreaseSpeed * 0.5f) * g_frameRateMultiplier; 
+				if (fovMultiplier < dynamicMinFov) fovMultiplier = dynamicMinFov;
+			} else if (fovMultiplier < dynamicMinFov) {
+				// Instantly catch up if pushed below the dynamic floor
+				fovMultiplier = dynamicMinFov;
 			} else {
-				fovMultiplier = queuedFov;
-				fovWasIncreased = false;
+				if (cameraDistance >= groundDistanceSP - 0.1f) {
+					fovMultiplier = queuedFov;
+					fovWasIncreased = false;
+				}
 			}
+		} else if (fovMultiplier < dynamicMinFov) {
+			// Ensure it always respects the floor even if not restoring
+			fovMultiplier = dynamicMinFov;
 		}
 	}
 	// Handle camera collision and distance adjustment
 	if (g_cameraHittingWall > 1) {
 		// Immediate approach when deeply colliding
 		cameraDistance -= 40.0f * g_frameRateMultiplier; // Approach faster if needed
-		//if (cameraDistance < groundDistanceSP) cameraDistance = groundDistanceSP;
+		if (cameraDistance < 100.0f) cameraDistance = 100.0f; // Prevent infinite negative zoom which pulls camera inside players
 		lastWallClearTime = std::chrono::steady_clock::now(); // Reset cooldown
 	} else if (g_cameraHittingWall == 1) {
 		// Only allow pull-back if cooldown has passed
 		auto now = std::chrono::steady_clock::now();
 		if (now - lastWallClearTime > wallCooldown) {
-			// Handle camera distance adjustment based on screen position
+			// Handle camera distance adjustment using frame-rate independent smooth damping
+			float deltaTime = ImGui::GetIO().DeltaTime;
 			if (needZoomOut) {
 				lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-				cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-				if (cameraDistance > maxDistance) {
-					cameraDistance = maxDistance; // Capping the distance
-				}
+				// Exponentially smooth towards max distance
+				cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-10.0f * deltaTime));
 			} else {
 				auto currentTime = std::chrono::steady_clock::now();
 				auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 				// Only adjust the camera if the cooldown time has passed and all entities are in the center
 				if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenterForFov) {
-					if (cameraDistance > groundDistanceSP) {
-						cameraDistance -= 10.0f * g_frameRateMultiplier;
-						if (cameraDistance < groundDistanceSP) {
-							cameraDistance = groundDistanceSP; // Prevent going below default distance
-						}
+					// Exponentially smooth towards default ground distance
+					cameraDistance -= (cameraDistance - groundDistanceSP) * (1.0f - std::exp(-0.8f * deltaTime));
+					if (cameraDistance < groundDistanceSP) {
+						cameraDistance = groundDistanceSP; // Prevent going below default distance
 					}
 				}
 			}
 		}
 	} else {
-		// Not colliding, normal logic
+		// Not colliding, normal logic (Using smooth damping)
+		float deltaTime = ImGui::GetIO().DeltaTime;
 		if (needZoomOut) {
 			lastAdjustmentTime = std::chrono::steady_clock::now(); // Reset timer
-			cameraDistance += 20.0f * g_frameRateMultiplier; // Increase camera distance per frame
-			if (cameraDistance > maxDistance) {
-				cameraDistance = maxDistance; // Capping the distance
-			}
+			cameraDistance += (maxDistance - cameraDistance) * (1.0f - std::exp(-10.0f * deltaTime));
 		} else {
 			auto currentTime = std::chrono::steady_clock::now();
 			auto timeSinceLastAdjustment = currentTime - lastAdjustmentTime;
 
 			// Only adjust the camera if the cooldown time has passed and all entities are in the center
 			if (timeSinceLastAdjustment > timeThreshold && allEntitiesInCenterForFov) {
-				if (cameraDistance > groundDistanceSP) {
-					cameraDistance -= 10.0f * g_frameRateMultiplier;
-					if (cameraDistance < groundDistanceSP) {
-						cameraDistance = groundDistanceSP; // Prevent going below default distance
-					}
+				cameraDistance -= (cameraDistance - groundDistanceSP) * (1.0f - std::exp(-0.8f * deltaTime));
+				if (cameraDistance < groundDistanceSP) {
+					cameraDistance = groundDistanceSP; // Prevent going below default distance
 				}
 			}
 		}
@@ -854,10 +960,37 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 		return;
 	}
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
+
+	if (cameraMetadata.fixedCameraAddr != 0) {
+		return; // Disable distance adjustment when a fixed camera is active
+	}
+
+	static bool wasMPCamActive = false;
+	bool isMPCamActiveNow = g_isMPCamActive && activeConfig.Actor.enable;
+
+	// Snap back instantly on transition to SP Cam
+	if (wasMPCamActive && !isMPCamActiveNow) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+
+		if (activeCrimsonConfig.Camera.distance == 0) { // Far
+			cameraData.distanceCam = 430.0f;
+		} else if (activeCrimsonConfig.Camera.distance == 1) { // Closer
+			cameraData.distanceCam = 350.0f;
+		} else { // Dynamic
+			// HandleDynamicSPCameraDistance will handle it, but we can set a safe fallback here too
+			cameraData.distanceCam = 430.0f;
+		}
+	}
+	wasMPCamActive = isMPCamActiveNow;
+
 	if (activeCrimsonConfig.Camera.distance == 0 || cameraMetadata.fixedCameraAddr != 0) { // Far (Vanilla Default) // check if the camera is in a fixed pos mode
 		if (g_isMPCamActive && activeConfig.Actor.enable) {
 			HandleMultiplayerCameraDistance(cameraData.distanceCam, 430, 580);
 		} else {
+			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+			if (cameraData.distanceCam > 800.0f) {
+				cameraData.distanceCam = 430.0f;
+			}
 			return;
 		}
 	}
@@ -865,14 +998,12 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 	if (activeCrimsonConfig.Camera.distance == 1) { // Closer
 		if (g_isMPCamActive && activeConfig.Actor.enable) {
 			HandleMultiplayerCameraDistance(cameraData.distanceCam, 430, 580);
-		} else if (cameraData.distanceCam > 350) {
-			cameraData.distanceCam = 350.0f;
 		} else {
-			return;
-		}
-		
-		if (activeCrimsonConfig.Camera.fovMultiplier != queuedCrimsonConfig.Camera.fovMultiplier) {
 			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+			if (cameraData.distanceCam > 350.0f) {
+				cameraData.distanceCam = 350.0f;
+			}
+			return;
 		}
 	}
 
@@ -892,32 +1023,53 @@ void CameraDistanceController(CameraControlMetadata& cameraMetadata) {
 
 
 void CameraLockOnDistanceController() {
-    auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
-    if (!pool_4449 || !pool_4449[147]) {
-        return;
-    }
-    auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
+	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
+	if (!pool_4449 || !pool_4449[147]) {
+		return;
+	}
+	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
 
-    auto pool_166 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
-    if (!pool_166 || !pool_166[3]) {
-        return;
-    }
-    auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
+	auto pool_166 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
+	if (!pool_166 || !pool_166[3]) {
+		return;
+	}
+	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_166[3]);
+	auto& cameraMetadata = *reinterpret_cast<CameraControlMetadata*>(pool_4449);
 
+	if (cameraMetadata.fixedCameraAddr != 0) {
+		return; // Disable lock-on distance adjustment when a fixed camera is active
+	}
 
-    if (activeCrimsonConfig.Camera.lockOnDistance == 0) {
-		if (activeCrimsonConfig.Camera.fovMultiplier != queuedCrimsonConfig.Camera.fovMultiplier) {
-			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+	static bool wasMPCamActiveLockOn = false;
+	bool isMPCamActiveNow = g_isMPCamActive && activeConfig.Actor.enable;
+
+	// Snap back instantly on transition to SP Cam
+	if (wasMPCamActiveLockOn && !isMPCamActiveNow) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+		if (activeCrimsonConfig.Camera.lockOnDistance == 0 || activeCrimsonConfig.Camera.lockOnDistance == 2) { 
+			cameraData.distanceLockOn = 430.0f;
+		} else if (activeCrimsonConfig.Camera.lockOnDistance == 1) { 
+			cameraData.distanceLockOn = 360.0f;
 		}
-        return;
-    }
+	}
+	wasMPCamActiveLockOn = isMPCamActiveNow;
 
-    if (activeCrimsonConfig.Camera.lockOnDistance == 1) {
-		if (activeCrimsonConfig.Camera.fovMultiplier != queuedCrimsonConfig.Camera.fovMultiplier) {
-			activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+	if (activeCrimsonConfig.Camera.lockOnDistance == 0) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+		if (cameraData.distanceLockOn > 800.0f) {
+			cameraData.distanceLockOn = 430.0f;
 		}
-        cameraData.distanceLockOn = 360.0f;
-    }
+		return;
+	}
+
+	if (activeCrimsonConfig.Camera.lockOnDistance == 1) {
+		activeCrimsonConfig.Camera.fovMultiplier = queuedCrimsonConfig.Camera.fovMultiplier;
+		if (cameraData.distanceLockOn > 360.0f) {
+			cameraData.distanceLockOn = 360.0f;
+		} else {
+			cameraData.distanceLockOn = 360.0f;
+		}
+	}
 
     if (activeCrimsonConfig.Camera.lockOnDistance == 2) {
 		if (g_isMPCamActive) {
@@ -934,13 +1086,63 @@ void CameraLockOnDistanceController() {
 }
 
 void CameraTiltController(CameraData* cameraData, CameraControlMetadata& cameraMetadata) {
-    if (activeCrimsonConfig.Camera.verticalTilt == 0 || cameraMetadata.fixedCameraAddr != 0) { // Original (Vanilla Default)
+  static CameraData* lastCameraData = nullptr;
+	static int lastVerticalTilt = -1;
+	static bool tiltApplied = false;
+
+	//if (!cameraData) {
+	//	lastCameraData = nullptr;
+	//	tiltApplied = false;
+	//	return;
+	//}
+
+	//if (lastCameraData != cameraData) {
+	//	lastCameraData = cameraData;
+	//	tiltApplied = false;
+	//}
+
+	//if (cameraMetadata.fixedCameraAddr != 0) {
+ //       tiltApplied = false;
+	//	return; // Disable tilt adjustment when a fixed camera is active
+	//}
+
+	//if (lastVerticalTilt != activeCrimsonConfig.Camera.verticalTilt) {
+	//	lastVerticalTilt = activeCrimsonConfig.Camera.verticalTilt;
+	//	tiltApplied = false;
+	//}
+
+	//if (tiltApplied) {
+	//	return;
+	//}
+
+    if (activeCrimsonConfig.Camera.verticalTilt == 0) { // Original (Vanilla Default)
 		cameraData->tilt = 0.253073f;
     }
 
     if (activeCrimsonConfig.Camera.verticalTilt == 1) { // Closer to Ground
         cameraData->tilt = 0.103073f;
     }
+
+	tiltApplied = true;
+}
+
+void DisableCameraShake(bool enable) {
+	static bool run = false;
+
+	// If the function has already run in the current state, return early
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1F02E3 - 74 37                 - je dmc3.exe+1F031C
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x1F02E3), (char*)"\xEB\x37", 2); // jmp dmc3.exe+1F031C
+	} else {
+		_patch((char*)(appBaseAddr + 0x1F02E3), (char*)"\x74\x37", 2); // je dmc3.exe+1F031C
+	}
+
+	run = enable;
 }
 
 void ForceThirdPersonCamera(bool enable) {
@@ -1054,10 +1256,123 @@ void DisableLockOnCamera(bool enable) {
 
 #pragma region GraphicsStuff
 
-void DisableBlendingEffects(bool enable) {
+void DisableGhostingEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+	// From sub_140317470:
+	// This function builds a render command buffer with 5 commands:
+	//   Type 0x63 - Init ghost buffer
+	//   Type 0x64 - Color filter top-left position
+	//   Type 0x64 - Color filter bottom-right position
+	//   Type 0x64 - Color filter intensity/fade value
+	//   Type 0x65 - Ghost/motion blur enable
+	//
+	// Patching ret at the function entry kills ALL ghosting blending effects cleanly.
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x317470), (char*)"\xC3", 1); // ret
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x317470), (char*)"\x48\x89\x5C\x24\x08", 5); // mov [rsp+08], rbx
+	}
+
+	run = enable;
+}
+
+void DisableColorFilterEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+315566 - E8 65 25 00 00           - call dmc3.sub_140317AD0 { Scene Color Filter }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x315566), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x315566), (char*)"\xE8\x65\x25\x00\x00", 5);
+	}
+
+	run = enable;
+}
+
+void DisableBloomEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+315583 - E8 C8 4D 00 00           - call dmc3.sub_14031A350 { Bloom 1 }
+	// dmc3.exe+315590 - E8 BB 20 00 00           - call dmc3.sub_140317650 { Bloom 2 }
+	// dmc3.exe+31559D - E8 EE 22 00 00           - call dmc3.sub_140317890 { Bloom 3 }
+
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x315583), 5);
+		_nop((char*)(appBaseAddr + 0x315590), 5);
+		_nop((char*)(appBaseAddr + 0x31559D), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x315583), (char*)"\xE8\xC8\x4D\x00\x00", 5);
+		_patch((char*)(appBaseAddr + 0x315590), (char*)"\xE8\xBB\x20\x00\x00", 5);
+		_patch((char*)(appBaseAddr + 0x31559D), (char*)"\xE8\xEE\x22\x00\x00", 5);
+	}
+
+	run = enable;
+}
+
+
+void DisableFogMistEffect(bool enable) {
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+3155D1 - E8 CA400000           - call dmc3.sub_1403196A0 { Fog / Mist }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x3155D1), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x3155D1), (char*)"\xE8\xCA\x40\x00\x00", 5);
+	}
+}
+
+void DisableWarpingEffect(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// From UpdateBlendingEffectInstances_sub_1403153C0:
+	// dmc3.exe+3155B7 - E8 04 39 00 00           - call dmc3.sub_140318EC0 { Warp }
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x3155B7), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x3155B7), (char*)"\xE8\x04\x39\x00\x00", 5);
+	}
+
+	run = enable;
+}
+
+void DisableAllBlendingEffects(bool enable) {
 	static bool run = false;
 
 	// If the function has already run in the current state, return early
+
+	// From RenderBlendingEffects_sub_140315820:
+	// dmc3.exe+315BA4 - 75 07                 - jne dmc3.exe+315BAD
+	
 	if (run == enable) {
 		return;
 	}
@@ -1070,6 +1385,24 @@ void DisableBlendingEffects(bool enable) {
 	}
 
     run = enable;
+}
+
+void DisableScreenFadeOuts(bool enable) {
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// From UpdateCFadeControl_sub_1402E8B10:
+	// dmc3.exe+2E8B3F - E8 1C DE 03 00           - call dmc3.ControlCFadeAmount_sub_140326960
+	
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x2E8B3F), 5);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x2E8B3F), (char*)"\xE8\x1C\xDE\x03\x00", 5);
+	}
+
+	run = enable;
 }
 
 #pragma endregion
@@ -1491,6 +1824,151 @@ void ToggleM6CrashFix(bool enable) {
 	run = enable;
 }
 
+void ToggleTempFixHighFPSEnigmaShls(bool enable) {
+	// This fixes the Enigma Shells ghost hits at High FPS by skipping velocity normalization
+	// Likely a temporary fix until we can properly address the underlying issue, 
+	// which is related to how collsion desyncs a bit at high FPS.
+	// See: StateAssignmentCollision_sub_1402CC530 with collision matrix assignment.
+	// This fix seems to work fine and doesn't cause any noticeable issues, but it does feel a bit hacky, 
+	// so ideally we'd want to address the root cause eventually. -- Berth
+	// From FireEnigmaShl_sub_1401A3550:
+	// dmc3.exe+1A361C - 76 1D                 - jna dmc3.exe+1A363B
+	// dmc3.exe+1A361C - EB 1D                 - jmp dmc3.exe+1A363B
+
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	if (enable) {
+		_patch((char*)(appBaseAddr + 0x1A361C), (char*)"\xEB\x1D", 2);
+	} else {
+		_patch((char*)(appBaseAddr + 0x1A361C), (char*)"\x76\x1D", 2);
+	}
+	run = enable;
+}
+
+
+void MenuScrollTapSpeedFix(bool enable) {
+	// From ProcessMenuInput_sub_14032CDE0:
+	// dmc3.exe+32CE31 - 45 8D 67 02           - lea r12d,[r15+02] { scroll speed }
+	//   Step immediate byte at +3 (0x32CE34)
+	// dmc3.exe+32CE92 - C7 43 08 00001E00     - mov [rbx+08],001E0000 { (2035) } -- Dpad
+	//   32-bit delay immediate at +3 (0x32CE95)
+	// dmc3.exe+32CF18 - C7 40 08 00001E00     - mov [rax+08],001E0000 { (2035) } -- Analog
+	//   32-bit delay immediate at +3 (0x32CF1B)
+
+	// Operand addresses — just the immediate values within their instructions
+	auto addrStep        = (byte8*)(appBaseAddr + 0x32CE34);
+	auto addrDelayDpad   = (byte8*)(appBaseAddr + 0x32CE95);
+	auto addrDelayAnalog = (byte8*)(appBaseAddr + 0x32CF1B);
+
+	static bool backedUp = false;
+	static bool lastEnable = false;
+	static double lastUpdateTime = 0.0;
+	static int lastQuantizedFPS = 0; // sentinel: forces initial patch
+	static bool firstEnable = true;
+
+	// One-time backup of original bytes (so Restore() always reverts to true originals)
+	if (!backedUp) {
+		backupHelper.Save(addrStep, 1);
+		backupHelper.Save(addrDelayDpad, 4);
+		backupHelper.Save(addrDelayAnalog, 4);
+		backedUp = true;
+	}
+
+	if (!enable) {
+		backupHelper.Restore(addrStep);
+		backupHelper.Restore(addrDelayDpad);
+		backupHelper.Restore(addrDelayAnalog);
+
+		lastEnable = false;
+		lastUpdateTime = 0.0;
+		lastQuantizedFPS = 0;
+		firstEnable = true;
+		return;
+	}
+
+
+	// FPS Smoothing (EMA)
+	static float smoothedFPS = 60.0f;
+	const float alpha = 0.02f;
+	smoothedFPS = smoothedFPS + alpha * (g_FrameRate - smoothedFPS);
+
+
+	// Quantization: round to nearest 30
+	int quantizedFPS = (int)((smoothedFPS + 15.0f) / 30.0f) * 30;
+
+	if (quantizedFPS < 30)  quantizedFPS = 30;
+	if (quantizedFPS > 600) quantizedFPS = 600;
+
+	float scale = (float)quantizedFPS / 60.0f;
+
+
+	// TIME GATE (100ms) — unconditional
+	double now = ImGui::GetTime();
+	if ((now - lastUpdateTime) < 0.1)
+		return;
+
+	// FPS CHANGE GATE (30 FPS hysteresis)
+	// Skip on first enable so we always apply initial values immediately.
+	if (!firstEnable && (abs(quantizedFPS - lastQuantizedFPS) < 30))
+		return;
+	firstEnable = false;
+
+
+	// Scale scroll step
+	int step = (int)(5.0f * scale);
+	if (step < 1)   step = 1;
+	if (step > 127) step = 127;
+
+
+	// Scale delay (0x1E0000 base)
+	int delay = (int)(0x1E0000 * scale);
+	if (delay < 0x1000)     delay = 0x1000;
+	if (delay > 0x7FFFFFFF) delay = 0x7FFFFFFF;
+
+
+	// Apply patches — Write<T> writes only the immediate operand (1 or 4 bytes)
+	Write<uint8>(addrStep, (uint8)step);
+	Write<uint32>(addrDelayDpad, (uint32)delay);
+	Write<uint32>(addrDelayAnalog, (uint32)delay);
+
+	// Flush instruction cache so stale bytes are never fetched
+	FlushInstructionCache(GetCurrentProcess(), addrStep, 1);
+	FlushInstructionCache(GetCurrentProcess(), addrDelayDpad, 4);
+	FlushInstructionCache(GetCurrentProcess(), addrDelayAnalog, 4);
+
+	// commit state
+	lastEnable = true;
+	lastUpdateTime = now;
+	lastQuantizedFPS = quantizedFPS;
+}
+
+void KillTurnRateTruncation(bool enable) {
+	// From ControlMovementRotation_sub_1401FC5B0:
+	// dmc3.exe+1FC630 - F3 0F 2C C0 - cvttss2si eax,xmm0
+	// dmc3.exe+1FC65A - F3 0F 2C C4 - cvttss2si eax,xmm4
+
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x1FC630), 4);
+		_nop((char*)(appBaseAddr + 0x1FC65A), 4);
+	}
+	else {
+		_patch((char*)(appBaseAddr + 0x1FC630), (char*)"\xF3\x0F\x2C\xC0", 4);
+		_patch((char*)(appBaseAddr + 0x1FC65A), (char*)"\xF3\x0F\x2C\xC4", 4);
+	}
+
+	run = enable;
+}
+
 #pragma endregion
 
 # pragma region Enemy
@@ -1570,6 +2048,28 @@ void DisableRegularEnemyAttacks(bool enable) {
 		_patch((char*)(appBaseAddr + 0x1C998A), (char*)"\x7E\x15", 2); 
 	}
 
+	run = enable;
+}
+
+#pragma endregion
+
+# pragma region Level
+
+void DisableDoorsInstancing(bool enable) {
+	// This disables the instancing of doors in levels. Useful for Void and Better Arkham Pt.2
+
+	static bool run = false;
+	// If the function has already run in the current state, return early
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1A9B90 - E8 2B 02 00 00           - call dmc3.exe+1A9DC0
+	if (enable) {
+		_nop((char*)(appBaseAddr + 0x1A9B90), 5); 
+	} else {
+		_patch((char*)(appBaseAddr + 0x1A9B90), (char*)"\xE8\x2B\x02\x00\x00", 5); 
+	}
 	run = enable;
 }
 

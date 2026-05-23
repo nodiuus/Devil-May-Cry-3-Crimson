@@ -1,11 +1,17 @@
 // UNSTUPIFY(Disclaimer: by 5%)... POOOF
 #include <algorithm>
+#include <windows.h>
+#include <thread>
+#include <chrono>
 #include "CrimsonEnemyAITarget.hpp"
 #include "Core/Core.hpp"
 #include <stdio.h>
 #include "Utility/Detour.hpp"
 #include <intrin.h>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 #include "CrimsonUtil.hpp"
 #include "DMC3Input.hpp"
 #include "Global.hpp"
@@ -18,12 +24,16 @@
 #include "CrimsonCameraController.hpp"
 #include "Actor.hpp"
 #include "CrimsonOnTick.hpp"
-
+#include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
+#include "CrimsonReversedCalls.hpp"
+#include "Internal.hpp"
+#include "CrimsonDetours.hpp"
 
 namespace CrimsonDetours {
 
 extern "C" {
-std::uint64_t DetourBaseAddr;
+std::uint64_t g_appBaseAddr;
 
 // SampleMod
 std::uint64_t g_SampleMod_ReturnAddr1;
@@ -127,6 +137,8 @@ std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr4;
 void FixCrashArkhamPt2GrabDetour4();
 std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr5;
 void FixCrashArkhamPt2GrabDetour5();
+std::uint64_t g_FixCrashArkhamPt2Grab_ReturnAddr6;
+void FixCrashArkhamPt2GrabDetour6();
 
 // FixCrashArkhamPt2Doppel
 std::uint64_t g_FixCrashArkhamPt2Doppel_ReturnAddr1;
@@ -198,6 +210,12 @@ std::uint64_t g_CamHittingWall_ReturnAddr;
 void CamHittingWallDetour();
 bool* g_CamHittingWall_ConditionalAddr = nullptr;
 
+// ConfirmSetAction
+std::uint64_t g_ConfirmSetAction_ReturnAddr;
+std::uint64_t g_ConfirmSetAction_FuncCall;
+void ConfirmSetActionDetour();
+void* g_ConfirmSetActionCheckCall;
+
 // RerouteRedOrbsCounterAlpha
 std::uint64_t g_RerouteRedOrbsCounterAlpha_ReturnAddr1;
 std::uint64_t g_RerouteRedOrbsCounterAlpha_ReturnAddr2;
@@ -218,10 +236,15 @@ std::uint64_t g_DMC4LockOnDirection_ReturnAddr;
 void DMC4LockOnDirectionDetour();
 void* g_DMC4LockOnDirectionCall;
 
+// InterceptCollisions
+std::uint64_t g_InterceptCollisions_ReturnAddr;
+void InterceptCollisionsDetour();
+void* g_DrawCollisionsCall;
+void* g_InterceptCollisionsCall;
+
 // FasterTurnRate
-std::uint64_t g_FasterTurnRate_ReturnAddr;
-std::uint64_t g_FasterTurnRateCallAddr;
-void FasterTurnRateDetour();
+std::uint64_t g_TurnRateFix_ReturnAddr;
+void TurnRateFixDetour();
 
 // FixFPSSpeedIssues
 std::uint64_t g_FixFPSSpeedIssues_ReturnAddr;
@@ -231,12 +254,6 @@ void* g_FixFPSSpeedIssuesCall;
 // FixBallsHangHitSpeed
 std::uint64_t g_FixBallsHangHitSpeed_ReturnAddr;
 void FixBallsHangHitSpeedDetour();
-
-// FixSecretMissionTimerFPS
-std::uint64_t g_FixSecretMissionTimerFPS_ReturnAddr;
-void FixSecretMissionTimerFPSDetour();
-std::uint64_t g_FixSecretMissionTimerFPS_ReturnAddr2;
-void FixSecretMissionTimerFPSDetour2();
 
 // StyleRankHUDNoFadeout
 std::uint64_t g_StyleRankHudNoFadeout_ReturnAddr;
@@ -264,6 +281,13 @@ void GreenOrbsMPRegenDetour();
 std::uint64_t g_GreenOrbsMPRegen_ReturnAddr;
 void* g_GreenOrbsMPRegen_Call;
 
+// PortalsHide
+void PortalsHideDetour();
+std::uint64_t g_PortalsHide_ReturnAddr;
+
+// PortalsMute
+void PortalsMuteDetour();
+std::uint64_t g_PortalsMute_ReturnAddr;
 // StyleLevellingCCSFix
 void StyleLevellingCCSFixDetour1();
 std::uint64_t g_StyleLevellingCCSFix_ReturnAddr1;
@@ -282,54 +306,154 @@ void DanteTrickAlterationsDetour3();
 std::uint64_t g_DanteTrickAlter_ReturnAddr4;
 void DanteTrickAlterationsDetour4();
 
+// ShotgunShlSpawnAnglePointBlank
+std::uint64_t g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1;
+void ShotgunShlSpawnAnglePointBlankDetour();
+std::uint64_t g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2;
+void ShotgunShlSpawnAnglePointBlankDetour2();
+void* g_ShotgunShlSpawnAnglePointBlankCheckCall;
+std::uint64_t g_ShotgunShlSpawnAnglePointBlankLockedOnEnemyJmp;
+
+// PointBlankShotgunFire
+std::uint64_t g_PointBlankShotgunFire_ReturnAddr;
+void PointBlankShotgunFireDetour();
+std::uint64_t g_PointBlankShotgunFireOgCall;
+std::uint64_t g_PointBlankShotgunFireTailCall_ReturnAddr;
+void PointBlankShotgunFireTailCallDetour();
+void* g_PointBlankShotgunFireDelayCall;
+std::uint64_t g_PointBlankShotgunCancelAnimTailCall;
+
+// JudgementCutDetours
+std::uint64_t g_JudgementCutSpeed_ReturnAddr;
+void JudgementCutSpeedDetour();
+std::uint64_t g_JudgementCutStartDelayCall;
+std::uint64_t g_JudgementCutSpawnCollisionCall;
+void* g_JudgementCutCheckJustFrameCall;
+
+std::uint64_t g_JudgementCutVFX_ReturnAddr;
+std::uint64_t g_JudgementCutVFX_ReturnAddr2;
+void JudgementCutVFXDetour();
+std::uint64_t g_JudgementCutRegularVFXCall;
+void* g_JudgementCutJustFrameVFXCall;
+
+std::uint64_t g_JudgementCutPosition_ReturnAddr;
+void JudgementCutPositionDetour();
+void* g_JudgementCutSetPositionCall;
+
+std::uint64_t g_JudgementCutExtraShl_ReturnAddr;
+void JudgementCutExtraShlDetour();
+void* g_JudgementCutExtraShlCall;
+
 // DTMustStyleArmor
 std::uint64_t g_DTMustStyleArmor_ReturnAddr;
 void DTMustStyleArmorDetour();
 void* g_DTMustStyleArmor_CheckCall1;
 void* g_DTMustStyleArmor_CheckCall2;
+
+// CheckScreenBreak
+std::uint64_t g_CheckScreenBreak_ReturnAddr;
+void CheckScreenBreakDetour();
+
+// CheckMissionResultScreen
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr1;
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr2;
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr3;
+std::uint64_t g_CheckMissionResultScreen_ReturnAddr4;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr1;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr2;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr3;
+std::uint64_t g_CheckMissionResultScreen_TargetAddr4;
+void CheckMissionResultScreenDetour1();
+void CheckMissionResultScreenDetour2();
+void CheckMissionResultScreenDetour3();
+void CheckMissionResultScreenDetour4();
+
+// CheckMissionResultBPScreen
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr1;
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr2;
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr3;
+std::uint64_t g_CheckMissionResultBPScreen_ReturnAddr4;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr1;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr2;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr3;
+std::uint64_t g_CheckMissionResultBPScreen_TargetAddr4;
+void CheckMissionResultBPScreenDetour1();
+void CheckMissionResultBPScreenDetour2();
+void CheckMissionResultBPScreenDetour3();
+void CheckMissionResultBPScreenDetour4();
+
+// CheckTotalResultsScreen
+std::uint64_t g_CheckTotalResultsScreen_ReturnAddr;
+void CheckTotalResultsScreenDetour();
+
+// NoAirLunarPhaseLift
+std::uint64_t g_NoAirLunarPhaseLift_ReturnAddr;
+void NoAirLunarPhaseLiftDetour();
+void* g_NoAirLunarPhaseLiftCheckCall;  
+
+// ChargeMechanicsCPlayer
+std::uint64_t g_ChargeMechanicsCPlayer_ReturnAddr;
+std::uint64_t g_ChargeMechanicsCPlayer_ConstAddr;
+void ChargeMechanicsCPlayerDetour();
+void* g_ChargeMechanicsCPlayerCheckCall;  // Uncomment if calling C++ functions from ASM
+
+// CItemOrbPickupAllPlayers
+std::uint64_t g_CItemOrbPickupAllPlayers_ReturnAddr;
+std::uint64_t g_CItemOrbPickupAllPlayers_ReturnAddr2;
+std::uint64_t g_CItemOrbPickupAllPlayers_BoneMatrixCall;
+void CItemOrbPickupAllPlayersDetour();
+void CItemOrbPickupAllPlayersDetour2();
+void* g_CItemOrbPickupAllPlayersCheckCall; 
 }
 
 bool g_HoldToCrazyComboFuncA(PlayerActorData& actorData) {
     using namespace ACTION_DANTE;
 
-    auto playerIndex = CrimsonUtil::GetPlayerIndexFromAddr((uintptr_t)actorData.baseAddr); // simply using actorData.newPlayerIndex also works here.
+	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
 
     auto tiltDirection = GetRelativeTiltDirection(actorData);
 
     auto inputException = !(actorData.lockOn && (tiltDirection == TILT_DIRECTION::UP || tiltDirection == TILT_DIRECTION::DOWN));
 
     auto inputExceptionNevanJamSession = !(tiltDirection == TILT_DIRECTION::LEFT);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
     // if the player ptr we fetched is a Clone then we use action/animTimers Clone, if not then use the normal ones instead.
-    auto actionTimer =
-        (actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].actionTimerClone : crimsonPlayer[playerIndex].actionTimer;
-    auto animTimer = (actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].animTimerClone : crimsonPlayer[playerIndex].animTimer;
+	auto actionTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer : crimsonPlayer[playerIndex].actionTimerClone;
+	auto motionTimer =
+		(entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].motionTimer : crimsonPlayer[playerIndex].motionTimerClone;
+	auto motionIndex = actorData.motionData[0].index;
+	auto& stingerInput = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].stingerInput : crimsonPlayer[playerIndex].stingerInputClone;
+	auto& delayedComboFX = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].delayedComboFX : crimsonPlayer[playerIndex].delayedComboFXClone;
 
 
     switch (actorData.action) { // from vars, namespace ACTION_DANTE {
 
     case REBELLION_STINGER_LEVEL_1:
-        if (std::clamp<float>(actionTimer, 0.22f, 0.3f) == actionTimer && inputException) {
+        if (motionIndex == 16 && stingerInput.meleeButtonHold >= 0.1f && !stingerInput.meleeReleasedStinger && inputException) {
             return true;
         }
         break;
     case REBELLION_STINGER_LEVEL_2:
-        if (std::clamp<float>(actionTimer, 0.22f, 0.3f) == actionTimer && inputException) {
+        if (motionIndex == 42 && stingerInput.meleeButtonHold >= 0.17f && !stingerInput.meleeReleasedStinger && inputException) {
             return true;
         }
         break;
-    case REBELLION_MILLION_STAB:
-        if (std::clamp<float>(actionTimer, 0.22f, 10.0f) == actionTimer && inputException) {
-            return true;
-        }
-        break;
+	case REBELLION_MILLION_STAB:
+		if (std::clamp<float>(actionTimer, 0.22f, 10.0f) == actionTimer && inputException) {
+			return true;
+		}
+		break;
     case REBELLION_COMBO_2_PART_2:
         if (std::clamp<float>(actionTimer, 0.0f, 0.90f) == actionTimer && inputException) {
             return true;
         }
         break;
     case BEOWULF_COMBO_2_PART_3:
-        if (std::clamp<float>(animTimer, 0.5f, 1.09f) == animTimer && inputException) {
+        if (std::clamp<float>(motionTimer, 0.5f, 1.0f) == motionTimer && inputException) {
+			if (motionIndex != 27) delayedComboFX.transitioningToHyperFist = true;
             return true;
         }
         break;
@@ -510,7 +634,7 @@ void AddingToPlayersMirageGauge(PlayerActorData& actorData, std::uint64_t amount
 
 bool CheckForceRoyalReleaseForSkyLaunch(PlayerActorData& actorData) {
     auto playerIndex = actorData.newPlayerIndex;
-    auto gamepad = GetGamepad(playerIndex);
+    auto gamepad = GetGamepad(actorData.newGamepad);
 
     if ((actorData.state & STATE::IN_AIR && gamepad.buttons[0] & GetBinding(BINDING::TAUNT))
             || activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease) {
@@ -522,7 +646,7 @@ bool CheckForceRoyalReleaseForSkyLaunch(PlayerActorData& actorData) {
 
 bool DetectIfInSkyLaunch(PlayerActorData& actorData) {
 	auto playerIndex = actorData.newPlayerIndex;
-	auto gamepad = GetGamepad(playerIndex);
+	auto gamepad = GetGamepad(actorData.newGamepad);
 
     if (activeCrimsonGameplay.Cheats.Training.infiniteHP) {
         return true;
@@ -538,18 +662,18 @@ bool DetectIfInSkyLaunch(PlayerActorData& actorData) {
 }
 
 bool CheckSkyLaunchEnabled() {
-	return activeCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt;
+	return activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SKY_LAUNCH_AIR_TAUNT];
 }
 
 bool CheckAirTauntRisingSunEnabled() {
-	return activeCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun;
+	return activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataVergil.unlocks[UNLOCK_VERGIL::RISING_SUN_AIR_TAUNT];
 }
 
 uint16 ActorCameraDirectionToEnemyCameraDirection(PlayerActorData& actorData) {
 	if (actorData.character != CHARACTER::DANTE && actorData.character != CHARACTER::VERGIL) return actorData.actorCameraDirection;
-	if (!activeConfig.Actor.enable) return actorData.actorCameraDirection;
-	auto playerIndex = actorData.newPlayerIndex;
-	auto& rotationTowardsEnemy = (actorData.newEntityIndex == 1) ? crimsonPlayer[playerIndex].rotationCloneTowardsEnemy : crimsonPlayer[playerIndex].rotationTowardsEnemy;
+	uint8 playerIndex = (activeConfig.Actor.enable) ? actorData.newPlayerIndex : 0;
+	uint8 entityIndex = (activeConfig.Actor.enable) ? actorData.newEntityIndex : (actorData.isClone ? 1 : 0);
+	auto& rotationTowardsEnemy = (entityIndex == 1) ? crimsonPlayer[playerIndex].rotationCloneTowardsEnemy : crimsonPlayer[playerIndex].rotationTowardsEnemy;
 
 	auto enemyCameraDirection = rotationTowardsEnemy - actorData.cameraDirection;
 	return enemyCameraDirection;
@@ -614,9 +738,599 @@ void SetAnnouncerWasHit() {
 	}
 }
 
+bool CheckIfInBackslide(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	if (actorData.character != CHARACTER::DANTE) return false;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& backslide = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].backslide
+		: crimsonPlayer[actorData.newPlayerIndex].backslideClone;
+
+	if (backslide.performing) {
+		return true;
+	}
+	return false;
+}
+
+bool CheckIfInJustFrameJDC(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	if (actorData.character != CHARACTER::VERGIL) return false;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& jCut = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].jCut
+		: crimsonPlayer[actorData.newPlayerIndex].jCutClone;
+	if (jCut.inJustFrameJDC) {
+		return true;
+	}
+	return false;
+}
+
+static std::unordered_set<uintptr_t> s_suppressJustFrameVFXForShl;
+
+uintptr_t PlayJustFrameJDCVFX(uintptr_t shlAddr) {
+	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
+  auto shlActorBaseAddr = shlAddr - 0x60;
+
+	if (s_suppressJustFrameVFXForShl.find(shlActorBaseAddr) != s_suppressJustFrameVFXForShl.end()) {
+		float fakeVFXMatrix[16] = { 0 };
+		std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
+		fakeVFXMatrix[13] -= 10000000.0f;
+		shlActorData.CGeneratorPtr = CrimsonReversedCalls::PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
+		return shlActorData.CGeneratorPtr;
+	}
+
+	EffekseerHandle handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::justFrameJDC_Handle, shlActorData.matrix, NULL);
+
+	// Spawn Default JDC VFX for the JDCs CGenerator not to be NULL
+	// Default JDC VFX is group 2 index 456
+
+	float fakeVFXMatrix[16] = { 0 };
+	std::memcpy(fakeVFXMatrix, shlActorData.matrix, sizeof(float) * 16);
+	if (!activeCrimsonConfig.VFX.originalJDCReference) fakeVFXMatrix[13] -= 10000000.0f;  // Make it go out of bounds
+	shlActorData.CGeneratorPtr = CrimsonReversedCalls::PlayVFX_sub_1402E7CA0(2, 456, (uintptr_t)&fakeVFXMatrix, 0);
+	if (shlActorData.CGeneratorPtr) {
+		auto& cGenerator = *reinterpret_cast<CGenerator*>(shlActorData.CGeneratorPtr);
+		cGenerator.color = 0xFF36EDFA;
+		cGenerator.speed = 1.5f;
+	}
+
+	return shlActorData.CGeneratorPtr;
+}
+
+struct JdcSourceKey {
+	uintptr_t ownerPlayerActorAddr = 0;
+	uintptr_t sourceAddr = 0;
+
+	bool operator==(const JdcSourceKey& other) const {
+		return ownerPlayerActorAddr == other.ownerPlayerActorAddr && sourceAddr == other.sourceAddr;
+	}
+};
+
+struct JdcSourceKeyHash {
+	std::size_t operator()(const JdcSourceKey& key) const {
+		return std::hash<uintptr_t>{}(key.ownerPlayerActorAddr) ^ (std::hash<uintptr_t>{}(key.sourceAddr) << 1);
+	}
+};
+
+static std::unordered_map<JdcSourceKey, std::chrono::steady_clock::time_point, JdcSourceKeyHash> s_pendingSinceBySource;
+static std::unordered_map<JdcSourceKey, uint8, JdcSourceKeyHash> s_spawnedExtraCountBySource;
+static std::unordered_map<JdcSourceKey, vec3, JdcSourceKeyHash> s_primaryPosBySource;
+static std::unordered_map<JdcSourceKey, vec3, JdcSourceKeyHash> s_fixedExtraPosBySource;
+static std::unordered_map<uintptr_t, JdcSourceKey> s_extraAddrToSource;
+
+void SetJDCPositionAtMatrix(uintptr_t shlAddr) {
+	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlAddr - 0x60);
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+	auto shlActorBaseAddr = shlAddr - 0x60;
+	const bool isJustFrameJdc = CheckIfInJustFrameJDC(shlActorData.playerActorAddr);
+
+	if (isJustFrameJdc) {
+		shlActorData.justFrame = true; // Mark the SHL as a Just Frame JDC for use in Damage logic
+
+		auto extraIt = s_extraAddrToSource.find(shlActorBaseAddr);
+		if (extraIt != s_extraAddrToSource.end()) {
+			auto fixedPosIt = s_fixedExtraPosBySource.find(extraIt->second);
+			if (fixedPosIt != s_fixedExtraPosBySource.end()) {
+				shlActorData.position.x = fixedPosIt->second.x;
+				shlActorData.position.y = fixedPosIt->second.y;
+				shlActorData.position.z = fixedPosIt->second.z;
+				shlActorData.matrix[12] = shlActorData.position.x;
+				shlActorData.matrix[13] = shlActorData.position.y;
+				shlActorData.matrix[14] = shlActorData.position.z;
+				return;
+			}
+
+			s_extraAddrToSource.erase(extraIt);
+		}
+	}
+
+	auto SpawnJDCInFrontOfPlayer = [](CPl021Shl02Actor& shlActorData, PlayerActorData& actorData) {
+		constexpr float jdcForwardOffset = 500.0f;
+		constexpr float rotationToRadians = 6.28318530717958647692f / 65536.0f;
+
+		const float yaw = static_cast<float>(actorData.rotation) * rotationToRadians;
+		const float forwardX = std::sin(yaw);
+		const float forwardZ = std::cos(yaw);
+
+		shlActorData.position.x = actorData.position.x + forwardX * jdcForwardOffset;
+		shlActorData.position.y = actorData.position.y + 120.0f;
+		shlActorData.position.z = actorData.position.z + forwardZ * jdcForwardOffset;
+		};
+
+	if (actorData.lockOnData.targetBaseAddr60) {
+		float heightOffset = 120.0f;
+		if (actorData.state & STATE::IN_AIR) {
+			heightOffset = 0.0f; // slightly higher spawn for airborne JDCs to avoid ground collision and look better visually
+		}
+		auto& enemyData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
+		shlActorData.position.x = enemyData.position.x;
+		shlActorData.position.y = enemyData.position.y + heightOffset;
+		shlActorData.position.z = enemyData.position.z;
+	}
+	else {
+		SpawnJDCInFrontOfPlayer(shlActorData, actorData);
+	}
+
+	shlActorData.matrix[12] = shlActorData.position.x;
+	shlActorData.matrix[13] = shlActorData.position.y;
+	shlActorData.matrix[14] = shlActorData.position.z;
+
+	if (isJustFrameJdc) {
+		JdcSourceKey sourceKey{ shlActorData.playerActorAddr, shlActorBaseAddr };
+		s_primaryPosBySource[sourceKey] = {
+			shlActorData.position.x,
+			shlActorData.position.y,
+			shlActorData.position.z
+		};
+	}
+}
+
+
+void SpawnExtraJDCs(uintptr_t shlActorAddr) {
+	auto& shlActorData = *reinterpret_cast<CPl021Shl02Actor*>(shlActorAddr);
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(shlActorData.playerActorAddr);
+	JdcSourceKey sourceKey{ shlActorData.playerActorAddr, shlActorAddr };
+	constexpr uint8 targetExtraJdcCount = 3; // Total JDCs = 1 base + 2 extras = 3
+
+	if (!shlActorData.aliveStatus) {
+		auto extraIt = s_extraAddrToSource.find(shlActorAddr);
+		if (extraIt != s_extraAddrToSource.end()) {
+         s_suppressJustFrameVFXForShl.erase(shlActorAddr);
+			s_extraAddrToSource.erase(extraIt);
+			return;
+		}
+
+		s_pendingSinceBySource.erase(sourceKey);
+		s_spawnedExtraCountBySource.erase(sourceKey);
+		s_primaryPosBySource.erase(sourceKey);
+		s_fixedExtraPosBySource.erase(sourceKey);
+
+		for (auto it = s_extraAddrToSource.begin(); it != s_extraAddrToSource.end(); ) {
+			if (it->second == sourceKey) {
+             s_suppressJustFrameVFXForShl.erase(it->first);
+				it = s_extraAddrToSource.erase(it);
+			}
+			else {
+				++it;
+			}
+		}
+		return;
+	}
+
+	if (!CheckIfInJustFrameJDC(shlActorData.playerActorAddr)) {
+		return;
+	}
+
+	if (s_extraAddrToSource.find(shlActorAddr) != s_extraAddrToSource.end()) {
+		return;
+	}
+
+	auto spawnedCountIt = s_spawnedExtraCountBySource.find(sourceKey);
+	const uint8 spawnedExtraCount = (spawnedCountIt != s_spawnedExtraCountBySource.end()) ? spawnedCountIt->second : 0;
+	if (spawnedExtraCount >= targetExtraJdcCount) {
+		return;
+	}
+
+	vec3 newPosition = { shlActorData.position.x, shlActorData.position.y, shlActorData.position.z };
+	auto primaryPosIt = s_primaryPosBySource.find(sourceKey);
+	if (primaryPosIt != s_primaryPosBySource.end()) {
+		newPosition = primaryPosIt->second;
+	}
+	float newMatrix[16] = { 0 };
+	std::memcpy(newMatrix, shlActorData.matrix, sizeof(float) * 16);
+	newMatrix[12] = newPosition.x;
+	newMatrix[13] = newPosition.y;
+	newMatrix[14] = newPosition.z;
+
+	const float speedScale = actorData.speed / (std::max)(0.001f, g_FrameRateTimeMultiplier);
+	const int scaledDelayMs = (std::max)(1, static_cast<int>(100.0f * speedScale));
+	auto extraJdcDelay = std::chrono::milliseconds(scaledDelayMs);
+
+	auto now = std::chrono::steady_clock::now();
+	auto pendingIt = s_pendingSinceBySource.find(sourceKey);
+	if (pendingIt == s_pendingSinceBySource.end()) {
+		s_pendingSinceBySource[sourceKey] = now + extraJdcDelay;
+		return;
+	}
+
+	if (now < pendingIt->second) {
+		return;
+	}
+
+	uintptr_t newJDC = CrimsonReversedCalls::SetJDCPosition_sub_1401DC1A0((uintptr_t)&newPosition, (uintptr_t)newMatrix, shlActorData.playerActorAddr, 10);
+	if (newJDC) {
+		s_spawnedExtraCountBySource[sourceKey] = spawnedExtraCount + 1;
+		s_pendingSinceBySource[sourceKey] = now + extraJdcDelay;
+		s_extraAddrToSource[newJDC] = sourceKey;
+       s_suppressJustFrameVFXForShl.insert(newJDC);
+		s_fixedExtraPosBySource[sourceKey] = newPosition;
+		auto& newShlActorData = *reinterpret_cast<CPl021Shl02Actor*>(newJDC);
+		CrimsonReversedCalls::SpawnJDCShl_sub_1401DC320(newJDC + 0x60);
+	}
+}
+
+void QueueDelayPointBlankShotgunFire(uintptr_t playerAddr, uint8 fireMode, uint8 unk3) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	auto& backslide = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].backslide 
+		: crimsonPlayer[actorData.newPlayerIndex].backslideClone;
+	auto& actionTimer = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].actionTimer 
+		: crimsonPlayer[actorData.newPlayerIndex].actionTimerClone;
+	actionTimer = 0.0f; // this is needed for the repeated shots' delay
+	backslide.pendingFire = true;
+
+	// Actual delay and subsequent call happens from CrimsonGameplay::DanteShotgunBackslide
+}
+
+namespace DriveCol {
+	// Track effect handles per collision instance
+	enum class DriveFxPhase : uint8_t { Part1, Part2, Part3 };
+	struct DriveInstanceState {
+		EffekseerHandle handle{};
+		DriveFxPhase phase = DriveFxPhase::Part1;
+
+		// Enables custom vertical pathing (Y) for this projectile instance.
+		bool hasLockedTargetHeight = false;
+		// Enables custom horizontal pathing (XZ) for this projectile instance.
+		bool hasLockedDirection = false;
+		// Tracks whether we have previous projectile position for step accumulation.
+		bool hasLastProjectilePos = false;
+
+		// Spawn/start values used to build deterministic pathing.
+		float startY = 0.0f;
+		float lockedTargetY = 0.0f;
+		float startX = 0.0f;
+		float startZ = 0.0f;
+
+		// Last frame projectile world position (for measuring traveled distance this frame).
+		float lastProjectileX = 0.0f;
+		float lastProjectileZ = 0.0f;
+
+		// Horizontal distance to target sampled at spawn (for normalized slope math).
+		float targetDistXZ = 1.0f;
+		// Locked horizontal direction sampled at spawn.
+		float dirX = 0.0f;
+		float dirZ = 0.0f;
+
+		// Monotonic traveled distance along the path; never decreases.
+		float furthestTraveledXZ = 0.0f;
+		// Constant Y increase per 1 unit of XZ travel (fixed at spawn time).
+		float verticalSlopePerXZ = 0.0f;
+	};
+
+	struct DriveMetadataState {
+		std::unordered_map<uint32, DriveInstanceState> effectsByInstanceId;
+	};
+
+	static std::unordered_map<uintptr_t, DriveMetadataState> s_driveEffectsByMetadata;
+	static std::unordered_map<uintptr_t, float> s_lastDriveVerticalSlopeByShooter;
+
+	void HandleDriveCollisionLogic(CollisionDataMetadata* collisionMeta, uintptr_t metadataKey) {
+		if (!activeCrimsonGameplay.Gameplay.Dante.driveRework) {
+			return;
+		}
+		const bool isDriveCollision =
+			reinterpret_cast<uintptr_t>(collisionMeta->dmgDataAddr) == reinterpret_cast<uintptr_t>(appBaseAddr + 0x5CB1E0);
+
+		if (isDriveCollision) {
+			auto& collisionData = *reinterpret_cast<CollisionData*>(collisionMeta->collisionDataAddr);
+			auto& actorData = *reinterpret_cast<PlayerActorData*>(collisionData.playerBaseAddr);
+			auto& drive = (actorData.newEntityIndex == 0) ? crimsonPlayer[actorData.newPlayerIndex].drive : crimsonPlayer[actorData.newPlayerIndex].driveClone;
+
+			auto& metadataState = s_driveEffectsByMetadata[metadataKey];
+
+			// Latch phase at spawn per instanceId inside this metadata stream.
+			if (metadataState.effectsByInstanceId.find(collisionMeta->instanceId) == metadataState.effectsByInstanceId.end()) {
+				const auto desiredPhase = drive.inPart3
+					? DriveFxPhase::Part3
+					: (drive.inPart2 ? DriveFxPhase::Part2 : DriveFxPhase::Part1);
+
+				EffekseerHandle handle{};
+				if (desiredPhase == DriveFxPhase::Part3) {
+                 handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part3_Handle, collisionMeta->matrix1, NULL);
+				}
+				else if (desiredPhase == DriveFxPhase::Part2) {
+                 handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part2_Handle, collisionMeta->matrix1, NULL);
+				}
+				else {
+                  handle = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::driveCol_Part1_Handle, collisionMeta->matrix1, NULL);
+				}
+
+				DriveInstanceState instanceState{};
+				instanceState.handle = handle;
+				instanceState.phase = desiredPhase;
+				vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
+				vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
+
+				auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
+				instanceState.startX = hitboxPos.x;
+				instanceState.startZ = hitboxPos.z;
+				instanceState.startY = hitboxPos.y + 50.0f;
+				instanceState.lastProjectileX = projectileData.position.x;
+				instanceState.lastProjectileZ = projectileData.position.z;
+				instanceState.hasLastProjectilePos = true;
+
+				// Lock-on logic is evaluated once at projectile spawn.
+				// The result is latched into instanceState so trajectory remains stable afterward.
+				if (actorData.lockOnData.targetBaseAddr60 != 0) {
+					const uintptr_t shooterKey = reinterpret_cast<uintptr_t>(collisionData.playerBaseAddr);
+					auto& enemyActorData = *reinterpret_cast<EnemyActorData*>(actorData.lockOnData.targetBaseAddr60 - 0x60);
+					const float dx = enemyActorData.position.x - instanceState.startX;
+					const float dz = enemyActorData.position.z - instanceState.startZ;
+					const float targetDistXZRaw = std::sqrt(dx * dx + dz * dz);
+					instanceState.targetDistXZ = (std::max)(0.001f, targetDistXZRaw);
+
+					// Cap vertical targeting by angle so very close lock-on targets don't force extreme upward arcs.
+					constexpr float maxVerticalAimAngleDeg = 38.0f;
+					constexpr float degToRad = 0.01745329251994329577f;
+					const float maxVerticalDelta = std::tan(maxVerticalAimAngleDeg * degToRad) * instanceState.targetDistXZ;
+					const float desiredVerticalDelta = (std::max)(0.0f, enemyActorData.position.y - instanceState.startY);
+
+					constexpr float minTrackingDistanceXZ = 120.0f;
+					const bool targetTooClose = targetDistXZRaw < minTrackingDistanceXZ;
+					const bool hitsAngleCap = desiredVerticalDelta > maxVerticalDelta;
+
+					// Decision gate:
+					// - Normal case: lock to enemy (custom XZ + custom Y).
+					// - Close/capped case: reuse previous valid vertical slope for this shooter,
+					//   but keep default forward XZ (no custom direction lock).
+					if (!targetTooClose && !hitsAngleCap) {
+						instanceState.lockedTargetY = instanceState.startY + desiredVerticalDelta;
+						instanceState.verticalSlopePerXZ = (instanceState.lockedTargetY - instanceState.startY) / instanceState.targetDistXZ;
+						instanceState.hasLockedTargetHeight = true;
+						instanceState.dirX = dx / instanceState.targetDistXZ;
+						instanceState.dirZ = dz / instanceState.targetDistXZ;
+						instanceState.hasLockedDirection = true;
+						s_lastDriveVerticalSlopeByShooter[shooterKey] = instanceState.verticalSlopePerXZ;
+					}
+					else {
+						auto previousSlopeIt = s_lastDriveVerticalSlopeByShooter.find(shooterKey);
+						if (previousSlopeIt != s_lastDriveVerticalSlopeByShooter.end()) {
+							instanceState.verticalSlopePerXZ = previousSlopeIt->second;
+							instanceState.hasLockedTargetHeight = true;
+							instanceState.hasLockedDirection = false; // keep default forward XZ travel
+						}
+					}
+				}
+
+				metadataState.effectsByInstanceId[collisionMeta->instanceId] = instanceState;
+			}
+
+			auto instanceIt = metadataState.effectsByInstanceId.find(collisionMeta->instanceId);
+			const DriveFxPhase latchedPhase = (instanceIt != metadataState.effectsByInstanceId.end())
+				? instanceIt->second.phase
+				: DriveFxPhase::Part1;
+
+			vec4& matrixPos = *reinterpret_cast<vec4*>(&collisionMeta->matrix1[12]);
+			vec4& hitboxPos = *reinterpret_cast<vec4*>(&collisionMeta->hitboxPos);
+			// When locked on to an enemy, apply custom trajectory logic to steer towards the target.
+			if (instanceIt != metadataState.effectsByInstanceId.end() && instanceIt->second.hasLockedTargetHeight) {
+				auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
+				auto& state = instanceIt->second;
+
+				// Accumulate horizontal travel by per-frame XZ step length.
+				// This avoids jitter from recomputing from spawn every frame.
+				float traveledXZ = state.furthestTraveledXZ;
+				if (state.hasLastProjectilePos) {
+					const float stepDx = projectileData.position.x - state.lastProjectileX;
+					const float stepDz = projectileData.position.z - state.lastProjectileZ;
+					traveledXZ += std::sqrt(stepDx * stepDx + stepDz * stepDz);
+				}
+				state.lastProjectileX = projectileData.position.x;
+				state.lastProjectileZ = projectileData.position.z;
+				state.hasLastProjectilePos = true;
+
+				// Keep progression monotonic so path never changes mid-flight.
+				traveledXZ = (std::max)(state.furthestTraveledXZ, traveledXZ);
+				state.furthestTraveledXZ = traveledXZ;
+
+				
+
+				// Custom vertical steering along a fixed slope from spawn.
+				const float desiredY = state.startY + state.verticalSlopePerXZ * traveledXZ;
+				matrixPos.y = desiredY;
+				hitboxPos.y = desiredY;
+			}
+			else { // When no enemy is locked-on to, just apply a simple vertical offset to keep particles above the ground.
+				matrixPos.y += 120.0f;
+				hitboxPos.y += 120.0f;
+			}
+
+			if (latchedPhase == DriveFxPhase::Part2) {
+				vec3 right = { collisionMeta->matrix1[0], collisionMeta->matrix1[1], collisionMeta->matrix1[2] };
+				right.y = 0.0f;
+				float len = std::sqrt(right.x * right.x + right.z * right.z);
+				if (len > 0.0001f) { right.x /= len; right.z /= len; }
+
+				constexpr float leftOffset = -80.0f;
+				const float ox = -right.x * leftOffset;
+				const float oz = -right.z * leftOffset;
+
+				auto& projectileData = *reinterpret_cast<ActorDataBase*>(collisionData.baseAddr);
+				matrixPos.x += ox; matrixPos.z += oz;
+				hitboxPos.x += ox; hitboxPos.z += oz;
+				//projectileData.position.x += ox; projectileData.position.z += oz;
+				//projectileData.position.x += 200.0f;
+			}
+
+// 			auto& collisionFile = *reinterpret_cast<uint32*>(collisionMeta->files[0]);
+// 			collisionFile = 3; // Allows Drive collision go through walls
+			//collisionMeta->mode = 6; // Allows Drive collision go through walls
+		}
+		else {
+			// Only stop effect tied to THIS instance (not globally)
+			auto metadataIt = s_driveEffectsByMetadata.find(metadataKey);
+			if (metadataIt != s_driveEffectsByMetadata.end()) {
+				for (auto& kvp : metadataIt->second.effectsByInstanceId) {
+					CrimsonEfk::StopEffect(kvp.second.handle);
+				}
+				s_driveEffectsByMetadata.erase(metadataIt);
+			}
+		}
+	}
+}
+
+float InterceptingCollisions(byte8* metadataAddr, float radius) {
+	auto collisionMeta = reinterpret_cast<CollisionDataMetadata*>(metadataAddr);
+
+	if (!collisionMeta) {
+		return radius;
+	}
+
+	const uintptr_t metadataKey = reinterpret_cast<uintptr_t>(metadataAddr);
+
+	// Context: Every move seems to have a specific offset from PlayerAddr for its collision data.
+	// We can use this to both id which move the collision pertains to and which player it belongs to / spawned it.
+	// You can identify this offset by putting a breakpoint at dmc3.exe + 2CCC98 and looking at RBX, 
+	// which points to the collisionMetadata struct. For attack hitboxes, it will usually end at ...0x420 (for Vergil) and 0x760 (for Dante).
+	// so just look at the relation between sourceMatrixAddr (+0x20) and the playerAddr to get the hitbox offset for each move.
+	// This detour call is placed right before the game writes the radius value for the hitbox, 
+	// so we can check for specific moves and modify their hitbox size if we want to.
+	// Conversely, we can also use the dmgDatastruct and playerAddr present in the Collision Structs to id them (more reliable). 
+	// - Mia
+
+	DriveCol::HandleDriveCollisionLogic(collisionMeta, metadataKey);
+
+	// Yamato High Time hitbox increase
+	uintptr_t yamatoHighTimeOffset = (uintptr_t)collisionMeta->sourceMatrixAddr - 0x66640;
+	uintptr_t yamatoHighTimeOffsetDT = (uintptr_t)collisionMeta->sourceMatrixAddr - 0x7CA40; // +0x16400 from yamatoHighTimeOffset, for DT version of the move, DT has slightly larger radius?
+	uintptr_t yamatoHighTimeOffsetClone = (uintptr_t)collisionMeta->sourceMatrixAddr - 0x17A640; // +0x114000 from yamatoHighTimeOffset
+
+	// Checking for all Players and Clones
+	for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {
+		for (uint8 entityIndex = 0; entityIndex < 2; entityIndex++) {
+			auto& playerData = GetPlayerData(playerIndex);
+			auto& characterData = GetCharacterData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+			auto& newActorData = GetNewActorData(playerIndex, playerData.activeCharacterIndex, entityIndex);
+
+			if (!newActorData.baseAddr) {
+				continue;
+			}
+			auto& actorData = *reinterpret_cast<PlayerActorData*>(newActorData.baseAddr);
+			auto& inYamatoHighTime = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].inYamatoHighTime :
+				crimsonPlayer[playerIndex].inYamatoHighTimeClone;
+
+			if ((((yamatoHighTimeOffset == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTime) ||
+				(yamatoHighTimeOffsetClone == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTimeClone) ||
+				(yamatoHighTimeOffsetDT == (uintptr_t)newActorData.baseAddr) && crimsonPlayer[playerIndex].inYamatoHighTime) {
+
+				return radius * 3.5f;
+			}
+
+		}
+	}
+
+
+	return radius;
+}
+
+void DebugDrawCollisions(byte8* metadataAddr) {
+	if (!activeCrimsonGameplay.Debug.showHitboxes || !activeCrimsonGameplay.Debug.debugTools) {
+		return;
+	}
+
+	auto& collisionMeta = *reinterpret_cast<CollisionDataMetadata*>(metadataAddr);
+
+	vec3 right = { collisionMeta.matrix1[0], collisionMeta.matrix1[1], collisionMeta.matrix1[2] };
+	vec3 up = { collisionMeta.matrix1[4], collisionMeta.matrix1[5], collisionMeta.matrix1[6] };
+	vec3 forward = { collisionMeta.matrix1[8], collisionMeta.matrix1[9], collisionMeta.matrix1[10] };
+
+	vec4 position = { collisionMeta.matrix1[12], collisionMeta.matrix1[13], collisionMeta.matrix1[14],  collisionMeta.matrix1[15] };
+
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.hitboxPos, *(ddVec3*)&up, dd::colors::Coral, collisionMeta.hitboxRadius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.hitboxPos, *(ddVec3*)&right, dd::colors::Chartreuse, collisionMeta.hitboxRadius, 8, 32);
+	dd::circle(dd_ctx(), *(ddVec3*)&collisionMeta.hitboxPos, *(ddVec3*)&forward, dd::colors::Crimson, collisionMeta.hitboxRadius, 8, 32);
+}
+
+bool CheckIfCanExecuteAction(uintptr_t playerAddr, uint32 event) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	uint8 playerIndex = actorData.newPlayerIndex;
+	uint8 entityIndex = actorData.newEntityIndex;
+	auto& jCut = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].jCut : crimsonPlayer[playerIndex].jCutClone;
+	auto lockOn = (actorData.buttons[0] & GetBinding(BINDING::LOCK_ON));
+	auto& gamepad = GetGamepad(actorData.newGamepad);
+	auto tiltDirection = GetRelativeTiltDirection(actorData);
+
+	// Here we can block certain actions from being performed.
+	
+// 	if (jCut.isJustFrameCharged || jCut.isAfterJustFrameCharged || actorData.action == ACTION_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2 || actorData.eventData[0].event == 33) {
+// 		return false;
+// 	}
+
+// 	if (jCut.performing) {
+// 		return false;
+// 	}
+
+	return true;
+}
+
+bool CheckIfInAirLunarPhase(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	if (actorData.character != CHARACTER::VERGIL) return false;
+	auto playerIndex = actorData.newPlayerIndex;
+	auto& inAirLunarPhase = (actorData.newEntityIndex == ENTITY::MAIN) ? crimsonPlayer[actorData.newPlayerIndex].inAirLunarPhase
+		: crimsonPlayer[actorData.newPlayerIndex].inAirLunarPhaseClone;
+	if (inAirLunarPhase) {
+		return true;
+	}
+	return false;
+}
+
+bool CheckChargeMechanics(uintptr_t playerAddr) {
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(playerAddr);
+	auto playerIndex = actorData.newPlayerIndex;
+
+	if (activeCrimsonGameplay.Gameplay.Dante.chargedShotgunLifts && actorData.activeRangedWeapon == WEAPON::SHOTGUN) {
+		return true;
+	}
+	
+	return false;
+}
+
+uintptr_t CheckPlayerClosestToOrb(uintptr_t playerAddr, vec4* orbPos) {
+	uintptr_t closestAddr = playerAddr;
+	float closestDist = FLT_MAX;
+
+	ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8 playerIndex, uint8 characterIndex, 
+		uint8 entityIndex) {
+		float dist = CrimsonReversedCalls::CalcDistanceVec4_sub_14032E5F0(&playerActor.position, orbPos);
+		if (dist < closestDist) {
+			closestDist = dist;
+			closestAddr = (uintptr_t)&playerActor;
+		}
+	});
+
+	ForEachVanillaPlayerActor([&](PlayerActorData& playerActor, uint8 pIndex, uint8 entityIndex) {
+		float dist = CrimsonReversedCalls::CalcDistanceVec4_sub_14032E5F0(&playerActor.position, orbPos);
+		if (dist < closestDist) {
+			closestDist = dist;
+			closestAddr = (uintptr_t)&playerActor;
+		}
+	});
+
+	return closestAddr;
+}
+
 void InitDetours() {
     using namespace Utility;
-    DetourBaseAddr = (uintptr_t)appBaseAddr;
+    g_appBaseAddr = (uintptr_t)appBaseAddr;
 
 	// cEnemySetCtrl__spawnGuy_sub_1401A4680
 	//dmc3.exe+1A4680 - 40 57 - push rdi
@@ -624,6 +1338,7 @@ void InitDetours() {
 	CameraSwitchInitDetour();
 	CameraWallCheckDetour();
 	LdkInitDetour();
+	CrimsonEfk::EffekInitRenderHook();
 	CrimsonOnTick::ToggleOnTickFuncs(true);
 
 	// AddToMirageGauge
@@ -650,7 +1365,15 @@ void InitDetours() {
     createEffectCallB  = (uintptr_t)appBaseAddr + 0x1FAA50;
     createEffectRBXMov = (uintptr_t)appBaseAddr + 0xC18AF8;
 
-       
+	// InterceptCollisions
+	// dmc3.exe + 2CCC98 - F3 0F 11 8B 40 01 00 00 - movss[rbx + 00000140], xmm1 { Assigning Hitbox Radius }
+	static std::unique_ptr<Utility::Detour_t> InterceptCollisionsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2CCC98, &InterceptCollisionsDetour, 8);
+	g_InterceptCollisions_ReturnAddr = InterceptCollisionsHook->GetReturnAddress();
+	g_DrawCollisionsCall = &DebugDrawCollisions;
+	g_InterceptCollisionsCall = &InterceptingCollisions;
+	InterceptCollisionsHook->Toggle(true);
+
     // VergilNeutralTrick // func is already detoured, Crimson.MobilityFunction<27>+B1
     // static std::unique_ptr<Utility::Detour_t> VergilNeutralTrickHook = std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x0,
     // &VergilNeutralTrickDetour, 5); g_VergilNeutralTrick_ReturnAddr = VergilNeutralTrickHook->GetReturnAddress();
@@ -793,23 +1516,25 @@ void ToggleDTInfusedRoyalguardDetours(bool enable) {
 //	run = enable;
 //}
 
-void ToggleFasterTurnRate(bool enable) {
+void ToggleTurnRateFix(bool enable) {
+	// Here we make Turn Rates behave consistently across all FramesPerSecond targets.
+	// This also controls the Faster Turn Rate setting. - Berthrage
 	using namespace Utility;
 	static bool run = false;
-
+	CrimsonPatches::KillTurnRateTruncation(enable);
 	if (run == enable) {
 		return;
 	}
 
-	// FasterTurnRate
-	// dmc3.exe + 1FC5D5 - E8 D6 13 13 00 - call dmc3.exe+32D9B0
-	// dmc3.exe + 1FC5DA - 44 0F B7 0F - movzx r9d,word ptr [rdi]
-	// dmc3.exe + 1FC5DE - 44 0F B7 D0 - movzx r10d, ax { value in ax (return from call) holds turn rate speed }
-	static std::unique_ptr<Utility::Detour_t> FasterTurnRateHook =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1FC5D5, &FasterTurnRateDetour, 13);
-	g_FasterTurnRate_ReturnAddr = FasterTurnRateHook->GetReturnAddress();
-	g_FasterTurnRateCallAddr = (uintptr_t)appBaseAddr + 0x32D9B0;
-	FasterTurnRateHook->Toggle(enable);
+	// Alter Turn Rate, from ControlMovementRotation_sub_1401FC5B0:
+	// dmc3.exe+1FC5C7 - 41 0F BF D9 - movsx ebx,r9w { Turn Rate }
+	// dmc3.exe+1FC5CB - 41 0F BF 08  - movsx ecx,word ptr [r8]
+
+	static std::unique_ptr<Utility::Detour_t> TurnRateFixHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1FC5C7, &TurnRateFixDetour, 8);
+	g_TurnRateFix_ReturnAddr = TurnRateFixHook->GetReturnAddress();
+	g_FasterTurnRateSettingAddr = &activeCrimsonGameplay.Gameplay.General.fasterTurnRate;
+	TurnRateFixHook->Toggle(enable);
 
 	run = enable;
 }
@@ -932,7 +1657,6 @@ void ToggleHoldToCrazyCombo(bool enable) {
 
 void SkyLaunchDetours(bool enable) {
 	using namespace Utility;
-	DetourBaseAddr = (uintptr_t)appBaseAddr;
 	static bool run = false;
 
 	if (run == enable) {
@@ -1051,6 +1775,29 @@ void ToggleEnsureAirRisingDragonLaunch(bool enable) {
 	run = enable;
 }
 
+void ToggleConfirmSetAction(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+
+	if (run == enable) {
+		return;
+	}
+
+	// dmc3.exe+1E6DAF - E8 4C9AFFFF           - call dmc3.exe+1E0800 -- TriggerEvent call
+	// RCX is playerPtr, RDX is event ID (0x11)
+
+	g_ConfirmSetAction_FuncCall = (uintptr_t)appBaseAddr + 0x1E0800;
+
+	static std::unique_ptr<Utility::Detour_t> ConfirmSetActionHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1E6DAF, &ConfirmSetActionDetour, 5);
+	g_ConfirmSetAction_ReturnAddr = ConfirmSetActionHook->GetReturnAddress();
+	ConfirmSetActionHook->Toggle(enable);
+	g_ConfirmSetActionCheckCall = &CheckIfCanExecuteAction;
+	
+	run = enable;
+
+}
+
 void ToggleGreenOrbsMPRegen(bool enable) {
 	using namespace Utility;
 	static bool run = false;
@@ -1113,7 +1860,6 @@ void RerouteRedOrbsCounterAlpha(bool enable, volatile uint16_t& alphaVar) {
 
 void ToggleClassicHUDPositionings(bool enable) {
 	using namespace Utility;
-	DetourBaseAddr = (uintptr_t)appBaseAddr;
 
 	// HudHPSeparation
 	static std::unique_ptr<Utility::Detour_t> HudHPSeparationHook =
@@ -1156,6 +1902,31 @@ void ToggleStyleRankHudNoFadeout(bool enable) {
     else {
         StyleRankHudNoFadeoutHook->Toggle(false);
     }
+}
+
+void ToggleHideAndMutePortals(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// HidePortals
+	// dmc3.exe + 270B85 - 66 89 44 24 28        - mov [rsp+28],ax
+	static std::unique_ptr<Utility::Detour_t> HidePortalsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x270B85, &PortalsHideDetour, 5);
+	g_PortalsHide_ReturnAddr = HidePortalsHook->GetReturnAddress();
+	HidePortalsHook->Toggle(enable);
+
+	// MutePortals
+	// dmc3.exe + 26D07E - 89 03                 - mov [rbx],eax
+	// dmc3.exe + 26D080 - 48 8D 5B 04           - lea rbx,[rbx+04]
+	static std::unique_ptr<Utility::Detour_t> MutePortalsHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x26D07E, &PortalsMuteDetour, 6);
+	g_PortalsMute_ReturnAddr = MutePortalsHook->GetReturnAddress();
+	MutePortalsHook->Toggle(enable);
+
+	run = enable;
 }
 
 void ToggleFPSSpeedIssues(bool enable) {
@@ -1235,33 +2006,101 @@ void ToggleDanteTrickAlterations(bool enable) {
 	run = enable;
 }
 
-
-void ToggleFixSecretMissionTimerFPS(bool enable) {
-	// This will untie the Secret Mission timer from FPS settings (ie no longer spawning with half the time when playing at 120 fps).
+void ToggleShotgunShlSpawnAnglePointBlank(bool enable) {
+	// Used for changing the Spawn Angle for Backslide.
 	using namespace Utility;
 	static bool run = false;
 	if (run == enable) {
 		return;
 	}
 	
-	// FixSecretMissionTimerFPS
-	// dmc3.exe+27C0DD - F3 0F 11 81 48 69 00 00   - movss [rcx+00006948],xmm0 { Setting secret mission timer }
-	// RCX is HUDPtr
+	// dmc3.exe + 2180C6 - 75 53 - jne dmc3.exe+21811B { Check if locked on enemy is near} -- needs killing
+	// dmc3.exe + 2180C8 - 0F B7 8B C0 00 00 00 - movzx ecx, word ptr[rbx + 000000C0]{ Spawn Angle taking Player Rotation for Normal Shots}
+	// dmc3.exe+2180DC - 0F B7 8B C0 00 00 00 - movzx ecx,word ptr [rbx+000000C0] { Spawn Angle taking Player Rotation for Normal Shots 2 }
+	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180C6, &ShotgunShlSpawnAnglePointBlankDetour, 9);
+	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr1 = ShotgunShlSpawnAngleHook1->GetReturnAddress();
+	g_ShotgunShlSpawnAnglePointBlankLockedOnEnemyJmp = (uintptr_t)appBaseAddr + 0x21811B;
+	ShotgunShlSpawnAngleHook1->Toggle(enable);
 
-	// dmc3.exe+27EF74 - F3 0F 5C C8            - subss xmm1,xmm0
-	// dmc3.exe+27EF78 - 0F 57 C0               - xorps xmm0,xmm0
-	// dmc3.exe + 27EF7E - F3 0F 11 8F 48 69 00 00 - movss[rdi + 00006948], xmm1{ Decrement Secret Mission Timer }
-	// RDI is HUDPtr
+	static std::unique_ptr<Utility::Detour_t> ShotgunShlSpawnAngleHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2180DC, &ShotgunShlSpawnAnglePointBlankDetour2, 7);
+	g_ShotgunShlSpawnAnglePointBlank_ReturnAddr2 = ShotgunShlSpawnAngleHook2->GetReturnAddress();
+	ShotgunShlSpawnAngleHook2->Toggle(enable);
 
-	static std::unique_ptr<Utility::Detour_t> FixSecretMissionTimerFPSHook =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x27C0DD, &FixSecretMissionTimerFPSDetour, 8);
-	g_FixSecretMissionTimerFPS_ReturnAddr = FixSecretMissionTimerFPSHook->GetReturnAddress();
-	FixSecretMissionTimerFPSHook->Toggle(enable);
+	g_ShotgunShlSpawnAnglePointBlankCheckCall = &CheckIfInBackslide;
+	
 
-	static std::unique_ptr<Utility::Detour_t> FixSecretMissionTimerFPSHook2 =
-		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x27EF74, &FixSecretMissionTimerFPSDetour2, 7);
-	g_FixSecretMissionTimerFPS_ReturnAddr2 = FixSecretMissionTimerFPSHook2->GetReturnAddress();
-	FixSecretMissionTimerFPSHook2->Toggle(enable);
+	// dmc3.exe+20EDEB - 75 1C                 - jne dmc3.exe+20EE09
+	// dmc3.exe+20EDED - 48 8D 8B 10 65 00 00  - lea rcx,[rbx+00006510]
+	// dmc3.exe + 20EE11 - E8 DA 91 00 00 - call dmc3.exe + 217FF0{ Point Blank's ShotgunFire }
+	// player in RCX, fireMode in RDX, R8 is 0
+	static std::unique_ptr<Utility::Detour_t> PointBlankShotgunFireHook =
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x20EDEB, &PointBlankShotgunFireDetour, 9);
+	g_PointBlankShotgunFire_ReturnAddr = PointBlankShotgunFireHook->GetReturnAddress();
+	PointBlankShotgunFireHook->Toggle(enable);
+
+	g_PointBlankShotgunFireDelayCall = &QueueDelayPointBlankShotgunFire;
+	g_PointBlankShotgunFireOgCall = (uintptr_t)appBaseAddr + 0x217FF0;
+
+	// dmc3.exe+20ED1A - E9 D1 92 00 00 - jmp dmc3.exe+217FF0 { Tail Func Call for PB's ShotgunFire(repeated shot) }
+	static std::unique_ptr<Utility::Detour_t> PointBlankShotgunFireTailHook =
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x20ED1A, &PointBlankShotgunFireTailCallDetour, 5);
+	g_PointBlankShotgunFireTailCall_ReturnAddr = PointBlankShotgunFireTailHook->GetReturnAddress();
+	PointBlankShotgunFireTailHook->Toggle(enable);
+
+	// In case we want to do Charged shots instead
+	// dmc3.exe+21828B - 66 03 8B C0 00 00 00 - add cx,[rbx+000000C0] { Spawn Angle taking Player Rotation for Charged Shot } 
+	// dmc3.exe+2182BD - 66 44 03 B3 C0 00 00 00 - add r14w,[rbx+000000C0] { Spawn Angle taking Player Rotation for Charged Shot 2 } 
+
+	g_PointBlankShotgunCancelAnimTailCall = (uintptr_t)appBaseAddr + 0x1FC4F0;
+
+	run = enable;
+}
+
+
+void ToggleJudgementCutDetours(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+	// JudgementCutDetours
+	// dmc3.exe+1DC678 - E9 B3 FA FF FF - jmp dmc3.StartupDelayJDC_sub_1401DC130
+	// dmc3.exe+1DC66B - E9 70FEFFFF           - jmp dmc3.SpawnJDCCollision_sub_1401DC4E0
+
+	static std::unique_ptr<Utility::Detour_t> JudgementCutSpeedHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC678, &JudgementCutSpeedDetour, 5);
+	g_JudgementCutSpeed_ReturnAddr = JudgementCutSpeedHook->GetReturnAddress();
+	g_JudgementCutVFX_ReturnAddr2 = (uintptr_t)appBaseAddr + 0x1DC3D7;
+	g_JudgementCutStartDelayCall = (uintptr_t)appBaseAddr + 0x1DC130;
+	g_JudgementCutSpawnCollisionCall = (uintptr_t)appBaseAddr + 0x1DC4E0;
+	g_JudgementCutCheckJustFrameCall = &CheckIfInJustFrameJDC;
+	JudgementCutSpeedHook->Toggle(false);
+
+
+	// dmc3.exe+1DC3B5 - E8 E6 B8 10 00 - call dmc3.PlayVFX_sub_1402E7CA0 { JudgementCut PlayVFX Call }
+	static std::unique_ptr<Utility::Detour_t> JudgementCutVFXHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC3B5, &JudgementCutVFXDetour, 5);
+	g_JudgementCutVFX_ReturnAddr = JudgementCutVFXHook->GetReturnAddress();
+	g_JudgementCutRegularVFXCall = (uintptr_t)appBaseAddr + 0x2E7CA0;
+	g_JudgementCutJustFrameVFXCall = &PlayJustFrameJDCVFX;
+	JudgementCutVFXHook->Toggle(enable);
+
+	// dmc3.exe+1DC3AB - C7 83 7C 01 00 00 00 00 80 3F - mov [rbx+0000017C],3F800000 { Setting JDC W position at matrix }
+	static std::unique_ptr<Utility::Detour_t> JudgementCutPositionHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC3AB, &JudgementCutPositionDetour, 10);
+	g_JudgementCutPosition_ReturnAddr = JudgementCutPositionHook->GetReturnAddress();
+	g_JudgementCutSetPositionCall = &SetJDCPositionAtMatrix;
+	JudgementCutPositionHook->Toggle(enable);
+
+	// dmc3.exe+1DC62E - 0F B6 53 08 - movzx edx,byte ptr [rbx+08] { Checking aliveStatus for comparisons }
+	// dmc3.exe+1DC632 - 85 D2 - test edx,edx
+	static std::unique_ptr<Utility::Detour_t> JudgementCutExtraShlHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1DC62E, &JudgementCutExtraShlDetour, 6);
+	g_JudgementCutExtraShl_ReturnAddr = JudgementCutExtraShlHook->GetReturnAddress();
+	g_JudgementCutExtraShlCall = &SpawnExtraJDCs;
+	JudgementCutExtraShlHook->Toggle(enable);
 
 	run = enable;
 }
@@ -1409,6 +2248,15 @@ void ToggleArkhamPt2GrabCrashFix(bool enable) {
 	g_FixCrashArkhamPt2Grab_ReturnAddr5 = FixCrashArkhamPt2GrabHook5->GetReturnAddress();
 	FixCrashArkhamPt2GrabHook5->Toggle(enable);
 
+	
+	// Detour 6
+	// From sub_1400510E0 (related to CSceneMgr vftable):
+	// dmc3.exe+510FA - 0F 28 81 80 00 00 00      - movaps xmm0,[rcx+00000080] { playerPos }
+	static std::unique_ptr<Utility::Detour_t> FixCrashArkhamPt2GrabHook6 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x510FA, &FixCrashArkhamPt2GrabDetour6, 7);
+	g_FixCrashArkhamPt2Grab_ReturnAddr6 = FixCrashArkhamPt2GrabHook6->GetReturnAddress();
+	FixCrashArkhamPt2GrabHook6->Toggle(enable);
+
 	run = enable;
 }
 
@@ -1484,6 +2332,201 @@ void ToggleDTMustStyleArmor(bool enable) {
 	g_DTMustStyleArmor_CheckCall2 = &SetAnnouncerWasHit;
 	DTMustStyleArmorHook->Toggle(enable);
 	run = enable;
+}
+
+void CheckScreenBreak(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CScrnBreakUpdate_sub_1402440B0:
+	// dmc3.exe+24419E - F3 0F 11 8E 50 24 00 00 - movss [rsi+00002450],xmm1 { Screen Break }
+	static std::unique_ptr<Utility::Detour_t> checkScreenBreakHook =
+	std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x24419E, &CheckScreenBreakDetour, 8);
+	g_CheckScreenBreak_ReturnAddr = checkScreenBreakHook->GetReturnAddress();
+
+	checkScreenBreakHook->Toggle(enable);
+
+	run = enable;
+}
+
+
+void CheckMissionResultScreen(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CUIDResultUpdate_sub_1402A3170:
+	// dmc3.exe+2A2718 - E8 B3 00 00 00 - call dmc3.sub_1402A27D0 { begin mission results screen }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A2718, &CheckMissionResultScreenDetour1, 5);
+	g_CheckMissionResultScreen_ReturnAddr1 = checkMissionResultScreenHook->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr1 = (uintptr_t)appBaseAddr + 0x2A27D0;
+	checkMissionResultScreenHook->Toggle(enable);
+
+	// dmc3.exe+2A2768 - E8 B30C0000           - call dmc3.sub_1402A3420 { process mission results screen }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A2768, &CheckMissionResultScreenDetour2, 5);
+	g_CheckMissionResultScreen_ReturnAddr2 = checkMissionResultScreenHook2->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr2 = (uintptr_t)appBaseAddr + 0x2A3420;
+	checkMissionResultScreenHook2->Toggle(enable);
+
+	// dmc3.exe+2A277C - E8 5F0C0000           - call dmc3.sub_1402A33E0 { process save screen }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A277C, &CheckMissionResultScreenDetour3, 5);
+	g_CheckMissionResultScreen_ReturnAddr3 = checkMissionResultScreenHook3->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr3 = (uintptr_t)appBaseAddr + 0x2A33E0;
+	checkMissionResultScreenHook3->Toggle(enable);
+
+	// dmc3.exe+2A2772 - E8 E91A0000           - call dmc3.sub_1402A4260 { leaving mission results }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultScreenHook4 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A2772, &CheckMissionResultScreenDetour4, 5);
+	g_CheckMissionResultScreen_ReturnAddr4 = checkMissionResultScreenHook4->GetReturnAddress();
+	g_CheckMissionResultScreen_TargetAddr4 = (uintptr_t)appBaseAddr + 0x2A4260;
+	checkMissionResultScreenHook4->Toggle(enable);
+
+	run = enable;
+}
+
+
+void CheckMissionResultBPScreen(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CUIDResultBPUpdate_sub_1402A5350:
+	// dmc3.exe+2A5378 - E8 93 00 00 00 - call dmc3.sub_1402A5410 { begin results BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook1 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A5378, &CheckMissionResultBPScreenDetour1, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr1 = checkMissionResultBPScreenHook1->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr1 = (uintptr_t)appBaseAddr + 0x2A5410;
+	checkMissionResultBPScreenHook1->Toggle(enable);
+
+	// dmc3.exe+2A53AA - E8 41 06 00 00 - call dmc3.sub_1402A59F0 { process results BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A53AA, &CheckMissionResultBPScreenDetour2, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr2 = checkMissionResultBPScreenHook2->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr2 = (uintptr_t)appBaseAddr + 0x2A59F0;
+	checkMissionResultBPScreenHook2->Toggle(enable);
+
+	// dmc3.exe+2A53B4 - E8 77 0B 00 00 - call dmc3.sub_1402A5F30 { leaving results BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook3 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A53B4, &CheckMissionResultBPScreenDetour3, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr3 = checkMissionResultBPScreenHook3->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr3 = (uintptr_t)appBaseAddr + 0x2A5F30;
+	checkMissionResultBPScreenHook3->Toggle(enable);
+
+	// dmc3.exe+2A53BE - E8 ED 05 00 00 - call dmc3.sub_1402A59B0 { process save screen BP }
+	static std::unique_ptr<Utility::Detour_t> checkMissionResultBPScreenHook4 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2A53BE, &CheckMissionResultBPScreenDetour4, 5);
+	g_CheckMissionResultBPScreen_ReturnAddr4 = checkMissionResultBPScreenHook4->GetReturnAddress();
+	g_CheckMissionResultBPScreen_TargetAddr4 = (uintptr_t)appBaseAddr + 0x2A59B0;
+	checkMissionResultBPScreenHook4->Toggle(enable);
+
+	run = enable;
+}
+
+void CheckTotalResultsScreen(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From CUIDTotalRankingUpdate_sub_1402BE980:
+	// dmc3.exe+2BE989 - 0F B6 49 08 - movzx ecx,byte ptr [rcx+08]
+	// dmc3.exe+2BE98D - 85 C9                 - test ecx,ecx
+	static std::unique_ptr<Utility::Detour_t> checkTotalResultsScreenHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x2BE989, &CheckTotalResultsScreenDetour, 6);
+	g_CheckTotalResultsScreen_ReturnAddr = checkTotalResultsScreenHook->GetReturnAddress();
+	checkTotalResultsScreenHook->Toggle(enable);
+
+	run = enable;
+}
+
+void NoAirLunarPhaseLift(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From ExecuteLunarPhaseMove_sub_14021DE20:
+	// dmc3.exe+21E34A - F3 0F 10 98 70 01 00 00 - movss xmm3,[rax+00000170] { movePart 0 yInertiaMult }
+	// dmc3.exe+21E352 - F3 0F 10 90 6C 01 00 00 - movss xmm2,[rax+0000016C] { movePart 0 yInertia }
+	static std::unique_ptr<Utility::Detour_t> noAirLunarPhaseLiftHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x21E34A, &NoAirLunarPhaseLiftDetour, 16);
+	g_NoAirLunarPhaseLift_ReturnAddr = noAirLunarPhaseLiftHook->GetReturnAddress();
+	g_NoAirLunarPhaseLiftCheckCall = &CheckIfInAirLunarPhase;  // Uncomment if calling C++ functions
+	g_NoAirLunarPhaseLiftSettingAddr = &activeCrimsonGameplay.Gameplay.Vergil.noAirLunarPhaseLift;
+	noAirLunarPhaseLiftHook->Toggle(enable);
+
+	run = enable;
+}
+
+
+void ChargeMechanicsCPlayer(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// From DMC3_sub_1401EB3D0:
+	// dmc3.exe+1EB6F7 - 0F 2F 05 D2 BB 2D 00 - comiss xmm0,[dmc3.exe+4C72D0] { (10000.00) }
+	static std::unique_ptr<Utility::Detour_t> chargeMechanicsCPlayerHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1EB6F7, &ChargeMechanicsCPlayerDetour, 7);
+	g_ChargeMechanicsCPlayer_ReturnAddr = chargeMechanicsCPlayerHook->GetReturnAddress();
+	g_ChargeMechanicsCPlayerCheckCall = &CheckChargeMechanics;  
+	g_ChargeMechanicsCPlayer_ConstAddr = (uintptr_t)appBaseAddr + 0x4C72D0; // Address of the 10000.0 float constant used in charge mechanics
+	chargeMechanicsCPlayerHook->Toggle(enable);
+
+	run = enable;
+}
+
+void CItemOrbPickupAllPlayers(bool enable) {
+	using namespace Utility;
+	static bool run = false;
+	if (run == enable) {
+		return;
+	}
+
+	// Proximity pickup 
+	// From CItemOrbBehavior_sub_1401B61C0:
+	// dmc3.exe+1B6344 - 80 B9 99 3E 00 00 01 - cmp byte ptr [rcx+00003E99],01 { compare player->isDead }
+	static std::unique_ptr<Utility::Detour_t> cItemOrbPickupAllPlayersHook =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1B6344, &CItemOrbPickupAllPlayersDetour, 7);
+	g_CItemOrbPickupAllPlayers_ReturnAddr = cItemOrbPickupAllPlayersHook->GetReturnAddress();
+	g_CItemOrbPickupAllPlayersCheckCall = &CheckPlayerClosestToOrb;  
+	cItemOrbPickupAllPlayersHook->Toggle(enable);
+
+	// VFX, SFX for orb pickup 
+	// From CItemOrbAfterPickup_sub_1401B6910:
+	// dmc3.exe+1B6990 - E8 FB 40 04 00 - call dmc3.CPlFetchBoneMatrix_sub_1401FAA90
+	// dmc3.exe+1B6B00 - E8 9B 11 13 00 - call dmc3.PlayVFX_sub_1402E7CA0 { orb pickup vfx }
+	static std::unique_ptr<Utility::Detour_t> cItemOrbPickupAllPlayersHook2 =
+		std::make_unique<Detour_t>((uintptr_t)appBaseAddr + 0x1B6990, &CItemOrbPickupAllPlayersDetour2, 5);
+	g_CItemOrbPickupAllPlayers_ReturnAddr2 = cItemOrbPickupAllPlayersHook2->GetReturnAddress();
+	g_CItemOrbPickupAllPlayers_BoneMatrixCall = (uintptr_t)appBaseAddr + 0x1FAA90;
+	cItemOrbPickupAllPlayersHook2->Toggle(enable);
+
+	run = enable;
+}
+
+void ToggleAllDetours(bool enable) {
+	CheckScreenBreak(enable);
+	CheckMissionResultScreen(enable);
+	CheckMissionResultBPScreen(enable);
+	NoAirLunarPhaseLift(enable);
+	CheckTotalResultsScreen(enable);
+	ChargeMechanicsCPlayer(enable);
+	CItemOrbPickupAllPlayers(enable);
 }
 
 }

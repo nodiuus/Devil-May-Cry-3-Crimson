@@ -20,6 +20,7 @@
 #include "../../ThirdParty/ImGui/Backend/imgui_impl_dx11.h"
 #include "../StyleSwitchFX.hpp"
 #include "../CrimsonSDL.hpp"
+#include "../CrimsonEfk.hpp"
 
 namespace API {
 enum {
@@ -27,6 +28,9 @@ enum {
     D3D11,
 };
 };
+
+void FPSLimiter_Init(double fps);
+void FPSLimiter_Apply();
 
 void UpdateMousePositionMultiplier();
 
@@ -217,13 +221,14 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
     UpdateMouse();
     UpdateGamepad();
 
-    XI::UpdateGamepad();
+    //XI::UpdateGamepad();
 
 
     if constexpr (api == API::D3D10) {
         ImGui_ImplDX10_NewFrame();
         ImGui_ImplWin32_NewFrame();
     } else if constexpr (api == API::D3D11) {
+        CrimsonEfk::CaptureDepthStencilForPresent(::D3D11::deviceContext);
         ImGui_ImplDX11_NewFrame();
         ImGui_ImplWin32_NewFrame();
     }
@@ -268,6 +273,8 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
 
         ImGui_ImplDX10_RenderDrawData(ImGui::GetDrawData());
     } else if constexpr (api == API::D3D11) {
+        CrimsonEfk::EffekIncFrames();
+
         ::D3D11::deviceContext->OMSetRenderTargets(1, &::D3D11::renderTargetView, 0);
 
         // Low-latency optimization: Prefetch render target for better cache performance
@@ -293,28 +300,8 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
         func();
     }();
 
-    // Ultra-low latency optimization: Wait for GPU frame completion before presenting
-    if (activeCrimsonConfig.System.flipModelPresentation && g_frameLatencyWaitableObject != nullptr) {
-        // Boost thread priority for rendering thread during frame presentation
-        HANDLE currentThread = GetCurrentThread();
-        int originalPriority = GetThreadPriority(currentThread);
-        SetThreadPriority(currentThread, THREAD_PRIORITY_TIME_CRITICAL);
-        
-        // Wait for the GPU to signal that it's ready for the next frame
-        // This ensures minimal CPU-GPU pipeline stalls and reduces input lag by 1-2 frames
-        DWORD waitResult = WaitForSingleObjectEx(g_frameLatencyWaitableObject, 16, TRUE); // 16ms timeout (1 frame at 60fps)
-        if (waitResult == WAIT_OBJECT_0) {
-            // GPU is ready - proceed with minimal latency
-            // Force immediate command buffer flush for D3D11
-            if constexpr (api == API::D3D11) {
-                ::D3D11::deviceContext->Flush(); // Ensure all GPU commands are submitted immediately
-            }
-        } else if (waitResult == WAIT_TIMEOUT) {
-            Log("Frame latency wait timeout - GPU may be overloaded");
-        }
-        
-        // Restore original thread priority
-        SetThreadPriority(currentThread, originalPriority);
+    if constexpr (api == API::D3D11) {
+        CrimsonEfk::EffekRenderOnPresent(::D3D11::deviceContext);
     }
 
     // Use optimal present flags for flip model low latency
@@ -329,7 +316,32 @@ template <new_size_t api> HRESULT Present(IDXGISwapChain* pSwapChain, UINT SyncI
         }
     }
 
-    return ::Base::DXGI::Present(pSwapChain, SyncInterval, presentFlags);
+    // Non-blocking GPU sync: poll the frame latency waitable object before Present.
+    // If the GPU is still busy with the previous frame, WaitForSingleObject(x, 0)
+    // returns immediately without blocking. The FPS limiter's spin-wait will then
+    // naturally back-pressure the CPU until the GPU catches up, preventing the
+    // render queue from building up latency.
+    if (activeCrimsonConfig.System.flipModelPresentation && g_frameLatencyWaitableObject != nullptr) {
+        WaitForSingleObject(g_frameLatencyWaitableObject, 0);
+    }
+
+    HRESULT presentResult = ::Base::DXGI::Present(pSwapChain, SyncInterval, presentFlags);
+
+	static double g_currentCap = -1.0;
+	constexpr double maxFPSAllowed = 500.0;
+
+	double newCap = activeCrimsonConfig.System.fpsUnlocked
+		? maxFPSAllowed
+		: (activeCrimsonConfig.System.fpsCap < maxFPSAllowed ? activeCrimsonConfig.System.fpsCap : maxFPSAllowed);
+
+	if (g_currentCap != newCap) {
+		g_currentCap = newCap;
+		FPSLimiter_Init(newCap);
+	}
+
+	FPSLimiter_Apply();
+
+    return presentResult;
 }
 
 template <new_size_t api>

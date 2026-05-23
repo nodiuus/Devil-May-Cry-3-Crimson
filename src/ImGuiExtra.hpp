@@ -63,6 +63,7 @@ namespace UI {
 		std::array<ImFont*, 40> m_FontSizes;
 
 		friend void SetStyleCrimson();
+		friend void BuildFontsCrimson();
 	};
 
 	class RussoOne_t {
@@ -80,6 +81,7 @@ namespace UI {
 		std::array<ImFont*, 40> m_FontSizes;
 
 		friend void SetStyleCrimson();
+		friend void BuildFontsCrimson();
 	};
 
 	extern Roboto_t g_ImGuiFont_Roboto;
@@ -157,14 +159,14 @@ namespace UI {
 
 		struct {
 			uint32_t Major = 0;
-			uint32_t Minor = 4;
+			uint32_t Minor = 5;
 			char	 PatchLetter = 0;
 		} CurrentVersion;
 
 		struct {
-			uint32_t Day = 20;
+			uint32_t Day = 23;
 			uint32_t Month = 5;
-			uint32_t Year = 2025;
+			uint32_t Year = 2026;
 		} LatestUpdateDate;
 
 		std::string LatestVersionURL{};
@@ -214,6 +216,8 @@ namespace UI {
 
 	void SetStyleCrimson();
 
+	void BuildFontsCrimson();
+
 	bool ButtonEx(const char* label, const ImVec2& size_arg, ImU32 hover_text_color, ImGuiButtonFlags flags);
 
 	bool TabButton(const char* label, bool isActive, bool isEnabled, bool hasSubtab, const ImVec2& size = ImVec2(0, 0));
@@ -228,6 +232,9 @@ namespace UI {
 	bool BeginCombo(const char* label, const char* preview_value, ImVec2 preview_align = { 0.0f, 0.0f }, float arrow_scale = 1.0f, ImGuiComboFlags flags = 0);
 
 	void SeparatorEx(float length = 0.0f, float align = 0.0f, ImGuiSeparatorFlags flags = ImGuiSeparatorFlags_Horizontal);
+
+	void DropShadowText(const ImFont* font, float font_size, const ImVec2& pos, ImVec4 col, const char* text_begin, const char* text_end = NULL, float wrap_width = 0.0f, const ImVec4* cpu_fine_clip_rect = NULL, ImVec2 offset = ImVec2(2.0f, 2.0f));
+
 
 #pragma region SerpCode
 	bool Selectable(const char* label, bool* selected, ImGuiSelectableFlags flags = 0);

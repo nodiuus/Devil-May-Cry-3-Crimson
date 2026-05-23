@@ -50,10 +50,10 @@ public:
 	{}
 
 protected:
-	static constexpr uint32_t	m_CompressedWidth{ 1598 };
-	static constexpr uint32_t	m_CompressedHeight{ 317 };
-	static constexpr uint32_t	m_ImageCompressedSize{ 465059 };
-	static			 uint32_t	m_ImageCompressedData[465060 / 4];
+	static constexpr uint32_t	m_CompressedWidth{ 968 };
+	static constexpr uint32_t	m_CompressedHeight{ 198 };
+	static constexpr uint32_t	m_ImageCompressedSize{ 314079 };
+	static			 uint32_t	m_ImageCompressedData[314080 / 4];
 };
 
 extern CrimsonHeaderLogo g_Image_CrimsonHeaderLogo;
@@ -68,9 +68,9 @@ public:
 
 protected:
 	static constexpr uint32_t	m_CompressedWidth{ 1924 };
-	static constexpr uint32_t	m_CompressedHeight{ 509 };
-	static constexpr uint32_t	m_ImageCompressedSize{ 851506 };
-	static			 uint32_t	m_ImageCompressedData[851508 / 4];
+	static constexpr uint32_t	m_CompressedHeight{ 510 };
+	static constexpr uint32_t	m_ImageCompressedSize{ 1095949 };
+	static			 uint32_t	m_ImageCompressedData[1095952 / 4];
 };
 
 extern CrimsonMainLogo g_Image_CrimsonMainLogo;

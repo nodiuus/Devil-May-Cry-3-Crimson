@@ -1,9 +1,11 @@
 ﻿// UNSTUPIFY(Disclaimer: by 5%)... POOOF
 #include "UI\WeaponWheel.hpp"
 
+#include "CrimsonEfk.hpp"
 #include "../ThirdParty/SDL2/SDL_gamecontroller.h"
 #include "../ThirdParty/glm/glm.hpp"
 #include "CrimsonGUI.hpp"
+#include "CrimsonLicense.hpp"
 #include "Core/Core.hpp"
 #include "CrimsonGameplay.hpp"
 #include "Camera.hpp"
@@ -14,6 +16,7 @@
 #include "Global/GUIBase.hpp"
 #include "CrimsonUtil.hpp"
 #include "CrimsonFileHandling.hpp"
+#include "CrimsonOnboarding.hpp"
 #include "DMC3Input.hpp"
 #include "File.hpp"
 #include "ImGuiExtra.hpp"
@@ -66,17 +69,21 @@
 #include "CrimsonTimers.hpp"
 #include "CrimsonOnTick.hpp"
 #include "CrimsonGameModes.hpp"
+#include "CrimsonVisualStyle.hpp"
 #include "CrimsonSDL.hpp"
 #include "CrimsonPatches.hpp"
 #include "CrimsonDetours.hpp"
 #include "UI\Texture2DD3D11.hpp"
 #include "UI\EmbeddedImages.hpp"
 #include "CrimsonCameraController.hpp"
+#include "CrimsonBetterArkham2.hpp"
 
 #include "DebugDrawDX11.hpp"
 
 #include "ImGui/imgui.h"
 #include "CrimsonHUD.hpp"
+#include "CrimsonFX.hpp"
+#include "CrimsonReversedCalls.hpp"
 
 #define SDL_FUNCTION_DECLRATION(X) decltype(X)* fn_##X
 #define LOAD_SDL_FUNCTION(X) fn_##X = GetSDLFunction<decltype(X)*>(#X)
@@ -85,6 +92,7 @@
 namespace CrimsonGUI {
 float scaleFactorX;
 float scaleFactorY;
+float scaleFactor;
 float scaledFontSize;
 float itemWidth;
 }
@@ -108,7 +116,7 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 	// Todo: move to context
 	static bool uiElementsInitialized = false;
 	if (!uiElementsInitialized) {
-		g_Image_CrimsonHeaderLogo.ResizeByRatioW(size_t(g_UIContext.DefaultFontSize * 12.23f));
+		g_Image_CrimsonHeaderLogo.ResizeByRatioW(size_t(g_UIContext.DefaultFontSize * 13.23f));
 
 		uiElementsInitialized = true;
 	}
@@ -167,7 +175,10 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 		ImRect wndRect = window->Rect();
 		ImGuiStyle& style = ImGui::GetStyle();
 		
-
+		queuedCrimsonConfig.System.windowSizeX = window->Size.x;
+		queuedCrimsonConfig.System.windowSizeY = window->Size.y;
+		queuedCrimsonConfig.System.windowPosX = window->Pos.x;
+		queuedCrimsonConfig.System.windowPosY = window->Pos.y;
 		window->ContentRegionRect = ImRect{ window->ContentRegionRect.Min, window->ContentRegionRect.Max - ImVec2{ 0.0f, 70.0f } };
 
 		float contentMinHeightOffsetFromTop;
@@ -688,10 +699,10 @@ void DrawCrimson(IDXGISwapChain* pSwapChain, const char* title, bool* pIsOpened)
 			// Middle footer section
 			{
 				constexpr auto BACKGROUND_FADED_TEXT = u8"C•Team";
-				constexpr auto CREDIT_TEXT = u8"Berthrage • SSSiyan • deepdarkkapustka • Darkness • Charlie • The Hitchhiker • RaccMoon • Lenam ";
+				constexpr auto CREDIT_TEXT = u8"Berthrage • SSSiyan • deepdarkkapustka • Darkness • Charlie • The Hitchhiker • RaccMoon • Lenam • Airdragon • ZippoIG • Vainiuss1 ";
 				constexpr auto ABOUT_BUTTON_TEXT = "ABOUT";
 
-				ImGui::PushFont(g_ImGuiFont_Roboto[g_UIContext.DefaultFontSize]);
+				ImGui::PushFont(g_ImGuiFont_Roboto[g_UIContext.DefaultFontSize * 0.85f]);
 
 				float creditTextWidth = ImGui::CalcTextSize((const char*)CREDIT_TEXT).x;
 				float aboutButtonWidth = ImGui::CalcTextSize(ABOUT_BUTTON_TEXT).x + style.FramePadding.x * 2.0f;
@@ -1256,6 +1267,28 @@ uint8 rightStickCenterCamMap[] = {
 	2,
 };
 
+const char* cameraShakeNames[] = {
+	"Off",
+	"Only in Single Player Cam",
+	"Always On",
+};
+
+uint8 cameraShakeMap[] = {
+	0,
+	1,
+	2,
+};
+
+const char* styleSwitchTypeNames[] = {
+	"Crimson",
+	"DMC3 Switch",
+};
+
+uint8 styleSwitchTypeMap[] = {
+	0,
+	1,
+};
+
 const char* styleRankNames[] = {
 	"None",
 	"Dope",
@@ -1722,6 +1755,16 @@ constexpr uint8 stylesDisplayStateMap[3] = {
 	STYLESDISPLAY::NO_BROKEN_GLASS,
 };
 
+const char* styleNamesTextureSetNames[] = {
+	"Crimson",
+	"DMC3 Switch",
+};
+
+constexpr uint8 styleNamesTextureSetMap[2] = {
+	STYLENAMESSET::CRIMSON,
+	STYLENAMESSET::DMC3_SWITCH,
+};
+
 const char* missionTimerDisplayStateNames[] = {
 	"Off",
 	"Only in BP",
@@ -1732,13 +1775,6 @@ constexpr uint8 missionTimerDisplayStateMap[3] = {
 	MISSIONTIMERDISPLAY::OFF,
 	MISSIONTIMERDISPLAY::ONLY_IN_BP,
 	MISSIONTIMERDISPLAY::ALWAYS,
-};
-
-
-std::vector<std::string> VergilMoveAdjustmentsNames = {
-	"Off",
-	"From Air",
-	"Always",
 };
 
 const char* ldkModeNames[] = {
@@ -1802,71 +1838,43 @@ static_assert(countof(trackFilenames) == countof(trackNames));
 
 #pragma endregion
 
+float GetFadeToBlackProgress(float targetTotal = 60.0f) {
+	auto transitionAmount = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA4);
+	auto transitionTotal = *reinterpret_cast<float*>(appBaseAddr + 0x5CFAA8);
+	if (transitionTotal != targetTotal)
+		return 0.0f;
+	auto percentage = (transitionAmount / transitionTotal);
+	percentage = (std::max)(0.0f, percentage);
+	percentage = (std::min)(1.0f, percentage);
+	return percentage;
+}
+ImVec4 LerpFadeToBlack(ImVec4 color, float target) {
+	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress(target)); // default is white
+}
+ImVec4 LerpFadeToBlack(ImVec4 color) {
+	return ImLerp(color, ImVec4(0, 0, 0, color.w), GetFadeToBlackProgress()); // default is white
+}
+
 void PauseWhenGUIOpened() {
-	auto pool_10298 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
-	if (!pool_10298 || !pool_10298[8]) {
-		return;
-	}
-	auto& eventData = *reinterpret_cast<EventData*>(pool_10298[8]);
-
-	auto name_10723 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
-	if (!name_10723) {
-		return;
-	}
-	auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
-
-
-
-	auto pool_10222 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
-	if (!pool_10222 || !pool_10222[3]) {
-		return;
-	}
-	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_10222[3]);
-
-	static uint32 storedFrameCount = 0;
-	if (g_inGameCutscene || !activeCrimsonConfig.GUI.pauseWhenOpened) {
-		return;
-	}
-
-	// We add this timer so we can safely (aka no crash) say when we can pause the game by setting speed to 0.
-	if (g_scene != SCENE::GAME || eventData.event != EVENT::MAIN) {
-		guiPause.timer = 0.5f;
-		guiPause.canPause = false;
-		g_inGameDelayed = false;
-	}
-	else {
-		g_inGameDelayed = true;
-
-		if (guiPause.timer > 0) {
-			guiPause.timer -= ImGui::GetIO().DeltaTime;
+	if (activeCrimsonConfig.GUI.pauseWhenOpened) {
+		if (g_show) {
+			CrimsonPatches::PauseGameTime(true);
+			auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+			if (!pool_C90E10 || !pool_C90E10[5]) {
+				return;
+			}
+			auto& cSceneGameMain = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+			if (cSceneGameMain.event == EVENT::MAIN) {
+				g_inGUIPause = true;
+			}
+		} else {
+			CrimsonPatches::PauseGameTime(false);
+			g_inGUIPause = false;
 		}
+	} else {
+		CrimsonPatches::PauseGameTime(false);
+		g_inGUIPause = false;
 	}
-
-	if (guiPause.timer <= 0) {
-		guiPause.canPause = true;
-	}
-// 
-// 
-// 	if (!g_show || !guiPause.canPause) {
-// 		storedFrameCount = missionData.frameCount; // This stores the game's timer.
-// 		activeConfig.Speed.mainSpeed = queuedConfig.Speed.mainSpeed; // This resumes the game speed
-// 		activeConfig.Speed.turbo = queuedConfig.Speed.turbo;
-// 		Speed::Toggle(true); 
-// 		guiPause.in = false;
-// 
-// 	}
-// 	else if (g_show && !guiPause.in && guiPause.canPause) {
-// 		activeConfig.Speed.mainSpeed = 0;  // This pauses the game speed
-// 		activeConfig.Speed.turbo = 0;
-// 		Speed::Toggle(true); // Toggle Speed on and off to set the new speed
-// 		Speed::Toggle(false);
-// 		guiPause.in = true;
-// 	}
-// 
-// 
-// 	if (g_showMain) {
-// 		missionData.frameCount = storedFrameCount;  // This pauses the game's timer.
-// 	}
 }
 
 std::unique_ptr<WW::WeaponWheel> dummyWeaponWheel;
@@ -2003,7 +2011,7 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	auto playerData = GetPlayerData(playerIndex);
 	auto& characterData = GetCharacterData(actorData);
 
-	auto& gamepad = GetGamepad(actorData.newPlayerIndex);
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 
 	if (InCutscene() || InCredits() || !activeConfig.Actor.enable || g_inGameCutscene ||
 		!((characterData.character == CHARACTER::DANTE) || (characterData.character == CHARACTER::VERGIL))) {
@@ -2013,7 +2021,7 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	auto& charIndex = actorData.newCharacterIndex;
 	auto& weaponIndex = isMelee ? characterData.meleeWeaponIndex : characterData.rangedWeaponIndex;
 	auto& weaponCount = isMelee ? playerData.characterData[charIndex][ENTITY::MAIN].meleeWeaponCount : playerData.characterData[charIndex][ENTITY::MAIN].rangedWeaponCount;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+	auto activeGameSpeed = GetCurrentGameSpeed();
 
 	auto weapons = isMelee ? playerData.characterData[charIndex][ENTITY::MAIN].meleeWeapons : playerData.characterData[charIndex][ENTITY::MAIN].rangedWeapons;
 
@@ -2157,6 +2165,46 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	pWeaponWheel->OnUpdate(deltaTimeGameSpeed);
 
 	bool isSwitchingButtonDown = actorData.buttons[1] & GetBinding(isMelee ? BINDING::CHANGE_DEVIL_ARMS : BINDING::CHANGE_GUN);
+	bool isSwitchButtonDown = (actorData.buttons[0] & playerData.switchButton) ||
+		(actorData.buttons[2] & playerData.switchButton);
+
+	auto GetDanteDoppelSwitchCondition = [](PlayerActorData& actorData) {
+		if (!activeCrimsonGameplay.Gameplay.Dante.doppelgangerSplitSync)
+			return false;
+		auto& gamepad = GetGamepad(actorData.newGamepad);
+		bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
+			|| (gamepad.buttons[2] & GetBinding(BINDING::STYLE_ACTION));
+		if (!styleDown)
+			return false;
+		if (actorData.newEntityIndex != ENTITY::MAIN) {
+			auto& mainActorData = *reinterpret_cast<PlayerActorData*>(GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, ENTITY::MAIN).baseAddr);
+			//if lockCloneStyle set only allow switch if main actor is currently in doppelganger style
+			if (mainActorData == nullptr) return false;
+			if (mainActorData.character != CHARACTER::DANTE) return false;
+			if ((mainActorData.style == STYLE::DOPPELGANGER && styleDown)) {
+				return true;
+			}
+		}
+		if (actorData.newEntityIndex == ENTITY::MAIN) {
+			if (actorData.character != CHARACTER::DANTE) return false;
+			if ((actorData.style == STYLE::DOPPELGANGER && styleDown)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	bool danteCondition = GetDanteDoppelSwitchCondition(actorData);
+	bool suppressWheel = (isSwitchButtonDown || danteCondition) && isSwitchingButtonDown;
+
+	if (suppressWheel) {
+		if (pWeaponWheel->GetAnalogSwitchingMode()) {
+			pWeaponWheel->ToggleAnalogSwitchingUI(false);
+		}
+		if (pWeaponWheel->GetAlwaysVisible()) {
+			pWeaponWheel->ToggleAlwaysVisible(false);
+		}
+		isSwitchingButtonDown = false;
+	}
 	bool leftStick = (characterData.rangedWeaponSwitchStick == LEFT_STICK);
 	auto radius = (leftStick) ? gamepad.leftStickRadius : gamepad.rightStickRadius;
 	bool stickUsed = radius > RIGHT_STICK_DEADZONE ? true : false;
@@ -2195,6 +2243,10 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 
 	pWeaponWheel->UpdateSwitchButtonHeldEnough(isSwitchingButtonDown, 500);
 	pWeaponWheel->OnDraw();
+
+	if (suppressWheel) {
+		return false;
+	}
 
 	if (activeCrimsonConfig.WeaponWheel.hide && trackHide) {
 		return true;
@@ -2243,10 +2295,7 @@ void WeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 	auto& playerScreenPosition = crimsonPlayer[playerIndex].playerScreenPosition;
 	auto distanceClamped = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
 
-	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	auto inMultiplayer = activeCrimsonConfig.WeaponWheel.force1PMultiplayerPosScale || activeConfig.Actor.playerCount > 1;
 	auto& scale = activeCrimsonConfig.WeaponWheel.scale;
@@ -2268,7 +2317,7 @@ void WeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 	if (WeaponWheelController(actorData, pSwapChain, meleeWeaponWheel[0], "MeleeWheel1P",
 		!inMultiplayer,
 		inMultiplayer ? multiplayerPosMelee : normalPos, inMultiplayer ? multiplayerSize : normalSize,
-		alwaysShow, true, true, stateMelee, deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+		alwaysShow, true, true, stateMelee, deltaTimeMs, deltaTimeMs)) {
 
 		initialized = true;
 	}
@@ -2276,7 +2325,7 @@ void WeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 	WeaponWheelController(actorData, pSwapChain, rangedWeaponWheel[0], "RangedWheel1P",
 		!inMultiplayer,
 		inMultiplayer ? multiplayerPosRanged : normalPos, inMultiplayer ? multiplayerSize : normalSize,
-		alwaysShow, true, false, stateRanged, deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+		alwaysShow, true, false, stateRanged, deltaTimeMs, deltaTimeMs);
 }
 
 void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
@@ -2287,9 +2336,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 	static bool initializedRanged[PLAYER_COUNT] = { false };
 
 	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	if (!activeCrimsonConfig.MultiplayerBars2D.show) return;
 
@@ -2305,7 +2352,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 
 		auto& playerScreenPosition = crimsonPlayer[playerIndex].playerScreenPosition;
 		auto distanceClamped = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
-		auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
+		auto activeGameSpeed = GetCurrentGameSpeed();
 
 		ImVec2 normalSize = ImVec2(g_renderSize.y * 0.45f, g_renderSize.y * 0.45f);
 
@@ -2336,7 +2383,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 		if (WeaponWheelController(actorData, pSwapChain, meleeWheel, meleeWheelName.c_str(),
 			false,
 			multiplayerPosMelee, multiplayerSize,
-			alwaysShow, true, true, stateMelee[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+			alwaysShow, true, true, stateMelee[playerIndex], deltaTimeMs, deltaTimeMs)) {
 
 			initializedMelee[playerIndex] = true;
 		}
@@ -2344,7 +2391,7 @@ void WeaponWheelsMultiplayerController(IDXGISwapChain* pSwapChain) {
 		WeaponWheelController(actorData, pSwapChain, rangedWheel, rangedWheelName.c_str(),
 			false,
 			multiplayerPosRanged, multiplayerSize,
-			alwaysShow, true, false, stateRanged[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+			alwaysShow, true, false, stateRanged[playerIndex], deltaTimeMs, deltaTimeMs);
 	}
 
 	multiplayerWheelsLoaded = true; 
@@ -2361,10 +2408,7 @@ void WorldSpaceWeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 		(activeCrimsonConfig.WeaponWheel.worldSpaceWheels == HUDELEMENTSHOWSTATE::ONLY_IN_MP
 			&& activeConfig.Actor.playerCount <= 1)) return;
 
-	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	auto pool_1431 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
 	if (!pool_1431 || !pool_1431[3]) {
@@ -2404,7 +2448,7 @@ void WorldSpaceWeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 		false,
 		meleeWheelPos, multiplayerSize,
 		alwaysShow, false, true,
-		stateMelee, deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+		stateMelee, deltaTimeMs, deltaTimeMs)) {
 		initialized = true;
 	}
 
@@ -2412,7 +2456,7 @@ void WorldSpaceWeaponWheels1PController(IDXGISwapChain* pSwapChain) {
 		false,
 		rangedWheelPos, multiplayerSize,
 		alwaysShow, false, false,
-		stateRanged, deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+		stateRanged, deltaTimeMs, deltaTimeMs);
 
 }
 
@@ -2428,11 +2472,7 @@ void WorldSpaceWeaponWheelsController(IDXGISwapChain* pSwapChain) {
 		(activeCrimsonConfig.WeaponWheel.worldSpaceWheels == HUDELEMENTSHOWSTATE::ONLY_IN_MP
 			&& activeConfig.Actor.playerCount <= 1)) return;
 
-	// Measure delta time using chrono
-	float deltaTime = ImGui::GetIO().DeltaTime;
-	auto activeGameSpeed = (IsTurbo()) ? activeConfig.Speed.turbo : activeConfig.Speed.mainSpeed;
-	float deltaTimeAdjustedSpeed = deltaTime * 1000.0f * (activeGameSpeed / g_FrameRateTimeMultiplier);
-	float deltaTimeAdjusted = deltaTime * 1000.0f;
+	const float deltaTimeMs = g_deltaTime * 1000.0f;
 
 	for (int playerIndex = 1; playerIndex < activeConfig.Actor.playerCount; playerIndex++) {
 		auto& playerData = GetPlayerData((uint8)playerIndex);
@@ -2476,7 +2516,7 @@ void WorldSpaceWeaponWheelsController(IDXGISwapChain* pSwapChain) {
 			false,
 			meleeWheelPos, multiplayerSize,
 			alwaysShow, false, true,
-			stateMelee[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted)) {
+			stateMelee[playerIndex], deltaTimeMs, deltaTimeMs)) {
 			initializedMelee[playerIndex] = true;
 		}
 	
@@ -2484,7 +2524,7 @@ void WorldSpaceWeaponWheelsController(IDXGISwapChain* pSwapChain) {
 			false,
 			rangedWheelPos, multiplayerSize,
 			alwaysShow, false, false,
-			stateRanged[playerIndex], deltaTimeAdjustedSpeed, deltaTimeAdjusted);
+			stateRanged[playerIndex], deltaTimeMs, deltaTimeMs);
 	}
 }
 
@@ -3203,6 +3243,9 @@ void SelectPlayerLoadoutsWeaponsTab() {
 
 	uint8 activePlayerIndex;
 
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[defaultFontSize * 1.0]);
+	ImGui::Text("PLAYER SETTINGS / LOADOUTS");
+	ImGui::PopFont();
 
 	if (ImGui::BeginTable("CharacterTable", 2)) {
 
@@ -3300,86 +3343,117 @@ void CharacterSection(size_t defaultFontSize) {
 		ImGui::PopFont();
 	}
 	UI::SeparatorEx(defaultFontSize * 23.35f);
-	
+
 	GUI_PushDisable(actorCondition);
 
 	ImGui::Text("");
-
-	SelectPlayerLoadoutsWeaponsTab();
-
-	GUI_PopDisable(actorCondition);
-
-	
-	GUI_PushDisable(actorCondition);
-
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColor);
-	
-
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
-	const char* SPMPText = (queuedConfig.Actor.playerCount == 1) ? SPMPText = "SINGLE PLAYER" : SPMPText = "MULTIPLAYER";
-	ImGui::Text(SPMPText);
-	ImGui::PopFont();
-	BackgroundSPMPText(SPMPText);
-	
-
-	ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
-	ImGui::PushItemWidth(itemWidth);
-	if (GUI_Slider<uint8>("Number of Players", queuedConfig.Actor.playerCount, 1, PLAYER_COUNT)) {
-		if (queuedConfig.Actor.playerCount > 1) {
-			activeCrimsonConfig.Camera.multiplayerCamera = true;
-			queuedCrimsonConfig.Camera.multiplayerCamera = true;
-			activeCrimsonConfig.Camera.thirdPersonCamera = true;
-			queuedCrimsonConfig.Camera.thirdPersonCamera = true;
-		} else {
-			activeConfig.enablePVPFixes = false;
-			queuedConfig.enablePVPFixes = false;
-		}
-	}
-	UI::Combo2("DMC3 Costume Game Progression", costumeRespectsProgressionNames, activeConfig.costumeRespectsProgression,
-		queuedConfig.costumeRespectsProgression);
-
-	ImGui::SameLine();
-	TooltipHelper("(?)", "Makes DMC3 Costume update as the game progresses, as in the Vanilla game.\n"
-		"\n"
-		"'Crimson' updates Vergil's Costume at Mission 1."
-
-	);
 
 	{
 		const float columnWidth = 0.6f * queuedConfig.globalScale;
 		const float rowWidth = 40.0f * queuedConfig.globalScale;
 
-		if (ImGui::BeginTable("ActorSystemTable", 3)) {
+		if (ImGui::BeginTable("ActorPlayersTable", 2)) {
 
 			ImGui::TableSetupColumn("c2", 0, columnWidth * 2.0f);
 			ImGui::TableNextRow(0, rowWidth);
 
 			ImGui::TableNextColumn();
 
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
+			const char* SPMPText = (queuedConfig.Actor.playerCount == 1) ? SPMPText = "SINGLE PLAYER" : SPMPText = "MULTIPLAYER";
+			ImGui::Text(SPMPText);
+			ImGui::PopFont();
+			BackgroundSPMPText(SPMPText);
+
+
+			ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
+			ImGui::PushItemWidth(itemWidth);
+			if (GUI_Slider<uint8>("Number of Players", queuedConfig.Actor.playerCount, 1, PLAYER_COUNT)) {
+				if (queuedConfig.Actor.playerCount > 1) {
+					activeCrimsonConfig.Camera.multiplayerCamera = true;
+					queuedCrimsonConfig.Camera.multiplayerCamera = true;
+					activeCrimsonConfig.Camera.thirdPersonCamera = true;
+					queuedCrimsonConfig.Camera.thirdPersonCamera = true;
+				} else {
+					activeConfig.enablePVPFixes = false;
+					queuedConfig.enablePVPFixes = false;
+				}
+			}
+			ImGui::PopItemWidth();
+			ImGui::PopFont();
+			ImGui::TableNextColumn();
+
+			ImGui::Text("");
+
+			if (GUI_Button("BUTTON CONFIGURATION")) {
+				g_showControllerRemap = true;
+			}
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Open the controller button remapping window to customize button bindings for each player and character.");
+
+			ImGui::TableNextColumn();
+
+
+			ImGui::PushItemWidth(itemWidth);
+			UI::Combo2("DMC3 Costume Game Progression", costumeRespectsProgressionNames, activeConfig.costumeRespectsProgression,
+				queuedConfig.costumeRespectsProgression);
+			ImGui::PopItemWidth();
+
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Makes DMC3 Costume update as the game progresses, as in the Vanilla game.\n"
+				"\n"
+				"'Crimson' updates Vergil's Costume at Mission 1.");
+
+
+			ImGui::EndTable();
+		}
+	}
+
+	{
+		const float columnWidth = 0.6f * queuedConfig.globalScale;
+		const float rowWidth = 40.0f * queuedConfig.globalScale;
+
+		if (ImGui::BeginTable("ActorSystemTable", 2)) {
+
+			ImGui::TableSetupColumn("c2", 0, columnWidth * 2.0f);
 			ImGui::TableNextRow(0, rowWidth);
+
 			ImGui::TableNextColumn();
 
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("PLAYER NAMES / COLORS");
-			
-			for (int playerIndex = 0; playerIndex < PLAYER_COUNT; playerIndex++) {
+
+			// Static persistent buffers for player names - survive across frames for proper ImGui text editing
+			static char s_playerNameBuffers[PLAYER_COUNT][20] = {};
+			static bool s_buffersInitialized = false;
+
+			// Initialize buffers once from config
+			if (!s_buffersInitialized) {
+				for (int i = 0; i < PLAYER_COUNT; i++) {
+					const std::string& configName = queuedCrimsonConfig.PlayerProperties.playerName[i];
+					size_t copyLen = (configName.length() < 19) ? configName.length() : 19;
+					memcpy(s_playerNameBuffers[i], configName.c_str(), copyLen);
+					s_playerNameBuffers[i][copyLen] = '\0';
+				}
+				s_buffersInitialized = true;
+			}
+
+			for (int playerIndex = 0; playerIndex < queuedConfig.Actor.playerCount; playerIndex++) {
 
 				ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
-				std::string& playerNameActive = activeCrimsonConfig.PlayerProperties.playerName[playerIndex];
-				std::string& playerNameQueued = queuedCrimsonConfig.PlayerProperties.playerName[playerIndex];
-				char buffer[20] = { 0 }; 
-				strncpy(buffer, playerNameQueued.c_str(), sizeof(buffer) - 1);
-				buffer[20 - 1] = '\0';
 
 				std::string inputLabel = "##playerName" + std::to_string(playerIndex);
 				ImGui::PushItemWidth(itemWidth * 1.3f);
-				if (ImGui::InputText(inputLabel.c_str(), buffer, sizeof(buffer))) {
-					playerNameActive = std::string(buffer);
-					playerNameQueued = std::string(buffer);
+
+				// ImGui edits the persistent buffer directly
+				if (ImGui::InputText(inputLabel.c_str(), s_playerNameBuffers[playerIndex], 20)) {
+					activeCrimsonConfig.PlayerProperties.playerName[playerIndex] = s_playerNameBuffers[playerIndex];
+					queuedCrimsonConfig.PlayerProperties.playerName[playerIndex] = s_playerNameBuffers[playerIndex];
 					GUI::save = true;
 				}
-				ImGui::PopFont();
+
 				ImGui::PopItemWidth();
+				ImGui::PopFont();
 
 				ImGui::SameLine();
 				GUI_Color2("", activeCrimsonConfig.PlayerProperties.playerColor[playerIndex], queuedCrimsonConfig.PlayerProperties.playerColor[playerIndex]);
@@ -3394,24 +3468,19 @@ void CharacterSection(size_t defaultFontSize) {
 						sizeof(queuedCrimsonConfig.PlayerProperties.playerColor[playerIndex]));
 				}
 
-				if (playerIndex == 1) {
-					ImGui::TableNextRow(0, rowWidth);
-				}
-				
-				ImGui::TableNextColumn();
-				if (playerIndex == 0) {
-					ImGui::Text("");
-				}
-				
-				
+
 			}
 			ImGui::PopFont();
 			ImGui::TableNextColumn();
+
+			ImGui::Text("");
+			ImGui::Text("");
 
 			GUI_PushDisable(queuedConfig.Actor.playerCount <= 1);
 			GUI_Checkbox2("PVP Fixes", activeConfig.enablePVPFixes, queuedConfig.enablePVPFixes);
 			ImGui::SameLine();
 			TooltipHelper("(?) WARNING", "Allows you to set up PVP Multiplayer.\n"
+				"Lock On in PVP requires an enemy spawned in order to work properly.\n"
 				"WARNING: This option WILL break actual enemies (they will freeze). Use with caution.", 2048.0f, true);
 			GUI_PopDisable(queuedConfig.Actor.playerCount <= 1);
 
@@ -3419,35 +3488,22 @@ void CharacterSection(size_t defaultFontSize) {
 		}
 	}
 
-	// Deprecated DDMK Options
+	SelectPlayerLoadoutsWeaponsTab();
 
-// 	GUI_Checkbox2("Update Lock-Ons", activeConfig.updateLockOns, queuedConfig.updateLockOns);
-// 
-// 	GUI_Checkbox2("Force Sync Hit & Magic Points", activeConfig.forceSyncHitMagicPoints, queuedConfig.forceSyncHitMagicPoints);
-// 
-// 
-// 	GUI_Checkbox2("Reset Permissions", activeConfig.resetPermissions, queuedConfig.resetPermissions);
-// 	ImGui::SameLine();
-// 	TooltipHelper("(?)", "Press the taunt button to reset the actor's permissions.\n"
-// 		"Useful when getting stuck.");
+	GUI_PopDisable(actorCondition);
 
-	// 
-// 	GUI_Checkbox2("Unlock Everything (Absolute Unit)", activeConfig.absoluteUnit, queuedConfig.absoluteUnit);
-// 	ImGui::SameLine();
-// 	TooltipHelper("(?)",
-// 		"I mastered the art of jump-cancelling before I was born.\n"
-// 		"I beat the game 5000+ times.\n"
-// 		"Star-raving on 3x turbo amuses me.\n"
-// 		"Other \"players\" complaining about wrist pain makes me cringe.\n"
-// 		"I'm a GROWN, ASS, MAN.\n"
-// 		"I can absolutely, positively, under no circumstances be bothered with leveling up again.",
-// 		500);
 
+	GUI_PushDisable(actorCondition);
+
+	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColor);
+
+	
 
 	GUI_PopDisable(actorCondition);
 	ImGui::PopStyleColor();
-	ImGui::PopItemWidth();
-	ImGui::PopFont();
+	//
+	//ImGui::PopItemWidth();
+	//ImGui::PopFont();
 }
 
 #pragma endregion
@@ -3740,8 +3796,26 @@ void RenderMissionResultGameModeStats() {
 
 	// We use this to identify whether or not we're in the exact Mission Result Screen
 	uint32 inMissionResultScreenInt = *reinterpret_cast<uint32*>(appBaseAddr + 0x5CF9A0);
-	bool inMissionResultScreen = inMissionResultScreenInt == 0x14FD80 ? true : false;
-	bool shouldShow = (g_scene == SCENE::MISSION_RESULT && inMissionResultScreen);
+	bool inMissionResultScreen = true;
+	bool shouldShow = false;
+	if (sessionData.mission == MISSION::BLOODY_PALACE || sessionData.mission == 0) { // Skips Screen Break
+		shouldShow = g_inMissionResultBPScreen;
+	}
+	else if (sessionData.mission == 20) { // Skips Screen Break
+		shouldShow = g_inMissionResultScreen;
+	}
+	else {
+		if (activeConfig.skipCutscenes) { // Skips Screen Break
+			shouldShow = g_inMissionResultScreen;
+		}
+		else {
+			shouldShow = g_inMissionResultScreen && g_screenBreakTriggered;
+		}
+	}
+
+	if (g_scene != SCENE::MISSION_RESULT) {
+		g_screenBreakTriggered = false;
+	}
 
 	// Static variables to track fade state
 	static bool wasShowing = false;
@@ -3778,7 +3852,7 @@ void RenderMissionResultGameModeStats() {
 			alpha = fadeProgress;
 		}
 	} else if (isFadingOut) {
-		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
 		if (fadeProgress >= 1.0f) {
 			alpha = 0.0f;
 			isFadingOut = false;
@@ -3852,7 +3926,7 @@ void RenderMissionResultGameModeStats() {
 		ImVec2 textSize = font->CalcTextSizeA(font->FontSize, FLT_MAX, 0.0f, missionResultGameModeString);
 		ImVec2 textPos = ImGui::GetWindowPos() + ImVec2(10.0f * scaleFactorY, 0.0f);
 
-		drawList->AddText(g_ImGuiFont_Benguiat256, scaledFontSize * 3.8f, textPos, gameModeStringColor, missionResultGameModeString);
+		UI::DropShadowText(g_ImGuiFont_Benguiat256, scaledFontSize * 3.8f, textPos, UI::ColorToImVec4(UI::SwapColorEndianness(gameModeStringColor)), missionResultGameModeString,NULL,0.0f,NULL, ImVec2(5.0f,5.0f));
 
 		ImGui::End();
 	}
@@ -3992,6 +4066,125 @@ void RenderMissionResultGameModeStats() {
 	ImGui::PopStyleColor(); // Pop the alpha style var
 }
 
+void RenderMissionResultVersionDisplay() {
+	using namespace UI;
+	auto sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+	// We use this to identify whether or not we're in the exact Mission Result Screen
+	uint32 inMissionResultScreenInt = *reinterpret_cast<uint32*>(appBaseAddr + 0x5CF9A0);
+	bool inMissionResultScreen = true;
+	bool shouldShow = false;
+	if (sessionData.mission == MISSION::BLOODY_PALACE || sessionData.mission == 0) { // Skips Screen Break
+		shouldShow = g_inMissionResultBPScreen;
+	}
+	else if (sessionData.mission == 20) { // Skips Screen Break
+		shouldShow = g_inMissionResultScreen;
+	}
+	else {
+		if (activeConfig.skipCutscenes) { // Skips Screen Break
+			shouldShow = g_inMissionResultScreen;
+		}
+		else {
+			shouldShow = g_inMissionResultScreen && g_screenBreakTriggered;
+		}
+	}
+
+	if (g_scene != SCENE::MISSION_RESULT) {
+		g_screenBreakTriggered = false;
+	}
+
+	if (g_scene != SCENE::MISSION_RESULT) {
+		g_screenBreakTriggered = false;
+	}
+
+	// Static variables to track fade state (shared with other mission result windows)
+	static bool wasShowing = false;
+	static float fadeStartTime = 0.0f;
+	static bool isFadingIn = false;
+	static bool isFadingOut = false;
+
+	float currentTime = ImGui::GetTime();
+	const float fadeDuration = 1.0f;
+
+	// Handle fade state transitions
+	if (shouldShow && !wasShowing) {
+		isFadingIn = true;
+		isFadingOut = false;
+		fadeStartTime = currentTime;
+	} else if (!shouldShow && wasShowing) {
+		isFadingIn = false;
+		isFadingOut = true;
+		fadeStartTime = currentTime;
+	}
+
+	wasShowing = shouldShow;
+
+	// Calculate alpha based on fade state
+	float alpha = 1.0f;
+	if (isFadingIn) {
+		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		if (fadeProgress >= 1.0f) {
+			alpha = 1.0f;
+			isFadingIn = false;
+		} else {
+			alpha = fadeProgress;
+		}
+	} else if (isFadingOut) {
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
+		if (fadeProgress >= 1.0f) {
+			alpha = 0.0f;
+			isFadingOut = false;
+			return;
+		} else {
+			alpha = 1.0f - fadeProgress;
+		}
+	} else if (!shouldShow) {
+		return;
+	}
+
+	// Build version string
+	std::string versionStr{};
+	if (g_UIContext.CurrentVersion.PatchLetter == 0) {
+		versionStr = std::format("v{}.{}", g_UIContext.CurrentVersion.Major, g_UIContext.CurrentVersion.Minor);
+	} else {
+		versionStr = std::format("v{}.{}{}", g_UIContext.CurrentVersion.Major, g_UIContext.CurrentVersion.Minor, g_UIContext.CurrentVersion.PatchLetter);
+	}
+	std::string versionDisplay = " Crimson " + versionStr;
+
+	ImVec2 displaySize = ImGui::GetIO().DisplaySize;
+	// Offset from the right edge — larger than the RedOrb counter (~38) to keep distance
+	float edgeOffsetX = 60.0f * scaleFactorY;
+	float edgeOffsetY = 30.0f * scaleFactorY;
+
+	ImFont* font = g_ImGuiFont_Benguiat[20.0f];
+	ImGui::PushFont(font);
+	ImVec2 textSize = ImGui::CalcTextSize(versionDisplay.c_str());
+
+	// Window size and position - bottom right corner, with generous right offset
+	ImVec2 windowSize = ImVec2(textSize.x + 30.0f * scaleFactorY, 100.0f * scaleFactorY);
+	ImVec2 windowPos = ImVec2(displaySize.x - windowSize.x - edgeOffsetX, displaySize.y - windowSize.y - edgeOffsetY);
+
+	ImGui::SetNextWindowSize(windowSize);
+	ImGui::SetNextWindowPos(windowPos);
+
+	ImGuiWindowFlags windowFlags = ImGuiWindowFlags_NoBackground |
+		ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize |
+		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMouseInputs;
+
+	ImGui::Begin("MissionResultVersionWindow", nullptr, windowFlags);
+
+	ImGui::SetWindowFontScale(scaleFactorY);
+
+	// Apply alpha to text color
+	ImU32 alphaPacked = (ImU32)(alpha * 255.0f);
+	ImU32 textColor = (0xD5D9DBFF & 0x00FFFFFF) | (alphaPacked << 24);
+
+	ImVec2 textPos = ImVec2(0.0f, (windowSize.y - textSize.y * scaleFactorY) / 2.0f);
+	ImGui::SetCursorScreenPos(ImGui::GetWindowPos() + textPos);
+	ImGui::TextColored(ImColor(textColor), "%s", versionDisplay.c_str());
+
+	ImGui::End();
+	ImGui::PopFont();
+}
 
 void RenderMissionResultCheatsUsed() {
 	using namespace UI;
@@ -4044,7 +4237,7 @@ void RenderMissionResultCheatsUsed() {
 			alpha = fadeProgress;
 		}
 	} else if (isFadingOut) {
-		float fadeProgress = (currentTime - fadeStartTime) / fadeDuration;
+		float fadeProgress = GetFadeToBlackProgress(30.0f);
 		if (fadeProgress >= 1.0f) {
 			alpha = 0.0f;
 			isFadingOut = false;
@@ -4382,7 +4575,7 @@ void RenderMultiplayerBar(
 	}
 	const float alpha = ImLerp(0.27f, 1.0f, 1.0);
 	ImVec4 hitColor = CrimsonUtil::HexToImVec4(0x43fe65FF);
-	ImVec4 magicColor[4] = CrimsonUtil::HexToImVec4(0xde1c4cFF);
+	ImVec4 magicColor[4] = { CrimsonUtil::HexToImVec4(0xde1c4cFF),CrimsonUtil::HexToImVec4(0xde1c4cFF),CrimsonUtil::HexToImVec4(0xde1c4cFF),CrimsonUtil::HexToImVec4(0xde1c4cFF) };
 	float magicColorVergil[4] = { 0.06f, 0.74f, 0.81f, 1.0f };
 
 	const float baseSpacing = 0.37f;
@@ -4424,7 +4617,23 @@ void RenderMultiplayerBar(
 		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[18.0f]);
 		ImGui::Text("  ");
 		ImGui::SameLine();
+		//grabbing mission data real quick
+		auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+		if (!name_6975) {
+			return;
+		}
+		auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
 		//ImGui::SameLine();
+		if (actorData.dead && missionData.itemCounts[ITEM::GOLD_ORB] > 0) {
+			ImGui::Text("Hold start to revive");
+			ImGui::Text("  ");
+			ImGui::SameLine();
+			ImGui::Text("Gold orbs left: %u", missionData.itemCounts[ITEM::GOLD_ORB]);
+		}else
+		if (actorData.dead) {
+			ImGui::Text("Gold orbs left: %u", missionData.itemCounts[ITEM::GOLD_ORB]);
+		}
+		else
 		if (actorData.character == CHARACTER::DANTE || actorData.character == CHARACTER::VERGIL) {
 
 			if (actorData.character == CHARACTER::DANTE) {
@@ -5037,13 +5246,13 @@ void CameraSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 1.1f);
-			UI::Combo2("Follow-Up Speed", cameraFollowUpSpeedNames, activeCrimsonConfig.Camera.followUpSpeed, queuedCrimsonConfig.Camera.followUpSpeed);
+			UI::Combo2("Follow-Up Speed", cameraFollowUpSpeedNames, activeCrimsonConfig.Camera.followUpSpd, queuedCrimsonConfig.Camera.followUpSpd);
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(activeCrimsonConfig.Camera.multiplayerCamera || activeCrimsonConfig.Camera.panoramicCam);
+			GUI_PushDisable(activeCrimsonConfig.Camera.panoramicCam);
 			ImGui::PushItemWidth(itemWidth * 1.1f);
 			UI::Combo2("Distance", cameraDistanceNames, activeCrimsonConfig.Camera.distance, queuedCrimsonConfig.Camera.distance);
 			ImGui::SameLine();
@@ -5062,7 +5271,7 @@ void CameraSection(size_t defaultFontSize) {
 				"\n"
 				"Dynamic Option adjusts based on whether player is airborne.");
 			ImGui::PopItemWidth();
-			GUI_PopDisable(activeCrimsonConfig.Camera.multiplayerCamera || activeCrimsonConfig.Camera.panoramicCam);
+			GUI_PopDisable(activeCrimsonConfig.Camera.panoramicCam);
 
 			ImGui::TableNextColumn();
 
@@ -5093,8 +5302,15 @@ void CameraSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.87f);
-			UI::ComboMapValue2("Right Stick Camera Centering", rightStickCenterCamNames, rightStickCenterCamMap,
+			UI::ComboMapValue2("Camera Centering", rightStickCenterCamNames, rightStickCenterCamMap,
 				activeCrimsonConfig.Camera.rightStickCameraCentering, queuedCrimsonConfig.Camera.rightStickCameraCentering);
+			ImGui::PopItemWidth();
+
+			ImGui::TableNextColumn();
+
+			ImGui::PushItemWidth(itemWidth * 1.27f);
+			UI::ComboMapValue2("Camera Shake", cameraShakeNames, cameraShakeMap,
+				activeCrimsonConfig.Camera.cameraShake, queuedCrimsonConfig.Camera.cameraShake);
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextColumn();
@@ -5169,8 +5385,8 @@ void CameraSection(size_t defaultFontSize) {
 			activeCrimsonConfig.Camera.rightStickCameraCentering = 2;
 			queuedCrimsonConfig.Camera.rightStickCameraCentering = 2;
 
-			activeCrimsonConfig.Camera.followUpSpeed = 0;
-			queuedCrimsonConfig.Camera.followUpSpeed = 0;
+			activeCrimsonConfig.Camera.followUpSpd = 0;
+			queuedCrimsonConfig.Camera.followUpSpd = 0;
 
 			activeCrimsonConfig.Camera.autoAdjust = 0;
 			queuedCrimsonConfig.Camera.autoAdjust = 0;
@@ -5217,8 +5433,8 @@ void CameraSection(size_t defaultFontSize) {
 			activeCrimsonConfig.Camera.rightStickCameraCentering = 1;
 			queuedCrimsonConfig.Camera.rightStickCameraCentering = 1;
 
-			activeCrimsonConfig.Camera.followUpSpeed = 0;
-			queuedCrimsonConfig.Camera.followUpSpeed = 0;
+			activeCrimsonConfig.Camera.followUpSpd = 0;
+			queuedCrimsonConfig.Camera.followUpSpd = 0;
 
 			activeCrimsonConfig.Camera.autoAdjust = 0;
 			queuedCrimsonConfig.Camera.autoAdjust = 0;
@@ -5265,8 +5481,8 @@ void CameraSection(size_t defaultFontSize) {
 			activeCrimsonConfig.Camera.rightStickCameraCentering = 1;
 			queuedCrimsonConfig.Camera.rightStickCameraCentering = 1;
 
-			activeCrimsonConfig.Camera.followUpSpeed = 2;
-			queuedCrimsonConfig.Camera.followUpSpeed = 2;
+			activeCrimsonConfig.Camera.followUpSpd = 2;
+			queuedCrimsonConfig.Camera.followUpSpd = 2;
 
 			activeCrimsonConfig.Camera.autoAdjust = 0;
 			queuedCrimsonConfig.Camera.autoAdjust = 0;
@@ -5428,7 +5644,7 @@ void CustomDamageSection() {
 			ImGui::TableSetupColumn("b1", 0, columnWidth);
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
-
+			GUI_Checkbox2("Disable Player Damage", activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable);
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("PLAYER RECEIVED DAMAGE MULT.");
 			ImGui::PopFont();
@@ -5452,6 +5668,7 @@ void CustomDamageSection() {
 			}
 			ImGui::TableNextColumn();
 
+			GUI_Checkbox2("Disable Enemy Damage", activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable);
 			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 			ImGui::Text("ENEMY RECEIVED DAMAGE MULT.");
 			ImGui::PopFont();
@@ -5464,7 +5681,7 @@ void CustomDamageSection() {
 
 					if (!toggled) {
 						toggled = true;
-						activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 100.0f;
+						activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = queuedCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 9999.0f;
 					}
 					else {
 						toggled = false;
@@ -5525,56 +5742,68 @@ const char* tabNames[] = {
 
 struct ShopExperienceHelper {
 	const char* name;
+	const char* description;
 	int64 id;
 	uint32 price;
 	int64 last;
 	int64 next;
 	int64 devilarm;
 	int64 gun;
+	int64 child[5];
 };
 
 struct ShopExperienceStyleHelper {
 	const char* name;
+	const char* description;
 	uint32 price;
 	int64 styleid;
 	int64 stylelevel;
 	int64 styleexp;
+	int64 moddedunlock;
+	int64 moddedchild;
 };
 
 
 ShopExperienceHelper shopHelpersDante[] = {
-	{"Rebellion Stinger Level 1",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, 2500, -1, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2,-1,-1},
-	{"Rebellion Stinger Level 2",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2, 10000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1},
-	{"Rebellion Drive",UNLOCK_DANTE::REBELLION_DRIVE, 10000, -1, -1,-1,-1},
-	{"Air Hike",UNLOCK_DANTE::REBELLION_AIR_HIKE, 20000, -1, -1,-1,-1},
-	{"Cerberus Revolver Level 2",UNLOCK_DANTE::CERBERUS_REVOLVER_LEVEL_2, 15000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1},
-	{"Cerberus Windmill",UNLOCK_DANTE::CERBERUS_WINDMILL, 7500, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1},
-	{"Agni & Rudra Jet-Stream Level 2",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, 10000, -1, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3,DEVILARMUNLOCKS::AGNI_RUDRA,-1},
-	{"Agni & Rudra Jet-Stream Level 3",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3, 15000, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1},
-	{"Agni & Rudra Whirlwind",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, 7500, -1, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1},
+	{"Sprint","Sprints out of combat, similar to DMC4 and 5's Speed Ability.", UNLOCK_DANTE::SPRINT, 3000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Sky Launch Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_DANTE::SKY_LAUNCH_AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Stinger Level 1","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, 2500, -1, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2,-1,-1, {UNLOCK_DANTE::REBELLION_STINGER_AIR,-1,-1,-1,-1}},
+	{"Rebellion Stinger Level 2","",UNLOCK_DANTE::REBELLION_STINGER_LEVEL_2, 10000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Air Stinger","Lock On + Forward + Melee while in air.",UNLOCK_DANTE::REBELLION_STINGER_AIR, 5000, UNLOCK_DANTE::REBELLION_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Drive","",UNLOCK_DANTE::REBELLION_DRIVE, 10000, -1, UNLOCK_DANTE::REBELLION_OVERDRIVE,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rebellion Overdrive","Hold Melee during Drive to charge, then release and press Melee again during the swing to perform OverDrive.\nQuick Drive can also be held to charge for 1s, then press Melee during the swing for OverDrive.",UNLOCK_DANTE::REBELLION_OVERDRIVE, 10000, UNLOCK_DANTE::REBELLION_DRIVE, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Air Hike","",UNLOCK_DANTE::REBELLION_AIR_HIKE, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Cerberus Revolver Level 2","",UNLOCK_DANTE::CERBERUS_REVOLVER_LEVEL_2, 15000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
+	{"Cerberus Air Revolver","Lock On + Forward + Melee while in air.",UNLOCK_DANTE::CERBERUS_REVOLVER_AIR, 5000, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
+	{"Cerberus Windmill","",UNLOCK_DANTE::CERBERUS_WINDMILL, 7500, -1, -1,DEVILARMUNLOCKS::CERBERUS,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Jet-Stream Level 2","",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, 10000, -1, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Jet-Stream Level 3","",UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_3, 15000, UNLOCK_DANTE::AGNI_RUDRA_JET_STREAM_LEVEL_2, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Whirlwind","",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, 7500, -1, UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
+	{"Agni & Rudra Air Whirlwind","LockOn + Back + Melee while in air",UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND_AIR, 10000, UNLOCK_DANTE::AGNI_RUDRA_WHIRLWIND, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1, {-1,-1,-1,-1,-1}},
 	//{"Agni & Rudra Air Hike",UNLOCK_DANTE::AGNI_RUDRA_AIR_HIKE, 20000, -1, -1,DEVILARMUNLOCKS::AGNI_RUDRA,-1},
-	{"Nevan Reverb Shock Level 1",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, 7500, -1, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2,DEVILARMUNLOCKS::NEVAN,-1},
-	{"Nevan Reverb Shock Level 2",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2, 15000, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, -1,DEVILARMUNLOCKS::NEVAN,-1},
-	{"Nevan Bat Rift Level 2",UNLOCK_DANTE::NEVAN_BAT_RIFT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1},
-	{"Nevan Air Raid",UNLOCK_DANTE::NEVAN_AIR_RAID, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1},
-	{"Nevan Volume Up",UNLOCK_DANTE::NEVAN_VOLUME_UP, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1},
-	{"Beowulf Straight Level 2",UNLOCK_DANTE::BEOWULF_STRAIGHT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::BEOWULF,-1},
-	{"Beowulf Beast Uppercut",UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, 7500, -1, UNLOCK_DANTE::BEOWULF_RISING_DRAGON,DEVILARMUNLOCKS::BEOWULF,-1},
-	{"Beowulf Rising Dragon",UNLOCK_DANTE::BEOWULF_RISING_DRAGON, 15000, UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, -1,DEVILARMUNLOCKS::BEOWULF,-1},
+	{"Nevan Reverb Shock Level 1","",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, 7500, -1, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Reverb Shock Level 2","",UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_2, 15000, UNLOCK_DANTE::NEVAN_REVERB_SHOCK_LEVEL_1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Bat Rift Level 2","",UNLOCK_DANTE::NEVAN_BAT_RIFT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Air Raid","",UNLOCK_DANTE::NEVAN_AIR_RAID, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Nevan Volume Up","",UNLOCK_DANTE::NEVAN_VOLUME_UP, 20000, -1, -1,DEVILARMUNLOCKS::NEVAN,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Straight Level 2","",UNLOCK_DANTE::BEOWULF_STRAIGHT_LEVEL_2, 10000, -1, -1,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Beast Uppercut","",UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, 7500, -1, UNLOCK_DANTE::BEOWULF_RISING_DRAGON,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Rising Dragon","",UNLOCK_DANTE::BEOWULF_RISING_DRAGON, 15000, UNLOCK_DANTE::BEOWULF_BEAST_UPPERCUT, UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR, DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Air Dragon","LockOn + Back + Melee while in air",UNLOCK_DANTE::BEOWULF_RISING_DRAGON_AIR, 20000, UNLOCK_DANTE::BEOWULF_RISING_DRAGON, -1,DEVILARMUNLOCKS::BEOWULF,-1, {-1,-1,-1,-1,-1}},
 	//{"Beowulf Air Hike",UNLOCK_DANTE::BEOWULF_AIR_HIKE, 20000, -1, -1,DEVILARMUNLOCKS::BEOWULF,-1},
 };
 
 ShopExperienceHelper shopHelpersDanteGuns[] = {
-	{"Ebony & Ivory Level 2",UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, 5000, -1, UNLOCK_DANTE::EBONY_IVORY_LEVEL_3,-1,-1},
-	{"Ebony & Ivory Level 3",UNLOCK_DANTE::EBONY_IVORY_LEVEL_3, 10000, UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, -1,-1,-1},
-	{"Shotgun Level 2",UNLOCK_DANTE::SHOTGUN_LEVEL_2, 10000, -1, UNLOCK_DANTE::SHOTGUN_LEVEL_3,-1,GUNUNLOCKS::SHOTGUN},
-	{"Shotgun Level 3",UNLOCK_DANTE::SHOTGUN_LEVEL_3, 20000, UNLOCK_DANTE::SHOTGUN_LEVEL_2, -1,-1,GUNUNLOCKS::SHOTGUN},
-	{"Artemis Level 2",UNLOCK_DANTE::ARTEMIS_LEVEL_2, 10000, -1, UNLOCK_DANTE::ARTEMIS_LEVEL_3,-1,GUNUNLOCKS::ARTEMIS},
-	{"Artemis Level 3",UNLOCK_DANTE::ARTEMIS_LEVEL_3, 20000, UNLOCK_DANTE::ARTEMIS_LEVEL_2, -1,-1,GUNUNLOCKS::ARTEMIS},
-	{"Spiral Level 2",UNLOCK_DANTE::SPIRAL_LEVEL_2, 7500, -1, UNLOCK_DANTE::SPIRAL_LEVEL_3,-1,GUNUNLOCKS::SPIRAL},
-	{"Spiral Level 3",UNLOCK_DANTE::SPIRAL_LEVEL_3, 15000, UNLOCK_DANTE::SPIRAL_LEVEL_2, -1,-1,GUNUNLOCKS::SPIRAL},
-	{"Kalina Ann Level 2",UNLOCK_DANTE::KALINA_ANN_LEVEL_2, 5000, -1, UNLOCK_DANTE::KALINA_ANN_LEVEL_3,-1,GUNUNLOCKS::KALINA_ANN},
-	{"Kalina Ann Level 3",UNLOCK_DANTE::KALINA_ANN_LEVEL_3, 10000, UNLOCK_DANTE::KALINA_ANN_LEVEL_2, -1,-1,GUNUNLOCKS::KALINA_ANN},
+	{"Ebony & Ivory Level 2","",UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, 5000, -1, UNLOCK_DANTE::EBONY_IVORY_LEVEL_3,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Ebony & Ivory Level 3","",UNLOCK_DANTE::EBONY_IVORY_LEVEL_3, 10000, UNLOCK_DANTE::EBONY_IVORY_LEVEL_2, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Shotgun Level 2","",UNLOCK_DANTE::SHOTGUN_LEVEL_2, 10000, -1, UNLOCK_DANTE::SHOTGUN_LEVEL_3,-1,GUNUNLOCKS::SHOTGUN, {-1,-1,-1,-1,-1}},
+	{"Shotgun Level 3","",UNLOCK_DANTE::SHOTGUN_LEVEL_3, 20000, UNLOCK_DANTE::SHOTGUN_LEVEL_2, -1,-1,GUNUNLOCKS::SHOTGUN, {-1,-1,-1,-1,-1}},
+	{"Artemis Level 2","",UNLOCK_DANTE::ARTEMIS_LEVEL_2, 10000, -1, UNLOCK_DANTE::ARTEMIS_LEVEL_3,-1,GUNUNLOCKS::ARTEMIS, {-1,-1,-1,-1,-1}},
+	{"Artemis Level 3","",UNLOCK_DANTE::ARTEMIS_LEVEL_3, 20000, UNLOCK_DANTE::ARTEMIS_LEVEL_2, -1,-1,GUNUNLOCKS::ARTEMIS, {-1,-1,-1,-1,-1}},
+	{"Spiral Level 2","",UNLOCK_DANTE::SPIRAL_LEVEL_2, 7500, -1, UNLOCK_DANTE::SPIRAL_LEVEL_3,-1,GUNUNLOCKS::SPIRAL, {-1,-1,-1,-1,-1}},
+	{"Spiral Level 3","",UNLOCK_DANTE::SPIRAL_LEVEL_3, 15000, UNLOCK_DANTE::SPIRAL_LEVEL_2, -1,-1,GUNUNLOCKS::SPIRAL, {-1,-1,-1,-1,-1}},
+	{"Kalina Ann Level 2","",UNLOCK_DANTE::KALINA_ANN_LEVEL_2, 5000, -1, UNLOCK_DANTE::KALINA_ANN_LEVEL_3,-1,GUNUNLOCKS::KALINA_ANN, {-1,-1,-1,-1,-1}},
+	{"Kalina Ann Level 3","",UNLOCK_DANTE::KALINA_ANN_LEVEL_3, 10000, UNLOCK_DANTE::KALINA_ANN_LEVEL_2, -1,-1,GUNUNLOCKS::KALINA_ANN, {-1,-1,-1,-1,-1}},
 };
 
 ShopExperienceStyleHelper shopHelpersDanteStyle[] = {
@@ -5584,46 +5813,61 @@ ShopExperienceStyleHelper shopHelpersDanteStyle[] = {
 //	{"Quicksilver Level 2", 20000, STYLE::QUICKSILVER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
 //	{"Quicksilver Level 3", 30000, STYLE::QUICKSILVER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
 
-	{"Swordmaster Level 2", 20000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Swordmaster Level 3", 30000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Swordmaster Level 2", "",20000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Swordmaster Level 3","", 30000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES},
+	{"Swordmaster Level 4","With Beowulf: Neutral + Style while in air. Reduces Tornado damage across the board. Carries inertia.", 15000, STYLE::SWORDMASTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE, UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES,-1},
 	
-	{"Gunslinger Level 2", 20000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Gunslinger Level 3", 30000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Gunslinger Level 2", "", 20000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Gunslinger Level 3","", 30000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::GUNSLINGER_MODDED_MOVES},
+	{"Gunslinger Level 4", "With Coyote-A: Lock On + Back + Style. Dante performs backslide, hitting enemies behind him.",15000, STYLE::GUNSLINGER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::GUNSLINGER_MODDED_MOVES,-1},
 
-	{"Trickster Level 2", 20000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Trickster Level 3", 30000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
 
-	{"Royal Guard Level 2", 20000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Royal Guard Level 3", 30000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Trickster Level 2", "",20000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Trickster Level 3", "",30000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES},
+	{"Trickster Level 4", "Lock On + Back to Forward + Style.\n"
+				"Dante Teleports to the Ground near the enemy.",15000, STYLE::TRICKSTER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::TRICKSTER_MODDED_MOVES,-1},
+
+	{"Royal Guard Level 2", "",20000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Royal Guard Level 3", "",30000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES},
+	{"Royal Guard Level 4", "Royalguard Normal Blocks will consume DT instead, until you're low on DT. This will also prevent Guard Breaks by converting them into Normal Blocks.",15000, STYLE::ROYALGUARD,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_DANTE::ROYALGUARD_MODDED_MOVES,-1},
 
 
 };
 
 ShopExperienceStyleHelper shopHelpersVergilStyle[] = {
-	{"Dark Slayer Level 2", 20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO},
-	{"Dark Slayer Level 3", 30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE},
+	{"Dark Slayer Level 2", "",20000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_TWO,STYLE_LEVEL_EXP::LEVEL_TWO,-1,-1},
+	{"Dark Slayer Level 3", "",30000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,-1,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES},
+	//{"Dark Slayer Level 4", "Allows Vergil to Trick Up instead of Air Tricking when using the Style Button without Lock On.\n"
+	//			"Similar to DMC5.",15000,STYLE::DARK_SLAYER,STYLE_LEVEL::LEVEL_THREE,STYLE_LEVEL_EXP::LEVEL_THREE,UNLOCK_VERGIL::DARK_SLAYER_MODDED_MOVES,-1},
 };
 
 
 ShopExperienceHelper shopHelpersVergil[] = {
-	{"Yamato Rapid Slash Level 1",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2,-1,-1},
-	{"Yamato Rapid Slash Level 2",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2, 15000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1},
-	{"Yamato Judgement Cut Level 1",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, 10000, -1, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2,-1,-1},
-	{"Yamato Judgement Cut Level 2",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2, 20000, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, -1,-1,-1},
-	{"Beowulf Starfall Level 2",UNLOCK_VERGIL::BEOWULF_STARFALL_LEVEL_2, 7500, -1, -1,-1,-1},
-	{"Beowulf Rising Sun",UNLOCK_VERGIL::BEOWULF_RISING_SUN, 5000, -1, -1,-1,-1},
-	{"Beowulf Lunar Phase Level 2",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2, 15000, -1, -1,-1,-1},
-	{"Yamato & Force Edge Helm Breaker Level 2",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2, 13000, -1, -1,-1,-1},
-	{"Yamato & Force Edge Stinger Level 1",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2,-1,-1},
-	{"Yamato & Force Edge Stinger Level 2",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2, 10000, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1},
-	{"Yamato & Force Edge Round Trip",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_ROUND_TRIP, 10000, -1, -1,-1,-1},
+	{"Sprint","Sprints out of combat, similar to DMC4 and 5's Speed Ability.", UNLOCK_VERGIL::SPRINT, 3000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Rising Sun Air Taunt","With any Weapon or Style: Press Taunt button while in air.", UNLOCK_VERGIL::RISING_SUN_AIR_TAUNT, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Rapid Slash Level 1","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_RISING_STAR,-1,-1,-1,-1}},
+	{"Yamato Rapid Slash Level 2","",UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_2, 15000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Rising Star","During Rapid Slash HOLD Melee.",UNLOCK_VERGIL::YAMATO_RISING_STAR, 10000, UNLOCK_VERGIL::YAMATO_RAPID_SLASH_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato High Time","Lock On + Back + HOLD Melee",UNLOCK_VERGIL::YAMATO_HIGH_TIME, 7500, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Judgement Cut Level 1","",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, 10000, -1, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato Judgement Cut Level 2","",UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_2, 20000, UNLOCK_VERGIL::YAMATO_JUDGEMENT_CUT_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Starfall Level 2","",UNLOCK_VERGIL::BEOWULF_STARFALL_LEVEL_2, 7500, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Rising Sun","",UNLOCK_VERGIL::BEOWULF_RISING_SUN, 5000, -1, UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Air Rising Sun","Lock On + Back + Melee while in air",UNLOCK_VERGIL::BEOWULF_RISING_SUN_AIR, 10000, UNLOCK_VERGIL::BEOWULF_RISING_SUN, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Lunar Phase Level 2","",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_LEVEL_2, 15000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Beowulf Air Lunar Phase","Lock On + Forward + Melee while in air.",UNLOCK_VERGIL::BEOWULF_LUNAR_PHASE_AIR, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Helm Breaker Level 2","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_HELM_BREAKER_LEVEL_2, 13000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Stinger Level 1","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, 5000, -1, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2,-1,-1, {UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Stinger Level 2","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_2, 10000, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Air Stinger","Lock On + Forward + Melee while in air.",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_AIR, 7500, UNLOCK_VERGIL::YAMATO_FORCE_EDGE_STINGER_LEVEL_1, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Yamato & Force Edge Round Trip","",UNLOCK_VERGIL::YAMATO_FORCE_EDGE_ROUND_TRIP, 10000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 
 };
 
 ShopExperienceHelper shopHelpersVergilGuns[] = {
-	{"Summoned Swords Level 2", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, 7500, -1, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3,-1,-1},
-	{"Summoned Swords Level 3", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3, 15000, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, -1,-1,-1},
-	{"Spiral Swords",UNLOCK_VERGIL::SPIRAL_SWORDS, 20000, -1, -1,-1,-1},
+	{"Summoned Swords Level 2","", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, 7500, -1, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Summoned Swords Level 3","", UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_3, 15000, UNLOCK_VERGIL::SUMMONED_SWORDS_LEVEL_2, -1,-1,-1, {-1,-1,-1,-1,-1}},
+	{"Spiral Swords","",UNLOCK_VERGIL::SPIRAL_SWORDS, 20000, -1, -1,-1,-1, {-1,-1,-1,-1,-1}},
 };
 
 
@@ -5656,7 +5900,7 @@ enum {
 };
 
 // Function Declarations
-void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData);
+void ShowExperienceTab(int charID,ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData,uint64 baseMoveCount);
 void ShowExperienceStyleTab(ExpConfig::ExpData& expData,ShopExperienceStyleHelper* styleHelpers, new_size_t styleHelperCount, MissionData& missionData, uint8 character);
 
 void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMissionActorData, ActiveMissionActorData& activeMissionActorData, bool unlockDevilTrigger);
@@ -5717,9 +5961,10 @@ void ShopWindow() {
 			shopCooldownActive = false;
 		}
 	}
-	//Replace this with a map option at some point. 
-	if (io.KeysDown[DI8::KEY::L] && (io.KeysDownDuration[DI8::KEY::L] == 0.0f)) {
-		Log("keyboard back button");
+	
+	//Keyboard back key handling
+	int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11]; // L key is default, but can be rebound in the config.
+	if (io.KeysDown[keyboardBackKey] && (io.KeysDownDuration[keyboardBackKey] == 0.0f)) {
 		if (!shopCooldownActive) {
 			CloseShop();
 			run = false;
@@ -5773,7 +6018,7 @@ void ShopWindow() {
 		
 
 		// 		for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
-		// 			auto& gamepad = GetGamepad(playerIndex);
+		// 			auto& gamepad = GetGamepad(actorData.newGamepad);
 		// 
 		// 			if ((gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))) {
 		// 				CloseShop();
@@ -5789,19 +6034,19 @@ void ShopWindow() {
 
 					switch (tabIndex) {
 					case TAB::DANTE_DEVILARM:
-						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDante, sizeof(shopHelpersDante) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(CHARACTER::DANTE,ExpConfig::missionExpDataDante, shopHelpersDante, sizeof(shopHelpersDante) / sizeof(ShopExperienceHelper), missionData,UNLOCK_DANTE::COUNT);
 						break;
 					case TAB::DANTE_GUN:
-						ShowExperienceTab(ExpConfig::missionExpDataDante, shopHelpersDanteGuns, sizeof(shopHelpersDanteGuns) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(CHARACTER::DANTE, ExpConfig::missionExpDataDante, shopHelpersDanteGuns, sizeof(shopHelpersDanteGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_DANTE::COUNT);
 						break;
 					case TAB::DANTE_STYLE:
 						ShowExperienceStyleTab(ExpConfig::missionExpDataDante, shopHelpersDanteStyle, sizeof(shopHelpersDanteStyle) / sizeof(ShopExperienceStyleHelper), missionData, CHARACTER::DANTE);
 						break;
 					case TAB::VERGIL_DEVILARM:
-						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergil, sizeof(shopHelpersVergil) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(CHARACTER::VERGIL, ExpConfig::missionExpDataVergil, shopHelpersVergil, sizeof(shopHelpersVergil) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
 						break;
 					case TAB::VERGIL_GUN:
-						ShowExperienceTab(ExpConfig::missionExpDataVergil, shopHelpersVergilGuns, sizeof(shopHelpersVergilGuns) / sizeof(ShopExperienceHelper), missionData);
+						ShowExperienceTab(CHARACTER::VERGIL, ExpConfig::missionExpDataVergil, shopHelpersVergilGuns, sizeof(shopHelpersVergilGuns) / sizeof(ShopExperienceHelper), missionData, UNLOCK_VERGIL::COUNT);
 						break;
 					case TAB::VERGIL_STYLE:
 						ShowExperienceStyleTab(ExpConfig::missionExpDataVergil, shopHelpersVergilStyle, sizeof(shopHelpersVergilStyle) / sizeof(ShopExperienceStyleHelper), missionData, CHARACTER::VERGIL);
@@ -5859,7 +6104,7 @@ void ShowStyleLevelsTab(ExpConfig::ExpData& expData, MissionData& missionData) {
 }
 
 
-void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData) {
+void ShowExperienceTab(int charID, ExpConfig::ExpData& expData, ShopExperienceHelper* helpers, new_size_t helperCount, MissionData& missionData, uint64 baseMoveCount) {
 	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 
 	const float columnWidth = 0.48f * queuedConfig.globalScale;
@@ -5876,7 +6121,6 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 		//ImGui::TableSetupColumn("SellCol2", 0, columnWidth * 2.0f);
 		ImGui::TableNextRow(0, rowHeight);
 
-
 		for (size_t helperIndex = 0; helperIndex < helperCount; ++helperIndex) {
 			auto& helper = helpers[helperIndex];
 
@@ -5889,6 +6133,13 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 					continue;
 			}
 
+			//Don't show modded moves if the modded moves aren't turned on
+			if (helper.id > baseMoveCount && !activeCrimsonGameplay.Gameplay.General.extramoves)
+			{
+				if (expData.unlocks[helper.id] == false)
+					continue;
+			}
+				//
 			columnTracker++;
 			ImGui::TableNextColumn();
 			auto Buy = [&]() {
@@ -5907,6 +6158,17 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 				missionData.redOrbs += helper.price;
 				FMOD_PlaySound(0, 18);
 				expData.unlocks[helper.id] = false;
+				//only refund move expertise if it's not a modded move.
+				//if (helper.id < baseMoveCount)
+					//ExpConfig::RefundMoveExpertise(charID, helper.id);
+				//Make sure everything relying on this move is properly disabled
+				if (helper.next > -1)
+					expData.unlocks[helper.next] = false;
+				for (int64 childIndex = 0; childIndex < 5; ++childIndex) {
+					if(helper.child[childIndex] > -1)
+						expData.unlocks[helper.child[childIndex]] = false;
+				}
+
 
 				// Sets the flag off on sessionData expertise to also update non Actor System
 	// 			const auto& expertiseHelper =
@@ -5923,8 +6185,21 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 
 			// Begin a new row
 			ImGui::BeginGroup();
-
-			if (GUI_Button(helper.name, ImVec2(400.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+			bool result = GUI_Button(helper.name, ImVec2(320.0f * scaleFactorY, 80.0f * scaleFactorY));
+			if (helper.description != "")
+			{
+				if (ImGui::IsItemHovered()) {
+					ImGui::BeginTooltip();
+					ImGui::SetWindowFontScale(scaleFactorY);
+					ImGui::PushTextWrapPos(320.0f * scaleFactorY);
+					ImGui::Text(helper.description);
+					ImGui::PopTextWrapPos();
+					ImGui::EndTooltip();
+				}
+				//TooltipHelper("(?)", helper.description);
+			}
+			if (result) {
+				
 				Buy();
 			}
 
@@ -5946,18 +6221,40 @@ void ShowExperienceTab(ExpConfig::ExpData& expData, ShopExperienceHelper* helper
 			ImGui::Text("%u", helper.price);
 			GUI_PopDisable(priceCondition);
 
+			
+			
+
 			// Display the sell button in a new column
 			ImGui::EndGroup(); // End the group for the current row
 			ImGui::TableNextColumn();
-			if (expData.unlocks[helper.id]) {
-				condition = ((helper.next > -1) && expData.unlocks[helper.next]);
+			//if (expData.unlocks[helper.id]) {
+				//check if there's a "next move" and if it's unlocked. That means we shouldn't be able to refund. 
+				condition = !expData.unlocks[helper.id] ||((helper.next > -1) && expData.unlocks[helper.next]);
+				//if next is a modded move and extra moves is off, ignore that requirement 
+				//if ((helper.next > baseMoveCount) && !activeCrimsonGameplay.Gameplay.General.extramoves)
+					//condition = false;
+				//check for extra children 
+				if (!condition) {
+					//hardcoded to 5 because I was being lazy, updated to base off array size when convenient
+					for (int64 childIndex = 0; childIndex < 5; ++childIndex) {
+
+						//should stop these pre-requisites from being valid if they're modded and we're disabled. 
+						//if (helper.child[childIndex] > baseMoveCount && !activeCrimsonGameplay.Gameplay.General.extramoves)
+							//continue;
+
+						condition = ((helper.child[childIndex] > -1) && expData.unlocks[helper.child[childIndex]]);
+						if (condition)
+							break;
+					}
+				}
+
 				GUI_PushDisable(condition);
 
 				if (GUI_Button("Sell",ImVec2(80.0f * scaleFactorY, 80.0f * scaleFactorY))) {
 					Sell();
 				}
 				GUI_PopDisable(condition);
-			}
+			//}
 
 
 			
@@ -5989,10 +6286,13 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 	const float columnWidth = 0.48f * queuedConfig.globalScale;
 	const float rowHeight = 40.0f * queuedConfig.globalScale;
 	int columnTracker = 0;
-	if (ImGui::BeginTable("SkillTable", 2)) {
-		ImGui::TableSetupColumn("Col1", ImGuiTableColumnFlags_WidthAuto, 400.0f * scaleFactorY); // Default to 100.0f
-		ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_WidthAuto, 400.0f * scaleFactorY); // Default to 100.0f
-
+	if (ImGui::BeginTable("SkillTable", 6)) {
+		ImGui::TableSetupColumn("Col1", ImGuiTableColumnFlags_WidthAuto, 250.0f * scaleFactorY); // Default to 100.0f
+		ImGui::TableSetupColumn("SellCol1", ImGuiTableColumnFlags_WidthAuto, 50.0f * scaleFactorY); // Default to 200.0f
+		ImGui::TableSetupColumn("Col2", ImGuiTableColumnFlags_WidthAuto, 250.0f * scaleFactorY); // Default to 100.0f
+		ImGui::TableSetupColumn("SellCol2", ImGuiTableColumnFlags_WidthAuto, 50.0f * scaleFactorY); // Default to 200.0f
+		ImGui::TableSetupColumn("Col3", ImGuiTableColumnFlags_WidthAuto, 250.0f * scaleFactorY); // Default to 100.0f
+		ImGui::TableSetupColumn("SellCol3", ImGuiTableColumnFlags_WidthAuto, 50.0f * scaleFactorY); // Default to 200.0f
 		for (size_t helperIndex = 0; helperIndex < styleHelperCount; ++helperIndex) {
 			auto& helper = styleHelpers[helperIndex];
 
@@ -6003,78 +6303,211 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 				if (helper.styleid == STYLE::DOPPELGANGER and !sessionData.weaponAndStyleUnlocks[WEAPONANDSTYLEUNLOCKS::DOPPELGANGER])
 					continue;
 			}
-			ImGui::TableNextColumn();
-			//calculates how far through leveling up a style you were as a percentage
-			uint32 percentage_discount = static_cast<uint32>(floor(100 * expData.styleExpPoints[helper.styleid] / helper.styleexp));
-			if (percentage_discount < 0)
-				percentage_discount = 0;
-			if (percentage_discount > 100)
-				percentage_discount = 100;
 
-			//calculates cost of red orbs as the base price with a percentage discount based on how close you were to leveling up style
-			//so 30% of the exp to level 2 = 30% discount
-			uint32 rorb_cost_calculated = helper.price - (static_cast<uint32>(helper.price / 100) * percentage_discount);
-			auto Buy = [&]() {
-				if (missionData.redOrbs < rorb_cost_calculated) {
-					FMOD_PlaySound(0, 19);
-					return;
-				}
-				HeldStyleExpData& heldStyleExpData = (character == CHARACTER::DANTE)
-					? heldStyleExpDataDante
-					: heldStyleExpDataVergil;
-				missionData.redOrbs -= rorb_cost_calculated;
-				FMOD_PlaySound(0, 18);
-				expData.styleLevels[helper.styleid] = helper.stylelevel;
-				expData.styleExpPoints[helper.styleid] = 0;
-				heldStyleExpData.missionStyleLevels[helper.styleid] = helper.stylelevel;
-				heldStyleExpData.accumulatedStylePoints[helper.styleid] = 0;
-				ExpConfig::UpdatePlayerActorExps();
+			//Just making sure our style id is in range
+			if (helper.styleid >= STYLE::MAX)
+				continue;
+
+			//Check if we're doing modded style or vanilla style
+			if (helper.moddedunlock > -1) {
+				//don't show if extra_shop disabled AND modded move not already purchased (expData.unlocks[moddedunlock] false)
+				if (!activeCrimsonGameplay.Gameplay.General.extramoves && !expData.unlocks[helper.moddedunlock])
+					continue;
+
+
+				ImGui::TableNextColumn();
+				//calculates how far through leveling up a style you were as a percentage
+
+				auto Buy = [&]() {
+					if (missionData.redOrbs < helper.price) {
+						FMOD_PlaySound(0, 19);
+						return;
+					}
+
+					missionData.redOrbs -= helper.price;
+					FMOD_PlaySound(0, 18);
+					expData.unlocks[helper.moddedunlock] = true;
+					ExpConfig::UpdatePlayerActorExps();
 				};
-			bool condition = !(expData.styleLevels[helper.styleid] + 1 == helper.stylelevel);
-			GUI_PushDisable(condition);
 
-			// Begin a new row
-			ImGui::BeginGroup();
 
-			if (GUI_Button(helper.name, ImVec2(500.0f * scaleFactorY, 80.0f * scaleFactorY))) {
-				Buy();
-			}
+				auto Sell = [&]() {
+					missionData.redOrbs += helper.price;
+					FMOD_PlaySound(0, 18);
+					expData.unlocks[helper.moddedunlock] = false;
+					ExpConfig::UpdatePlayerActorExps();
+					};
 
-			GUI_PopDisable(condition);
+				//Buy Button gui element starts
+				bool condition = expData.unlocks[helper.moddedunlock] || (expData.styleLevels[helper.styleid] != STYLE_LEVEL::LEVEL_THREE);
+				GUI_PushDisable(condition);
 
-			// Display price and bullet point in a new column
-			ImGui::SameLine(120);
+				// Begin a new row
+				ImGui::BeginGroup();
+				
 
-			bool priceCondition = (missionData.redOrbs < rorb_cost_calculated);
-			ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
-			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
-			constexpr auto BULLET = u8"•";
-			ImGui::Text((const char*)BULLET);
-			ImGui::PopFont();
-			ImGui::PopStyleColor();
+				if (GUI_Button(helper.name, ImVec2(200.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Buy();
+				}
 
-			GUI_PushDisable(priceCondition);
-			ImGui::SameLine();
-			if (expData.styleLevels[helper.styleid] >= helper.stylelevel) {
-				ImGui::Text("Sold out!");
+				if (helper.description != "")
+				{
+					if (ImGui::IsItemHovered()) {
+						ImGui::BeginTooltip();
+						ImGui::SetWindowFontScale(scaleFactorY);
+						ImGui::PushTextWrapPos(180.0f * scaleFactorY);
+						ImGui::Text(helper.description);
+						ImGui::PopTextWrapPos();
+						ImGui::EndTooltip();
+					}
+					//TooltipHelper("(?)", helper.description);
+				}
+
+				GUI_PopDisable(condition);
+
+				// Display price and bullet point in a new column
+				ImGui::SameLine(90);
+
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+				ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
+				constexpr auto BULLET = u8"•";
+				ImGui::Text((const char*)BULLET);
+				ImGui::PopFont();
+				ImGui::PopStyleColor();
+				ImGui::SameLine();
+				ImGui::Text("%u", helper.price);
+
+				//Sell button begins:
+				// Display the sell button in a new column
+				ImGui::EndGroup(); // End the group for the current row
+				ImGui::TableNextColumn();
+				//Disable selling when: The item is not our current style level OR if there's a modded style linked to this style that's been purchased.
+				bool sellcondition = !expData.unlocks[helper.moddedunlock];
+				GUI_PushDisable(sellcondition);
+
+				if (GUI_Button("Sell", ImVec2(80.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Sell();
+				}
+				GUI_PopDisable(sellcondition);
+
+
+				ImGui::Spacing(); // Add spacing between rows
+				ImGui::TableNextRow(0, rowHeight);
+
+
 			}
 			else {
-				if (rorb_cost_calculated == helper.price) {
-					ImGui::Text("%u", rorb_cost_calculated);
+				ImGui::TableNextColumn();
+				//calculates how far through leveling up a style you were as a percentage
+				uint32 percentage_discount = static_cast<uint32>(floor(100 * expData.styleExpPoints[helper.styleid] / helper.styleexp));
+				if (percentage_discount < 0)
+					percentage_discount = 0;
+				if (percentage_discount > 100)
+					percentage_discount = 100;
+
+				//calculates cost of red orbs as the base price with a percentage discount based on how close you were to leveling up style
+				//so 30% of the exp to level 2 = 30% discount
+				uint32 rorb_cost_calculated = helper.price - (static_cast<uint32>(helper.price / 100) * percentage_discount);
+
+
+				auto Buy = [&]() {
+					if (missionData.redOrbs < rorb_cost_calculated) {
+						FMOD_PlaySound(0, 19);
+						return;
+					}
+					HeldStyleExpData& heldStyleExpData = (character == CHARACTER::DANTE)
+						? heldStyleExpDataDante
+						: heldStyleExpDataVergil;
+					missionData.redOrbs -= rorb_cost_calculated;
+					FMOD_PlaySound(0, 18);
+					expData.styleLevels[helper.styleid] = helper.stylelevel;
+					expData.styleExpPoints[helper.styleid] = 0;
+					heldStyleExpData.missionStyleLevels[helper.styleid] = helper.stylelevel;
+					heldStyleExpData.accumulatedStylePoints[helper.styleid] = 0;
+					ExpConfig::UpdatePlayerActorExps();
+					};
+
+
+				auto Sell = [&]() {
+					missionData.redOrbs += helper.price;
+					FMOD_PlaySound(0, 18);
+					HeldStyleExpData& heldStyleExpData = (character == CHARACTER::DANTE)
+						? heldStyleExpDataDante
+						: heldStyleExpDataVergil;
+
+					expData.styleLevels[helper.styleid] = helper.stylelevel - 1;
+					expData.styleExpPoints[helper.styleid] = 0;
+					heldStyleExpData.missionStyleLevels[helper.styleid] = helper.stylelevel - 1;
+					heldStyleExpData.accumulatedStylePoints[helper.styleid] = 0;
+					ExpConfig::UpdatePlayerActorExps();
+					};
+
+				//Buy Button gui element starts
+				bool condition = !(expData.styleLevels[helper.styleid] + 1 == helper.stylelevel);
+				GUI_PushDisable(condition);
+
+				// Begin a new row
+				ImGui::BeginGroup();
+
+				if (GUI_Button(helper.name, ImVec2(200.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Buy();
+				}
+
+				GUI_PopDisable(condition);
+
+				// Display price and bullet point in a new column
+				ImGui::SameLine(90);
+
+				bool priceCondition = (missionData.redOrbs < rorb_cost_calculated) || condition;
+				ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(1, 0, 0, 1));
+				ImGui::PushFont(UI::g_ImGuiFont_RussoOne[UI::g_UIContext.DefaultFontSize * 1.5f]);
+				constexpr auto BULLET = u8"•";
+				ImGui::Text((const char*)BULLET);
+				ImGui::PopFont();
+				ImGui::PopStyleColor();
+
+
+				GUI_PushDisable(priceCondition);
+				ImGui::SameLine();
+				if (expData.styleLevels[helper.styleid] >= helper.stylelevel) {
+					ImGui::Text("Sold out!");
 				}
 				else {
-					ImGui::Text("%u (%u%% off!)", rorb_cost_calculated, percentage_discount);
-					ImGui::SameLine();
-					GUI_PopDisable(priceCondition);
-					TooltipHelper("(?)", "Discount is based on XP earned for this style. Resets on purchase.");
-					GUI_PushDisable(priceCondition);
+					if (rorb_cost_calculated == helper.price) {
+						ImGui::Text("%u", rorb_cost_calculated);
+					}
+					else {
+						ImGui::Text("%u (%u%% off!)", rorb_cost_calculated, percentage_discount);
+						ImGui::SameLine();
+						GUI_PopDisable(priceCondition);
+						TooltipHelper("(?)", "Discount is based on XP earned for this style. Resets on purchase.");
+						GUI_PushDisable(priceCondition);
 
+					}
+				}
+				GUI_PopDisable(priceCondition);
+
+
+
+				//Sell button begins:
+				// Display the sell button in a new column
+				ImGui::EndGroup(); // End the group for the current row
+				ImGui::TableNextColumn();
+				//Disable selling when: The item is not our current style level OR if there's a modded style linked to this style that's been purchased.
+				bool sellcondition = (expData.styleLevels[helper.styleid] != helper.stylelevel) || (helper.moddedchild > -1 && expData.unlocks[helper.moddedchild]);
+				GUI_PushDisable(sellcondition);
+
+				if (GUI_Button("Sell", ImVec2(80.0f * scaleFactorY, 80.0f * scaleFactorY))) {
+					Sell();
+				}
+				GUI_PopDisable(sellcondition);
+
+
+				if (helper.stylelevel == STYLE_LEVEL::LEVEL_THREE && (helper.moddedchild == -1 || !activeCrimsonGameplay.Gameplay.General.extramoves)) {
+					ImGui::Spacing(); // Add spacing between rows
+					ImGui::TableNextRow(0, rowHeight);
 				}
 			}
-			GUI_PopDisable(priceCondition);
-
-			ImGui::EndGroup(); // End the group for the current row
-			ImGui::Spacing(); // Add spacing between rows
 		}
 		ImGui::EndTable();
 	}
@@ -6082,6 +6515,7 @@ void ShowExperienceStyleTab(ExpConfig::ExpData& expData, ShopExperienceStyleHelp
 
 
 void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMissionActorData, ActiveMissionActorData& activeMissionActorData, bool unlockDevilTrigger) {
+	auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
 	for (int itemHelperIndex = 0; itemHelperIndex < sizeof(itemHelpers) / sizeof(ShopItemHelper); ++itemHelperIndex) {
 		auto& itemHelper = itemHelpers[itemHelperIndex];
 
@@ -6091,7 +6525,10 @@ void ShowItemTab(MissionData& missionData, QueuedMissionActorData& queuedMission
 		if ((itemHelper.itemIndex == ITEM::PURPLE_ORB || itemHelper.itemIndex == ITEM::DEVIL_STAR) && !unlockDevilTrigger) {
 			continue;
 		}
-
+		if (itemHelper.itemIndex == ITEM::GOLD_ORB && !sessionData.useGoldOrb)
+			continue;
+		if (itemHelper.itemIndex == ITEM::YELLOW_ORB && sessionData.useGoldOrb)
+			continue;
 		uint32 price = GetItemPrice(itemHelper, buyCount);
 
 		if (GUI_Button(itemNames[itemHelper.itemIndex], ImVec2(500.0f * scaleFactorY, 80.0f * scaleFactorY))) {
@@ -7302,10 +7739,29 @@ void DebugSection() {
 
 		ImGui::Text("");
 
+		GUI_Checkbox2("Show Hitboxes", activeCrimsonGameplay.Debug.showHitboxes, queuedCrimsonGameplay.Debug.showHitboxes);
+
+		bool condition = (!InGame() || activeConfig.Actor.playerCount == 1);
+		GUI_PushDisable(condition);
+		for_each(players, 1, activeConfig.Actor.playerCount) {
+			bool isDead = CrimsonGameplay::CanBeRevived(players);
+			//GUI_PushDisable(!isDead);
+			std::string inputLabel = "Revive Player " + std::to_string(players + 1) + "##playerReviveLabel";
+			if (GUI_Button(inputLabel.c_str())) {
+				CrimsonGameplay::RevivePlayer(players);
+			}
+
+			//GUI_PopDisable(!isDead);
+		}
+
+
+
+		GUI_PopDisable(condition);
 		if (ImGui::Button("heheh")) {
 			CrimsonDetours::SampleModDetour1();
 		}
 
+		CrimsonEfk::EffekDrawImgui();
 		// if (ImGui::Button("EnableCrazyComboHook")){
 		//	HoldToCrazyComboHook->Toggle(true);
 		// }
@@ -7323,12 +7779,15 @@ void DebugSection() {
 		ImGui::InputInt("Player", &effectPlayerID);
 		ImGui::Checkbox("CustomColor", &enableCustomColor);
 		auto pPlayer = (void*)crimsonPlayer[effectPlayerID].playerPtr;
-		uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.color[0]);
+		uint32 vfxColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[0]);
 		if (ImGui::Button("CreateEffect")) {
 			CrimsonDetours::CreateEffectDetour(pPlayer, vfxBank, vfxId, boneIdx, enableCustomColor, vfxColor, 1);
 		}
 
 		ImGui::Text("");
+
+		GUI_Checkbox2("Original JDC VFX Reference for JF", activeCrimsonConfig.VFX.originalJDCReference,
+			queuedCrimsonConfig.VFX.originalJDCReference);
 
 		GUI_Checkbox("g_noTeleport", g_noTeleport);
 
@@ -8194,6 +8653,25 @@ void MiscCheatsSection() {
 		ImGui::TableNextRow(0, rowHeight);
 		ImGui::TableNextColumn();
 
+		
+
+		auto name_6975 = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+		if (!name_6975) {
+			
+		}
+		else {
+			auto& missionData = *reinterpret_cast<MissionData*>(name_6975);
+			ImGui::PushItemWidth(200);
+			GUI_Input<uint32>("Red Orbs", missionData.redOrbs, 1000, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Gold Orbs", missionData.itemCounts[ITEM::GOLD_ORB], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Vital Stars Small", missionData.itemCounts[ITEM::VITAL_STAR_SMALL], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Vital Stars Large", missionData.itemCounts[ITEM::VITAL_STAR_LARGE], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Devil Stars", missionData.itemCounts[ITEM::DEVIL_STAR], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			GUI_Input<uint8>("Holy Waters", missionData.itemCounts[ITEM::HOLY_WATER], 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
+			ImGui::PopItemWidth();
+		}
+
+
 		MiscCheatInput("Quicksilver Depletion", activeCrimsonGameplay.Cheats.Misc.quicksilverDepletion, queuedCrimsonGameplay.Cheats.Misc.quicksilverDepletion,
 			defaultCrimsonGameplay.Cheats.Misc.quicksilverDepletion);
 
@@ -8288,6 +8766,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
 				
 				ImGui::Text("inMainMenu: %u", g_inMainMenu);
+				ImGui::Text("inMissionResultScreen: %u", g_inMissionResultScreen);
                 ImGui::Text(sceneNames[g_scene]);
                 ImGui::Text("sessionData mission:  %u", sessionData.mission);
                 ImGui::Text("SCENE:  %u", g_scene);
@@ -8325,17 +8804,17 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 // 				for (int i = 0; i < weaponProgression.rangedWeaponIds.size(); i++) {
 // 					ImGui::Text("RangedWeaponId[%u]: %u", i, weaponProgression.rangedWeaponIds[i]);
 // 				}
- 				for (int i = 0; i < weaponProgression.meleeWeaponIds.size(); i++) {
-					ImGui::Text("MeleeWeaponName[%u]: %s", i, weaponProgression.meleeWeaponNames[i]);
- 				}
+//  				for (int i = 0; i < weaponProgression.meleeWeaponIds.size(); i++) {
+// 					ImGui::Text("MeleeWeaponName[%u]: %s", i, weaponProgression.meleeWeaponNames[i]);
+//  				}
 // 				for (size_t i = 0; i < queuedConfig.Actor.playerData[0].characterData[0][0].rangedWeaponCount; i++) {
 // 					ImGui::Text("RangedWeaponQeued[%u]: %u", i, queuedConfig.Actor.playerData[0].characterData[0][0].rangedWeapons[i]);
 // 				} 
 				
                // ImGui::Text("Gamepad Style Button: %u", gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION));
-				ImGui::Text("activePreset: %u", activeCrimsonGameplay.GameMode.preset);
-				ImGui::Text("queuedPreset: %u", queuedCrimsonGameplay.GameMode.preset);
-                ImGui::Text("Quicksilver Level: %u", sessionData.styleLevels[4]);
+// 				ImGui::Text("activePreset: %u", activeCrimsonGameplay.GameMode.preset);
+// 				ImGui::Text("queuedPreset: %u", queuedCrimsonGameplay.GameMode.preset);
+//                 ImGui::Text("Quicksilver Level: %u", sessionData.styleLevels[4]);
 
 
                 /*ImGui::Text("Sky Launch:  %u", executingSkyLaunch);
@@ -8416,7 +8895,14 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 
             ImGui::Text("");
         }
-
+// 		if (activeConfig.Actor.enable) {
+// 			[&]() {
+// 				ImGui::Text("Arkham CCS Fight Phase			%u", arkhamFightData.fightPhase);
+// 				ImGui::Text("Arkham CCS Next Fight Phase	%u", arkhamFightData.nextFightPhase);
+// 				ImGui::Text("Arkham CCS Fight Active		%u", arkhamFightData.fightActive);
+// 				ImGui::Text("Arkham CCS Fight Ending		%u", arkhamFightData.fightEnding);
+// 				}();
+// 		}
         if (activeConfig.debugOverlayData.showPosition) {
             [&]() {
                 auto pool_10213 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E28);
@@ -8517,10 +9003,51 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 				return;
 			}
 			auto& savingInGameData = *reinterpret_cast<SavingInGameData*>(savingInGameDataAddr);
+
+			ImGui::Text("activeRangedWeapon: %u", actorData.activeRangedWeapon);
+			ImGui::Text("trickUpCount: %u", actorData.newTrickUpCount);
+			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
+			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
+			ImGui::Text("Vertical Pull  %g", actorData.verticalPull);
+			ImGui::Text("Vertical Pull Multiplier %g", actorData.verticalPullMultiplier);
+			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
+			ImGui::Text("ACTION:  %u", actorData.action);
+			ImGui::Text("MovePart %u", actorData.recoverState[0]);
+			ImGui::Text("cameraLag: %g", cameraData.cameraLag);
+			ImGui::Text("fixedCamAddr: %x", cameraControlMetadata.fixedCameraAddr);
+			ImGui::Text("in JustFrame JDC:  %u", crimsonPlayer[0].jCut.inJustFrameJDC);
+			ImGui::Text("bufferedAction:  %u", actorData.bufferedAction);
+			ImGui::Text("gunButtonTimer : % g", crimsonPlayer[0].bulletMagnetism.gunButtonTimer);
+			ImGui::Text("inertiaRotation : % x", actorData.inertiaRotation);
+			ImGui::Text("MOTION TIMER:  %g", crimsonPlayer[0].motionTimer);
+			ImGui::Text("MOTION GROUP:  %u", actorData.motionData[0].group);
+			ImGui::Text("MOTION INDEX:  %u", actorData.motionData[0].index);
+			ImGui::Text("drive inPart2 : %d", crimsonPlayer[0].drive.inPart2);
+			ImGui::Text("drive inPart3 : %d", crimsonPlayer[0].drive.inPart3);
+			ImGui::Text("yamatoHighTimeClone : %d", crimsonPlayer[0].inYamatoHighTimeClone);
+			ImGui::Text("yamatoMotionState : %d", actorData.weaponMotionState[7]);
+			ImGui::Text("airSwordAttackCount : %d", actorData.airSwordAttackCount);
+			ImGui::Text("airGunAttackCount: %d", actorData.airGunAttackCount);
+			ImGui::Text("inYamatoHighTime : %d", crimsonPlayer[0].inYamatoHighTime);
+			ImGui::Text("drive levelTimer: %g", crimsonPlayer[0].drive.levelTimer);
+			ImGui::Text("actor speed: %g", actorData.speed);
+			ImGui::Text("inertia Rotation : %g", actorData.inertiaRotation);
+			ImGui::Text("Jcut MeleeHoldTime:  %g", crimsonPlayer[0].jCut.meleeHoldTime);
+			ImGui::Text("meleeHold jcut %g", crimsonPlayer[0].jCut.meleeButtonHold);
+			ImGui::Text("meleeHold stinger %g", crimsonPlayer[0].stingerInput.meleeButtonHold);
+			ImGui::Text("melee Released Stinger %u", crimsonPlayer[0].stingerInput.meleeReleasedStinger);
+			ImGui::Text("action Timer Trick not change:  %g", crimsonPlayer[0].actionTimerNotTrickChange);
+			ImGui::Text("Event Data %u", actorData.eventData[0].event);
+			ImGui::Text("Actor Data Permissions: %d", actorData.permissions);
+			ImGui::Text("isAJustFrameCharged %d", crimsonPlayer[0].jCut.isJustFrameCharged);
+			ImGui::Text("isAfterJustFrameCharged %d", crimsonPlayer[0].jCut.isAfterJustFrameCharged);
+			ImGui::Text("Motion Data 1: %u", crimsonPlayer[0].motion);
+			ImGui::Text("characterData.weapon %d", characterData.meleeWeapons[characterData.meleeWeaponIndex]);
 			ImGui::Text("Crazy announcer timer %g \ was hit %d", rankAnnouncer[1].timer, rankAnnouncer[1].wasHit);
 			ImGui::Text("actorData event %d", actorData.eventData[0].event);
 			ImGui::Text("actorData.state %d", actorData.state);
-			ImGui::Text("air Counts Rising Sun Launch %d", crimsonPlayer[0].airCounts.airRisingSunLaunch);
+			ImGui::Text("air Counts Rising Sun %d", actorData.newAirRisingSunCount);
+			ImGui::Text("inRisingStar %d", crimsonPlayer[0].inRisingStar);
 			ImGui::Text("lastActionTime %g", crimsonPlayer[0].lastActionTime);
 			ImGui::Text("actionTImerNotEventChange %g", crimsonPlayer[0].actionTimerNotEventChange);
 			ImGui::Text("closeToEnemy %u", crimsonPlayer[0].isCloseToEnemy);
@@ -8529,7 +9056,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("inertia airguard %g", crimsonPlayer[0].inertia.airGuard.cachedPull);
 			ImGui::Text("mirageGauge %g", crimsonPlayer[0].vergilDoppelganger.miragePoints);
 			ImGui::Text("maxMirageGauge %g", crimsonPlayer[0].vergilDoppelganger.maxMiragePoints);
-			ImGui::Text("MovePart %u", actorData.recoverState[0]);
 			ImGui::Text("Vertical Pull Multiplier %g", actorData.verticalPullMultiplier);
 			ImGui::Text("cameraHittingWall: %u", g_cameraHittingWall);
 			ImGui::Text("actorData styleLevel: %u", actorData.styleLevel);
@@ -8540,8 +9066,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("styleExpPoints: %g", actorData.styleExpPoints);
 			ImGui::Text("Actor Base Addr: %x", actorData.baseAddr);
 			ImGui::Text("TrickDash Timer: %g", crimsonPlayer[0].trickDashTimer);
-			ImGui::Text("ACTION:  %u", actorData.action);
-			ImGui::Text("Event Data 1 %u", actorData.eventData[0]);
 			ImGui::Text("lockOnEnemyMinusStun: %g", crimsonPlayer[0].lockedOnEnemyMinusStun);
 			ImGui::Text("lockOnEnemyMinusDisplacement: %g", crimsonPlayer[0].lockedOnEnemyMinusDisplacement);
 			ImGui::Text("gameModeData.mustStyleMissionResult: %u", gameModeData.mustStyleMissionResult);
@@ -8567,10 +9091,6 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("BufferedAction: %u", actorData.bufferedAction);
 			ImGui::Text("Air Trick Count : %u", actorData.newAirTrickCount);
 			ImGui::Text("rainstorm cached inertia:  %g", crimsonPlayer[0].inertia.rainstorm.cachedPull);
-			ImGui::Text("Horizontal Pull  %g", actorData.horizontalPull);
-			ImGui::Text("Horizontal Pull Multiplier %g", actorData.horizontalPullMultiplier);
-			ImGui::Text("Vertical Pull  %g", actorData.verticalPull);
-			ImGui::Text("Vertical Pull Multiplier %g", actorData.verticalPullMultiplier);
 			ImGui::Text("AIR SWORD COUNT: %u", actorData.airSwordAttackCount);
 			ImGui::Text("Back Buffer: %g", crimsonPlayer[0].b2F.backBuffer);
 			ImGui::Text("Forward Buffer: %g", crimsonPlayer[0].b2F.forwardBuffer);
@@ -8581,10 +9101,7 @@ void DebugOverlayWindow(size_t defaultFontSize) {
 			ImGui::Text("Royal Block: %u", actorData.royalBlock);
 			ImGui::Text("Guard: %u", actorData.guard);
 			ImGui::Text("maxDT: %g", actorData.maxMagicPoints);
-			ImGui::Text("Motion Data 1: %u", crimsonPlayer[0].motion);
-			ImGui::Text("anim Timer Main Actor:  %g", crimsonPlayer[0].animTimer);
-			ImGui::Text("anim Timer Clone:  %g", crimsonPlayer[0].animTimerClone);
-			ImGui::Text("action Timer Main Actor:  %g", crimsonPlayer[0].actionTimer);
+			ImGui::Text("anim Timer Clone:  %g", crimsonPlayer[0].motionTimerClone);
 			ImGui::Text("action Timer Clone:  %g", crimsonPlayer[0].actionTimerClone);
 			ImGui::Text("AIR GUARD: %u", actorData.airGuard);
 			ImGui::Text("GUARDFLY PULL: %g", crimsonPlayer[0].inertia.airGuard.cachedPull);
@@ -8898,7 +9415,7 @@ void MissionOverlayWindow(size_t defaultFontSize) {
         auto& missionData = *reinterpret_cast<MissionData*>(name_10723);
 
 
-        auto timeData = TimeData(static_cast<float>(missionData.frameCount), activeConfig.frameRate
+        auto timeData = TimeData(static_cast<float>(missionData.frameCount), g_FrameRate
             // 60.0f // @Update
         );
 
@@ -9087,8 +9604,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			if (GUI_Checkbox2("Pause When Opened", activeCrimsonConfig.GUI.pauseWhenOpened, queuedCrimsonConfig.GUI.pauseWhenOpened)) {
 				if (g_inGameDelayed) {
-					activeConfig.Speed.mainSpeed = queuedConfig.Speed.mainSpeed; // This resumes the game speed
-					activeConfig.Speed.turbo = queuedConfig.Speed.turbo;
+					activeCrimsonGameplay.Cheats.Speed.defaultGame = queuedCrimsonGameplay.Cheats.Speed.defaultGame; // This resumes the game speed
+					activeCrimsonGameplay.Cheats.Speed.turboGame = queuedCrimsonGameplay.Cheats.Speed.turboGame;
 					Speed::Toggle(true); // Toggle Speed on and off to set the new speed
 					Speed::Toggle(false);
 				}
@@ -9147,20 +9664,22 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedConfig.selectedHUD)) {
-				CrimsonFiles::CopyHUDtoGame();
-			}
-			if (queuedConfig.selectedHUD != activeConfig.selectedHUD) {
-				auto restartStrColor = CrimsonUtil::HexToImVec4(0x1DD6FFFF);
-				ImGui::TextColored(restartStrColor, "Restart the game to properly apply new HUD.");
+			UI::ComboVectorString("Select HUD", CrimsonFiles::HUDdirectories, queuedCrimsonConfig.HudOptions.selectedHUD);
+			if (queuedCrimsonConfig.HudOptions.selectedHUD != activeCrimsonConfig.HudOptions.selectedHUD) {
+				activeCrimsonConfig.HudOptions.selectedHUD = queuedCrimsonConfig.HudOptions.selectedHUD;
+				// Copy renamed files to GData.afs for backward compatibility
+				CrimsonFiles::CopyHUDFilePactoGameFolder();
+				// Load dynamically and hot-reload icons immediately
+				CrimsonFiles::ApplySelectedHUD(activeCrimsonConfig.HudOptions.selectedHUD);
+				HUD_ReloadIcons();
 			}
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (GUI_Checkbox2("Hide Main HUD", activeConfig.hideMainHUD, queuedConfig.hideMainHUD)) {
-				ToggleHideMainHUD(activeConfig.hideMainHUD);
+			if (GUI_Checkbox2("Hide Main HUD", activeCrimsonConfig.HudOptions.hideMainHUD, queuedCrimsonConfig.HudOptions.hideMainHUD)) {
+				ToggleHideMainHUD(activeCrimsonConfig.HudOptions.hideMainHUD);
 			}
 			ImGui::PopItemWidth();
 
@@ -9168,8 +9687,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth);
-			if (GUI_Checkbox2("Always Show Main HUD", activeConfig.forceVisibleHUD, queuedConfig.forceVisibleHUD)) {
-				ToggleForceVisibleHUD(activeConfig.forceVisibleHUD);
+			if (GUI_Checkbox2("Always Show Main HUD", activeCrimsonConfig.HudOptions.forceVisibleHUD, queuedCrimsonConfig.HudOptions.forceVisibleHUD)) {
+				ToggleForceVisibleHUD(activeCrimsonConfig.HudOptions.forceVisibleHUD);
 			}
 
 			ImGui::PopItemWidth();
@@ -9177,8 +9696,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Hide Lock-On", activeConfig.hideLockOn, queuedConfig.hideLockOn)) {
-				CrimsonPatches::ToggleHideLockOn(activeConfig.hideLockOn);
+			if (GUI_Checkbox2("Hide Lock-On", activeCrimsonConfig.HudOptions.hideLockOn, queuedCrimsonConfig.HudOptions.hideLockOn)) {
+				CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn);
 			}
 
 			ImGui::TableNextColumn();
@@ -9189,13 +9708,13 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Hide Boss Damage Bar", activeConfig.hideBossHUD, queuedConfig.hideBossHUD)) {
-				ToggleHideBossHUD(activeConfig.hideBossHUD);
+			if (GUI_Checkbox2("Hide Boss Damage Bar", activeCrimsonConfig.HudOptions.hideBossHUD, queuedCrimsonConfig.HudOptions.hideBossHUD)) {
+				ToggleHideBossHUD(activeCrimsonConfig.HudOptions.hideBossHUD);
 			}
 
 			ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Disable Style Rank Fadeout", activeConfig.disableStyleRankHudFadeout, queuedConfig.disableStyleRankHudFadeout);
+			GUI_Checkbox2("Disable Style Rank Fadeout", activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout, queuedCrimsonConfig.HudOptions.disableStyleRankHudFadeout);
 
 			ImGui::EndTable();
 		}
@@ -9206,7 +9725,7 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
     ImGui::PopStyleColor();
     
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
-	ImGui::Text("CRIMSON HUD ADDONS");
+	ImGui::Text("CRIMSON HUD 1.0 ADDONS");
 	ImGui::PopFont();
 	
 
@@ -9236,25 +9755,23 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 
 			ImGui::TableNextColumn();
 
-			if (UI::ComboMapValue2("Styles Display", stylesDisplayStateNames, stylesDisplayStateMap,
+			UI::ComboMapValue2("Styles Display", stylesDisplayStateNames, stylesDisplayStateMap,
 				activeCrimsonConfig.CrimsonHudAddons.stylesDisplay,
-				queuedCrimsonConfig.CrimsonHudAddons.stylesDisplay)) {
-				if (activeCrimsonConfig.CrimsonHudAddons.stylesDisplay == 0) {
-					activeCrimsonConfig.CrimsonHudAddons.displayStyleNames = false;
-					queuedCrimsonConfig.CrimsonHudAddons.displayStyleNames = false;
-				} else {
-					activeCrimsonConfig.CrimsonHudAddons.displayStyleNames = true;
-					queuedCrimsonConfig.CrimsonHudAddons.displayStyleNames = true;
-				}
-			}
+				queuedCrimsonConfig.CrimsonHudAddons.stylesDisplay);
+				
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.stylesDisplay);
-
 			GUI_Checkbox2("Show Style Names", activeCrimsonConfig.CrimsonHudAddons.displayStyleNames, queuedCrimsonConfig.CrimsonHudAddons.displayStyleNames);
 
-			GUI_PopDisable(!activeCrimsonConfig.CrimsonHudAddons.stylesDisplay);
+			ImGui::TableNextColumn();
+
+			if (UI::ComboMapValue2("Style Names Set", styleNamesTextureSetNames, styleNamesTextureSetMap,
+				activeCrimsonConfig.CrimsonHudAddons.styleNamesSet,
+				queuedCrimsonConfig.CrimsonHudAddons.styleNamesSet)) {
+				activeCrimsonConfig.CrimsonHudAddons.styleNamesSet = queuedCrimsonConfig.CrimsonHudAddons.styleNamesSet;
+				CrimsonHUD::InitStyleNameTextures(pDevice);
+			}
 
 			ImGui::TableNextColumn();
 
@@ -9308,29 +9825,14 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 			
 			if (GUI_Checkbox2("Lock-On", activeCrimsonConfig.CrimsonHudAddons.lockOn, queuedCrimsonConfig.CrimsonHudAddons.lockOn)) {
 				CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.CrimsonHudAddons.lockOn);
-				if (!activeCrimsonConfig.CrimsonHudAddons.lockOn) {
-					activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud = false;
-					queuedCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud = false;
-					activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance = false;
-					queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance = false;
-				}
 			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
-			GUI_Checkbox2("Scale Lock-On Enemy Distance", activeCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance, queuedCrimsonConfig.CrimsonHudAddons.scaleLockOnEnemyDistance);
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Scales the Lock-On Display size based on how distant the Enemy is from the Camera.");
-			GUI_PopDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
+			GUI_Checkbox2("Stun/Displacement Lock-On", activeCrimsonConfig.CrimsonHudAddons.lockOnStunDisplacement,
+				queuedCrimsonConfig.CrimsonHudAddons.lockOnStunDisplacement);
 
 			ImGui::TableNextColumn();
-
-			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
 
 			if (GUI_Checkbox2("Stun/Displacement Numeric HUD", activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud, queuedCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud)) {
 				if (activeCrimsonConfig.CrimsonHudAddons.stunDisplacementNumericHud) {
@@ -9340,11 +9842,11 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 				} 
 			}
 			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
 			TooltipHelper("(?)", "Show numerical stun and displacement values on lock-on (Hells enemies only).\nLast Move minus value updates each 200ms. Requires CrimsonHUD's Lock-On.");
 
 			ImGui::TableNextColumn();
+
+			GUI_PushDisable(!activeCrimsonConfig.CrimsonHudAddons.lockOn);
 
 			GUI_Checkbox2("Lock On Colors on Characters", activeCrimsonConfig.CrimsonHudAddons.lockOnColorsCharacter, 
 				queuedCrimsonConfig.CrimsonHudAddons.lockOnColorsCharacter);
@@ -9468,6 +9970,8 @@ void InterfaceSection(size_t defaultFontSize, ID3D11Device* pDevice) {
 	//ImGui::PopFont();
 
 	BarsSection(defaultFontSize);
+
+	CrimsonVisualStyle::TrackVisualStyle();
 }
 
 #pragma endregion
@@ -9594,6 +10098,46 @@ void CustomSpeedSection() {
 		ImGui::TableNextRow(0, rowHeight);
 		ImGui::TableNextColumn();
 		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+		ImGui::Text("DEFAULT GAME");
+		ImGui::PopFont();
+		ImGui::TableNextColumn();
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+		ImGui::Text("TURBO GAME"); ImGui::SameLine();
+		ImGui::PopFont();
+
+		ImGui::TableNextRow(0, rowHeight);
+
+		ImGui::TableNextColumn();
+		GUI_PushDisable(IsTurbo());
+		ImGui::PushItemWidth(itemWidth * 1.0f);
+
+		GUI_InputDefault2SpeedCalc("", activeCrimsonGameplay.Cheats.Speed.defaultGame, queuedCrimsonGameplay.Cheats.Speed.defaultGame, 
+			defaultCrimsonGameplay.Cheats.Speed.defaultGame, 0.1f,
+				"%g", ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::PopItemWidth();
+		GUI_PopDisable(IsTurbo());
+
+		ImGui::TableNextColumn();
+
+		GUI_PushDisable(!IsTurbo());
+
+		ImGui::PushItemWidth(itemWidth * 1.0f);
+		GUI_InputDefault2SpeedCalc("", activeCrimsonGameplay.Cheats.Speed.turboGame, queuedCrimsonGameplay.Cheats.Speed.turboGame,
+			defaultCrimsonGameplay.Cheats.Speed.turboGame, 0.1f,
+			"%g", ImGuiInputTextFlags_EnterReturnsTrue);
+		ImGui::PopItemWidth();
+
+		GUI_PopDisable(!IsTurbo());
+		ImGui::EndTable();
+	}
+
+	// --- Main Speed Table ---
+	if (ImGui::BeginTable("SpeedTable2", 2)) {
+		ImGui::TableSetupColumn("Left", 0, columnWidth * 3.5f);
+		ImGui::TableSetupColumn("Right", 0, columnWidth * 3.5f);
+		ImGui::TableNextRow(0, rowHeight);
+		ImGui::TableNextColumn();
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
 		ImGui::Text("ENEMY CHARACTER");
 		ImGui::PopFont();
 		ImGui::TableNextColumn();
@@ -9706,11 +10250,11 @@ void SystemSection(size_t defaultFontSize) {
 		if (ImGui::BeginTable("GraphicsWindowOptionsTable", 3)) {
 
 			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableNextRow(0, rowWidth * 0.5f);
+			//ImGui::TableNextRow(0, rowWidth * 0.5f);
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.9f);
-			if (GUI_InputDefault2<float>("Frame Rate", activeConfig.frameRate, queuedConfig.frameRate, defaultConfig.frameRate, 1, "%.2f",
+			if (GUI_InputDefault2<float>("Frame Rate", activeCrimsonConfig.System.fpsCap, queuedCrimsonConfig.System.fpsCap, defaultCrimsonConfig.System.fpsCap, 1, "%.2f",
 				ImGuiInputTextFlags_EnterReturnsTrue)) {
 				Speed::Toggle(true);
 				CrimsonOnTick::inputtingFPS = true;
@@ -9718,53 +10262,64 @@ void SystemSection(size_t defaultFontSize) {
 				CrimsonOnTick::inputtingFPS = false;
 			}
 			if (GUI_Button("60 FPS")) {
-				activeConfig.frameRate = 60.0f;
-				queuedConfig.frameRate = 60.0f;
+				activeCrimsonConfig.System.fpsCap = 60.0f;
+				queuedCrimsonConfig.System.fpsCap = 60.0f;
 			}
 			ImGui::SameLine();
 			if (GUI_Button("80 FPS")) {
-				activeConfig.frameRate = 80.0f;
-				queuedConfig.frameRate = 80.0f;
+				activeCrimsonConfig.System.fpsCap = 80.0f;
+				queuedCrimsonConfig.System.fpsCap = 80.0f;
 			}
 			ImGui::SameLine();
 			if (GUI_Button("120 FPS")) {
-				activeConfig.frameRate = 120.0f;
-				queuedConfig.frameRate = 120.0f;
+				activeCrimsonConfig.System.fpsCap = 120.0f;
+				queuedCrimsonConfig.System.fpsCap = 120.0f;
 			}
 
 			ImGui::PopItemWidth();
 
             ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Disable Motion Blur / Blending Effects", activeConfig.disableBlendingEffects, queuedConfig.disableBlendingEffects);
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Makes DMC3 look smoother/snappier, but lacking certain PS2 post process effects."
-				"\nDisables itself during cutscenes and screen transitions."
-				"\nPersonally, this is essential for a smoother, lag-free gameplay feel. -Berthrage");
+			GUI_Checkbox2("Unlocked FPS", activeCrimsonConfig.System.fpsUnlocked, queuedCrimsonConfig.System.fpsUnlocked);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("This neat experimental feature completely eliminates input lag and greatly boosts game responsiveness.\n"
+					"We're actively polishing it, some bugs may still occur.\n"
+					"If you find any, please report them on our GitHub issue tracker or Discord server.");
+			}
 
 			ImGui::TableNextColumn();
 
+
 			ImGui::PushItemWidth(itemWidth * 0.8f);
 			UI::Combo2("V-Sync", Graphics_vSyncNames, activeConfig.vSync, queuedConfig.vSync);
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Synchronizes Monitor Refresh Rate with Frame Rate to eliminate Screen Tearing.\n"
-				"WARNING: if On, will introduce a considerable amount of input lag. Keep this on 'Force Off' for lower latency.");
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Synchronizes Monitor Refresh Rate with Frame Rate to eliminate Screen Tearing.\n"
+					"WARNING: if On, will introduce a considerable amount of input lag. Keep this on 'Force Off' for lower latency.");
+			}
 
 			ImGui::PopItemWidth();
 
 			ImGui::TableNextColumn();
 
 			GUI_Checkbox("DXGI Flip Model Presentation", queuedCrimsonConfig.System.flipModelPresentation);
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Alters how Exclusive Fullscreen works by forcing usage of Flip Model Presentation.\n"
-				"This setting may improve alt-tab issues, latency, enables quicker toggling between fullscreen/windowed with Alt + Enter,"
-				"\nand adds support for HDR and VRR/GSync.");
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Alters how Exclusive Fullscreen works by forcing usage of Flip Model Presentation.\n"
+					"This setting may improve alt-tab issues, latency, enables quicker toggling between fullscreen/windowed with Alt + Enter,"
+					"\nand adds support for HDR and VRR/GSync.");
+			}
 
 			if (queuedCrimsonConfig.System.flipModelPresentation != activeCrimsonConfig.System.flipModelPresentation) {
 				ImGui::TextColored(CrimsonUtil::HexToImVec4(0x1DD6FFFF), "Requires Game Restart.");
 			}
 
 			ImGui::TableNextColumn();
+
+	
+			GUI_Checkbox2("Disable Menu Fadeouts", activeCrimsonConfig.System.disableMenuFadeouts, queuedCrimsonConfig.System.disableMenuFadeouts);
+				
+			
+			ImGui::TableNextColumn();
+
 
 			if (GUI_Checkbox2("Force Focus", activeConfig.forceWindowFocus, queuedConfig.forceWindowFocus)) {
 				ToggleForceWindowFocus(activeConfig.forceWindowFocus);
@@ -9773,74 +10328,6 @@ void SystemSection(size_t defaultFontSize) {
 			ImGui::TableNextColumn();
 
 			GUI_Checkbox2("Hide Mouse Cursor", activeConfig.hideMouseCursor, queuedConfig.hideMouseCursor);
-
-
-			ImGui::EndTable();
-		}
-	}
-
-	ImGui::Text("");
-
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
-
-
-	ImGui::Text("GAME SPEED");
-
-	ImGui::PopFont();
-
-	UI::SeparatorEx(defaultFontSize * 23.35f);
-
-	ImGui::Text("");
-
-	{
-		const float columnWidth = 0.5f * queuedConfig.globalScale;
-		const float rowWidth = 40.0f * queuedConfig.globalScale;
-
-		if (ImGui::BeginTable("GameSpeedOptionsTable", 3)) {
-
-			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableNextRow(0, rowWidth);
-			ImGui::TableNextColumn();
-
-			if (GUI_Checkbox2("Frame Rate-Responsive Game Speed", activeConfig.framerateResponsiveGameSpeed, queuedConfig.framerateResponsiveGameSpeed)) {
-				activeConfig.Speed.turbo = 1.2 / (activeConfig.frameRate / 60);
-				queuedConfig.Speed.turbo = 1.2 / (activeConfig.frameRate / 60);
-
-				activeConfig.Speed.mainSpeed = 1.0 / (activeConfig.frameRate / 60);
-				queuedConfig.Speed.mainSpeed = 1.0 / (activeConfig.frameRate / 60);
-			}
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Adjusts Game Speed based on the Frame Rate setting \n"
-				"to ensure gameplay stays consistent across different frame rates.\n"
-				"We recommend leaving this option on, unless you want to customize the Global Game Speed.\n\n"
-				"WARNING: Playing at higher frame rates will greatly reduce input lag, but \n"
-				"various gameplay issues may be introduced, such as enemy projectiles being too fast. \n"
-				"Help us fix those issues by reporting them individually on our GitHub's issue tracker \n"
-				"using the 'high frame issue' label: https://github.com/berthrage/Devil-May-Cry-3-Crimson/issues");
-
-			ImGui::TableNextColumn();
-
-			GUI_PushDisable(IsTurbo());
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_InputDefault2SpeedCalc("Default Speed", activeConfig.Speed.mainSpeed, queuedConfig.Speed.mainSpeed, defaultConfig.Speed.mainSpeed, 0.1f,
-				"%g", ImGuiInputTextFlags_EnterReturnsTrue);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Changes Default Game Speed, changing this to be other than default\n" 
-				"(without Frame Rate-Responsive Game Speed on) will tag you at the Mission End screen.");
-			GUI_PopDisable(IsTurbo());
-
-			ImGui::TableNextColumn();
-
-			GUI_PushDisable(!IsTurbo());
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_InputDefault2SpeedCalc("Turbo Speed", activeConfig.Speed.turbo, queuedConfig.Speed.turbo, defaultConfig.Speed.turbo, 0.1f, "%g",
-				ImGuiInputTextFlags_EnterReturnsTrue);
-			ImGui::PopItemWidth();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "Changes Turbo Game Speed, changing this to be other than default\n"
-				"(without Frame Rate-Responsive Game Speed on) will tag you at the Mission End screen.");
-			GUI_PopDisable(!IsTurbo());
 
 
 			ImGui::EndTable();
@@ -9868,7 +10355,6 @@ void SystemSection(size_t defaultFontSize) {
 		if (ImGui::BeginTable("MiscOptionsTable", 2)) {
 
 			ImGui::TableSetupColumn("b1", 0, columnWidth);
-			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
 			ImGui::PushItemWidth(itemWidth * 0.8f);
@@ -9883,7 +10369,13 @@ void SystemSection(size_t defaultFontSize) {
 				ToggleSkipCutscenes(activeConfig.skipCutscenes);
 			}
 
-            // Enable File Mods will be a json file only option for now, don't see much need for it in the GUI. - Mia
+			ImGui::TableNextColumn();
+
+			bool* turboSetting = reinterpret_cast<bool*>(appBaseAddr + 0xD6CEA9);
+
+			GUI_Checkbox("Turbo Mode", *turboSetting);
+
+			// Enable File Mods will be a json file only option for now, don't see much need for it in the GUI. - Mia
 // 			ImGui::TableNextRow(0, rowWidth);
 // 			ImGui::TableNextColumn();
 // 
@@ -9892,104 +10384,97 @@ void SystemSection(size_t defaultFontSize) {
 // 			TooltipHelper("(?)", "WARNING: Necessary for any and all file mods you may have, \n"
 // 				"disabling this will disable any file replacement mod, including custom HUDs and Models.");
 
-		
 			ImGui::EndTable();
 		}
+
+		ImGui::Text("");
+
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
+
+
+		ImGui::Text("BLENDING EFFECTS");
+
+		ImGui::PopFont();
+
+		UI::SeparatorEx(defaultFontSize * 23.35f);
+
+		ImGui::Text("");
+
+		{
+			const float columnWidth = 0.5f * queuedConfig.globalScale;
+			const float rowWidth = 40.0f * queuedConfig.globalScale;
+
+			if (ImGui::BeginTable("BlendingEffectsOptionsTable", 2)) {
+
+				ImGui::TableSetupColumn("b1", 0, columnWidth);
+				ImGui::TableNextColumn();
+
+				GUI_PushDisable(activeCrimsonConfig.System.BlendingEffects.disableAll);
+
+				GUI_Checkbox2("Ghosting", activeCrimsonConfig.System.BlendingEffects.ghosting,
+					queuedCrimsonConfig.System.BlendingEffects.ghosting);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("PS2-like Ghosting Blur present in some scenes, making the game feel kind of ethereal in movement.\n"
+						"This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.\n"
+						"WARNING: Keeping this disabled is recommended for a smoother, lag-free gameplay feel. -Berthrage.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Color Filter", activeCrimsonConfig.System.BlendingEffects.colorFilter,
+					queuedCrimsonConfig.System.BlendingEffects.colorFilter);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Color filter applied in some scenes.\n" 
+						"This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Bloom", activeCrimsonConfig.System.BlendingEffects.bloom,
+					queuedCrimsonConfig.System.BlendingEffects.bloom);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Fog / Mist", activeCrimsonConfig.System.BlendingEffects.fogMist,
+					queuedCrimsonConfig.System.BlendingEffects.fogMist);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Warping", activeCrimsonConfig.System.BlendingEffects.warp,
+					queuedCrimsonConfig.System.BlendingEffects.warp);
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("This toggle won't apply to screen transitions or cutscenes. Needs room reload to apply.");
+				}
+
+				ImGui::TableNextColumn();
+
+				GUI_PopDisable(activeCrimsonConfig.System.BlendingEffects.disableAll);
+
+				GUI_Checkbox2("Disable All Blending Effects", activeCrimsonConfig.System.BlendingEffects.disableAll,
+					queuedCrimsonConfig.System.BlendingEffects.disableAll);
+				ImGui::SameLine();
+				if (ImGui::IsItemHovered()) {
+					ImGui::SetTooltip("Disables all post processing effects. Can be useful to gain some slight performance."
+						"\nThis toggle won't apply to screen transitions or cutscenes. Doesn't need room reload to apply.");
+				}
+
+				ImGui::EndTable();
+			}
+		}
+
+		
 	}
-
-
-
-// 
-// 	GUI_SectionStart("Input");
-// 
-// 	
-// 
-// 
-// 	ImGui::PushItemWidth(300);
-// 
-// 	if (ImGui::InputText(
-// 		"Gamepad Name", queuedConfig.gamepadName, sizeof(queuedConfig.gamepadName), ImGuiInputTextFlags_EnterReturnsTrue)) {
-// 		::GUI::save = true;
-// 	}
-// 
-// 	GUI_Input2<byte8>(
-// 		"Gamepad Button", activeConfig.gamepadButton, queuedConfig.gamepadButton, 1, "%u", ImGuiInputTextFlags_EnterReturnsTrue);
-// 	ImGui::SameLine();
-// 	TooltipHelper("(?)", "Toggle Show Main");
-// 
-// 	ImGui::PopItemWidth();
 
 	
 
 	ImGui::PopFont();
 	ImGui::PopStyleColor();
-
-// 	if (GUI_ResetButton()) {
-// 		CopyMemory(&queuedConfig.skipIntro, &defaultConfig.skipIntro, sizeof(queuedConfig.skipIntro));
-// 		CopyMemory(&activeConfig.skipIntro, &queuedConfig.skipIntro, sizeof(activeConfig.skipIntro));
-// 
-// 		CopyMemory(&queuedConfig.skipCutscenes, &defaultConfig.skipCutscenes, sizeof(queuedConfig.skipCutscenes));
-// 		CopyMemory(&activeConfig.skipCutscenes, &queuedConfig.skipCutscenes, sizeof(activeConfig.skipCutscenes));
-// 
-// 		ToggleSkipIntro(activeConfig.skipIntro);
-// 		ToggleSkipCutscenes(activeConfig.skipCutscenes);
-// 
-// 		CopyMemory(&queuedConfig.enableFileMods, &defaultConfig.enableFileMods, sizeof(queuedConfig.enableFileMods));
-// 		CopyMemory(&activeConfig.enableFileMods, &queuedConfig.enableFileMods, sizeof(activeConfig.enableFileMods));
-// 
-// 
-// 		CopyMemory(&queuedConfig.frameRate, &defaultConfig.frameRate, sizeof(queuedConfig.frameRate));
-// 		CopyMemory(&activeConfig.frameRate, &queuedConfig.frameRate, sizeof(activeConfig.frameRate));
-// 
-// 		CopyMemory(&queuedConfig.vSync, &defaultConfig.vSync, sizeof(queuedConfig.vSync));
-// 		CopyMemory(&activeConfig.vSync, &queuedConfig.vSync, sizeof(activeConfig.vSync));
-// 
-// 		UpdateFrameRate();
-// 
-// 		CopyMemory(&queuedConfig.hideMainHUD, &defaultConfig.hideMainHUD, sizeof(queuedConfig.hideMainHUD));
-// 		CopyMemory(&activeConfig.hideMainHUD, &queuedConfig.hideMainHUD, sizeof(activeConfig.hideMainHUD));
-// 
-// 		ToggleHideMainHUD(activeConfig.hideMainHUD);
-// 
-// 		CopyMemory(&queuedConfig.hideLockOn, &defaultConfig.hideLockOn, sizeof(queuedConfig.hideLockOn));
-// 		CopyMemory(&activeConfig.hideLockOn, &queuedConfig.hideLockOn, sizeof(activeConfig.hideLockOn));
-// 
-// 		ToggleHideLockOn(activeConfig.hideLockOn);
-// 
-// 		CopyMemory(&queuedConfig.hideBossHUD, &defaultConfig.hideBossHUD, sizeof(queuedConfig.hideBossHUD));
-// 		CopyMemory(&activeConfig.hideBossHUD, &queuedConfig.hideBossHUD, sizeof(activeConfig.hideBossHUD));
-// 
-// 		ToggleHideBossHUD(activeConfig.hideBossHUD);
-// 
-// 		CopyMemory(&queuedConfig.hideMouseCursor, &defaultConfig.hideMouseCursor, sizeof(queuedConfig.hideMouseCursor));
-// 		CopyMemory(&activeConfig.hideMouseCursor, &queuedConfig.hideMouseCursor, sizeof(activeConfig.hideMouseCursor));
-// 
-// 		CopyMemory(&queuedConfig.gamepadName, &defaultConfig.gamepadName, sizeof(queuedConfig.gamepadName));
-// 		CopyMemory(&activeConfig.gamepadName, &queuedConfig.gamepadName, sizeof(activeConfig.gamepadName));
-// 
-// 		CopyMemory(&queuedConfig.gamepadButton, &defaultConfig.gamepadButton, sizeof(queuedConfig.gamepadButton));
-// 		CopyMemory(&activeConfig.gamepadButton, &queuedConfig.gamepadButton, sizeof(activeConfig.gamepadButton));
-// 
-// 
-// 		CopyMemory(&queuedConfig.channelVolumes, &defaultConfig.channelVolumes, sizeof(queuedConfig.channelVolumes));
-// 		CopyMemory(&activeConfig.channelVolumes, &queuedConfig.channelVolumes, sizeof(activeConfig.channelVolumes));
-// 
-// 		UpdateVolumes();
-// 		CopyMemory(&queuedConfig.soundIgnoreEnemyData, &defaultConfig.soundIgnoreEnemyData, sizeof(queuedConfig.soundIgnoreEnemyData));
-// 		CopyMemory(&activeConfig.soundIgnoreEnemyData, &queuedConfig.soundIgnoreEnemyData, sizeof(activeConfig.soundIgnoreEnemyData));
-// 
-// 
-// 		CopyMemory(&queuedConfig.windowPosX, &defaultConfig.windowPosX, sizeof(queuedConfig.windowPosX));
-// 		CopyMemory(&activeConfig.windowPosX, &queuedConfig.windowPosX, sizeof(activeConfig.windowPosX));
-// 
-// 		CopyMemory(&queuedConfig.windowPosY, &defaultConfig.windowPosY, sizeof(queuedConfig.windowPosY));
-// 		CopyMemory(&activeConfig.windowPosY, &queuedConfig.windowPosY, sizeof(activeConfig.windowPosY));
-// 
-// 		CopyMemory(&queuedConfig.forceWindowFocus, &defaultConfig.forceWindowFocus, sizeof(queuedConfig.forceWindowFocus));
-// 		CopyMemory(&activeConfig.forceWindowFocus, &queuedConfig.forceWindowFocus, sizeof(activeConfig.forceWindowFocus));
-// 
-// 		ToggleForceWindowFocus(activeConfig.forceWindowFocus);
-// 	}
     
 }
 
@@ -10147,7 +10632,7 @@ void TrainingSection() {
 			ImGui::TableNextRow(0, rowWidth);
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Infinite Hit Points", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
+			if (GUI_Checkbox2("Disable All Damage", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
 				ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
 			}
 
@@ -10155,6 +10640,17 @@ void TrainingSection() {
 
 			if (GUI_Checkbox2("Infinite Devil Trigger", activeCrimsonGameplay.Cheats.Training.infiniteDT, queuedCrimsonGameplay.Cheats.Training.infiniteDT)) {
 				ToggleInfiniteMagicPoints(activeCrimsonGameplay.Cheats.Training.infiniteDT);
+				//This might cause vanilla to crash I don't care though sucks to suck
+				if (activeCrimsonGameplay.Cheats.Training.infiniteDT && InGame() && activeConfig.Actor.enable) {
+					ForEachSpawnedPlayerActor([&](PlayerActorData& playerActor, NewActorData&, uint8 playerIndex, uint8 characterIndex,
+						uint8 entityIndex) {
+							playerActor.magicPoints = playerActor.maxMagicPoints;
+						});
+				}
+				if (activeCrimsonGameplay.Cheats.Training.infiniteDT && InGame() && !activeConfig.Actor.enable) {
+					PlayerActorData* actorData = GetVanillaPlayerActor();
+					actorData->magicPoints = actorData->maxMagicPoints;
+				}
 			}
 
 			ImGui::TableNextColumn();
@@ -10264,6 +10760,9 @@ void SoundSection(size_t defaultFontSize) {
 
 			ImGui::PushItemWidth(itemWidth * smallerComboMult);
 			GUI_Slider2<uint8>("Effect Volume", activeCrimsonConfig.SFX.styleChangeVolume, queuedCrimsonConfig.SFX.styleChangeVolume, 0, 100);
+			ImGui::PopItemWidth();
+			ImGui::PushItemWidth(itemWidth * smallerComboMult);
+			GUI_Slider2<uint8>("Snap Volume", activeCrimsonConfig.SFX.styleChangeSnapVolume, queuedCrimsonConfig.SFX.styleChangeSnapVolume, 0, 100);
 			ImGui::PopItemWidth();
 
 			ImGui::PushItemWidth(itemWidth * smallerComboMult);
@@ -10452,6 +10951,13 @@ void SoundSection(size_t defaultFontSize) {
 	ImGui::SameLine();
 	TooltipHelper("(?)", "Override the Mission Start song with the Divinity Statue song while in the Customize menu.");
 
+	GUI_Checkbox2("Crimson Mode Changes Music", activeCrimsonConfig.Sound.crimsonModeChangesMusic, queuedCrimsonConfig.Sound.crimsonModeChangesMusic);
+	if (ImGui::IsItemHovered()) {
+		ImGui::SetTooltip("Only changes Mission Results screen music.");
+	}
+	ImGui::SameLine();
+	GUI_CCSRequirementButton();
+
 	ImGui::Text("");
 
 	ImGui::PopFont();
@@ -10489,39 +10995,62 @@ void VisualSection(size_t defaultFontSize) {
     GUI_Checkbox2("STYLE SWITCH FLUX", activeCrimsonConfig.StyleSwitchFX.Flux.enable, queuedCrimsonConfig.StyleSwitchFX.Flux.enable);
 	ImGui::PopFont();
 
+	ImGui::SameLine();
+	ImGui::PushItemWidth(itemWidth);
+	UI::ComboMapValue2("Type", styleSwitchTypeNames, styleSwitchTypeMap,
+		activeCrimsonConfig.StyleSwitchFX.Flux.type, queuedCrimsonConfig.StyleSwitchFX.Flux.type);
+	ImGui::PopItemWidth();
+
 	for (int style = 0; style < 6; style++) {
 	
 		if (style > 0) {
 			ImGui::SameLine();
 		}
-		GUI_Color2("", activeCrimsonConfig.StyleSwitchFX.Flux.color[style], queuedCrimsonConfig.StyleSwitchFX.Flux.color[style]);
+		GUI_Color2("", activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor[style], queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor[style]);
 		ImGui::SameLine();
 		ImGui::Text(styleNamesFX[style]);
 	}
 
+	if (activeCrimsonConfig.StyleSwitchFX.Flux.type == STYLESWITCHVFXTYPE::CRIMSON) {
+		ImGui::SameLine();
+		GUI_Checkbox2("Custom Swoosh Colors", activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors,
+			queuedCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors);
 
-	if (GUI_Button("Colorful Subtle")) {
-		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.colorfulSubtle, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.color));
-		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.colorfulSubtle, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.color));
+		if (activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors) {
+			for (int style = 0; style < 6; style++) {
+
+				if (style > 0) {
+					ImGui::SameLine();
+				}
+				GUI_Color2("", activeCrimsonConfig.StyleSwitchFX.Flux.fluxSwooshColor[style], queuedCrimsonConfig.StyleSwitchFX.Flux.fluxSwooshColor[style]);
+				ImGui::SameLine();
+				ImGui::Text(styleNamesFX[style]);
+			}
+		}
+	}
+
+	if (GUI_Button("Default Colors")) {
+		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.defaultColors, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
+		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.defaultColors, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
 	}
 
 	ImGui::SameLine();
 	if (GUI_Button("DMC3 Switch")) {
-		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.color));
-		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.color));
+		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
+		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.dMC3Switch, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
 	}
 
     ImGui::SameLine();
 	if (GUI_Button("All Red")) {
-		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.allRed, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.color));
-		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.color, &colorPresets.StyleSwitchFlux.allRed, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.color));
+		CopyMemory(&queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.allRed, sizeof(queuedCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
+		CopyMemory(&activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor, &colorPresets.StyleSwitchFlux.allRed, sizeof(activeCrimsonConfig.StyleSwitchFX.Flux.fluxColor));
 	}
 
 	
 	ImGui::Text("");
 
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
-    GUI_Checkbox2("STYLE SWITCH TEXT", activeCrimsonConfig.StyleSwitchFX.Text.enable, queuedCrimsonConfig.StyleSwitchFX.Text.enable);
+    GUI_Checkbox2("STYLE SWITCH TEXT", activeCrimsonConfig.StyleSwitchFX.Text.textEnabled, queuedCrimsonConfig.StyleSwitchFX.Text.textEnabled);
 	ImGui::PopFont();
 
 	for (int style = 0; style < 9; style++) {
@@ -10667,7 +11196,89 @@ void VisualSection(size_t defaultFontSize) {
 
 	ImGui::Text("");
 
-	GUI_TitleCheckbox2("DELAYED COMBO VFX / VIBRATION", activeCrimsonConfig.VFX.delayedComboVFX, queuedCrimsonConfig.VFX.delayedComboVFX, true);
+	GUI_Title("CRIMSON VFX OPTIONS");
+
+	{
+		const float columnWidth = 0.5f * queuedConfig.globalScale;
+		const float rowWidth = 40.0f * queuedConfig.globalScale;
+
+
+		if (ImGui::BeginTable("MiscVisualOptionsTable", 3)) {
+
+			ImGui::TableSetupColumn("h1", 0, columnWidth * 2.5f);
+			ImGui::TableNextRow(0, rowWidth * 0.1f);
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Delayed Combo VFX / Vibration", activeCrimsonConfig.VFX.delayedComboVFX, queuedCrimsonConfig.VFX.delayedComboVFX);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.delayedComboColor, queuedCrimsonConfig.VFX.delayedComboColor);
+			ImGui::SameLine();
+			if (GUI_Button("D")) {
+				CopyMemory(&activeCrimsonConfig.VFX.delayedComboColor, &defaultCrimsonConfig.VFX.delayedComboColor,
+					sizeof(activeCrimsonConfig.VFX.delayedComboColor));
+				CopyMemory(&queuedCrimsonConfig.VFX.delayedComboColor, &defaultCrimsonConfig.VFX.delayedComboColor,
+					sizeof(queuedCrimsonConfig.VFX.delayedComboColor));
+			}
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Royal Block VFX", activeCrimsonConfig.VFX.royalBlockVFX, queuedCrimsonConfig.VFX.royalBlockVFX);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.royalBlockColor, queuedCrimsonConfig.VFX.royalBlockColor);
+			ImGui::SameLine();
+			if (GUI_Button("D")) {
+				CopyMemory(&activeCrimsonConfig.VFX.royalBlockColor, &defaultCrimsonConfig.VFX.royalBlockColor,
+					sizeof(activeCrimsonConfig.VFX.royalBlockColor));
+				CopyMemory(&queuedCrimsonConfig.VFX.royalBlockColor, &defaultCrimsonConfig.VFX.royalBlockColor,
+					sizeof(queuedCrimsonConfig.VFX.royalBlockColor));
+			}
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("DT Explosion VFX", activeCrimsonConfig.VFX.dtExplosionVFX, queuedCrimsonConfig.VFX.dtExplosionVFX);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.dtExplosionColorDante, queuedCrimsonConfig.VFX.dtExplosionColorDante);
+			ImGui::SameLine();
+			GUI_Color2("", activeCrimsonConfig.VFX.dtExplosionColorVergil, queuedCrimsonConfig.VFX.dtExplosionColorVergil);
+			ImGui::SameLine();
+			if (GUI_Button("D")) {
+				CopyMemory(&activeCrimsonConfig.VFX.dtExplosionColorDante, &defaultCrimsonConfig.VFX.dtExplosionColorDante,
+					sizeof(activeCrimsonConfig.VFX.dtExplosionColorDante));
+				CopyMemory(&queuedCrimsonConfig.VFX.dtExplosionColorDante, &defaultCrimsonConfig.VFX.dtExplosionColorDante,
+					sizeof(queuedCrimsonConfig.VFX.dtExplosionColorDante));
+				
+				CopyMemory(&activeCrimsonConfig.VFX.dtExplosionColorVergil, &defaultCrimsonConfig.VFX.dtExplosionColorVergil,
+					sizeof(activeCrimsonConfig.VFX.dtExplosionColorVergil));
+				CopyMemory(&queuedCrimsonConfig.VFX.dtExplosionColorVergil, &defaultCrimsonConfig.VFX.dtExplosionColorVergil,
+					sizeof(queuedCrimsonConfig.VFX.dtExplosionColorVergil));
+			}
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("DT Activation Vibration", activeCrimsonConfig.VFX.dtActivationVibration, queuedCrimsonConfig.VFX.dtActivationVibration);
+
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+
+
+			ImGui::PopItemWidth();
+
+			ImGui::EndTable();
+		}
+	}
+	
+	ImGui::Text("");
+
 
 	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 1.1f]);
 
@@ -10713,6 +11324,25 @@ void VisualSection(size_t defaultFontSize) {
 				ToggleNoDevilForm(activeConfig.noDevilForm);
 			}
 			ImGui::PopItemWidth();
+
+			ImGui::TableNextColumn();
+
+			ImGui::PushItemWidth(itemWidth * smallerComboMult);
+			GUI_Checkbox2("Refined Cloth Physics", activeCrimsonConfig.Visual.clothPhysicsEnhancement, queuedCrimsonConfig.Visual.clothPhysicsEnhancement);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Relaxes cloth physics slightly, giving them smoother and more natural movement,\n"
+					"also reduces Dante's coat weight. Can cause more clipping.");
+			}
+			ImGui::PopItemWidth();
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("More Taunt Animations", activeCrimsonConfig.Visual.moreTauntsAnimations, queuedCrimsonConfig.Visual.moreTauntsAnimations);
+			if (ImGui::IsItemHovered()) {
+				ImGui::SetTooltip("Brings several taunt animations from other DMC games. Taunts are cycled using Pseudo RNG.");
+			}
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
 
             ImGui::TableNextRow(0, rowWidth * 0.1f);
             ImGui::TableNextColumn();
@@ -10775,24 +11405,41 @@ void GeneralGameplayOptions() {
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "Changes how physics behave during almost all aerial moves. Spices up your combos with more aerial momentum variance. Allows Guardflying.");
+			TooltipHelper("(?)", "Changes how physics behave during almost all aerial moves. Spices up your combos with more aerial momentum variance.\n"
+				"Enables Guardflying and Bullet Magnetism.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
+
+			//ImGui::TableNextColumn();
+
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Sprint",
+			//	activeCrimsonGameplay.Gameplay.General.sprint,
+			//	queuedCrimsonGameplay.Gameplay.General.sprint,
+			//	activeCrimsonGameplayMask.Gameplay.General.sprint)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "Sprints out of combat, similar to DMC4 and 5's Speed Ability.");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Sprint",
-				activeCrimsonGameplay.Gameplay.General.sprint,
-				queuedCrimsonGameplay.Gameplay.General.sprint,
-				activeCrimsonGameplayMask.Gameplay.General.sprint)) {
+			if (GUI_Checkbox2("Expanded Movelist",
+				activeCrimsonGameplay.Gameplay.General.extramoves,
+				queuedCrimsonGameplay.Gameplay.General.extramoves,
+				activeCrimsonGameplayMask.Gameplay.General.extramoves)) {
 			}
+
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "Sprints out of combat, similar to DMC4 and 5's Speed Ability.");
+			TooltipHelper("(?)", "Enables new moves for dante & vergil that can be purchased from the shop.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
+
 
 			if (GUI_Checkbox2("Hold To Shoot Gun",
 				activeCrimsonGameplay.Gameplay.General.holdToShoot,
@@ -10870,6 +11517,21 @@ void GeneralGameplayOptions() {
 			TooltipHelper("(?)", "Allows you to do Reversals without buffering a move first.");
 			GUI_PopDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.General.freeformSoftLock);
 
+			
+			if (activeCrimsonGameplay.Gameplay.General.bufferlessReversals) {
+				ImGui::TableNextColumn();
+
+             ImGui::PushItemWidth(itemWidth * 0.8f);
+				GUI_Slider2FloatDefault("Reversal Window",
+					activeCrimsonGameplay.Gameplay.General.reversalWindow,
+					queuedCrimsonGameplay.Gameplay.General.reversalWindow,
+					defaultCrimsonGameplay.Gameplay.General.reversalWindow,
+					100.0f, 300.0f, 5.0f, "%.0f");
+				ImGui::SameLine();
+				TooltipHelper("(?)", "Time window in milliseconds to perform a Bufferless Reversal.");
+				ImGui::PopItemWidth();
+			}
+
 			ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
@@ -10886,7 +11548,6 @@ void GeneralGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("DMC4/5 Lock On Direction",
 				activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection,
 				queuedCrimsonGameplay.Gameplay.General.dmc4LockOnDirection,
@@ -10894,10 +11555,7 @@ void GeneralGameplayOptions() {
 				CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
 			}
 			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
 			TooltipHelper("(?)", "Directional moves take enemy camera direction instead of player camera direction.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
 
@@ -10955,12 +11613,11 @@ void GeneralGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			if (GUI_Checkbox2("Faster Turn Rate",
+			GUI_Checkbox2("Faster Turn Rate",
 				activeCrimsonGameplay.Gameplay.General.fasterTurnRate,
 				queuedCrimsonGameplay.Gameplay.General.fasterTurnRate,
-				activeCrimsonGameplayMask.Gameplay.General.fasterTurnRate)) {
-				CrimsonDetours::ToggleFasterTurnRate(activeCrimsonGameplay.Gameplay.General.fasterTurnRate);
-			}
+				activeCrimsonGameplayMask.Gameplay.General.fasterTurnRate);
+			
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Increases character turn speed.");
 
@@ -11005,6 +11662,18 @@ void GeneralGameplayOptions() {
 				"2 Players -> 0.7\n"
 				"3 Players -> 0.5\n"
 				"4 Players -> 0.4");
+
+			ImGui::TableNextColumn();
+			GUI_PushDisable(!activeConfig.Actor.enable);
+			GUI_Checkbox2("Consecutive Directional Moves",
+				activeCrimsonGameplay.Gameplay.General.consecutiveDirectionalMoves,
+				queuedCrimsonGameplay.Gameplay.General.consecutiveDirectionalMoves,
+				activeCrimsonGameplayMask.Gameplay.General.consecutiveDirectionalMoves);
+			GUI_PopDisable(!activeConfig.Actor.enable);
+			ImGui::SameLine();
+			GUI_CCSRequirementButton();
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Allows Directional Moves like Stinger to be executed consecutively without another move in between.");
 
 			ImGui::EndTable();
 		}
@@ -11112,15 +11781,16 @@ void DanteGameplayOptions() {
 			ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Drive Tweaks",
-				activeCrimsonGameplay.Gameplay.Dante.driveTweaks,
-				queuedCrimsonGameplay.Gameplay.Dante.driveTweaks,
-				activeCrimsonGameplayMask.Gameplay.Dante.driveTweaks)) {
+			if (GUI_Checkbox2("Drive Rework",
+				activeCrimsonGameplay.Gameplay.Dante.driveRework,
+				queuedCrimsonGameplay.Gameplay.Dante.driveRework,
+				activeCrimsonGameplayMask.Gameplay.Dante.driveRework)) {
 			}
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "Drive is now inputted by Lock On + Back to Forward + Melee and can be held for more damage. Do Quick Drive by performing Drive after a Rebellion attack.");
+			TooltipHelper("(?)", "Drive is now inputted by Lock On + Back to Forward + Melee, can be held for more damage and is now a three part attack like DMC4/5.\n"
+				"Do Quick Drive by performing Drive after a Rebellion attack.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			// Third row
@@ -11177,7 +11847,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Stinger",
 				activeCrimsonGameplay.Gameplay.Dante.airStinger,
 				queuedCrimsonGameplay.Gameplay.Dante.airStinger,
@@ -11189,24 +11859,24 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "With Rebellion: Lock On + Forward + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Air Revolver",
-				activeCrimsonGameplay.Gameplay.Dante.airRevolver,
-				queuedCrimsonGameplay.Gameplay.Dante.airRevolver,
-				activeCrimsonGameplayMask.Gameplay.Dante.airRevolver)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "With Cerberus: Lock On + Forward + Melee while in air.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Air Revolver",
+			//	activeCrimsonGameplay.Gameplay.Dante.airRevolver,
+			//	queuedCrimsonGameplay.Gameplay.Dante.airRevolver,
+			//	activeCrimsonGameplayMask.Gameplay.Dante.airRevolver)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "With Cerberus: Lock On + Forward + Melee while in air.");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
-			// Fifth row
-			ImGui::TableNextColumn();
+			//// Fifth row
+			//ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Agni & Rudra Whirlwind",
 				activeCrimsonGameplay.Gameplay.Dante.airAgniRudraWhirlwind,
 				queuedCrimsonGameplay.Gameplay.Dante.airAgniRudraWhirlwind,
@@ -11218,23 +11888,23 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "With Agni & Rudra: LockOn + Back + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Sky Launch Air Taunt",
-				activeCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
-				queuedCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
-				activeCrimsonGameplayMask.Gameplay.Dante.skyLaunchAirTaunt)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "With any Weapon or Style: Press Taunt button while in air.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Sky Launch Air Taunt",
+			//	activeCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
+			//	queuedCrimsonGameplay.Gameplay.Dante.skyLaunchAirTaunt,
+			//	activeCrimsonGameplayMask.Gameplay.Dante.skyLaunchAirTaunt)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "With any Weapon or Style: Press Taunt button while in air.");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			//ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Tornado",
 				activeCrimsonGameplay.Gameplay.Dante.airTornado,
 				queuedCrimsonGameplay.Gameplay.Dante.airTornado,
@@ -11246,9 +11916,9 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "With Beowulf: Neutral + Style while in air. Reduces Tornado damage across the board. Carries inertia.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.Dante.airTornado);
+			GUI_PushDisable(!activeConfig.Actor.enable || !(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]));
 			if (GUI_Checkbox2("Swap Hammer Volcano Inputs",
 				activeCrimsonGameplay.Gameplay.Dante.swapHammerVocalnoInputs,
 				queuedCrimsonGameplay.Gameplay.Dante.swapHammerVocalnoInputs,
@@ -11261,9 +11931,9 @@ void DanteGameplayOptions() {
 				"and Volcano input to be Air Lock On + Style + Back.\n"
 				"Ground Volcano will still be Lock On + Forward + Style not to confuse with Real Impact.\n"
 				"This will swap the order in which you unlock both moves.");
-			GUI_PopDisable(!activeConfig.Actor.enable || !activeCrimsonGameplay.Gameplay.Dante.airTornado);
+			GUI_PopDisable(!activeConfig.Actor.enable || !(activeCrimsonGameplay.Gameplay.General.extramoves && ExpConfig::missionExpDataDante.unlocks[UNLOCK_DANTE::SWORDMASTER_MODDED_MOVES]));
 
-			ImGui::TableNextColumn();
+			/*ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Rising Dragon Launch",
@@ -11275,7 +11945,7 @@ void DanteGameplayOptions() {
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
 			TooltipHelper("(?)", "With Beowulf: LockOn + Back + Melee while in air.");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			GUI_PopDisable(!activeConfig.Actor.enable);*/
 
 			// Sixth row
 			ImGui::TableNextColumn();
@@ -11295,7 +11965,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (!activeConfig.Actor.enable) {
 				activeCrimsonGameplay.Gameplay.Dante.dTInfusedRoyalguard = false;
 			}
@@ -11310,7 +11980,7 @@ void DanteGameplayOptions() {
 			TooltipHelper("(?)", "Royalguard Normal Blocks will consume DT instead, until you're low on DT. This will also prevent Guard Breaks by converting them into Normal Blocks.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			// Adding Air Hike section
 			if (GUI_Checkbox2("Air Hike Core Ability",
@@ -11368,7 +12038,7 @@ void DanteGameplayOptions() {
 
 			ImGui::TableNextColumn();
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Ground Trick",
 				activeCrimsonGameplay.Gameplay.Dante.groundTrick,
 				queuedCrimsonGameplay.Gameplay.Dante.groundTrick,
@@ -11381,7 +12051,7 @@ void DanteGameplayOptions() {
 				"Dante Teleports to the Ground near the enemy. Requires Trickster level 3.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
 			if (GUI_Checkbox2("Swap Artemis' Inputs",
 				activeCrimsonGameplay.Gameplay.Dante.swapArtemisMultiLockNormalShot,
@@ -11403,6 +12073,36 @@ void DanteGameplayOptions() {
 			}
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Disables the Knockback from Nevan's Air Slash pt. 1.");
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Charged Shotgun Lifts",
+				activeCrimsonGameplay.Gameplay.Dante.chargedShotgunLifts,
+				queuedCrimsonGameplay.Gameplay.Dante.chargedShotgunLifts,
+				activeCrimsonGameplayMask.Gameplay.Dante.chargedShotgunLifts);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Makes Charged Shots Shotgun lift enemies instead of knocking them back,"
+				"\nharkening to the old DMC1 days. Makes shotgun charge slightly faster.");
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Doppelganger Split Sync",
+				activeCrimsonGameplay.Gameplay.Dante.doppelgangerSplitSync,
+				queuedCrimsonGameplay.Gameplay.Dante.doppelgangerSplitSync,
+				activeCrimsonGameplayMask.Gameplay.Dante.doppelgangerSplitSync);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "(Dante Only) Doppelganger spawns fully synchronized with your current Style setup. \n"
+				"While in Doppelganger Style, press Lock-On + Style Action to summon or dismiss Doppelganger. \n"
+				"Pressing Style Action without Lock-On lets you change Weapons and Styles exclusively for Doppelganger,\n"
+				"causing it to desync from Dante's current Style configuration until resummoned.");
+
+			ImGui::TableNextColumn();
+
+			GUI_Checkbox2("Quick Grapple",
+				activeCrimsonGameplay.Gameplay.Dante.quickGrapple,
+				queuedCrimsonGameplay.Gameplay.Dante.quickGrapple,
+				activeCrimsonGameplayMask.Gameplay.Dante.quickGrapple);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Makes Dante's Grapple skip the initial windup, firing faster.");
 
 			ImGui::EndTable();
 		}
@@ -11546,7 +12246,7 @@ void VergilGameplayOptions() {
 			// Second row
 			ImGui::TableNextRow(0, rowHeight * 0.5f);
 			ImGui::TableNextColumn();
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Stinger",
 				activeCrimsonGameplay.Gameplay.Vergil.airStinger,
 				queuedCrimsonGameplay.Gameplay.Vergil.airStinger,
@@ -11558,8 +12258,8 @@ void VergilGameplayOptions() {
 			TooltipHelper("(?)", "With Force Edge : Lock On + Forward + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			ImGui::TableNextColumn();*/
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Air Rising Sun",
 				activeCrimsonGameplay.Gameplay.Vergil.airRisingSun,
 				queuedCrimsonGameplay.Gameplay.Vergil.airRisingSun,
@@ -11584,21 +12284,36 @@ void VergilGameplayOptions() {
 			TooltipHelper("(?)", "With Beowulf: Lock On + Forward + Melee while in air.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Alternate Judgement Cut Input",
-				activeCrimsonGameplay.Gameplay.Vergil.altJudgementCutInput,
-				queuedCrimsonGameplay.Gameplay.Vergil.altJudgementCutInput,
-				activeCrimsonGameplayMask.Gameplay.Vergil.altJudgementCutInput)) {
+			if (GUI_Checkbox2("Judgement Cut Rework",
+				activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
+				queuedCrimsonGameplay.Gameplay.Vergil.judgementCutRework,
+				activeCrimsonGameplayMask.Gameplay.Vergil.judgementCutRework)) {
+
+				if (activeCrimsonGameplay.Gameplay.Vergil.judgementCutRework) {
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 3;
+
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 3;
+				}
+				else {
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					queuedCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 2;
+
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[0] = 2;
+					activeCrimsonGameplay.Cheats.Vergil.judgementCutCount[1] = 2;
+				}
 			}
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "With Yamato: Lock On + Back to Forward + Melee.");
+			TooltipHelper("(?)", "Makes Judgement Cut behave like it does in 4SE/5 with Just Frame inputs.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
-			GUI_PushDisable(!activeConfig.Actor.enable);
+			/*GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Yamato Rising Star",
 				activeCrimsonGameplay.Gameplay.Vergil.yamatoRisingStar,
 				queuedCrimsonGameplay.Gameplay.Vergil.yamatoRisingStar,
@@ -11607,7 +12322,7 @@ void VergilGameplayOptions() {
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
 			ImGui::SameLine();
-			TooltipHelper("(?)", "With Yamato: During Rapid Slash HOLD Melee + HOLD Forward.");
+			TooltipHelper("(?)", "With Yamato: During Rapid Slash HOLD Melee.");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
 			ImGui::TableNextColumn();
@@ -11623,22 +12338,22 @@ void VergilGameplayOptions() {
 			TooltipHelper("(?)", "With Yamato: Lock On + Back + HOLD Melee");
 			GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			ImGui::TableNextColumn();*/
 
-			GUI_PushDisable(!activeConfig.Actor.enable);
-			if (GUI_Checkbox2("Air Taunt Rising Sun",
-				activeCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
-				queuedCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
-				activeCrimsonGameplayMask.Gameplay.Vergil.airTauntRisingSun)) {
-			}
-			ImGui::SameLine();
-			GUI_CCSRequirementButton();
-			ImGui::SameLine();
-			TooltipHelper("(?)", "With any Weapon: Press Taunt button while in air.\n"
-				"Differs a bit from Air Rising Sun's positioning. ");
-			GUI_PopDisable(!activeConfig.Actor.enable);
+			//GUI_PushDisable(!activeConfig.Actor.enable);
+			//if (GUI_Checkbox2("Air Taunt Rising Sun",
+			//	activeCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
+			//	queuedCrimsonGameplay.Gameplay.Vergil.airTauntRisingSun,
+			//	activeCrimsonGameplayMask.Gameplay.Vergil.airTauntRisingSun)) {
+			//}
+			//ImGui::SameLine();
+			//GUI_CCSRequirementButton();
+			//ImGui::SameLine();
+			//TooltipHelper("(?)", "With any Weapon: Press Taunt button while in air.\n"
+			//	"Differs a bit from Air Rising Sun's positioning. ");
+			//GUI_PopDisable(!activeConfig.Actor.enable);
 
-			ImGui::TableNextColumn();
+			//ImGui::TableNextColumn();
 
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			if (GUI_Checkbox2("Mirage Trigger",
@@ -11681,11 +12396,10 @@ void VergilGameplayOptions() {
 			ImGui::TableNextColumn();
 			GUI_PushDisable(!activeConfig.Actor.enable);
 			ImGui::PushItemWidth(itemWidth * 0.5f);
-			GUI_ComboVectorString2("Alt. Lunar Phase Pos.",
-				VergilMoveAdjustmentsNames,
-				activeCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos,
-				queuedCrimsonGameplay.Gameplay.Vergil.adjustLunarPhasePos,
-				activeCrimsonGameplayMask.Gameplay.Vergil.adjustLunarPhasePos);
+			GUI_Checkbox2("No Air Lunar Phase Lift",
+				activeCrimsonGameplay.Gameplay.Vergil.noAirLunarPhaseLift,
+				queuedCrimsonGameplay.Gameplay.Vergil.noAirLunarPhaseLift,
+				activeCrimsonGameplayMask.Gameplay.Vergil.noAirLunarPhaseLift);
 			ImGui::PopItemWidth();
 			ImGui::SameLine();
 			GUI_CCSRequirementButton();
@@ -11898,8 +12612,14 @@ void ExtraDifficultyGameplayOptions() {
 			"Instant Enemy DT will apply Enemy DT instantly when they spawn on DMD.\n"
 		"No Enemy DT will make it so enemy DT never occurs, even on DMD.");
 
+		//ImGui::TableNextColumn();
+		//GUI_Checkbox2("Better Arkham 2",
+		//	activeCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2,
+		//	queuedCrimsonGameplay.Gameplay.ExtraDifficulty.betterArkham2);
+		//ImGui::TableNextColumn();
+		//CrimsonBetterArkham2::DebugGui();
+		
 		ImGui::TableNextColumn();
-
 		ImGui::PushItemWidth(itemWidth * 0.93f);
 		UI::ComboMapValue2("Force Difficulty",
 			forceDifficultyNames,
@@ -12143,81 +12863,18 @@ void DrawKeybindEditor(const std::vector<std::pair<uint16_t, const char*>>& butt
     //ImGui::End();
 }
 
-void InputRemapOptions() {
-	auto& defaultFontSize = UI::g_UIContext.DefaultFontSize;
-	ImU32 checkmarkColorBg = UI::SwapColorEndianness(0xFFFFFFFF);
-
-	GUI_Title("INPUT REMAPS", false, false, true, "Remaps are global for all controllers, will only take into account Player 1's active Character for the switch.");
-
-	ImGui::PushFont(UI::g_ImGuiFont_Roboto[defaultFontSize * 0.9f]);
-	ImGui::PushStyleColor(ImGuiCol_CheckMark, checkmarkColorBg);
-
-	{
-		const float columnWidth = 0.5f * queuedConfig.globalScale;
-		const float rowHeight = 40.0f * queuedConfig.globalScale;
-
-		if (ImGui::BeginTable("InputRemapsTable", 3)) {
-			ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
-			ImGui::TableSetupColumn("b2", 0, columnWidth * 2.0f);
-			ImGui::TableSetupColumn("b3", 0, columnWidth * 2.0f);
-
-			// First row
-			ImGui::TableNextRow(0, rowHeight * 0.5f);
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Dante DT Button",
-				activeCrimsonConfig.System.Remaps.danteDTButton,
-				queuedCrimsonConfig.System.Remaps.danteDTButton);
-			ImGui::PopItemWidth();
-
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Dante Shoot Button",
-				activeCrimsonConfig.System.Remaps.danteShootButton,
-				queuedCrimsonConfig.System.Remaps.danteShootButton);
-			ImGui::PopItemWidth();
-
-			// Second row
-			ImGui::TableNextRow(0, rowHeight * 0.5f);
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Vergil DT Button",
-				activeCrimsonConfig.System.Remaps.vergilDTButton,
-				queuedCrimsonConfig.System.Remaps.vergilDTButton);
-			ImGui::PopItemWidth();
-
-			ImGui::TableNextColumn();
-
-			ImGui::PushItemWidth(itemWidth * 0.8f);
-			GUI_ButtonCombo2("Vergil Shoot Button",
-				activeCrimsonConfig.System.Remaps.vergilShootButton,
-				queuedCrimsonConfig.System.Remaps.vergilShootButton);
-			ImGui::PopItemWidth();
-
-			ImGui::EndTable();
-		}
-	}
-
-	/*DrawKeybindEditor(buttonPairs);*/
-	
-	ImGui::PopStyleColor();
-	ImGui::PopFont();
-}
-
 void GameplaySection() {
  	GeneralGameplayOptions();
 	DanteGameplayOptions();
 	VergilGameplayOptions();
 	ExtraDifficultyGameplayOptions();
-	InputRemapOptions();
 }
 
 #pragma endregion
 
 #pragma region Indicators
+
+
 
 void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	static bool wasInMenu = false;
@@ -12229,7 +12886,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		g_Image_CrimsonMainLogo.Resize(1924.0f, 509.0f);
 		resized = true;
 	}
-
+	auto textColor = ImColor(LerpFadeToBlack(UI::ColorToImVec4(IM_COL32(255, 255, 255, 255))));
 	if (g_inMainMenu != 1) {
 		// Reset fade when not in menu
 		wasInMenu = false;
@@ -12258,8 +12915,8 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		ImGuiWindowFlags_NoBringToFrontOnFocus | ImGuiWindowFlags_NoInputs | ImGuiWindowFlags_NoMouseInputs;
 
 
-	auto logoWidth = (logo.GetWidth() * 0.6f) * scaleFactorY;
-	auto logoHeight = (logo.GetHeight() * 0.6f) * scaleFactorY;
+	auto logoWidth = (logo.GetWidth() * 0.68f) * scaleFactorY;
+	auto logoHeight = (logo.GetHeight() * 0.68f) * scaleFactorY;
 	ImVec2 logoWindowSize = ImVec2(logoWidth + 50.0f, logoHeight + 50.0f);
 	ImVec2 logoWindowPos = ImVec2((g_renderSize.x - (logoWidth)) * 0.5f, 310.0 * scaleFactorY);
 	auto logoSize = ImVec2(logoWindowPos.x + logoWidth, logoWindowPos.y + logoHeight);
@@ -12272,7 +12929,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	// Fade from white to normal color
 	ImVec4 tintColor = ImLerp(ImVec4(1, 1, 1, 1), ImVec4(1, 1, 1, 1), fadeProgress); // default is white
 	tintColor = ImVec4(1, 1, 1, fadeProgress);
-
+	tintColor = LerpFadeToBlack(tintColor);
 	ImGui::GetWindowDrawList()->AddImage(
 		logo,
 		logoWindowPos,
@@ -12283,87 +12940,134 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	ImGui::End();
 
-	// C•Team 'A Berthrage Project' window
-	float cTeamBerthrageFontSize = 30.0f;
-	int cTeamBerthrageAlpha = static_cast<int>(fadeProgress * 255.0f);
-	ImFont* berthrageFont = UI::g_ImGuiFont_RussoOne[cTeamBerthrageFontSize];
-	float scaledFontSize = berthrageFont->FontSize * scaleFactorY;
-	auto cTeamBerthrageText = u8"C•Team Presents • A Berthrage Project";
+	//// C•Team 'A Berthrage Project' window
+	//float cTeamBerthrageFontSize = 30.0f;
+	//int cTeamBerthrageAlpha = static_cast<int>(fadeProgress * 255.0f);
+	//ImFont* berthrageFont = UI::g_ImGuiFont_RussoOne[cTeamBerthrageFontSize];
+	//float scaledFontSize = berthrageFont->FontSize * scaleFactorY;
+	//auto cTeamBerthrageText = u8"C•Team Presents • A Berthrage Project";
 
-	// Calculate text size with scaling
-	ImVec2 cTeamBerthrageTextSize = berthrageFont->CalcTextSizeA(
-		scaledFontSize, FLT_MAX, 0.0f, (const char*)cTeamBerthrageText
-	);
+	//// Calculate text size with scaling
+	//ImVec2 cTeamBerthrageTextSize = berthrageFont->CalcTextSizeA(
+	//	scaledFontSize, FLT_MAX, 0.0f, (const char*)cTeamBerthrageText
+	//);
 
-	// Calculate centered position in screen space
-	ImVec2 berthrageTitleTextScreenPos = ImVec2(
-		(g_renderSize.x - cTeamBerthrageTextSize.x) * 0.5f,
-		logoWindowPos.y - (40.0f * scaleFactorY) // Y position as before
-	);
+	//// Calculate centered position in screen space
+	//ImVec2 berthrageTitleTextScreenPos = ImVec2(
+	//	(g_renderSize.x - cTeamBerthrageTextSize.x) * 0.5f,
+	//	logoWindowPos.y - (40.0f * scaleFactorY) // Y position as before
+	//);
 
-	// Setup window (make sure it's big enough, but position doesn't matter for AddText)
-	ImVec2 cTeamBerthrageTextWindowSize = ImVec2(
-		cTeamBerthrageTextSize.x + 20.0f * scaleFactorY,
-		cTeamBerthrageTextSize.y + 20.0f * scaleFactorY
-	);
-	ImVec2 cTeamBerthrageTextWindowPos = ImVec2(
-		berthrageTitleTextScreenPos.x - 10.0f * scaleFactorY,
-		berthrageTitleTextScreenPos.y - 10.0f * scaleFactorY
-	);
+	//// Setup window (make sure it's big enough, but position doesn't matter for AddText)
+	//ImVec2 cTeamBerthrageTextWindowSize = ImVec2(
+	//	cTeamBerthrageTextSize.x + 20.0f * scaleFactorY,
+	//	cTeamBerthrageTextSize.y + 20.0f * scaleFactorY
+	//);
+	//ImVec2 cTeamBerthrageTextWindowPos = ImVec2(
+	//	berthrageTitleTextScreenPos.x - 10.0f * scaleFactorY,
+	//	berthrageTitleTextScreenPos.y - 10.0f * scaleFactorY
+	//);
 
-	ImGui::SetNextWindowPos(cTeamBerthrageTextWindowPos);
-	ImGui::SetNextWindowSize(cTeamBerthrageTextWindowSize);
-	ImGui::Begin("CTeamBerthrageProjectWindow", nullptr, windowFlags);
+	//ImGui::SetNextWindowPos(cTeamBerthrageTextWindowPos);
+	//ImGui::SetNextWindowSize(cTeamBerthrageTextWindowSize);
+	//ImGui::Begin("CTeamBerthrageProjectWindow", nullptr, windowFlags);
 
-	// Draw shadow
-	ImVec2 berthrageTitleTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
-	ImGui::GetWindowDrawList()->AddText(
-		berthrageFont,
-		scaledFontSize,
-		berthrageTitleTextScreenPos + berthrageTitleTextShadowOffset,
-		IM_COL32(0, 0, 0, cTeamBerthrageAlpha),
-		(const char*)cTeamBerthrageText
-	);
+	//// Draw shadow
+	//ImVec2 berthrageTitleTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
+	//ImGui::GetWindowDrawList()->AddText(
+	//	berthrageFont,
+	//	scaledFontSize,
+	//	berthrageTitleTextScreenPos + berthrageTitleTextShadowOffset,
+	//	IM_COL32(0, 0, 0, cTeamBerthrageAlpha),
+	//	(const char*)cTeamBerthrageText
+	//);
 
-	// Draw normal text
-	ImGui::GetWindowDrawList()->AddText(
-		berthrageFont,
-		scaledFontSize,
-		berthrageTitleTextScreenPos,
-		IM_COL32(255, 255, 255, cTeamBerthrageAlpha),
-		(const char*)cTeamBerthrageText
-	);
+	//// Draw normal text
+	//ImGui::GetWindowDrawList()->AddText(
+	//	berthrageFont,
+	//	scaledFontSize,
+	//	berthrageTitleTextScreenPos,
+	//	IM_COL32(255, 255, 255, cTeamBerthrageAlpha),
+	//	(const char*)cTeamBerthrageText
+	//);
 
+	//
+	//ImGui::End();
+
+	auto onNewGame = *reinterpret_cast<float*>(appBaseAddr + 0xC0D1E0);
+	if (onNewGame != 0.0f) {
+		// Game Mode Text Window
+		float gameModeFontSize = 55.0f;
+		//ImGui::PushStyleColor(ImGuiCol_Text, *reinterpret_cast<ImVec4*>(&gameModeData.colors[activeCrimsonGameplay.GameMode.preset]));
+		ImGui::PushFont(UI::g_ImGuiFont_Benguiat256);
+		std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
+		ImVec2 gameModeTextSize = ImGui::CalcTextSize(gameModeText.c_str());
+		ImVec2 gameModeTextSizeWindowSize = ImVec2((gameModeTextSize.x + 20.0f) * scaleFactorY, 100.0f * scaleFactorY);
+		ImVec2 gameModeTextSizeWindowPos = ImVec2(-5.0f * scaleFactorY, 869.0f * scaleFactorY);
+
+		ImVec2 gameModeGradientSize = ImVec2((700.0f) * scaleFactorY, 69.0f * scaleFactorY);
+		ImVec2 gameModeGradientPos = ImVec2((g_renderSize.x) * 0.0f, 869.0f * scaleFactorY);
+		if (gameModeTextSizeWindowSize.x < gameModeGradientSize.x) {
+			gameModeTextSizeWindowSize.x = gameModeGradientSize.x + 5.0f;
+		}
+		ImGui::SetNextWindowPos(gameModeTextSizeWindowPos);
+		ImGui::SetNextWindowSize(gameModeTextSizeWindowSize);
+
+		ImGui::Begin("GameModeTextWindow", nullptr, windowFlags);
+		ImGui::SetWindowFontScale(scaleFactorY);
+		ImDrawList* drawList = ImGui::GetWindowDrawList();
+		static ImU32 styleswitchcolor = 0xE8BA18FF;
+		static ImU32 vanillacolor = 0xBDC0C1FF;
+		// Draw shadow
+		ImU32 gradientColor = gameModeData.colors[activeCrimsonGameplay.GameMode.preset];
+		if (activeCrimsonGameplay.GameMode.preset == GAMEMODEPRESETS::VANILLA) {
+			gradientColor = vanillacolor;
+		}
+		if (activeCrimsonGameplay.GameMode.preset == GAMEMODEPRESETS::STYLE_SWITCHER) {
+			gradientColor = styleswitchcolor;
+		}
+		ImVec2 gamemodeTextShadowOffset = ImVec2(6.0f * scaleFactorY, 6.0f * scaleFactorY);
+		ImVec2 gamemodePadding = ImVec2(15.0f * scaleFactorY, 8.0f * scaleFactorY);
+		auto gradientaddr = CrimsonHUD::getCrimsonGradient();
+		if (gradientaddr != nullptr) {
+			ImGui::GetWindowDrawList()->AddImage(
+				gradientaddr->GetTexture(),
+				gameModeGradientPos,
+				ImVec2(gameModeGradientPos.x + gameModeGradientSize.x, gameModeGradientPos.y + gameModeGradientSize.y),
+				ImVec2(0, 0), ImVec2(1, 1),
+				ImColor(LerpFadeToBlack(UI::ColorToImVec4(gradientColor)))
+
+			);
+		}
+		ImGui::GetWindowDrawList()->AddText(
+			UI::g_ImGuiFont_Benguiat256,
+			gameModeFontSize * scaleFactorY,
+			gameModeTextSizeWindowPos + gamemodeTextShadowOffset + gamemodePadding,
+			IM_COL32(0, 0, 0, 155),
+			gameModeText.c_str()
+		);
+
+		ImGui::GetWindowDrawList()->AddText(
+			UI::g_ImGuiFont_Benguiat256,
+			gameModeFontSize * scaleFactorY,
+			gameModeTextSizeWindowPos + gamemodePadding,
+			ImColor(LerpFadeToBlack(ImVec4(1, 1, 1, 1))),
+			gameModeText.c_str()
+		);
+
+		//ImGui::PopStyleColor();
+		ImGui::PopFont();
+
+		ImGui::End();
+	}
 	
-	ImGui::End();
-
-	// Game Mode Text Window
-	float gameModeFontSize = 30.0f;
-	//ImGui::PushStyleColor(ImGuiCol_Text, *reinterpret_cast<ImVec4*>(&gameModeData.colors[activeCrimsonGameplay.GameMode.preset]));
-	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[gameModeFontSize]);
-	std::string gameModeText = gameModeData.names[activeCrimsonGameplay.GameMode.preset];
-	ImVec2 gameModeTextSize = ImGui::CalcTextSize(gameModeText.c_str());
-	ImVec2 gameModeTextSizeWindowSize = ImVec2((gameModeTextSize.x + 20.0f) * scaleFactorY, 100.0f * scaleFactorY);
-	ImVec2 gameModeTextSizeWindowPos = ImVec2((g_renderSize.x - (gameModeTextSize.x * scaleFactorY)) * 0.5f, 675.0f * scaleFactorY);
-
-	ImGui::SetNextWindowPos(gameModeTextSizeWindowPos);
-	ImGui::SetNextWindowSize(gameModeTextSizeWindowSize);
-
-	ImGui::Begin("GameModeTextWindow", nullptr, windowFlags);
-	ImGui::SetWindowFontScale(scaleFactorY);
-	ImGui::Text(gameModeText.c_str());
-
-	//ImGui::PopStyleColor();
-	ImGui::PopFont();
-
-	ImGui::End();
 
 	// Version Text Window
 	float versionFontSize = 20.0f;
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[versionFontSize]);
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[versionFontSize]);
 
 	// Format the version string
-	std::string versionStr = std::format("v{}.{}{}", UI::g_UIContext.CurrentVersion.Major, UI::g_UIContext.CurrentVersion.Minor, UI::g_UIContext.CurrentVersion.PatchLetter);
+	std::string versionStr = std::format("V{}.{}{}", UI::g_UIContext.CurrentVersion.Major, UI::g_UIContext.CurrentVersion.Minor, UI::g_UIContext.CurrentVersion.PatchLetter);
 	std::string versionText = "BETA " + versionStr;
 
 	// Calculate text size
@@ -12384,7 +13088,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	// Offset the position to align the text correctly
 	ImVec2 versionTextSizeWindowPos = ImVec2(
 		centerX + (800.0f * scaleFactorY), // Center horizontally
-		100.0f * scaleFactorY // Center vertically
+		879.0f * scaleFactorY // Center vertically
 	);
 
 	// Ensure the position stays within bounds
@@ -12392,32 +13096,33 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	versionTextSizeWindowPos.y = (std::max)(0.0f, versionTextSizeWindowPos.y);
 
 	// Set the window position and size
-	ImGui::SetNextWindowPos(versionTextSizeWindowPos);
-	ImGui::SetNextWindowSize(versionTextSizeWindowSize);
+	//ImGui::SetNextWindowPos(versionTextSizeWindowPos);
+	//ImGui::SetNextWindowSize(versionTextSizeWindowSize);
 
-	ImGui::Begin("VersionTextWindow", nullptr, windowFlags);
+	//ImGui::Begin("VersionTextWindow", nullptr, windowFlags);
 
-	ImGui::SetWindowFontScale(scaleFactorY);
-	ImGui::Text(versionText.c_str());
+	//ImGui::SetWindowFontScale(scaleFactorY);
+	//ImGui::Text(versionText.c_str());
+
+
+	//ImGui::End();
 	ImGui::PopFont();
-
-	ImGui::End();
 
 	// GUI Hotket Text Window
 	static bool guiHotkeyRun = false;
-	float guiKeyFontSize = 35.0f;
+	float guiKeyFontSize = 24.0f;
 	if (!guiHotkeyRun) keyBindings[0].UpdateBuffer(keyBindings[0].mainInfo, keyBindings[0].activeKeyData);
 	
-	float guiHotkeyFontSize = 35.0f;
+	float guiHotkeyFontSize = 24.0f;
 	int guiHotkeyAlpha = 255; // Fixed alpha
 
-	ImFont* guiHotkeyFont = UI::g_ImGuiFont_RussoOne[guiHotkeyFontSize];
+	ImFont* guiHotkeyFont = UI::g_ImGuiFont_Benguiat[guiHotkeyFontSize];
 	float guiHotkeyScaledFontSize = guiHotkeyFont->FontSize * scaleFactorY;
 
 	auto guiHotkey = keyBindings[0].mainInfo.buffer;
-	std::string guiHotkeyTextKeyboard = "Press " + (std::string)guiHotkey;
-	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + " or Left Stick + Right Stick to toggle the Overlay";
-	std::string guiHotkeyTextKeyboardOnly = "Press " + (std::string)keyBindings[0].mainInfo.buffer + " to toggle the Overlay";
+	std::string guiHotkeyTextKeyboard = "" + (std::string)guiHotkey;
+	std::string guiHotkeyTextComplete = guiHotkeyTextKeyboard + "/LS + RS:\nTOGGLE OVERLAY";
+	std::string guiHotkeyTextKeyboardOnly = "" + (std::string)keyBindings[0].mainInfo.buffer + ":\nTOGGLE OVERLAY";
 	ImVec2 guiTextSize = ImGui::CalcTextSize(guiHotkeyTextComplete.c_str());
 	ImVec2 guiTextSize2 = ImGui::CalcTextSize(guiHotkeyTextKeyboardOnly.c_str());
 
@@ -12436,8 +13141,8 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 
 	// Calculate centered position in screen space
 	ImVec2 guiHotkeyTextScreenPos = ImVec2(
-		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.5f,
-		775.0f * scaleFactorY
+		(g_renderSize.x - guiHotkeyTextFinalSize.x) * 0.97f,
+		879.0f * scaleFactorY
 	);
 
 	// Setup window (make sure it's big enough, but position doesn't matter for AddText)
@@ -12469,34 +13174,37 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		guiHotkeyFont,
 		guiHotkeyScaledFontSize,
 		guiHotkeyTextScreenPos,
-		IM_COL32(255, 255, 255, guiHotkeyAlpha),
+		ImColor(LerpFadeToBlack(ImVec4(0.46, 0.46, 0.46, 1))),
 		guiHotkeyTextFinal
 	);
 
 	ImGui::End();
 
 	// Credits Text Window
-	float creditsFontSize = 22.0f;
-	float creditsCapCoFontSize = 10.0f;
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[creditsFontSize]);
-	auto creditsText = u8"C•Team • Directed by Berthrage • Project Crimson © • 2025";
-	auto creditsCapCo = "Devil May Cry is a property of Capcom Co., Ltd. All assets belong to their respective owners.";
+	float creditsFontSize = 20.0f;
+	float creditsCapCoFontSize = 20.0f;
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsFontSize]);
+	auto OGcreditsText = u8"©CAPCOM CO., LTD. 2005, 2018 ALL RIGHTS RESERVED./ILLUSTRATIONS: Kazuma Kaneko/ATLUS";
+	auto creditsText = u8"C•TEAM • DIRECTED BY BERTHRAGE • PROJECT CRIMSON © • 2025";
+
+	auto creditsCapCo = "DEVIL MAY CRY IS A PROPERTY OF CAPCOM CO., LTD. ALL ASSETS BELONG TO THEIR RESPECTIVE OWNERS.";
 
 	// Calculate text sizes with correct fonts
+	ImVec2 OGcreditsTextSize = ImGui::CalcTextSize((const char*)OGcreditsText);
 	ImVec2 creditsTextSize = ImGui::CalcTextSize((const char*)creditsText);
 	ImGui::PopFont();
 
-	ImGui::PushFont(UI::g_ImGuiFont_RussoOne[creditsCapCoFontSize]);
+	ImGui::PushFont(UI::g_ImGuiFont_Benguiat[creditsCapCoFontSize]);
 	ImVec2 creditsCapCoSize = ImGui::CalcTextSize(creditsCapCo);
 	ImGui::PopFont();
 
 	ImVec2 creditsWindowSize = ImVec2(
 		g_renderSize.x,
-		60.0f * scaleFactorY
+		180.0f * scaleFactorY
 	);
 	ImVec2 creditsWindowPos = ImVec2(
 		(g_renderSize.x - (creditsWindowSize.x)) * 0.5f,
-		1030.0f * scaleFactorY
+		940.0f * scaleFactorY
 	);
 
 	ImGui::SetNextWindowPos(creditsWindowPos);
@@ -12507,18 +13215,48 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 	ImGui::Begin("CreditsTextWindow", nullptr, windowFlags);
 
 	// Main credits text (centered)
-	ImFont* creditsFont = UI::g_ImGuiFont_RussoOne[creditsFontSize];
+	ImFont* creditsFont = UI::g_ImGuiFont_Benguiat[creditsFontSize];
 	float creditsScaledFontSize = creditsFont->FontSize * scaleFactorY;
+	ImVec2 OGcreditsTextSizeScaled = creditsFont->CalcTextSizeA(
+		creditsScaledFontSize, FLT_MAX, 0.0f, (const char*)OGcreditsText
+	);
+
 	ImVec2 creditsTextSizeScaled = creditsFont->CalcTextSizeA(
 		creditsScaledFontSize, FLT_MAX, 0.0f, (const char*)creditsText
 	);
+
+	ImVec2 OGcreditsTextScreenPos = ImVec2(
+		(g_renderSize.x - OGcreditsTextSizeScaled.x) * 0.5f,
+		creditsWindowPos.y + ImGui::GetCursorPosY()
+	);
+
 	ImVec2 creditsTextScreenPos = ImVec2(
 		(g_renderSize.x - creditsTextSizeScaled.x) * 0.5f,
-		creditsWindowPos.y + ImGui::GetCursorPosY()
+		creditsWindowPos.y + ImGui::GetCursorPosY()+ OGcreditsTextSizeScaled.y
 	);
 
 	// Draw shadow
 	ImVec2 creditsTextShadowOffset = ImVec2(2.0f * scaleFactorY, 2.0f * scaleFactorY);
+
+	ImGui::GetWindowDrawList()->AddText(
+		creditsFont,
+		creditsScaledFontSize,
+		OGcreditsTextScreenPos + creditsTextShadowOffset,
+		IM_COL32(0, 0, 0, 255),
+		(const char*)OGcreditsText
+	);
+	//ImGui::GetColorU32()
+	// 
+	// Draw main text
+
+	ImGui::GetWindowDrawList()->AddText(
+		creditsFont,
+		creditsScaledFontSize,
+		OGcreditsTextScreenPos,
+		ImColor(LerpFadeToBlack(ImGui::GetStyleColorVec4(ImGuiCol_Text))),
+		(const char*)OGcreditsText
+	);
+
 	ImGui::GetWindowDrawList()->AddText(
 		creditsFont,
 		creditsScaledFontSize,
@@ -12531,20 +13269,20 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		creditsFont,
 		creditsScaledFontSize,
 		creditsTextScreenPos,
-		ImGui::GetColorU32(ImGuiCol_Text),
+		ImColor(LerpFadeToBlack(ImGui::GetStyleColorVec4(ImGuiCol_Text))),
 		(const char*)creditsText
 	);
 
 
 	// CapCo copyright (smaller, centered)
-	ImFont* capcoFont = UI::g_ImGuiFont_RussoOne[creditsCapCoFontSize];
+	ImFont* capcoFont = UI::g_ImGuiFont_Benguiat[creditsCapCoFontSize];
 	float capcoScaledFontSize = capcoFont->FontSize * scaleFactorY;
 	ImVec2 capcoTextSizeScaled = capcoFont->CalcTextSizeA(
 		capcoScaledFontSize, FLT_MAX, 0.0f, creditsCapCo
 	);
 	ImVec2 capcoTextScreenPos = ImVec2(
 		(g_renderSize.x - capcoTextSizeScaled.x) * 0.5f,
-		creditsWindowPos.y + ImGui::GetCursorPosY() + 25.0f * scaleFactorY
+		creditsWindowPos.y + ImGui::GetCursorPosY() + OGcreditsTextSizeScaled.y + creditsTextSizeScaled.y
 	);
 
 	// Draw CapCo main text
@@ -12552,7 +13290,7 @@ void RenderMainMenuInfo(IDXGISwapChain* pSwapChain) {
 		capcoFont,
 		capcoScaledFontSize,
 		capcoTextScreenPos,
-		ImGui::GetColorU32(ImGuiCol_Text),
+		ImColor(LerpFadeToBlack(ImGui::GetStyleColorVec4(ImGuiCol_Text))),
 		creditsCapCo
 	);
 
@@ -12588,6 +13326,24 @@ void ReloadRoom() {
 
 
     eventData.event = EVENT::TELEPORT;
+}
+
+void FreezeEnemies() {
+	if (!InGame()) {
+		return;
+	}
+	if (activeCrimsonGameplay.Cheats.Speed.enemy != 0.0f) {
+		activeCrimsonGameplay.Cheats.General.customSpeed = true;
+		activeCrimsonGameplay.Cheats.Speed.enemy = 0.0f;
+		cheatsPopUp.cheatText = "Toggled Freeze Enemies On";
+	}
+	else {
+		activeCrimsonGameplay.Cheats.General.customSpeed = queuedCrimsonGameplay.Cheats.General.customSpeed;
+		activeCrimsonGameplay.Cheats.Speed.enemy = queuedCrimsonGameplay.Cheats.Speed.enemy;
+		cheatsPopUp.cheatText = "Toggled Freeze Enemies Off";
+	}
+	if (activeCrimsonConfig.GUI.sounds) FMOD_PlaySound(0, 25);
+	cheatsPopUp.showPopUp = true;
 }
 
 
@@ -12660,31 +13416,43 @@ void MoveToMainActor() {
 
 void ToggleInfiniteHealth() {
 
-    if (activeCrimsonGameplay.Cheats.Training.infiniteHP) {
-		activeCrimsonGameplay.Cheats.Training.infiniteHP = false;
+    if (activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable || activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable) {
+		//activeCrimsonGameplay.Cheats.Training.infiniteHP = false;
+		activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = false;
+		activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable = false;
 		cheatsPopUp.cheatText = "Toggled Infinite HP Off";
     } else {
-		activeCrimsonGameplay.Cheats.Training.infiniteHP = true;
+		activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable = true;
+		activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = true;
 		cheatsPopUp.cheatText = "Toggled Infinite HP On";
     }
 	if (activeCrimsonConfig.GUI.sounds) FMOD_PlaySound(0, 25); 
 
-    ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
+    //ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
 	cheatsPopUp.showPopUp = true;
 }
 
 void ToggleOneHitKill() {
-	static bool toggled = activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult == 100.0f ? true : false;
+	static bool toggled = activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult == 9999.0f ? true : false;
 
 	if (!toggled) {
 		toggled = true;
 		activeCrimsonGameplay.Cheats.General.customDamage = true;
-		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 100.0f;
+		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = 9999.0f;
+		activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = false;
 		cheatsPopUp.cheatText = "Toggled One Hit Kill On";
 	} else {
 		toggled = false;
 		activeCrimsonGameplay.Cheats.General.customDamage = queuedCrimsonGameplay.Gameplay.General.multiplayerDamageScaling;
 		activeCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult = defaultCrimsonGameplay.Cheats.Damage.enemyReceivedDmgMult;
+		//if it's on in the trainer GUI, this should toggle it back on.
+		if (queuedCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable) {
+			activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = true;
+		}
+		//this should trigger only when the hotkey for inf hp is set.
+		if (!queuedCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable && activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable)
+			activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable = true;
+		
 		cheatsPopUp.cheatText = "Toggled One Hit Kill Off";
 	}
 	if (activeCrimsonConfig.GUI.sounds) FMOD_PlaySound(0, 25); 
@@ -12752,6 +13520,8 @@ std::vector<KeyBinding> keyBindings = {
 	{"Toggle One Hit Kill", activeConfig.keyData[2], queuedConfig.keyData[2], defaultConfig.keyData[2], ToggleOneHitKill},
     {"Reload Room", activeConfig.keyData[3], queuedConfig.keyData[3], defaultConfig.keyData[3], ReloadRoom},
     {"Move To Main Character", activeConfig.keyData[4], queuedConfig.keyData[4], defaultConfig.keyData[4], MoveToMainActor},
+	{"Freeze Enemies", activeConfig.keyData[5], queuedConfig.keyData[5], defaultConfig.keyData[5], FreezeEnemies},
+	
 };
 
 void HotkeysSection() {
@@ -12814,6 +13584,219 @@ void PreventEmptyCrimsonGUIHotkey() {
 	}
 }
 
+//void CloseTraining() {
+//	g_showTraining = false;
+//	if (g_scene == SCENE::GAME) {
+//		PlayTrack("");
+//	}
+//}
+
+void TrainingWindow() {
+	static bool run = false;
+	static std::chrono::steady_clock::time_point trainingOpenedTime;
+	static bool trainingCooldownActive = false;
+
+	//if (!g_showTraining) {
+		run = false;
+		trainingCooldownActive = false;
+		return;
+	//}
+	auto& io = ImGui::GetIO();
+
+	auto missionDataPtr = *reinterpret_cast<byte8**>(appBaseAddr + 0xC90E30);
+	if (!missionDataPtr) {
+		return;
+	}
+	auto& missionData = *reinterpret_cast<MissionData*>(missionDataPtr);
+	auto& queuedMissionActorData = *reinterpret_cast<QueuedMissionActorData*>(missionDataPtr + 0xC0);
+	auto& activeMissionActorData = *reinterpret_cast<ActiveMissionActorData*>(missionDataPtr + 0x16C);
+
+	bool unlockDevilTrigger = (activeMissionActorData.maxMagicPoints >= 3000);
+
+	if (!run) {
+		// TODO: Play Divine Statue Track - Mia
+		//PlayTrack("afs/sound/Jikushinzou.ogg");
+		run = true;
+		trainingOpenedTime = std::chrono::steady_clock::now();
+		trainingCooldownActive = true;
+	}
+
+	// Check if cooldown has expired (0.2 seconds)
+	if (trainingCooldownActive) {
+		auto now = std::chrono::steady_clock::now();
+		auto elapsed = std::chrono::duration_cast<std::chrono::milliseconds>(now - trainingOpenedTime).count();
+		if (elapsed >= 200) {
+			trainingCooldownActive = false;
+		}
+	}
+
+	float width = 1000 * scaleFactorY;
+	float height = 900 * scaleFactorY;
+
+	ImGui::SetNextWindowSize(ImVec2(width, height));
+	ImGui::SetNextWindowPos(ImVec2(((g_renderSize.x - width) / 2), ((g_renderSize.y - height) / 2)));
+
+	if (io.NavInputs[ImGuiNavInput_Cancel] && (io.NavInputsDownDuration[ImGuiNavInput_Cancel] == 0.0f)) {
+		Log("controller back button");
+		if (!io.NavVisible && !trainingCooldownActive) {
+			//CloseShop();
+			run = false;
+			trainingCooldownActive = false;
+		}
+	}
+	//Replace this with a map option at some point. 
+	if (io.KeysDown[DI8::KEY::L] && (io.KeysDownDuration[DI8::KEY::L] == 0.0f)) {
+		Log("keyboard back button");
+		if (!trainingCooldownActive) {
+			//CloseShop();
+			run = false;
+			trainingCooldownActive = false;
+		}
+	}
+
+	if (ImGui::Begin("TrainingWindow", 0, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+		ImGui::SetWindowFontScale(scaleFactorY);
+		if (GUI_Button("Close")) {
+			if (!trainingCooldownActive) {
+				//CloseShop();
+				run = false;
+				trainingCooldownActive = false;
+			}
+		}
+
+		auto BACKGROUND_FADED_TEXT = u8"The Void";
+		ImFont* fadedFont = UI::g_ImGuiFont_RussoOne256;
+		float fadedFontSize = scaledFontSize * 4.8f;
+
+		ImVec2 bgFadedTextSize = ImGui::CalcTextSize((const char*)BACKGROUND_FADED_TEXT,
+			nullptr, false, fadedFontSize);
+
+		// Get window position and size
+		ImVec2 winPos = ImGui::GetWindowPos();
+		ImVec2 winSize = ImGui::GetWindowSize();
+
+		float rightMargin = 600.0f * scaleFactorY;
+
+		float x = winPos.x + winSize.x - bgFadedTextSize.x - rightMargin;
+		float y = winPos.y + 15.0f * scaleFactorY; // top margin
+
+		// Only show Divinity Statue text if not in mission start scene
+
+		ImGui::GetWindowDrawList()->AddText(
+			fadedFont, fadedFontSize,
+			ImVec2(x, y),
+			UI::SwapColorEndianness(0xFFFFFF10),
+			(const char*)BACKGROUND_FADED_TEXT
+		);
+		auto& defaultFontSize = UI::g_UIContext.DefaultFontSize;
+		const float columnWidth = 0.5f * queuedConfig.globalScale;
+		const float rowHeight = 40.0f * queuedConfig.globalScale;
+
+		ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+
+		GUI_Title("TRAINING OPTIONS");
+
+		{
+			const float columnWidth = 0.5f * queuedConfig.globalScale;
+			const float rowWidth = 40.0f * queuedConfig.globalScale * 0.5f;
+
+			if (ImGui::BeginTable("TrainingCheatsOptionsTable", 3)) {
+
+				ImGui::TableSetupColumn("b1", 0, columnWidth * 2.0f);
+				ImGui::TableNextRow(0, rowWidth);
+				ImGui::TableNextColumn();
+
+				GUI_Checkbox2("Disable Player Damage", activeCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.playerReceiveDmgDisable);
+				ImGui::TableNextColumn();
+				GUI_Checkbox2("Disable Enemy Damage", activeCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable, queuedCrimsonGameplay.Cheats.Damage.enemyRecieveDmgDisable);
+
+				ImGui::TableNextColumn();
+				if (GUI_Checkbox2("Disable all damage", activeCrimsonGameplay.Cheats.Training.infiniteHP, queuedCrimsonGameplay.Cheats.Training.infiniteHP)) {
+					ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
+				}
+
+				ImGui::TableNextColumn();
+
+				if (GUI_Checkbox2("Infinite Devil Trigger", activeCrimsonGameplay.Cheats.Training.infiniteDT, queuedCrimsonGameplay.Cheats.Training.infiniteDT)) {
+					ToggleInfiniteMagicPoints(activeCrimsonGameplay.Cheats.Training.infiniteDT);
+				}
+
+				ImGui::TableNextColumn();
+
+				if (GUI_Checkbox2("Disable Regular Enemy Attacks", activeCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks, queuedCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks)) {
+					CrimsonPatches::DisableRegularEnemyAttacks(activeCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks);
+				}
+				ImGui::SameLine();
+				GUI_WIPButton();
+				ImGui::SameLine();
+				TooltipHelper("(?)", "Does not work for all regular enemies.");
+
+				ImGui::TableNextColumn();
+
+				if (GUI_Checkbox2("Disable Timer", activeCrimsonGameplay.Cheats.Training.disableTimers, queuedCrimsonGameplay.Cheats.Training.disableTimers)) {
+					ToggleDisableTimer(activeCrimsonGameplay.Cheats.Training.disableTimers);
+				}
+				ImGui::TableNextColumn();
+				//GUI_Checkbox("turn on void - debug, variable might be removed", CrimsonTrainingRoom::trainingRoomEnabled);
+				//CrimsonTrainingRoom::DrawShopWidget();
+
+				if (activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters) {
+					ImGui::TableNextColumn();
+
+					GUI_PushDisable(!activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters);
+					if (GUI_Checkbox2("Infinite B. Lady Bullets", activeCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets,
+						queuedCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets)) {
+						ToggleInfiniteBullets(activeCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets);
+					}
+					ImGui::SameLine();
+					GUI_PopDisable(!activeCrimsonGameplay.Cheats.General.legacyDDMKCharacters);
+					TooltipHelper("(?)", "For Boss Lady (Legacy DDMK Character).");
+				}
+
+
+				ImGui::EndTable();
+			}
+		}
+
+		ImGui::PopFont();
+
+		if (ImGui::BeginTable("TeleporterTable", 2)) {
+			ImGui::TableSetupColumn("c1", 0, columnWidth * 2.0f);
+			ImGui::TableSetupColumn("c2", 0, columnWidth * 2.0f);
+
+			ImGui::TableNextRow(0, rowHeight * 0.75f);
+			ImGui::TableNextColumn();
+
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+			ImGui::Text("Room Settings");
+			ImGui::PopFont();
+			//CrimsonTrainingRoom::DrawRoomSelect();
+
+			ImGui::TableNextColumn();
+			ImGui::PushFont(UI::g_ImGuiFont_RussoOne[defaultFontSize * 0.9f]);
+			ImGui::Text("Enemy Settings");
+			ImGui::PopFont();
+			if (GUI_Button("Holy Water"))
+			{
+				//UseHolyWater();
+			}
+			EnemySpawnerToolSection();
+			ImGui::EndTable();
+
+		}
+		// 		for (uint8 playerIndex = 0; playerIndex < activeConfig.Actor.playerCount; ++playerIndex) {
+		// 			auto& gamepad = GetGamepad(playerIndex);
+		// 
+		// 			if ((gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))) {
+		// 				CloseShop();
+		// 			}
+		// 		}
+
+		ImGui::End();
+	}
+}
+
+
 #pragma endregion
 
 #pragma region Main
@@ -12828,12 +13811,23 @@ void Main(IDXGISwapChain* pSwapChain) {
     static bool doOnce = false;
 	static std::thread versionCheckerThread;
 
+	auto& io = ImGui::GetIO();
+	int keyboardBackKey = activeCrimsonConfig.System.KeyboardConfig.keybinds[11];
+
+	// Allow keyboard exit
+	if ((io.KeysDown[DI8::KEY::ESCAPE] && (io.KeysDownDuration[DI8::KEY::ESCAPE] == 0.0f))) {
+		CloseMain();
+	}
+
     if (!doOnce) {
         doOnce = true;
 
         // Originally 800x725, or screenWidth / 2.4 x screenHeight / 1.4 for 1080p
-        float width  = g_renderSize.x / 1.40;
-        float height = g_renderSize.y / 1.20;
+		float width = (activeCrimsonConfig.System.windowSizeX != 9999.0f) ? activeCrimsonConfig.System.windowSizeX :g_renderSize.x / 1.40;
+		float height = (activeCrimsonConfig.System.windowSizeY != 9999.0f) ? activeCrimsonConfig.System.windowSizeY : g_renderSize.y / 1.20;
+		float xpos = (activeCrimsonConfig.System.windowPosX != 9999.0f) ? activeCrimsonConfig.System.windowPosX : g_renderSize.x *0.5f;
+		float ypos = (activeCrimsonConfig.System.windowPosY != 9999.0f) ? activeCrimsonConfig.System.windowPosY : g_renderSize.y * 0.5f;
+
 
         ImGui::SetNextWindowSize(ImVec2(width, height));
 
@@ -12844,7 +13838,13 @@ void Main(IDXGISwapChain* pSwapChain) {
 //         } else {
 // 
         // CENTER MAIN SCREEN
-        ImGui::SetNextWindowPos(ImVec2(g_renderSize.x * 0.5f, g_renderSize.y * 0.5f), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		if (activeCrimsonConfig.System.windowPosX == 9999.0f && activeCrimsonConfig.System.windowPosY == 9999.0f) {
+			ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiCond_Always, ImVec2(0.5f, 0.5f));
+		}
+		else {
+			ImGui::SetNextWindowPos(ImVec2(xpos, ypos), ImGuiCond_Always, ImVec2(0.0f, 0.0f));
+		}
+
 
 
         // ImGuiIO & io = ImGui::GetIO();
@@ -12984,9 +13984,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 		constexpr float align = 0.5f; // Center = 0.5f
 
-		constexpr const char* MODE_SELECTION_TEXT = "Choose your desired Devil May Cry 3 version! Game Modes govern your style of gameplay.\n"
+		constexpr const char* MODE_SELECTION_TEXT = "Choose your desired Devil May Cry 3 version! GAME MODES govern your style of gameplay.\n"
 			"This will affect the entire Gameplay Options globally and tag you at the Mission Result screen.\n\n"
-			"If Gameplay Options diverge too much from any preset, the 'CUSTOM MODE' Game Mode will be selected instead automatically.";
+			"If Gameplay Options diverge too much from any preset, the 'CUSTOM MODE' Game Mode will be selected instead automatically.\n";
 
 		float width = ImGui::CalcTextSize(MODE_SELECTION_TEXT).x;
 
@@ -13066,6 +14066,8 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 		auto previewValue = context.SelectedGameMode == UI::UIContext::GameModes::Custom ? modesWCustom[size_t(context.SelectedGameMode)] :
 			modes[size_t(context.SelectedGameMode)];
 
+		static bool tieVisualStyleToGameMode = false;
+
 		if (UI::BeginCombo("##Game Mode", previewValue, { 0.5f, 0.5f }, 0.9f)) {
 			ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, { 0.5f, 0.5f });
 
@@ -13123,6 +14125,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				if (ImGui::Selectable(modes[i], isSelected)) {
 					CrimsonGameModes::SetGameModePreset((uint8)i);
 					CrimsonGameplay::AdjustDMC4MobilitySettings();
+					if (tieVisualStyleToGameMode) {
+						CrimsonVisualStyle::SetVisualStylePreset((uint8)i); // maps Vanilla->Classic, SS->Hybrid, Crimso->Modern
+					}
 					::GUI::save = true;
 				}
 
@@ -13139,6 +14144,147 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 		}
 
 		ImGui::PopStyleColor(3);
+		ImGui::PopFont(); // Pop Benguiat[baseFontSize * 1.7f] from the Game Mode section above
+
+		ImGui::PushFont(UI::g_ImGuiFont_Benguiat[baseFontSize * 0.9f]);
+		float visualStyleComboBoxWidth = width * 0.4f;
+
+		// Visual Style dropdown
+		{
+			// Preview images for Visual Styles tooltips
+			static const Texture2DD3D11 vsClassicPreview((std::string(Paths::visualStylesPreviews) + "\\Classic.png").c_str(), pDevice);
+			static const Texture2DD3D11 vsHybridPreview((std::string(Paths::visualStylesPreviews) + "\\Hybrid.png").c_str(), pDevice);
+			static const Texture2DD3D11 vsModernPreview((std::string(Paths::visualStylesPreviews) + "\\Modern.png").c_str(), pDevice);
+
+			std::array<const char*, 3> visualModes{ "CLASSIC VISUAL STYLE", "HYBRID VISUAL STYLE", "MODERN VISUAL STYLE" };
+			std::array<const char*, 4> visualModesWCustom{ "CLASSIC VISUAL STYLE", "HYBRID VISUAL STYLE", "MODERN VISUAL STYLE", "CUSTOM VISUAL STYLE" };
+
+			uint8 currentPreset = activeCrimsonConfig.VisualStyle.preset;
+			auto previewValue = (currentPreset == VISUALSTYLEPRESETS::CUSTOM)
+				? visualModesWCustom[size_t(currentPreset)]
+				: visualModes[size_t(currentPreset)];
+
+			ImGui::SetNextItemWidth(visualStyleComboBoxWidth);
+			ImGui::SetCursorPosX(ImGui::GetCursorPosX() + (cntRegion.GetWidth() - visualStyleComboBoxWidth) * align);
+
+			ImU32 vsFrameBG, vsFrameBGHovered, vsTextColor;
+			switch (currentPreset) {
+			case VISUALSTYLEPRESETS::CLASSIC:
+				vsFrameBG = UI::SwapColorEndianness(0xFFFFFFFF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0x979797AA);
+				vsTextColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_WindowBgText]);
+				break;
+			case VISUALSTYLEPRESETS::HYBRID:
+				vsFrameBG = UI::SwapColorEndianness(0xE8BA18FF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0xE8BA18AA);
+				vsTextColor = ImGui::ColorConvertFloat4ToU32(style.Colors[ImGuiCol_WindowBgText]);
+				break;
+			case VISUALSTYLEPRESETS::MODERN:
+				vsFrameBG = UI::SwapColorEndianness(0xDA1B53FF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0xDA1B53AA);
+				vsTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+				break;
+			case VISUALSTYLEPRESETS::CUSTOM:
+			default:
+				vsFrameBG = UI::SwapColorEndianness(0x4050FFFF);
+				vsFrameBGHovered = UI::SwapColorEndianness(0x4050FFAA);
+				vsTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+				break;
+			}
+
+			ImGui::PushStyleColor(ImGuiCol_FrameBg, vsFrameBG);
+			ImGui::PushStyleColor(ImGuiCol_FrameBgHovered, vsFrameBGHovered);
+			ImGui::PushStyleColor(ImGuiCol_Text, vsTextColor);
+
+			GUI_PushDisable(tieVisualStyleToGameMode);
+
+			if (UI::BeginCombo("##Visual Style", previewValue, { 0.5f, 0.5f }, 0.9f)) {
+				ImGui::PushStyleVar(ImGuiStyleVar_SelectableTextAlign, { 0.5f, 0.5f });
+
+				for (size_t i = 0; i < visualModes.size(); i++) {
+					ImU32 headerColor, headerHoveredColor, headerTextColor, headerActiveColor;
+					switch ((int)i) {
+					case VISUALSTYLEPRESETS::CLASSIC:
+						headerColor = UI::SwapColorEndianness(0x6B6B6BFF);
+						headerHoveredColor = UI::SwapColorEndianness(0x6B6B6BCC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0x6B6B6BFF);
+						break;
+					case VISUALSTYLEPRESETS::HYBRID:
+						headerColor = UI::SwapColorEndianness(0x856E1CFF);
+						headerHoveredColor = UI::SwapColorEndianness(0x856E1CCC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0x856E1CFF);
+						break;
+					case VISUALSTYLEPRESETS::MODERN:
+						headerColor = UI::SwapColorEndianness(0x821031FF);
+						headerHoveredColor = UI::SwapColorEndianness(0x821031CC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0x821031FF);
+						break;
+					default:
+						headerColor = UI::SwapColorEndianness(0xB7B7B7FF);
+						headerHoveredColor = UI::SwapColorEndianness(0xB7B7B7CC);
+						headerTextColor = UI::SwapColorEndianness(0xFFFFFFFF);
+						headerActiveColor = UI::SwapColorEndianness(0xB7B7B7FF);
+						break;
+					}
+
+					ImGui::PushStyleColor(ImGuiCol_Header, headerColor);
+					ImGui::PushStyleColor(ImGuiCol_HeaderHovered, headerHoveredColor);
+					ImGui::PushStyleColor(ImGuiCol_Text, headerTextColor);
+					ImGui::PushStyleColor(ImGuiCol_HeaderActive, headerActiveColor);
+
+					bool isSelected = size_t(currentPreset) == i;
+
+					if (ImGui::Selectable(visualModes[i], isSelected)) {
+						CrimsonVisualStyle::SetVisualStylePreset((uint8)i);
+						tieVisualStyleToGameMode = false;
+						::GUI::save = true;
+					}
+
+					if (ImGui::IsItemHovered()) {
+						ImGui::BeginTooltip();
+						ImGui::SetWindowFontScale(scaleFactorY);
+						const Texture2DD3D11* previewTex = nullptr;
+						if (i == VISUALSTYLEPRESETS::CLASSIC) previewTex = &vsClassicPreview;
+						else if (i == VISUALSTYLEPRESETS::HYBRID) previewTex = &vsHybridPreview;
+						else if (i == VISUALSTYLEPRESETS::MODERN) previewTex = &vsModernPreview;
+						ImGui::Text("Preview");
+						if (previewTex && previewTex->IsValid()) {
+							ImVec2 tipSize = ImVec2(400.0f * scaleFactorY, 225.0f * scaleFactorY);
+							ImGui::Image(*previewTex, tipSize);
+						}
+						ImGui::EndTooltip();
+					}
+
+					if (isSelected) {
+						ImGui::SetItemDefaultFocus();
+					}
+
+					ImGui::PopStyleColor(4);
+				}
+
+				ImGui::PopStyleVar();
+				ImGui::EndCombo();
+			}
+
+			GUI_PopDisable(tieVisualStyleToGameMode);
+
+			ImGui::PopStyleColor(3);
+			ImGui::PopFont(); // Pop Benguiat[baseFontSize * 0.9f] from the Visual Style section above
+
+			ImGui::SameLine();
+			ImGui::PushFont(UI::g_ImGuiFont_Roboto[baseFontSize]);
+			if (GUI_Checkbox2("Tie Visual Style to Game Mode", activeCrimsonConfig.VisualStyle.tieVisualStyleToGameMode, 
+				queuedCrimsonConfig.VisualStyle.tieVisualStyleToGameMode)) {
+				if (activeCrimsonConfig.VisualStyle.tieVisualStyleToGameMode) {
+					CrimsonVisualStyle::SetVisualStylePreset(activeCrimsonGameplay.GameMode.preset);
+					::GUI::save = true;
+				}
+			}
+			ImGui::PopFont();
+		}
 
 		const Texture2DD3D11* pMainLogo = nullptr;
 		{
@@ -13183,25 +14329,22 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 			auto descriptionVanilla =
 				u8"• No Style Switching\n"
-				u8"• Weapons Slots Restricted (2-Slots).\n";
+				u8"• Weapons Slots Restricted (2-Slots).\n"
+				u8"• Small Quality of Life Changes (like DMC4/5 Lock On Direction).\n";
 			
 			auto descriptionStyleSwitcher =
-				u8"• New Moves\n"
 				u8"• Style Switching\n"
 				u8"• Weapon Wheel (up to 5-Slots)\n"
 				u8"• Improved Cancels\n";
 
 			auto descriptionCrimson =
-				u8"• Inertia\n"
-				u8"• Guardflying\n"
-				u8"• DT-Infused Royalguard\n"
+				u8"• Style Switching\n"
+				u8"• Inertia / Guardflying\n"
+				u8"• Expanded Moveset (Dante & Vergil)\n"
 				u8"• Mirage Trigger\n"
 				u8"• Increased Jump Cancel Hitboxes\n"
 				u8"• Aerial Combat Changes\n"
-				u8"• Enemy Alterations\n"
-				u8"• Higher Mobility\n"
-				u8"• New Moves\n"
-				u8"• Style Switching\n"
+				u8"• Small Enemy Alterations\n"
 				u8"• Weapon Wheel (up to 5-Slots)\n"
 				u8"• Improved Cancels\n";
 
@@ -13251,8 +14394,6 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 			ImGui::PopFont();
 		}
-
-		ImGui::PopFont();
 
 		// Restore window scale for other tabs
 		ImGui::SetWindowFontScale(scaleFactorY);
@@ -14067,7 +15208,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				}
 				ImGui::PopFont();
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				auto fnDrawSocialButton = [window](const void* id, const size_t socialID, const ImVec2 size, const char* tooltip = nullptr) -> bool {
 					const auto bbTuple = g_Image_SocialIcons.GetUVRect(socialID);
@@ -14161,7 +15302,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.8f)]);
 					{
-						ImGui::Text("Project Director, Lead Programmer, Artist, Reverse Engineering");
+						ImGui::Text("Project Director, Lead Programmer, Game Design, Reverse Engineering");
 					}
 					ImGui::PopFont();
 
@@ -14215,7 +15356,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// Sarah
 				{
@@ -14235,17 +15376,29 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 					ImGui::SameLine();
 
-					const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+
+					const float socialIconSize = ImGui::GetFontSize();
+					const float kofiBtnWidth = ImGui::CalcTextSize("KO-FI").x + ImGui::GetStyle().FramePadding.x * 2.0f;
+					const float totalBtnWidth = socialIconSize + 4.0f + kofiBtnWidth + 4.0f;
 					const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
 
-					ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+					ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - totalBtnWidth, currentCursorPos.y });
 
-					if (fnDrawSocialButton("sarahtwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+					if (fnDrawSocialButton("sarahtwitter", SocialsIcons::ID_Twitter, ImVec2{ socialIconSize, socialIconSize })) {
 						ShellExecute(0, 0, "https://twitter.com/SSSiyan", 0, 0, SW_SHOW);
 					}
+
+					ImGui::SameLine(0.0f, 0.0f);
+
+					if (ImGui::Button("KO-FI", ImVec2{ kofiBtnWidth, socialIconSize + 4.0f })) {
+						ShellExecute(0, 0, "https://ko-fi.com/sssiyan", 0, 0, SW_SHOW);
+					}
+
+					ImGui::PopFont();
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// Deep
 				{
@@ -14281,7 +15434,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.4f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// My smooth shiny bald ass
 				{
@@ -14317,11 +15470,13 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
 				// Charlie
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("Community Manager, Testing, Q&A, Game Design Assistant");
+						ImGui::Text("Community Manager, Testing, Q&A, Game Design");
 					}
 					ImGui::PopFont();
 
@@ -14351,14 +15506,14 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					}
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.7f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 
 				// Hitchhiker
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("General Programmer, Reverse Engineering");
+						ImGui::Text("General Programmer, Reverse Engineering, Game Design");
 					}
 					ImGui::PopFont();
 
@@ -14396,7 +15551,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				
 				}
 
-				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.7f);
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				// RaccMoon
 				{
@@ -14424,13 +15579,14 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					if (fnDrawSocialButton("raccyoutube", SocialsIcons::ID_YouTube, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 						ShellExecute(0, 0, "https://www.youtube.com/@rakunuki3565", 0, 0, SW_SHOW);
 					}
-
 				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 					{
-						ImGui::Text("Artist");
+						ImGui::Text("Lead 2D Artist");
 					}
 					ImGui::PopFont();
 
@@ -14438,10 +15594,109 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
 					{
-						ImGui::Text("And Lenam was there too");
+						ImGui::Text("Lenam Lorbington");
 					}
 					ImGui::PopFont();
 
+				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+				{
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+					{
+						ImGui::Text("3D & 2D Artist, Animation");
+					}
+					ImGui::PopFont();
+
+					ImGui::Separator();
+
+					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+					{
+						ImGui::Text("Airdragon");
+
+						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+						if (fnDrawSocialButton("airdragongithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://github.com/Airdragon50", 0, 0, SW_SHOW);
+						}
+
+						ImGui::SameLine();
+
+						if (fnDrawSocialButton("airdragonnexus", SocialsIcons::ID_Nexusmods, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://www.nexusmods.com/profile/Airdragon50/mods", 0, 0, SW_SHOW);
+						}
+					}
+					ImGui::PopFont();
+				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+				{
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+					{
+						ImGui::Text("Lead VFX Artist");
+					}
+					ImGui::PopFont();
+
+					ImGui::Separator();
+
+					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+					{
+						ImGui::Text("ZippoIG");
+
+						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+						if (fnDrawSocialButton("zippoigtwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://x.com/ZippoIG", 0, 0, SW_SHOW);
+						}
+					}
+					ImGui::PopFont();
+				}
+
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+				{
+					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+					{
+						ImGui::Text("3D & 2D Artist, Animation");
+					}
+					ImGui::PopFont();
+
+					ImGui::Separator();
+
+					ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+					{
+						ImGui::Text("Vainiuss1");
+
+						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+						if (fnDrawSocialButton("vainiusstwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://x.com/vainiuss1", 0, 0, SW_SHOW);
+						}
+
+						ImGui::SameLine();
+
+						if (fnDrawSocialButton("vainiussnexus", SocialsIcons::ID_Nexusmods, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+							ShellExecute(0, 0, "https://www.nexusmods.com/profile/vainiuss1/mods", 0, 0, SW_SHOW);
+						}
+					}
+					ImGui::PopFont();
 				}
 
 				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.7f);
@@ -14459,7 +15714,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
 						{
-							ImGui::Text("Video Producer, Promoter");
+							ImGui::Text("Video Producer, Promoter, Consultant");
 						}
 						ImGui::PopFont();
 
@@ -14470,6 +15725,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 							ImGui::Text("Dany Sterkhov");
 
 							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
 
 							if (fnDrawSocialButton("danycuhrayzeeyoutube", SocialsIcons::ID_YouTube, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://www.youtube.com/@Cuhrayzee", 0, 0, SW_SHOW);
@@ -14485,6 +15745,54 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Animation & Texturing Work, Mod Tooling, Consultant");
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+						{
+							ImGui::Text("Che");
+						}
+						ImGui::PopFont();
+					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Artist");
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+						{
+							ImGui::Text("Garlic Goblin");
+
+							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+							if (fnDrawSocialButton("garlicgoblinlinktree", socialsBluesky, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
+								ShellExecute(0, 0, "https://linktr.ee/thegarlicgoblin", 0, 0, SW_SHOW);
+							}
+						}
+						ImGui::PopFont();
+					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -14501,12 +15809,19 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 							ImGui::SameLine();
 
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 							if (fnDrawSocialButton("cynumatwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://x.com/Cynumaa", 0, 0, SW_SHOW);
 							}
 						}
 						ImGui::PopFont();
 					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -14525,43 +15840,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					{
-						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
-						{
-							ImGui::Text("Mod Tooling");
-						}
-						ImGui::PopFont();
-
-						ImGui::Separator();
-
-						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
-						{
-							ImGui::Text("Che");
-						}
-						ImGui::PopFont();
-					}
-
-					{
-						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
-						{
-							ImGui::Text("Artist");
-						}
-						ImGui::PopFont();
-
-						ImGui::Separator();
-
-						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
-						{
-							ImGui::Text("Vainiuss1");
-
-							ImGui::SameLine();
-
-							if (fnDrawSocialButton("vainiusstwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
-								ShellExecute(0, 0, "https://x.com/vainiuss1", 0, 0, SW_SHOW);
-							}
-						}
-						ImGui::PopFont();
-					}
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -14578,6 +15857,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 							ImGui::SameLine();
 
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 							if (fnDrawSocialButton("adilgithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://github.com/adilahmeddev", 0, 0, SW_SHOW);
 							}
@@ -14585,27 +15869,7 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::PopFont();
 					}
 
-					{
-						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
-						{
-							ImGui::Text("Programmer");
-						}
-						ImGui::PopFont();
-
-						ImGui::Separator();
-
-						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
-						{
-							ImGui::Text("Airdragon");
-
-							ImGui::SameLine();
-
-							if (fnDrawSocialButton("airdragongithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
-								ShellExecute(0, 0, "https://github.com/Airdragon50", 0, 0, SW_SHOW);
-							}
-						}
-						ImGui::PopFont();
-					}
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
 
 					{
 						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
@@ -14622,13 +15886,60 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 							ImGui::SameLine();
 
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 							if (fnDrawSocialButton("tihantwitter", SocialsIcons::ID_Twitter, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
 								ShellExecute(0, 0, "https://x.com/t1h4n", 0, 0, SW_SHOW);
 							}
 						}
 						ImGui::PopFont();
 					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Programmer");
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 1.0f)]);
+						{
+							ImGui::Text("mos9527");
+
+							ImGui::SameLine();
+
+							const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+							const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+							ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
+							if (fnDrawSocialButton("mos9527github", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize() + 2, ImGui::GetFontSize() })) {
+								ShellExecute(0, 0, "https://github.com/mos9527", 0, 0, SW_SHOW);
+							}
+						}
+						ImGui::PopFont();
+					}
+
+					ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+					{
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 0.9f)]);
+						{
+							ImGui::Text("Thanks to Spritzkrieg for the express permission\n"
+								"to airdragon50 to use and modify his Original PS2 \n"
+								"Textures pack.");
+						}
+						ImGui::PopFont();
+					}
 				}
+
 
 				ImGui::Text("");
 
@@ -14648,6 +15959,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 						ImGui::SameLine();
 
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
+
 						if (fnDrawSocialButton("serpgithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 							ShellExecute(0, 0, "https://github.com/serpentiem", 0, 0, SW_SHOW);
 						}
@@ -14655,7 +15971,9 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 					ImGui::PopFont();
 				}
 
-				// Serp
+				ImGui::SetCursorPosY(ImGui::GetCursorPosY() + scaledFontSize * 0.8f);
+
+				// Lyall
 				{
 					ImGui::PushFont(UI::g_ImGuiFont_RussoOne[uint64_t(context.DefaultFontSize * 1.2f)]);
 					{
@@ -14670,6 +15988,11 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 						ImGui::Text("Lyall");
 
 						ImGui::SameLine();
+
+						const ImVec2 socialsBBFrameSize{ 4.0f + ImGui::GetFontSize(), 4.0f + ImGui::GetFontSize() };
+						const ImVec2 currentCursorPos = ImGui::GetCursorScreenPos();
+
+						ImGui::SetCursorScreenPos(ImVec2{ window->ContentRegionRect.Max.x - socialsBBFrameSize.x, currentCursorPos.y });
 
 						if (fnDrawSocialButton("lyallgithub", SocialsIcons::ID_Github, ImVec2{ ImGui::GetFontSize(), ImGui::GetFontSize() })) {
 							ShellExecute(0, 0, "https://github.com/serpentiem", 0, 0, SW_SHOW);
@@ -14864,7 +16187,8 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 				auto window = ImGui::GetCurrentWindow();
 				constexpr const char* THX_TEXT = "Thank you all for playing and supporting the project!";
 				constexpr const char* LICENSE_BUTTON_TEXT = "LICENSE";
-				constexpr const char* COPYRIGHT_TEXT = "Copyright (c) 2025 Berthrage";
+				constexpr const char* COPYRIGHT_TEXT = "Copyright (c) 2026 Berthrage";
+				static bool showLicense = false;
 
 				{
 					const float thxTextWidth = ImGui::CalcTextSize(THX_TEXT).x;
@@ -14877,10 +16201,65 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 
 					ImGui::PushStyleVar(ImGuiStyleVar_FrameRounding, 6.0f);
 					ImGui::SetCursorScreenPos(ImVec2{ areaMin.x + (areaSize.x - licenseButtonWidth) * 0.5f, areaMin.y + scaledFontSize * 2.0f });
-					UI::InfoButton(LICENSE_BUTTON_TEXT);
+					if (ImGui::Button(LICENSE_BUTTON_TEXT)) {
+						showLicense = !showLicense;
+					}
 					ImGui::PopStyleVar();
 				}
 				ImGui::PopFont();
+
+				// License popup window
+				if (showLicense) {
+					const float licenseScaleFactor = (scaleFactorY + (ImGui::GetIO().DisplaySize.x / 1920.0f)) * 0.5f;
+					const float licW = 650.0f * licenseScaleFactor;
+					const float licH = 500.0f * licenseScaleFactor;
+					const float licCenterX = (g_renderSize.x - licW) * 0.5f;
+					const float licCenterY = (g_renderSize.y - licH) * 0.5f;
+
+					ImGui::SetNextWindowSize(ImVec2(licW, licH));
+					ImGui::SetNextWindowPos(ImVec2(licCenterX, licCenterY));
+
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowPadding, ImVec2(20.0f * licenseScaleFactor, 20.0f * licenseScaleFactor));
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 20.0f * licenseScaleFactor);
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowBorderSize, 0);
+					ImGui::PushStyleVar(ImGuiStyleVar_WindowMinSize, ImVec2(0, 0));
+
+					ImGui::PushStyleColor(ImGuiCol_WindowBg, ImVec4(0.1f, 0.1f, 0.1f, 0.85f));
+
+					if (ImGui::Begin("LicenseWindow", &showLicense, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize)) {
+						ImGui::SetWindowFontScale(licenseScaleFactor);
+
+						ImGui::PushFont(UI::g_ImGuiFont_RussoOne[context.DefaultFontSize * 1.2f]);
+						ImGui::Text("LICENSE");
+						ImGui::SameLine();
+
+						const float xBtnSize = 24.0f * licenseScaleFactor;
+						ImGui::SetCursorPosX(ImGui::GetContentRegionMax().x - xBtnSize);
+						if (ImGui::Button("X", ImVec2(xBtnSize, xBtnSize))) {
+							showLicense = false;
+						}
+						ImGui::PopFont();
+
+						ImGui::Separator();
+
+						ImGui::PushFont(UI::g_ImGuiFont_Roboto[context.DefaultFontSize * 0.85f]);
+
+						ImVec2 childSize = ImGui::GetContentRegionAvail();
+						ImGui::BeginChild("LicenseTextArea", childSize, false, ImGuiWindowFlags_AlwaysVerticalScrollbar);
+						ImGui::SetWindowFontScale(licenseScaleFactor);
+
+						ImGui::PushTextWrapPos(0.0f);
+						ImGui::TextUnformatted(g_LicenseText);
+						ImGui::PopTextWrapPos();
+
+						ImGui::EndChild();
+						ImGui::PopFont();
+					}
+					ImGui::End();
+
+					ImGui::PopStyleColor();
+					ImGui::PopStyleVar(4);
+				}
 
 				ImGui::PushFont(UI::g_ImGuiFont_Roboto[uint64_t(context.DefaultFontSize * 0.8f)]);
 				{
@@ -14903,8 +16282,24 @@ void DrawMainContent(ID3D11Device* pDevice, UI::UIContext& context) {
 #pragma endregion
 
 
-void GUI_Render(IDXGISwapChain* pSwapChain) {
+void ExperimentalInputUpdate() {
+	static bool hasEnteredMainScene = false;
+	auto pool_C90E10 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
+	if (!pool_C90E10 || !pool_C90E10[5]) {
+		return;
+	}
+	auto& eventData = *reinterpret_cast<CSceneGameMain*>(pool_C90E10[5]);
+	if (eventData.event == EVENT::MAIN) {
+		hasEnteredMainScene = true;
+	}
+	if (hasEnteredMainScene) {
+		for (uint8 playerIndex = 0; playerIndex < 4; playerIndex++) {
+			CrimsonReversedCalls::InputsUpdate_sub_14032CFE0(0x140D54A10, playerIndex, 0);
+		}
+	}
+}
 
+void GUI_Render(IDXGISwapChain* pSwapChain) {
     if (g_scene != SCENE::GAME) {
         devilTriggerReadyPlayed = !activeConfig.playDTReadySFXAtMissionStart;
     }
@@ -14916,8 +16311,12 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     AdjustBackgroundColorAndTransparency();
 
     Welcome();
+	CrimsonOnboarding::Run(pSwapChain);
+	StoreHDCKeybinds();
+	OverrideHDCKeybinds();
     Main(pSwapChain);
     Shop::ShopWindow();
+	ShowButtonConfigWindow();
 	RenderMainMenuInfo(pSwapChain);
 
 	ActorWindow();
@@ -14930,6 +16329,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	
 	scaleFactorX = ImGui::GetIO().DisplaySize.x / 1920;
 	scaleFactorY = ImGui::GetIO().DisplaySize.y / 1080;
+	scaleFactor = (scaleFactorX + scaleFactorY) / 2.0f;
 	scaledFontSize = UI::g_UIContext.DefaultFontSize * scaleFactorY;
 	itemWidth = scaledFontSize * 8.0f;
 
@@ -14943,10 +16343,12 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
     BossVergilActionsOverlayWindow();
     
 	// Calling this from GUI Render is the safest way to ensure this will run on-tick properly
-    // outside of In Game.
-    
-  	CrimsonOnTick::FrameResponsiveGameSpeed();
+	// outside of In Game.32CFE0
+	//ExperimentalInputUpdate();
 
+	CrimsonOnTick::FrameResponsiveGameSpeed();
+	CrimsonOnTick::LevelFullyLoadedDelay();
+	CrimsonBetterArkham2::OnTick();
     // TIMERS
     CrimsonTimers::CallAllTimers();
 
@@ -14957,6 +16359,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 	WorldSpaceWeaponWheels1PController(pSwapChain);
 	WorldSpaceWeaponWheelsController(pSwapChain);
 	CrimsonHUD::RedOrbCounterWindow();
+	CrimsonBetterArkham2::BlackoutArkham2OriginalScene();
 	CrimsonHUD::CheatsHUDIndicatorWindow();
 	CrimsonHUD::CheatHotkeysPopUpWindow();
 	CrimsonHUD::StyleMeterWindows();
@@ -14974,7 +16377,17 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
 
 	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
 	RenderMissionResultGameModeStats();
+	RenderMissionResultVersionDisplay();
 	RenderMissionResultCheatsUsed();
+	//CrimsonGameModes::TrackGameMode();
+	//CrimsonGameModes::TrackCheats();
+	//CrimsonGameModes::TrackMissionResultGameMode();
+	//CrimsonOnTick::CrimsonMissionClearSong();
+	//CrimsonOnTick::DivinityStatueSong();
+	//CrimsonSDL::ReduceMusicVolumeInPause();
+
+	//CrimsonSDL::CheckAndOpenControllers();
+	//CrimsonSDL::UpdateJoysticks();
 
 
     HandleKeyBindings(keyBindings.data(), keyBindings.size());
@@ -14984,7 +16397,7 @@ void GUI_Render(IDXGISwapChain* pSwapChain) {
         g_shopTimer -= 1.0f;
     }
 
-    HandleSaveTimer(activeConfig.frameRate);
+    HandleSaveTimer(g_FrameRate);
     ImGui::PopStyleColor();
     // static bool enable = true;
     // ImGui::ShowDemoWindow(&enable);
@@ -14998,6 +16411,7 @@ void GUI_Init() {
     UpdateGlobalScale();
 
     UI::SetStyleCrimson();
+	UI::BuildFontsCrimson();
 
     Actor_UpdateIndices();
     Arcade_UpdateIndices();

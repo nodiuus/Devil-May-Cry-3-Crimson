@@ -5,23 +5,32 @@ set(MASM_SRC
     masm/AddToMirageGauge.asm
     masm/CameraHittingWall.asm
     masm/CameraSensitivity.asm
+    masm/ConfirmSetAction.asm
     masm/CreateEffect.asm
     masm/HoldToCrazyComboAsm.asm
     masm/DisableStaggerRoyalguard.asm
-    masm/FasterTurnRate.asm
+    masm/InterceptCollisions.asm
+    masm/JudgementCutDetours.asm
+    masm/TurnRateFix.asm
     masm/GuardBreakToNormalBlock.asm
     masm/FixBallsHangHitSpeed.asm
+    masm/FixBlendingEffects.asm
+    masm/FixBossCam.asm
+    masm/FixClothPhysics.asm
     masm/FixCrashArkhamPt2Doppel.asm
     masm/FixCrashArkhamPt2Grab.asm
     masm/FixCrashCerberus.asm
     masm/CerbDamageFix.asm
     masm/FixCrashM5.asm
     masm/FixCrashVergilM3.asm
+    masm/FixCStageSetGateSpawn.asm
     masm/FixSecretMissionTimerFPS.asm
+    masm/FixStaggerGravity.asm
     masm/EnsureAirRisingDragonLaunch.asm
     masm/HideStyleRankHUD.asm
     masm/HudHPSeparation.asm
     masm/HudStyleBarPosAsm.asm
+    masm/PortalsHideAndMute.asm
     masm/PlaytimeOnTick.asm
     masm/DisableDriveHoldAsm.asm
     masm/CustomCameraPositioning.asm
@@ -30,6 +39,7 @@ set(MASM_SRC
     masm/DMC4LockOnDirection.asm
     masm/DTMustStyleArmor.asm
     masm/EnemyAITarget.asm
+    masm/ShotgunShlSpawnAnglePointBlank.asm
     masm/SetAirTauntAsm.asm
     masm/SkyLaunchAirTaunt.asm
     masm/StyleLevellingCCSFix.asm
@@ -39,6 +49,18 @@ set(MASM_SRC
     masm/VergilTricksAsm.asm
     masm/StyleRankHudNoFadeout.asm
     masm/ArtemisInstantFullCharge.asm
+    masm/CheckScreenBreak.asm
+    masm/CheckMissionResultScreen.asm
+    masm/CheckMissionResultBPScreen.asm
+    masm/NoAirLunarPhaseLift.asm
+    masm/FixEnemyAttackCooldowns.asm
+    masm/FixBloodgoyleStormFormTime.asm
+    masm/FixCStaffRollCredits.asm
+    masm/FixCStageSetSeal.asm
+    masm/CheckTotalResultsScreen.asm
+    masm/FixSummonedSwordsInitialTravel.asm
+    masm/ChargeMechanicsCPlayer.asm
+    masm/CItemOrbPickupAllPlayers.asm
 )
 
 set (ASM_LIBS)
@@ -56,6 +78,9 @@ set(CXX_LIBS
     libzip
     zlib
     Detours
+
+    EffekseerRendererDX11
+    Effekseer
 
     debug ${CMAKE_SOURCE_DIR}/ThirdParty/curl/lib/x64-debug/libcurl_a_debug.lib optimized ${CMAKE_SOURCE_DIR}/ThirdParty/curl/lib/x64-release/libcurl_a.lib
     debug ${CMAKE_SOURCE_DIR}/ThirdParty/openssl/lib/x64-debug/libcrypto_static.lib optimized ${CMAKE_SOURCE_DIR}/ThirdParty/openssl/lib/x64-release/libcrypto_static.lib
@@ -133,12 +158,16 @@ file(GLOB MAIN_SRC
     CrimsonConfigGameplay.hpp
     CrimsonConfigGameplayMask.hpp
     CrimsonConfigHandling.h
+    CrimsonBetterArkham2.cpp
+    CrimsonBetterArkham2.hpp
     CrimsonCameraController.cpp
     CrimsonCameraController.hpp
     CrimsonDetours.cpp
     CrimsonDetours.hpp
     CrimsonEnemyAITarget.cpp
     CrimsonEnemyAITarget.hpp
+    CrimsonFastcallDetours.cpp
+    CrimsonFastcallDetours.hpp
     CrimsonFileHandling.cpp
     CrimsonFileHandling.hpp	
     CrimsonFX.cpp
@@ -149,16 +178,25 @@ file(GLOB MAIN_SRC
     CrimsonGameplay.hpp
     CrimsonGUI.cpp
     CrimsonGUI.hpp
+    CrimsonLicense.hpp
+    CrimsonOnboarding.cpp
+    CrimsonOnboarding.hpp
+    CrimsonHighFPSFixes.cpp
+    CrimsonHighFPSFixes.hpp
     CrimsonHUD.cpp
     CrimsonHUD.hpp
     CrimsonLDK.cpp
     CrimsonLDK.hpp
     CrimsonUtil.cpp
     CrimsonUtil.hpp
+    CrimsonVisualStyle.cpp
+    CrimsonVisualStyle.hpp
     CrimsonOnTick.cpp
     CrimsonOnTick.hpp
     CrimsonPatches.cpp
     CrimsonPatches.hpp
+    CrimsonReversedCalls.cpp
+    CrimsonReversedCalls.hpp
     CrimsonSDL.cpp
     CrimsonSDL.hpp
     CrimsonTimers.cpp	
@@ -198,9 +236,7 @@ file(GLOB MAIN_SRC
     Sound.hpp
     SoundRelocations.cpp
     SoundRelocations.hpp
-    Speed.cpp
-    Speed.hpp
-    Training.cpp
+    Speed.cpp Speed.hpp Training.cpp
     Training.hpp
     Vars.cpp
     Vars.hpp
@@ -210,6 +246,10 @@ file(GLOB MAIN_SRC
     Window.hpp
     StyleSwitchFX.cpp
     StyleSwitchFX.hpp
+    CrimsonEfk.hpp
+    CrimsonEfk.cpp
+    CrimsonEfkPreload.cpp
+    CrimsonEfkPreload.hpp
 )
 
 file(GLOB CORE_SRC 
@@ -318,3 +358,4 @@ target_link_libraries(${PROJECT_NAME} PUBLIC ${CXX_LIBS}) # Dependencies
 
 set_target_properties(${PROJECT_NAME} PROPERTIES 
 OUTPUT_NAME dinput8_injector)
+

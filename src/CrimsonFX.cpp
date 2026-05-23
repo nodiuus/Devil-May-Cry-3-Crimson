@@ -32,6 +32,8 @@
 #include <deque>
 #include "Training.hpp"
 #include "CrimsonUtil.hpp"
+#include "CrimsonEfk.hpp"
+#include "CrimsonEfkPreload.hpp"
 
 namespace CrimsonFX {
 
@@ -57,6 +59,19 @@ void DTReadySFX() {
     }
 }
 
+void ComputeLockOnScreenData(PlayerActorData& actorData, const CameraData& cameraData, uint8 playerIndex) {
+	// Compute locked enemy screen position
+	auto lockedEnemyScreenPositionDD = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
+	crimsonPlayer[playerIndex].lockedEnemyScreenPosition = lockedEnemyScreenPositionDD;
+
+	// Compute camera-to-locked-enemy distance and clamped value
+	glm::vec3 lockedEnemyPosition = { actorData.lockOnData.targetPosition.x, actorData.lockOnData.targetPosition.y, actorData.lockOnData.targetPosition.z };
+	glm::vec3 cameraPosition = { cameraData.data[0].x, cameraData.data[0].y, cameraData.data[0].z };
+	crimsonPlayer[playerIndex].cameraLockedEnemyDistance = glm::distance(lockedEnemyPosition, cameraPosition);
+	int distanceLockedEnemy = (int)crimsonPlayer[playerIndex].cameraLockedEnemyDistance / 20;
+	crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped = glm::clamp(distanceLockedEnemy, 0, 255);
+}
+
 void CalculateViewProperties(byte8* actorBaseAddr) {
 	if (!actorBaseAddr) return;
 
@@ -71,7 +86,7 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 	auto pool_4449 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC8FBD0);
 	if (!pool_4449 || !pool_4449[147]) return;
 	auto& cameraData = *reinterpret_cast<CameraData*>(pool_4449[147]);
-	
+
 	auto pool_11962 = *reinterpret_cast<byte8***>(appBaseAddr + 0xC90E10);
 	if (!pool_11962 || !pool_11962[8]) return;
 	auto& eventData = *reinterpret_cast<EventData*>(pool_11962[8]);
@@ -86,18 +101,16 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 	glm::vec3 clonePosition = { cloneActorData.position.x, cloneActorData.position.y, cloneActorData.position.z };
 	glm::vec3 mainActorPosition = { mainActorData.position.x, mainActorData.position.y, mainActorData.position.z };
 	glm::vec3 cameraPosition = { cameraData.data[0].x, cameraData.data[0].y, cameraData.data[0].z };
-	glm::vec3 lockedEnemyPosition = { actorData.lockOnData.targetPosition.x, actorData.lockOnData.targetPosition.y, actorData.lockOnData.targetPosition.z };
 	glm::vec3 cloneLockedEnemyPosition = { cloneActorData.lockOnData.targetPosition.x, cloneActorData.lockOnData.targetPosition.y, cloneActorData.lockOnData.targetPosition.z };
 
 	auto& playerTo1PDistance = crimsonPlayer[playerIndex].playerTo1PDistance;
 	auto& cloneTo1PDistance = crimsonPlayer[playerIndex].cloneTo1PDistance;
 	auto& playerScreenPosition = crimsonPlayer[playerIndex].playerScreenPosition;
 	auto& cloneScreenPosition = crimsonPlayer[playerIndex].cloneScreenPosition;
-	auto& lockedEnemyScreenPosition = crimsonPlayer[playerIndex].lockedEnemyScreenPosition;
+
 	auto& cloneLockedEnemyScreenPosition = crimsonPlayer[playerIndex].cloneLockedEnemyScreenPosition;
     auto& cameraPlayerDistance = crimsonPlayer[playerIndex].cameraPlayerDistance;
 	auto& cameraCloneDistance = crimsonPlayer[playerIndex].cameraCloneDistance;
-	auto& cameraLockedEnemyDistance = crimsonPlayer[playerIndex].cameraLockedEnemyDistance;
 	auto& cameraCloneLockedEnemyDistance = crimsonPlayer[playerIndex].cameraCloneLockedEnemyDistance;
 	auto& playerOutOfView = crimsonPlayer[playerIndex].playerOutOfView;
 	auto& cloneOutOfView = crimsonPlayer[playerIndex].cloneOutOfView;
@@ -109,7 +122,6 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 
 	playerScreenPosition = debug_draw_world_to_screen((const float*)&actorData.position, 1.0f);
 	cloneScreenPosition = debug_draw_world_to_screen((const float*)&cloneActorData.position, 1.0f);
-	//lockedEnemyScreenPosition = debug_draw_world_to_screen((const float*)&actorData.lockOnData.targetPosition, 1.0f);
 	cloneLockedEnemyScreenPosition = debug_draw_world_to_screen((const float*)&cloneActorData.lockOnData.targetPosition, 1.0f);
 
 	g_plEntityScreenPositions[indexToAssign] = playerScreenPosition;
@@ -124,10 +136,6 @@ void CalculateViewProperties(byte8* actorBaseAddr) {
 	int distanceClone = (int)cameraCloneDistance / 20;
 	crimsonPlayer[playerIndex].cameraCloneDistanceClamped = glm::clamp(distanceClone, 0, 255);
 	g_plEntityCameraDistances[cloneIndexToAssign] = cameraCloneDistance;
-
-// 	cameraLockedEnemyDistance = glm::distance(lockedEnemyPosition, cameraPosition);
-// 	int distanceLockedEnemy = (int)cameraLockedEnemyDistance / 20;
-// 	crimsonPlayer[playerIndex].cameraLockedEnemyDistanceClamped = glm::clamp(distanceLockedEnemy, 0, 255);
 
 	cameraCloneLockedEnemyDistance = glm::distance(cloneLockedEnemyPosition, cameraPosition);
 	int distanceCloneLockedEnemy = (int)cameraCloneLockedEnemyDistance / 20;
@@ -226,7 +234,7 @@ void DTExplosionFXController(byte8* actorBaseAddr) {
     auto& releaseVolumeMult = crimsonPlayer[playerIndex].dTESFX.releaseVolumeMult;
     auto& vfxStarted = crimsonPlayer[playerIndex].dTEVFX.started;
     auto& vfxFinished = crimsonPlayer[playerIndex].dTEVFX.finished;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     auto& distance = crimsonPlayer[playerIndex].cameraPlayerDistanceClamped;
 	static bool pausedSFX = false;
 
@@ -271,14 +279,14 @@ void DTExplosionFXController(byte8* actorBaseAddr) {
 
 	uint8 vfxColorDante[4] = { 48, 0, 10, 255 };
 	uint8 vfxColorVergil[4] = { 2, 16, 43, 255 };
-	uint32 actualColor = (actorData.character == CHARACTER::DANTE) ? CrimsonUtil::Uint8toAABBGGRR(vfxColorDante) :
-		CrimsonUtil::Uint8toAABBGGRR(vfxColorVergil);
+	uint32 actualColor = (actorData.character == CHARACTER::DANTE) ? CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.dtExplosionColorDante) :
+		CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.dtExplosionColorVergil);
 	// VFX START
 	if (actorData.dtExplosionCharge > 2500 && !vfxStarted && !vfxFinished) {
         crimsonPlayer[playerIndex].dTEVFX.time = 0;
 		auto pPlayer = (void*)crimsonPlayer[playerIndex].playerPtr;
 		
-		CrimsonDetours::CreateEffectDetour(pPlayer, 3, 61, 1, true, actualColor, 0.4f);
+		if (activeCrimsonConfig.VFX.dtExplosionVFX) CrimsonDetours::CreateEffectDetour(pPlayer, 3, 61, 1, true, actualColor, 0.4f);
 
 		vfxStarted = true;
 	}
@@ -286,7 +294,7 @@ void DTExplosionFXController(byte8* actorBaseAddr) {
 	// VFX FINISH
 	if (actorData.dtExplosionCharge >= maxDT && !vfxFinished) {
 		auto pPlayer = (void*)crimsonPlayer[playerIndex].playerPtr;
-		CrimsonDetours::CreateEffectDetour(pPlayer, 3, 41, 1, true, actualColor, 1.0f);
+		if (activeCrimsonConfig.VFX.dtExplosionVFX) CrimsonDetours::CreateEffectDetour(pPlayer, 3, 41, 1, true, actualColor, 1.0f);
 
 		vfxFinished = true;
 	}
@@ -304,7 +312,7 @@ void DTExplosionFXController(byte8* actorBaseAddr) {
         
         if (releaseVolumeMult > 0.4f && actorData.dtExplosionCharge > 0) {
 			auto pPlayer = (void*)crimsonPlayer[playerIndex].playerPtr;
-			CrimsonDetours::CreateEffectDetour(pPlayer, 3, 61, 1,true, actualColor, 1.0f);
+			if (activeCrimsonConfig.VFX.dtExplosionVFX) CrimsonDetours::CreateEffectDetour(pPlayer, 3, 61, 1,true, actualColor, 1.0f);
         }
 
         sfxStarted = false;
@@ -328,7 +336,7 @@ void StyleRankHudFadeoutController() {
 	auto& mainActorData = *reinterpret_cast<PlayerActorData*>(pool_12857[3]);
 
 
-	if (activeConfig.disableStyleRankHudFadeout) {
+	if (activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout) {
 		if (mainActorData.styleData.rank <= 0) {
 			CrimsonDetours::ToggleStyleRankHudNoFadeout(false);
 		}
@@ -385,11 +393,10 @@ void RoyalBlockFX(byte8* actorBaseAddr) {
 
 		// ROYAL BLOCK SFX
 		if (inRoyalBlock) {
-			if (!royalBlockPlayed[playerIndex]) {
+			if (!royalBlockPlayed[playerIndex] && activeCrimsonConfig.VFX.royalBlockVFX) {
 				//std::cout << "royal block played" << std::endl;
 				CrimsonSDL::PlayRoyalBlock(playerIndex);
-				uint8 vfxColor[4] = { 226, 4, 50, 255 };
-				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(vfxColor);
+				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.royalBlockColor);
 				CrimsonDetours::CreateEffectDetour(actorBaseAddr, 3, 61, 15, true, actualColor, 1.7f);
 				royalBlockPlayed[playerIndex] = true;
 			}
@@ -414,7 +421,7 @@ void RoyalBlockFX(byte8* actorBaseAddr) {
 
 		if (actorData.magicPoints >= 2000) {
 			// GUARD BREAK
-			// for Royalguard Rebalanced only
+			// for DT-Infused Royalguard only
 			if (actorData.royalBlock == 1) {
 				if (!guardPlayed[playerIndex]) {
 					CrimsonSDL::PlayNormalBlock(playerIndex);
@@ -440,90 +447,238 @@ template <typename T> auto GetMeleeWeapon(T& actorData) {
 }
 
 void DelayedComboFXController(byte8* actorBaseAddr) {
-    using namespace ACTION_DANTE;
+	using namespace ACTION_DANTE;
 
 	if (!actorBaseAddr) {
 		return;
 	}
 
 	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
-    auto& motionDataIndex = actorData.motionData[0].index;
+	if (!CrimsonGameplay::IsActiveCharacterActor(actorData)) return;
+	if (!activeCrimsonConfig.VFX.delayedComboVFX) return;
+	if (actorData.character != CHARACTER::DANTE) return;
+	auto& motionIndex = actorData.motionData[0].index;
 
 	auto playerIndex = actorData.newPlayerIndex;
+	auto entityIndex = actorData.newEntityIndex;
 	auto weapon = GetMeleeWeapon(actorData);
-
+	auto& gamepad = GetGamepad(actorData.newGamepad);
 	auto inAttack = (actorData.eventData[0].event == 17);
-	auto rebellionCombo1Anim = (actorData.motionData[0].index == 3);
-	auto inRebellionCombo1 = (actorData.action == REBELLION_COMBO_1_PART_1 && motionDataIndex == 3 && inAttack);
-    auto inRebellionCombo2 = (actorData.action == REBELLION_COMBO_2_PART_2 && motionDataIndex == 6 && inAttack);
-	auto inCerberusCombo2 = (actorData.action == CERBERUS_COMBO_1_PART_2 && motionDataIndex == 4 && inAttack);
-	auto inAgniCombo1 = (actorData.action == AGNI_RUDRA_COMBO_1_PART_1 && motionDataIndex == 3 && inAttack);
-	auto inAgniCombo2 = (actorData.action == AGNI_RUDRA_COMBO_2_PART_2 && motionDataIndex == 8 && inAttack);
-	auto inBeoCombo1 = (actorData.action == BEOWULF_COMBO_1_PART_2 && motionDataIndex == 4 && inAttack);
+	auto inRebellionCombo1 = (actorData.action == REBELLION_COMBO_1_PART_1 && motionIndex == 3 && inAttack);
+	auto inRebellionCombo2 = (actorData.action == REBELLION_COMBO_2_PART_2 && motionIndex == 6 && inAttack);
+	auto inCerberusCombo2 = (actorData.action == CERBERUS_COMBO_1_PART_2 && motionIndex == 4 && inAttack);
+	auto inAgniCombo1 = (actorData.action == AGNI_RUDRA_COMBO_1_PART_1 && motionIndex == 3 && inAttack);
+	auto inAgniCombo2 = (actorData.action == AGNI_RUDRA_COMBO_2_PART_2 && motionIndex == 8 && inAttack);
+	auto inBeoCombo1 = (actorData.action == BEOWULF_COMBO_1_PART_2 &&
+		(motionIndex == 4 || motionIndex == 43 || motionIndex == 44) && inAttack);
+	auto inBeoCombo2 = (actorData.action == BEOWULF_COMBO_2_PART_3 &&
+		(motionIndex == 7 || motionIndex == 47 || motionIndex == 48) && inAttack);
 	auto meleeWeapon = actorData.newWeapons[actorData.meleeWeaponIndex];
-	auto& delayedComboFX = crimsonPlayer[playerIndex].delayedComboFX;
-    auto& actionTimer = crimsonPlayer[playerIndex].actionTimer;
+	auto& delayedComboFX = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].delayedComboFX :
+		crimsonPlayer[playerIndex].delayedComboFXClone;
+	auto& actionTimer = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].actionTimer :
+		crimsonPlayer[playerIndex].actionTimerClone;
+	auto& motionTimer = (entityIndex == ENTITY::MAIN) ? crimsonPlayer[playerIndex].motionTimer :
+		crimsonPlayer[playerIndex].motionTimerClone;
+
+	bool meleeDown = (gamepad.buttons[0] & GetBinding(BINDING::MELEE_ATTACK)) != 0;
+
+	if (!actorData.newWeaponDataAddr[weapon]) {
+		return;
+	}
+	static const wchar_t* delayedComboFXPath[6] = {
+			CrimsonEfkPreload::delayedCombo_Rebellion_Path,
+			CrimsonEfkPreload::delayedCombo_Cerberus_Path,
+			CrimsonEfkPreload::delayedCombo_AgniRudra1_Path,
+			CrimsonEfkPreload::delayedCombo_AgniRudra2_Path,
+			CrimsonEfkPreload::delayedCombo_BeowulfArms_Path,
+			CrimsonEfkPreload::delayedCombo_BeowulfLegs_Path,
+	};
+
+	static EffekseerRefHandle* delayedComboRefs[6] = {
+		&CrimsonEfkPreload::delayedCombo_Rebellion_Handle,
+		&CrimsonEfkPreload::delayedCombo_Cerberus_Handle,
+		&CrimsonEfkPreload::delayedCombo_AgniRudra1_Handle,
+		&CrimsonEfkPreload::delayedCombo_AgniRudra2_Handle,
+		&CrimsonEfkPreload::delayedCombo_BeowulfArms_Handle,
+		&CrimsonEfkPreload::delayedCombo_BeowulfLegs_Handle,
+	};
+
+	cDrawReverse playerDanteCDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44Ptr* playerBoneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDanteCDraw.bonesMatrixesPtr);
 
 	if (inRebellionCombo1) {
 		delayedComboFX.duration = 0.485f;
-		delayedComboFX.weaponThatStartedMove = 0;
+		delayedComboFX.weaponThatStartedMove = WEAPON::REBELLION;
 	}
-    else if (inRebellionCombo2) {
+	else if (inRebellionCombo2) {
 		delayedComboFX.duration = 0.85f;
-		delayedComboFX.weaponThatStartedMove = 0;
-    }
+		delayedComboFX.weaponThatStartedMove = WEAPON::REBELLION;
+	}
 	else if (inCerberusCombo2) {
 		delayedComboFX.duration = 0.55f;
-		delayedComboFX.weaponThatStartedMove = 1;
+		delayedComboFX.weaponThatStartedMove = WEAPON::CERBERUS;
 	}
 	else if (inAgniCombo1) {
 		delayedComboFX.duration = 0.53f;
-		delayedComboFX.weaponThatStartedMove = 2;
+		delayedComboFX.weaponThatStartedMove = WEAPON::AGNI_RUDRA;
 	}
 	else if (inAgniCombo2) {
 		delayedComboFX.duration = 0.70f;
-		delayedComboFX.weaponThatStartedMove = 2;
+		delayedComboFX.weaponThatStartedMove = WEAPON::AGNI_RUDRA;
 	}
 	else if (inBeoCombo1) {
-		delayedComboFX.duration = 0.55f; // Beowulf's time can be very inconsistent due to charge time (the more you charge the less you
+		delayedComboFX.duration = 0.5f; // Beowulf's time can be very inconsistent due to charge time (the more you charge the less you
 		// need to wait between delays)
-		delayedComboFX.weaponThatStartedMove = 4;
+		delayedComboFX.weaponThatStartedMove = WEAPON::BEOWULF_DANTE;
+	}
+	else if (inBeoCombo2 && motionIndex == 7) {
+		delayedComboFX.duration = 1.1f;
+		delayedComboFX.weaponThatStartedMove = WEAPON::BEOWULF_DANTE;
+	}
+	else if (inBeoCombo2 && (motionIndex == 47 || motionIndex == 48)) {
+		delayedComboFX.duration = 0.60f;
+		delayedComboFX.weaponThatStartedMove = WEAPON::BEOWULF_DANTE;
 	}
 
+	if ((inRebellionCombo1 || inRebellionCombo2 || inCerberusCombo2 || inAgniCombo1 || inAgniCombo2 || inBeoCombo1 || inBeoCombo2) &&
+		delayedComboFX.playCount == 0 && weapon == delayedComboFX.weaponThatStartedMove) {
+		bool playedEffect = false;
 
-	if (actorData.character == CHARACTER::DANTE) {
-		if (actionTimer >= delayedComboFX.duration &&
-			(inRebellionCombo1 || inRebellionCombo2 || inCerberusCombo2 || inAgniCombo1 || inAgniCombo2 || inBeoCombo1) && delayedComboFX.playCount == 0 &&
-			weapon == delayedComboFX.weaponThatStartedMove) {
+		// VFX
+		// uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(activeCrimsonConfig.VFX.delayedComboColor);
+		// CrimsonDetours::CreateEffectDetour(pPlayer, delayedComboFX.bank, delayedComboFX.id, 1, true, actualColor, 1.2f);
+		auto& danteWeapon = *reinterpret_cast<WeaponData*>(actorData.newWeaponDataAddr[weapon]);
+		cDrawReverse* danteWeaponCDraw = reinterpret_cast<cDrawReverse*>(danteWeapon.weaponCDraw);
+		Matrix44Ptr* weaponBoneMatrix = reinterpret_cast<Matrix44Ptr*>(danteWeaponCDraw[0].bonesMatrixesPtr);
 
-            // SFX
+
+		if (weapon == WEAPON::REBELLION && actionTimer >= delayedComboFX.duration) {
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix1, actorData);
+			playedEffect = true;
+		}
+		else if (weapon == WEAPON::CERBERUS && actionTimer >= delayedComboFX.duration) {
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix2, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix9, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix10, actorData);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix11, actorData);
+
+			// INCLUDE 2 (additional for extra brightness), 9 (held rod), 10 (rod 2), 11 (rod 3)
+			playedEffect = true;
+		}
+		else if (weapon == WEAPON::AGNI_RUDRA && actionTimer >= delayedComboFX.duration) {
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], weaponBoneMatrix[0].matrix2, actorData);
+			*delayedComboRefs[weapon + 1] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon + 1], delayedComboFXPath[weapon + 1], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon + 1], weaponBoneMatrix[0].matrix3, actorData);
+			playedEffect = true;
+		}
+		else if (weapon == WEAPON::BEOWULF_DANTE && (inBeoCombo1 || inBeoCombo2) && motionTimer >= delayedComboFX.duration) {
+			if (inBeoCombo2 && delayedComboFX.transitioningToHyperFist) {
+				return;
+			}
+			*delayedComboRefs[weapon] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon], delayedComboFXPath[weapon], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], playerBoneMatrix[0].matrix10, actorData); // right hand
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon], playerBoneMatrix[0].matrix14, actorData); // left hand
+			*delayedComboRefs[weapon + 1] = CrimsonEfk::ReloadEffect(*delayedComboRefs[weapon + 1], delayedComboFXPath[weapon + 1], 1.0f);
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon + 1], playerBoneMatrix[0].matrix19, actorData); // right foot
+			delayedComboFX.efkHandle = CrimsonEfk::PlayEffectAtMatrix(*delayedComboRefs[weapon + 1], playerBoneMatrix[0].matrix23, actorData); // left foot
+			playedEffect = true;
+		}
+
+		if (playedEffect) {
+			// SFX
 			if (activeCrimsonConfig.SFX.delayedComboEffectType == DELAYEDCOMBOSFX::TYPE_A) {
 				CrimsonSDL::PlayDelayedCombo2(actorData.newPlayerIndex);
-			} else {
+			}
+			else {
 				CrimsonSDL::PlayDelayedCombo1(actorData.newPlayerIndex);
 			}
-			
-			
-            // VFX
-			if (activeCrimsonConfig.VFX.delayedComboVFX) {
-				auto pPlayer = (void*)crimsonPlayer[playerIndex].playerPtr;
-				uint8 vfxColor[4] = { 48, 0, 10, 255 };
-				uint32 actualColor = CrimsonUtil::Uint8toAABBGGRR(vfxColor);
-				CrimsonDetours::CreateEffectDetour(pPlayer, delayedComboFX.bank, delayedComboFX.id, 1, true, actualColor, 1.2f);
 
-				// VIBRATION
-				CrimsonSDL::VibrateController(playerIndex, 0, 0x5555, 130);
-			}
-
-
+			// VIBRATION
+			CrimsonSDL::VibrateController(playerIndex, 0, 0x5555, 130);
 			delayedComboFX.playCount++;
 		}
-		else if (actionTimer < 0.485f) {
-			delayedComboFX.playCount = 0;
-		}
-
 	}
-   
+	else if (actionTimer < 0.485f) {
+		delayedComboFX.playCount = 0;
+		delayedComboFX.transitioningToHyperFist = false;
+	}
+
+	if (!(inRebellionCombo1 || inRebellionCombo2 || inCerberusCombo2 || inAgniCombo1 || inAgniCombo2 || inBeoCombo1 || inBeoCombo2)) {
+		CrimsonEfk::StopEffect(delayedComboFX.efkHandle);
+	}
+}
+
+void StyleSwitchFluxCrimson(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, 
+	uint8 style, uint32_t color, uint32_t customSwooshColor) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+
+	uint8 handleId = 0;
+
+	for (uint8 i = 0; i < 10; i++) {
+		if (CrimsonEfk::IsPlaying(styleSwitchHandles[i])) {
+			if (i == 9) {
+				handleId = 0;
+			}
+			else {
+				handleId++;
+			}
+		}
+	}
+
+	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDantecDraw.bonesMatrixesPtr); 
+
+    
+	CrimsonEfkPreload::styleSwitchCrimson_Main_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchCrimson_Main_Handle[style], CrimsonEfkPreload::styleSwitchCrimson_Main_Path[style], 40.0f);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchCrimson_Main_Handle[style], boneMatrix->matrix3, &actorData);
+
+	CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Handle[style], CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Path[style], 40.0f);
+	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchCrimson_Swoosh_Handle[style], boneMatrix->matrix3, &actorData);
+	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
+	if (activeCrimsonConfig.StyleSwitchFX.Flux.customSwooshColors) {
+		CrimsonEfk::SetAllColor(swooshHandles[handleId], customSwooshColor);
+	}
+	else {
+		CrimsonEfk::SetAllColor(swooshHandles[handleId], color);
+	}
+}
+
+void StyleSwitchFluxNS(byte8* actorBaseAddr, EffekseerHandle* styleSwitchHandles, EffekseerHandle* swooshHandles, uint8 style, uint32_t color) {
+	if (!actorBaseAddr) {
+		return;
+	}
+	auto& actorData = *reinterpret_cast<PlayerActorData*>(actorBaseAddr);
+
+	uint8 handleId = 0;
+
+	for (uint8 i = 0; i < 10; i++) {
+		if (CrimsonEfk::IsPlaying(styleSwitchHandles[i])) {
+			if (i == 9) {
+				handleId = 0;
+			}
+			else {
+				handleId++;
+			}
+		}
+	}
+
+	cDrawReverse playerDantecDraw = actorData.newModelData[actorData.activeModelIndexMirror]; // activeModelIndex == which DT or Non-DT model
+	Matrix44Ptr* boneMatrix = reinterpret_cast<Matrix44Ptr*>(playerDantecDraw.bonesMatrixesPtr);
+
+
+	CrimsonEfkPreload::styleSwitchNS_Main_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchNS_Main_Handle[style], CrimsonEfkPreload::styleSwitchNS_Main_Path[style], 40.0f);
+	styleSwitchHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchNS_Main_Handle[style], boneMatrix->matrix3, &actorData);
+
+	CrimsonEfkPreload::styleSwitchNS_Swoosh_Handle[style] = CrimsonEfk::ReloadEffect(CrimsonEfkPreload::styleSwitchNS_Swoosh_Handle[style], CrimsonEfkPreload::styleSwitchNS_Swoosh_Path[style], 40.0f);
+	swooshHandles[handleId] = CrimsonEfk::PlayEffectAtMatrix(CrimsonEfkPreload::styleSwitchNS_Swoosh_Handle[style], boneMatrix->matrix3, &actorData);
+	CrimsonEfk::SetAllColor(styleSwitchHandles[handleId], color);
 }
 
 void StyleSwitchFlux(byte8* actorBaseAddr) {
@@ -537,7 +692,7 @@ void StyleSwitchFlux(byte8* actorBaseAddr) {
     auto* style = &actorData.style;
 	auto* canStart = &crimsonPlayer[playerIndex].fluxCanStart;
 	auto* canEnd = &crimsonPlayer[playerIndex].fluxCanEnd;
-    auto& gamepad = GetGamepad(playerIndex);
+    auto& gamepad = GetGamepad(actorData.newGamepad);
     
     if (*fluxtime > 0) {
 		

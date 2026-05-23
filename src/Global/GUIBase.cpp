@@ -250,7 +250,8 @@ void CreditsWindow() {
 
 
 void Welcome() {
-    if (!activeConfig.welcome) {
+    // Only show the text welcome at stage 0; stages 1+ handled by CrimsonOnboarding
+    if (activeCrimsonConfig.Onboarding.welcomeStage != 0) {
         return;
     }
 
@@ -270,7 +271,8 @@ void Welcome() {
 
     ImGui::PushStyleVar(ImGuiStyleVar_WindowRounding, 0);
 
-    if (ImGui::Begin("Welcome", &activeConfig.welcome,
+    static bool windowOpen = true;
+    if (ImGui::Begin("Welcome", &windowOpen,
             ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove | ImGuiWindowFlags_NoScrollbar)) {
         ImGui::Text("");
 
@@ -278,7 +280,9 @@ void Welcome() {
         ImGui::Text("");
 
         if (CenterButton("Close")) {
-            activeConfig.welcome = queuedConfig.welcome = false;
+            // Advance to stage 1 (Game Mode selection) instead of closing entirely
+            activeCrimsonConfig.Onboarding.welcomeStage =
+                queuedCrimsonConfig.Onboarding.welcomeStage = 1;
 
             SaveConfig();
         }

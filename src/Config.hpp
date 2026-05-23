@@ -110,11 +110,6 @@ struct Config {
     } Rebellion;
 
     struct {
-        float mainSpeed = 1.0f;
-        float turbo     = 1.2f;
-    } Speed;
-
-    struct {
         float stingerDuration[2]    = {16, 16};
         float stingerRange[2]       = {560, 560};
         uint8 airStingerCount[2]    = {1, 1};
@@ -140,7 +135,6 @@ struct Config {
 
     bool enableFileMods = true;
 
-    float frameRate = 120;
     uint8 vSync     = 1;
 
     bool hideMouseCursor = false;
@@ -201,17 +195,11 @@ struct Config {
     bool enableBossVergilFixes = false;
     bool enablePVPFixes        = false;
 
-    bool hideMainHUD = false;
-    bool hideLockOn  = false;
-    bool hideBossHUD = false;
-
     bool soundIgnoreEnemyData = false;
 
     uint8 dergil = 0;
 
     uint8 beowulfVergilAirRisingSunCount[2] = {1, 1};
-
-    bool forceVisibleHUD = false;
 
     _(6);
 
@@ -229,15 +217,13 @@ struct Config {
 
     BarsData barsData[PLAYER_COUNT];
 
-    bool disableStyleRankHudFadeout = true;
-
     bool forceSyncHitMagicPoints = true;
 
     bool updateLockOns = true;
 
     bool showCredits = (debug) ? false : true;
 
-	KeyData keyData[5] = {
+	KeyData keyData[HOTKEY_COUNT] = {
 	    { { DI8::KEY::DELETE }, 1, false },
 		{ { DI8::KEY::F1 }, 1, true },
 		{ { DI8::KEY::F3 }, 1, true },
@@ -247,9 +233,6 @@ struct Config {
 
     bool absoluteUnit = false;
 
-    char gamepadName[128] = "Wireless Controller";
-    byte8 gamepadButton   = 13;
-
     bool disablePlayerActorIdleTimer = false;
 
     bool rebellionInfiniteShredder = false;
@@ -257,12 +240,6 @@ struct Config {
 
     uint8 costumeRespectsProgression = 2;
 
-    // load these from cfg, here are default values for now
-    
-    std::string selectedHUD = "Crimson HUD";
-
-    bool disableBlendingEffects = false;
-    bool framerateResponsiveGameSpeed = true;
     bool playDTReadySFXAtMissionStart = true;
 };
 

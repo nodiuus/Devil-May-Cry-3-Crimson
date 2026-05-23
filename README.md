@@ -1,4 +1,4 @@
-<img src="Public/fulllogo-with-fullcredits.png" alt="Logo" style="width: 2400px;"/>  
+<img src="Public/CrimReFullCredits.png" alt="Logo" style="width: 2400px;"/>  
   
 # THE ULTIMATE DMC3 EXPERIENCE   
 DMC3 Crimson is an Overhaul Modification for Devil May Cry 3 (HD Collection version) that aims to bring Co-Op and PVP Multiplayer, High Frame-Rate support, Quality-of-Life improvements, Gameplay changes, Visual and Sound additions, Bugfixes, Cheats and more.

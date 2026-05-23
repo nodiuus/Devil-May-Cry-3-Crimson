@@ -453,14 +453,6 @@ void CreateMembers(Config& config_) {
         }
     }
 
-    {
-        auto& member = Create<struct_t>(crimsonConfigRoot, "Speed");
-        auto& config = config_.Speed;
-
-        Create<float>(member, "mainSpeed", config.mainSpeed);
-        Create<float>(member, "turbo", config.turbo);
-    }
-
 
     auto& member = crimsonConfigRoot;
     auto& config = config_;
@@ -476,7 +468,6 @@ void CreateMembers(Config& config_) {
     Create<bool>(member, "skipIntro", config.skipIntro);
     Create<bool>(member, "skipCutscenes", config.skipCutscenes);
     Create<bool>(member, "enableFileMods", config.enableFileMods);
-    Create<float>(member, "frameRate", config.frameRate);
     Create<uint8>(member, "vSync", config.vSync);
     Create<bool>(member, "hideMouseCursor", config.hideMouseCursor);
     Create<int32>(member, "windowPosX", config.windowPosX);
@@ -545,22 +536,11 @@ void CreateMembers(Config& config_) {
     Create<bool>(member, "enableBossLadyFixes", config.enableBossLadyFixes);
     Create<bool>(member, "enableBossVergilFixes", config.enableBossVergilFixes);
     Create<bool>(member, "enablePVPFixes", config.enablePVPFixes);
-    Create<bool>(member, "hideMainHUD", config.hideMainHUD);
-    Create<bool>(member, "hideLockOn", config.hideLockOn);
-    Create<bool>(member, "hideBossHUD", config.hideBossHUD);
-    Create<bool>(member, "disableStyleRankHudFadeout", config.disableStyleRankHudFadeout);
     Create<bool>(member, "soundIgnoreEnemyData", config.soundIgnoreEnemyData);
     Create<uint8>(member, "dergil", config.dergil);
     Create<uint8>(member, "costumeRespectsProgression", config.costumeRespectsProgression);
 
-    CreateString(member, "selectedHUD", config.selectedHUD.c_str());
-
-	Create<bool>(member, "disableBlendingEffects", config.disableBlendingEffects);
-	Create<bool>(member, "framerateResponsiveGameSpeed", config.framerateResponsiveGameSpeed);
-
     CreateArray<uint8, 2>(member, "beowulfVergilAirRisingSunCount", config.beowulfVergilAirRisingSunCount);
-
-    Create<bool>(member, "forceVisibleHUD", config.forceVisibleHUD);
 
 
     {
@@ -580,10 +560,10 @@ void CreateMembers(Config& config_) {
     Create<bool>(member, "showCredits", config.showCredits);
 
     {
-        auto& member = CreateArray<struct_t, 3>(crimsonConfigRoot, "keyData");
+        auto& member = CreateArray<struct_t, HOTKEY_COUNT>(crimsonConfigRoot, "keyData");
         auto& config = config_.keyData;
 
-        for_all(index, 3) {
+        for_all(index, HOTKEY_COUNT) {
             auto& member2 = member[index];
             auto& config2 = config[index];
 
@@ -593,8 +573,6 @@ void CreateMembers(Config& config_) {
 
 
     Create<bool>(member, "absoluteUnit", config.absoluteUnit);
-    CreateString(member, "gamepadName", config.gamepadName);
-    Create<byte8>(member, "gamepadButton", config.gamepadButton);
     Create<bool>(member, "disablePlayerActorIdleTimer", config.disablePlayerActorIdleTimer);
     Create<bool>(member, "rebellionInfiniteShredder", config.rebellionInfiniteShredder);
     Create<bool>(member, "rebellionHoldDrive", config.rebellionHoldDrive);
@@ -837,14 +815,6 @@ void ToJSON(Config& config_) {
         }
     }
 
-    {
-        auto& member = crimsonConfigRoot["Speed"];
-        auto& config = config_.Speed;
-
-        Set<float>(member["mainSpeed"], config.mainSpeed);
-        Set<float>(member["turbo"], config.turbo);
-    }
-
     auto& member = crimsonConfigRoot;
     auto& config = config_;
 
@@ -859,7 +829,6 @@ void ToJSON(Config& config_) {
     Set<bool>(member["skipIntro"], config.skipIntro);
     Set<bool>(member["skipCutscenes"], config.skipCutscenes);
     Set<bool>(member["enableFileMods"], config.enableFileMods);
-    Set<float>(member["frameRate"], config.frameRate);
     Set<uint8>(member["vSync"], config.vSync);
     Set<bool>(member["hideMouseCursor"], config.hideMouseCursor);
     Set<int32>(member["windowPosX"], config.windowPosX);
@@ -889,22 +858,11 @@ void ToJSON(Config& config_) {
     Set<bool>(member["enableBossLadyFixes"], config.enableBossLadyFixes);
     Set<bool>(member["enableBossVergilFixes"], config.enableBossVergilFixes);
     Set<bool>(member["enablePVPFixes"], config.enablePVPFixes);
-    Set<bool>(member["hideMainHUD"], config.hideMainHUD);
-    Set<bool>(member["hideLockOn"], config.hideLockOn);
-    Set<bool>(member["hideBossHUD"], config.hideBossHUD);
-    Set<bool>(member["disableStyleRankHudFadeout"], config.disableStyleRankHudFadeout);
     Set<bool>(member["soundIgnoreEnemyData"], config.soundIgnoreEnemyData);
     Set<uint8>(member["dergil"], config.dergil);
     Set<uint8>(member["costumeRespectsProgression"], config.costumeRespectsProgression);
 
-    SetString(member["selectedHUD"], config.selectedHUD.c_str());
-
-	Set<bool>(member["disableBlendingEffects"], config.disableBlendingEffects);
-	Set<bool>(member["framerateResponsiveGameSpeed"], config.framerateResponsiveGameSpeed);
-
     SetArray<uint8, 2>(member["beowulfVergilAirRisingSunCount"], config.beowulfVergilAirRisingSunCount);
-
-    Set<bool>(member["forceVisibleHUD"], config.forceVisibleHUD);
 
 
     for_all(playerIndex, PLAYER_COUNT) {
@@ -916,14 +874,12 @@ void ToJSON(Config& config_) {
     Set<bool>(member["showCredits"], config.showCredits);
 
 
-    for_all(index, 3) {
+    for_all(index, HOTKEY_COUNT) {
         ToJSON_KeyData(member["keyData"][index], config.keyData[index]);
     }
 
 
     Set<bool>(member["absoluteUnit"], config.absoluteUnit);
-    SetString(member["gamepadName"], config.gamepadName);
-    Set<byte8>(member["gamepadButton"], config.gamepadButton);
     Set<bool>(member["disablePlayerActorIdleTimer"], config.disablePlayerActorIdleTimer);
     Set<bool>(member["rebellionInfiniteShredder"], config.rebellionInfiniteShredder);
     Set<bool>(member["rebellionHoldDrive"], config.rebellionHoldDrive);
@@ -1177,14 +1133,6 @@ void ToConfig(Config& config_) {
         }
     }
 
-    {
-        auto& config = config_.Speed;
-        auto& member = crimsonConfigRoot["Speed"];
-
-        config.mainSpeed              = Get<float>(member["mainSpeed"]);
-        config.turbo                  = Get<float>(member["turbo"]);
-    }
-
     auto& config = config_;
     auto& member = crimsonConfigRoot;
 
@@ -1199,7 +1147,6 @@ void ToConfig(Config& config_) {
     config.skipIntro                   = Get<bool>(member["skipIntro"]);
     config.skipCutscenes               = Get<bool>(member["skipCutscenes"]);
     config.enableFileMods            = Get<bool>(member["enableFileMods"]);
-    config.frameRate                   = Get<float>(member["frameRate"]);
     config.vSync                       = Get<uint8>(member["vSync"]);
     config.hideMouseCursor             = Get<bool>(member["hideMouseCursor"]);
     config.windowPosX                  = Get<int32>(member["windowPosX"]);
@@ -1229,21 +1176,11 @@ void ToConfig(Config& config_) {
     config.enableBossLadyFixes                = Get<bool>(member["enableBossLadyFixes"]);
     config.enableBossVergilFixes              = Get<bool>(member["enableBossVergilFixes"]);
     config.enablePVPFixes                     = Get<bool>(member["enablePVPFixes"]);
-    config.hideMainHUD                        = Get<bool>(member["hideMainHUD"]);
-    config.hideLockOn                         = Get<bool>(member["hideLockOn"]);
-    config.disableStyleRankHudFadeout         = Get<bool>(member["disableStyleRankHudFadeout"]);
     config.soundIgnoreEnemyData               = Get<bool>(member["soundIgnoreEnemyData"]);
     config.dergil                             = Get<uint8>(member["dergil"]);
     config.costumeRespectsProgression         = Get<uint8>(member["costumeRespectsProgression"]);
 
-    config.selectedHUD = Get<std::string>(member["selectedHUD"]);
-
-	config.disableBlendingEffects = Get<bool>(member["disableBlendingEffects"]);
-	config.framerateResponsiveGameSpeed = Get<bool>(member["framerateResponsiveGameSpeed"]);
-
     GetArray<uint8, 2>(config.beowulfVergilAirRisingSunCount, member["beowulfVergilAirRisingSunCount"]);
-
-    config.forceVisibleHUD = Get<bool>(member["forceVisibleHUD"]);
 
 
     for_all(playerIndex, PLAYER_COUNT) {
@@ -1256,16 +1193,13 @@ void ToConfig(Config& config_) {
     config.showCredits             = Get<bool>(member["showCredits"]);
 
 
-    for_all(index, 3) {
+    for_all(index, HOTKEY_COUNT) {
         ToConfig_KeyData(config.keyData[index], member["keyData"][index]);
     }
 
 
     config.absoluteUnit = Get<bool>(member["absoluteUnit"]);
 
-    GetString(config.gamepadName, sizeof(config.gamepadName), member["gamepadName"]);
-
-    config.gamepadButton               = Get<byte8>(member["gamepadButton"]);
     config.disablePlayerActorIdleTimer = Get<bool>(member["disablePlayerActorIdleTimer"]);
     config.rebellionInfiniteShredder   = Get<bool>(member["rebellionInfiniteShredder"]);
     config.rebellionHoldDrive          = Get<bool>(member["rebellionHoldDrive"]);
@@ -1296,8 +1230,6 @@ void InitConfig() {
     DebugLog("kalinaAnnHookGrenadeTime   %llX", offsetof(Config, kalinaAnnHookGrenadeTime));
     DebugLog("kalinaAnnHookMultiplier    %llX", offsetof(Config, kalinaAnnHookMultiplier));
     DebugLog("barsData                   %llX", offsetof(Config, barsData));
-
-    DebugLog("activeConfig.gamepadName %llX", activeConfig.gamepadName);
 }
 
 // Declare template functions
@@ -1725,6 +1657,23 @@ std::vector<byte32> originalExpertise = {
 };
 
 
+void RefundMoveExpertise(uint8 charId, int unlock)
+{
+    auto& sessionData = *reinterpret_cast<SessionData*>(appBaseAddr + 0xC8F250);
+    if (charId == CHARACTER::DANTE) {
+        const ExpertiseHelper& helper = expertiseHelpersDante[unlock];
+        sessionData.expertise[helper.index] &= ~helper.flags;
+        
+    }
+    else if (charId == CHARACTER::VERGIL) {
+        const ExpertiseHelper& helper = expertiseHelpersVergil[unlock];
+        sessionData.expertise[helper.index] &= ~helper.flags;
+    }
+    else {
+        return;
+    }
+}
+
 void SavePlayerActorExp() {
     if (!Enable() || Max()) {
         return;
@@ -1895,7 +1844,7 @@ void UpdatePlayerActorExp(byte8* actorBaseAddr) {
         styleLevel = expData.styleLevels[actorData.style];
     }
 	
-	if (styleLevel >= 2) {
+	if (styleLevel >= 3) {
 		styleExpPoints = 100000;
 	}
 	else {
@@ -2276,7 +2225,7 @@ void MaintainUnlockAndExpertiseParity() {
 				if (sessionData.expertise[helper.index] & helper.flags && !sessionExpDataDante.unlocks[index]) {
 
 					// Set the corresponding unlock flag to true
-					sessionExpDataDante.unlocks[index] = true;
+					//sessionExpDataDante.unlocks[index] = true;
 				}
 			}
 
@@ -2294,7 +2243,7 @@ void MaintainUnlockAndExpertiseParity() {
 
                 // Check if the current weapon level matches the helper's level
                 if (sessionData.rangedWeaponLevels[(helper.index - 5)] >= weaponLevel  && !sessionExpDataDante.unlocks[index]) {
-                    sessionExpDataDante.unlocks[index] = true;
+                    //sessionExpDataDante.unlocks[index] = true;
                 }
             }
 

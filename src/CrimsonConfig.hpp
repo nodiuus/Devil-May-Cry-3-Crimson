@@ -11,6 +11,10 @@
 #pragma optimize("", off) // Disable all optimizations
 #pragma pack(push, 8)
 
+#define NUM_GAMEPADBINDS 16
+#define NUM_KEYBINDS 24
+#define NUM_DIRECT_WEAPON_BINDS 10
+
 namespace HUDELEMENTSCALESTATE {
 enum {
 	SMALL,
@@ -34,6 +38,13 @@ enum {
 };
 }
 
+namespace STYLENAMESSET {
+enum {
+	CRIMSON,
+	DMC3_SWITCH,
+};
+}
+
 namespace MISSIONTIMERDISPLAY {
 enum {
 	OFF,
@@ -50,6 +61,14 @@ enum {
 };
 }
 
+namespace CAMERASHAKE {
+	enum {
+		OFF,
+		ONLY_IN_SINGLE_PLAYER_CAM,
+		ALWAYS_ON
+	};
+}
+
 namespace DELAYEDCOMBOSFX {
 enum {
 	TYPE_A,
@@ -57,10 +76,27 @@ enum {
 };
 }
 
+namespace STYLESWITCHVFXTYPE {
+	enum {
+	CRIMSON,
+	NSWITCH
+};
+}
+
+namespace VISUALSTYLEPRESETS {
+enum {
+	CLASSIC,
+	HYBRID,
+	MODERN,
+	CUSTOM,
+	};
+}
+
 struct CrimsonConfig {
 	struct MultiplayerBars2D {
 		bool show = true;
 		uint8 show1PAttributes = HUDELEMENTSHOWSTATE::ONLY_IN_MP;
+
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
@@ -137,13 +173,14 @@ struct CrimsonConfig {
 		bool positionings = true;
 		uint8 stylesDisplay = STYLESDISPLAY::WITH_BROKEN_GLASS;
 		bool displayStyleNames = true;
+		uint8 styleNamesSet = STYLENAMESSET::CRIMSON;
 		bool redOrbCounter = true;
 		bool royalGauge = true;
 		bool styleRanksMeter = true;
 		bool stylishPtsCounter = true;
 		uint8 missionTimerDisplay = MISSIONTIMERDISPLAY::ONLY_IN_BP;
 		bool lockOn = true;
-		bool scaleLockOnEnemyDistance = false;
+		bool lockOnStunDisplacement = true;
 		bool stunDisplacementNumericHud = false;
 		bool lockOnColorsCharacter = true;
 		std::string selectedStyleRanks = "Crimson";
@@ -154,13 +191,14 @@ struct CrimsonConfig {
 				std::make_pair("positionings", &CrimsonHudAddons::positionings),
 				std::make_pair("stylesDisplay", &CrimsonHudAddons::stylesDisplay),
 				std::make_pair("displayStyleNames", &CrimsonHudAddons::displayStyleNames),
+				std::make_pair("styleNamesSet", &CrimsonHudAddons::styleNamesSet),
                 std::make_pair("redOrbCounter", &CrimsonHudAddons::redOrbCounter),
                 std::make_pair("royalGauge", &CrimsonHudAddons::royalGauge),
                 std::make_pair("styleRanksMeter", &CrimsonHudAddons::styleRanksMeter),
 				std::make_pair("missionTimerDisplay", &CrimsonHudAddons::missionTimerDisplay),
 				std::make_pair("stylishPtsCounter", &CrimsonHudAddons::stylishPtsCounter),
                 std::make_pair("lockOn", &CrimsonHudAddons::lockOn),
-				std::make_pair("scaleLockOnEnemyDistance", &CrimsonHudAddons::scaleLockOnEnemyDistance),
+				std::make_pair("lockOnStunDisplacement", &CrimsonHudAddons::lockOnStunDisplacement),
 				std::make_pair("stunDisplacementNumericHud", &CrimsonHudAddons::stunDisplacementNumericHud),
 				std::make_pair("lockOnColorsCharacter", &CrimsonHudAddons::lockOnColorsCharacter),
 				std::make_pair("selectedStyleRanks", &CrimsonHudAddons::selectedStyleRanks),
@@ -171,26 +209,50 @@ struct CrimsonConfig {
 
 	struct HudOptions {
 		bool hideStyleMeter = false;
+		bool hideMainHUD = false;
+		bool hideLockOn = false;
+		bool hideBossHUD = false;
+		bool forceVisibleHUD = false;
+		bool disableStyleRankHudFadeout = true;
+		std::string selectedHUD = "Crimson HUD";
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("hideStyleMeter", &HudOptions::hideStyleMeter)
+				std::make_pair("hideStyleMeter", &HudOptions::hideStyleMeter),
+				std::make_pair("hideMainHUD", &HudOptions::hideMainHUD),
+				std::make_pair("hideLockOn", &HudOptions::hideLockOn),
+				std::make_pair("hideBossHUD", &HudOptions::hideBossHUD),
+				std::make_pair("forceVisibleHUD", &HudOptions::forceVisibleHUD),
+				std::make_pair("disableStyleRankHudFadeout", &HudOptions::disableStyleRankHudFadeout),
+				std::make_pair("selectedHUD", &HudOptions::selectedHUD)
 			);
 		}
 	} HudOptions;
 
+	struct VisualStyle {
+		uint8 preset = VISUALSTYLEPRESETS::MODERN;
+		bool tieVisualStyleToGameMode = false;
+
+		static constexpr auto Metadata() {
+			return std::make_tuple(
+				std::make_pair("preset", &VisualStyle::preset),
+				std::make_pair("tieVisualStyleToGameMode", &VisualStyle::tieVisualStyleToGameMode)
+			);
+		}
+	} VisualStyle;
 
 	struct Camera {
 		float fovMultiplier = 1.2f;
 		uint8 sensitivity = 2;
-		uint8 followUpSpeed = 2;
+		uint8 followUpSpd = 0;
 		uint8 distance = 2;
 		uint8 lockOnDistance = 2;
 		uint8 verticalTilt = 0;
 		bool lockedOff = true;
 		bool invertX = true;
 		uint8 autoAdjust = 0;
-		uint8 rightStickCameraCentering = RIGHTSTICKCENTERCAM::TO_NEAREST_SIDE;
+		uint8 rightStickCameraCentering = RIGHTSTICKCENTERCAM::ON;
+		uint8 cameraShake = CAMERASHAKE::ONLY_IN_SINGLE_PLAYER_CAM;
 		bool disableBossCamera = false;
 		bool multiplayerCamera = true;
 		bool panoramicCam = true;
@@ -200,7 +262,7 @@ struct CrimsonConfig {
 			return std::make_tuple(
 				std::make_pair("fovMultiplier", &Camera::fovMultiplier),
 				std::make_pair("sensitivity", &Camera::sensitivity),
-                std::make_pair("followUpSpeed", &Camera::followUpSpeed),
+                std::make_pair("followUpSpd", &Camera::followUpSpd),
                 std::make_pair("distance", &Camera::distance),
                 std::make_pair("lockOnDistance", &Camera::lockOnDistance),
                 std::make_pair("verticalTilt", &Camera::verticalTilt),
@@ -208,6 +270,7 @@ struct CrimsonConfig {
                 std::make_pair("invertX", &Camera::invertX),
                 std::make_pair("autoAdjust", &Camera::autoAdjust),
                 std::make_pair("rightStickCameraCentering", &Camera::rightStickCameraCentering),
+				std::make_pair("cameraShake", &Camera::cameraShake),
                 std::make_pair("disableBossCamera", &Camera::disableBossCamera),
 				std::make_pair("multiplayerCamera", &Camera::multiplayerCamera),
 				std::make_pair("panoramicCam", &Camera::panoramicCam),
@@ -220,29 +283,45 @@ struct CrimsonConfig {
 
 		struct Flux {
 			bool enable = true;
+			uint8 type = STYLESWITCHVFXTYPE::CRIMSON;
 
-			uint8 color[7][4] = {
+			uint8 fluxColor[7][4] = {
 				// r   g  b  a 
-				{ 29, 29, 0, 255 }, //trick  
-				{ 26, 0, 0, 255 }, //sword  
-				{ 0, 8, 34, 255 }, //gun    
-				{ 0, 35, 6, 255 }, //royal  
-				{ 26, 0, 35, 255 }, //quick  
-				{ 30, 14, 0, 255 }, //doppel 
+				{ 250, 237, 54, 255 }, //trick  
+				{ 252, 45, 45, 255 }, //sword  
+				{ 72, 49, 255, 255 }, //gun    
+				{ 47, 255, 72, 255 }, //royal  
+				{ 255, 55, 221, 255 }, //quick  
+				{ 255, 146, 65, 255 }, //doppel 
 				{ 0, 25, 30, 255 } // vergil
 			};
+
+			uint8 fluxSwooshColor[7][4] = {
+				// r   g  b  a 
+				{ 240, 255, 0, 255 }, //trick  
+				{ 255, 0, 0, 255 }, //sword  
+				{ 28, 0, 255, 255 }, //gun    
+				{ 0, 255, 35, 255 }, //royal  
+				{ 255, 0, 215, 255 }, //quick  
+				{ 255, 109, 0, 255 }, //doppel 
+				{ 0, 25, 30, 255 } // vergil
+			};
+			bool customSwooshColors = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
 					std::make_pair("enable", &StyleSwitchFX::Flux::enable),
-                    std::make_pair("color", &StyleSwitchFX::Flux::color)
+					std::make_pair("type", &StyleSwitchFX::Flux::type),
+                    std::make_pair("fluxColor", &StyleSwitchFX::Flux::fluxColor),
+					std::make_pair("fluxSwooshColor", &StyleSwitchFX::Flux::fluxSwooshColor),
+					std::make_pair("customSwooshColors", &StyleSwitchFX::Flux::customSwooshColors)
 				);
 			}
 
 		} Flux;
 
 		struct Text {
-			bool enable = true;
+			bool textEnabled = false;
 			float maxAlpha = 0.9f;
 			float size = 1.0f;
 
@@ -261,7 +340,7 @@ struct CrimsonConfig {
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
-					std::make_pair("enable", &StyleSwitchFX::Text::enable),
+					std::make_pair("textEnabled", &StyleSwitchFX::Text::textEnabled),
 					std::make_pair("maxAlpha", &StyleSwitchFX::Text::maxAlpha),
 					std::make_pair("size", &StyleSwitchFX::Text::size),
                     std::make_pair("color", &StyleSwitchFX::Text::color)
@@ -281,10 +360,26 @@ struct CrimsonConfig {
 
 	struct VFX {
 		bool delayedComboVFX = true;
+		uint8 delayedComboColor[4] = { 48, 0, 10, 255 };
+		bool royalBlockVFX = true;
+		uint8 royalBlockColor[4] = { 226, 4, 50, 255 };
+		bool dtExplosionVFX = true;
+		uint8 dtExplosionColorDante[4] = { 48, 0, 10, 255 };
+		uint8 dtExplosionColorVergil[4] = { 2, 16, 43, 255 };
+		bool dtActivationVibration = true;
+		bool originalJDCReference = false;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("delayedComboVFX", &VFX::delayedComboVFX)
+				std::make_pair("delayedComboVFX", &VFX::delayedComboVFX),
+				std::make_pair("delayedComboColor", &VFX::delayedComboColor),
+				std::make_pair("royalBlockVFX", &VFX::royalBlockVFX),
+				std::make_pair("royalBlockColor", &VFX::royalBlockColor),
+				std::make_pair("dtExplosionVFX", &VFX::dtExplosionVFX),
+				std::make_pair("dtExplosionColorDante", &VFX::dtExplosionColorDante),
+				std::make_pair("dtExplosionColorVergil", &VFX::dtExplosionColorVergil),
+				std::make_pair("dtActivationVibration", &VFX::dtActivationVibration),
+				std::make_pair("originalJDCReference", &VFX::originalJDCReference)
 			);
 		}
 	} VFX;
@@ -295,6 +390,7 @@ struct CrimsonConfig {
 		uint8 changeWeaponEffectVolume = 100;
 		uint8 styleChangeNew = 1;
 		uint8 styleChangeVolume = 100;
+		uint8 styleChangeSnapVolume = 100;
 		uint8 styleChangeVoiceOverVolume = 100;
 		uint8 sprintEffectVolume = 100;
 		uint8 dTInL1Volume = 100;
@@ -323,6 +419,7 @@ struct CrimsonConfig {
                 std::make_pair("changeWeaponEffectVolume", &SFX::changeWeaponEffectVolume),
 				std::make_pair("styleChangeNew", &SFX::styleChangeNew),
                 std::make_pair("styleChangeVolume", &SFX::styleChangeVolume),
+				std::make_pair("styleChangeSnapVolume", &SFX::styleChangeSnapVolume),
                 std::make_pair("styleChangeVoiceOverVolume", &SFX::styleChangeVoiceOverVolume),
                 std::make_pair("sprintEffectVolume", &SFX::sprintEffectVolume),
                 std::make_pair("dTInL1Volume", &SFX::dTInL1Volume),
@@ -347,6 +444,18 @@ struct CrimsonConfig {
 		}
 	} SFX;
 
+	struct Visual {
+		bool clothPhysicsEnhancement = true;
+		bool moreTauntsAnimations = true;
+
+		static constexpr auto Metadata() {
+			return std::make_tuple(
+				std::make_pair("clothPhysicsEnhancement", &Visual::clothPhysicsEnhancement),
+				std::make_pair("moreTauntsAnimations", &Visual::moreTauntsAnimations)
+			);
+		}
+	} Visual;
+
 	struct Sound {
 		uint8 channelVolumes[CHANNEL::MAX] = {
 			100,
@@ -362,11 +471,13 @@ struct CrimsonConfig {
 			100,
 		};
 		bool overrideMissionStartSong = false;
+		bool crimsonModeChangesMusic = true;
 
 		static constexpr auto Metadata() {
 			return std::make_tuple(
 				std::make_pair("channelVolumes", &Sound::channelVolumes),
-				std::make_pair("overrideMissionStartSong", &Sound::overrideMissionStartSong)
+				std::make_pair("overrideMissionStartSong", &Sound::overrideMissionStartSong),
+				std::make_pair("crimsonModeChangesMusic", &Sound::crimsonModeChangesMusic)
 			);
 		}
 	} Sound;
@@ -397,29 +508,174 @@ struct CrimsonConfig {
 	} PlayerProperties;
 
 	struct System {
-		struct Remaps {
-			uint16_t danteDTButton = 0x0004;
-			uint16_t danteShootButton = 0x0080;
-			uint16_t vergilDTButton = 0x0080;
-			uint16_t vergilShootButton = 0x0004;
+		struct ButtonConfig {
+			uint16_t dante1P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil1P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t dante2P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil2P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t dante3P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil3P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t dante4P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
+
+			uint16_t vergil4P[NUM_GAMEPADBINDS] = {
+				0x1000, 0x4000, 0x2000, 0x8000,
+				0x10,   0x40,   0x20,   0x80,
+				0x4,    0x1,    0x200,  0x8,
+				0x2,    0x400,  0x100,  0x800
+			};
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
-					std::make_pair("danteDTButton", &Remaps::danteDTButton),
-					std::make_pair("danteShootButton", &Remaps::danteShootButton),
-					std::make_pair("vergilDTButton", &Remaps::vergilDTButton),
-					std::make_pair("vergilShootButton", &Remaps::vergilShootButton)
+					std::make_pair("dante1P", &ButtonConfig::dante1P),
+					std::make_pair("vergil1P", &ButtonConfig::vergil1P),
+					std::make_pair("dante2P", &ButtonConfig::dante2P),
+					std::make_pair("vergil2P", &ButtonConfig::vergil2P),
+					std::make_pair("dante3P", &ButtonConfig::dante3P),
+					std::make_pair("vergil3P", &ButtonConfig::vergil3P),
+					std::make_pair("dante4P", &ButtonConfig::dante4P),
+					std::make_pair("vergil4P", &ButtonConfig::vergil4P)
 				);
 			}
-		} Remaps;
-		
-		bool flipModelPresentation = true;
-	
+		} ButtonConfig;
 
+		struct KeyboardConfig {
+			uint32 keybinds[NUM_KEYBINDS] = {
+				DI8::KEY::LEFT_SHIFT, // keyboard_0(HDCdefault: 54) - SELECT / TAUNT - dmc3.exe+5611A0
+				DI8::KEY::U, // keyboard_1(HDCdefault: 49) - LB / DEVIL TRIGGER - dmc3.exe+5611A4
+				DI8::KEY::T, // keyboard_2(HDCdefault: 46) - LS / CHANGE TARGET - dmc3.exe + 5611A8
+				DI8::KEY::ONE, // keyboard_3(HDCdefault: 2) - DPAD UP - dmc3.exe + 5611AC
+				DI8::KEY::TWO, // keyboard_4(HDCdefault: 3) - DPAD RIGHT - dmc3.exe + 5611B0
+				DI8::KEY::FOUR, // keyboard_5(HDCdefault: 5) - DPAD DOWN - dmc3.exe + 5611B4
+				DI8::KEY::THREE, // keyboard_6(HDCdefault: 4) - DPAD LEFT - dmc3.exe + 5611B8
+				DI8::KEY::M, // keyboard_7(HDCdefault: 50) - START - dmc3.exe + 5611BC
+				DI8::KEY::SPACE, // keyboard_8(HDCdefault: 57) - RB / LOCK ON - dmc3.exe + 5611C0
+				DI8::KEY::R, // keyboard_9(HDCdefault: 33) - RS / DEFAULT CAMERA - dmc3.exe + 5611C4
+				DI8::KEY::I, // keyboard_10(HDCdefault: 23) - Y / MELEE ATK - dmc3.exe + 5611C8
+				DI8::KEY::L, // keyboard_11(HDCdefault: 38) - B / STYLE - dmc3.exe + 5611CC
+				DI8::KEY::K, // keyboard_12(HDCdefault: 37) - A / JUMP - dmc3.exe + 5611D0
+				DI8::KEY::J, // keyboard_13(HDCdefault: 36) - X / SHOOT - dmc3.exe + 5611D4
+				DI8::KEY::W, // keyboard_14(HDCdefault: 17) - LEFT ANALOG UP - dmc3.exe + 5611D8
+				DI8::KEY::D, // keyboard_15(HDCdefault: 32) - LEFT ANALOG RIGHT - dmc3.exe + 5611DC
+				DI8::KEY::S, // keyboard_16(0HDCdefault: 31) - LEFT ANALOG DOWN - dmc3.exe + 5611E0
+				DI8::KEY::A, // keyboard_17(HDCdefault: 30) - LEFT ANALOG LEFT - dmc3.exe + 5611E4
+				DI8::KEY::UP, // keyboard_18(HDCdefault: 72) - RIGHT ANALOG UP - dmc3.exe+5611E8
+				DI8::KEY::RIGHT, // keyboard_19(HDCdefault: 77) - RIGHT ANALOG RIGHT - dmc3.exe+5611EC
+				DI8::KEY::DOWN, // keyboard_20(HDCdefault: 80) - RIGHT ANALOG DOWN - dmc3.exe+5611F0
+				DI8::KEY::LEFT, // keyboard_21(HDCdefault: 75) - RIGHT ANALOG LEFT - dmc3.exe+5611F4
+				DI8::KEY::Q, // keyboard_22(HDCdefault: 16) - LT / CHANGE GUN - dmc3.exe + 5611F8
+				DI8::KEY::E, // keyboard_23(HDCdefault: 18) - RT / CHANGE DEVIL ARM - dmc3.exe + 5611FC
+			};
+
+			uint32 directWeaponKeybinds[NUM_DIRECT_WEAPON_BINDS] = {
+				DI8::KEY::F, // MELEE SLOT 1
+				DI8::KEY::V, // MELEE SLOT 2
+				DI8::KEY::C, // MELEE SLOT 3
+				DI8::KEY::X, // MELEE SLOT 4
+				DI8::KEY::Z, // MELEE SLOT 5
+				DI8::KEY::G, // GUN SLOT 1
+				DI8::KEY::H, // GUN SLOT 2
+				DI8::KEY::Y, // GUN SLOT 3
+				DI8::KEY::B, // GUN SLOT 4
+				DI8::KEY::N, // GUN SLOT 5
+			};
+
+			static constexpr auto Metadata() {
+				return std::make_tuple(
+					std::make_pair("keybinds", &KeyboardConfig::keybinds),
+					std::make_pair("directWeaponKeybinds", &KeyboardConfig::directWeaponKeybinds)
+				);
+			}
+
+		} KeyboardConfig;
+
+		uint8 xinputSlots[PLAYER_COUNT] = { 0, 1, 2, 3 };
+
+		bool flipModelPresentation = true;
+
+		float fpsCap = 120.0f;
+		bool fpsUnlocked = false;
+
+		bool disableMenuFadeouts = false;
+
+		struct BlendingEffects {
+			bool ghosting = false;
+			bool colorFilter = true;
+			bool bloom = true;
+			bool fogMist = true;
+			bool warp = true;
+			bool disableAll = false;
+
+			static constexpr auto Metadata() {
+				return std::make_tuple(
+					std::make_pair("ghosting", &BlendingEffects::ghosting),
+					std::make_pair("colorFilter", &BlendingEffects::colorFilter),
+					std::make_pair("bloom", &BlendingEffects::bloom),
+					std::make_pair("fogMist", &BlendingEffects::fogMist),
+					std::make_pair("warp", &BlendingEffects::warp),
+					std::make_pair("disableAll", &BlendingEffects::disableAll)
+				);
+			}
+		} BlendingEffects;
+
+		float windowSizeX = 9999.0f;
+		float windowSizeY = 9999.0f;
+		float windowPosX = 9999.0f;
+		float windowPosY = 9999.0f;
 		static constexpr auto Metadata() {
 			return std::make_tuple(
-				std::make_pair("Remaps", &System::Remaps),
-				std::make_pair("flipModelPresentation", &System::flipModelPresentation)
+				std::make_pair("ButtonConfig", &System::ButtonConfig),
+				std::make_pair("KeyboardConfig", &System::KeyboardConfig),
+				std::make_pair("xinputSlots", &System::xinputSlots),
+				std::make_pair("flipModelPresentation", &System::flipModelPresentation),
+				std::make_pair("fpsCap", &System::fpsCap),
+				std::make_pair("fpsUnlocked", &System::fpsUnlocked),
+				std::make_pair("disableMenuFadeouts", &System::disableMenuFadeouts),
+				std::make_pair("BlendingEffects", &System::BlendingEffects),
+				std::make_pair("windowSizeX",&System::windowSizeX),
+				std::make_pair("windowSizeY", &System::windowSizeY),
+				std::make_pair("windowPosX", &System::windowPosX),
+				std::make_pair("windowPosY", &System::windowPosY)
 			);
 		}
 	} System;
@@ -527,6 +783,16 @@ struct CrimsonConfig {
 		}
 	} CachedSettings;
 
+	struct Onboarding {
+		uint8 welcomeStage = 0; // 0=text welcome, 1=game mode, 2=visual style, 3=camera, 4=done
+
+		static constexpr auto Metadata() {
+			return std::make_tuple(
+				std::make_pair("welcomeStage", &Onboarding::welcomeStage)
+			);
+		}
+	} Onboarding;
+
 	static constexpr auto Metadata() {
 		return std::make_tuple(
 			std::make_pair("MultiplayerBars2D", &CrimsonConfig::MultiplayerBars2D),
@@ -535,14 +801,17 @@ struct CrimsonConfig {
 			std::make_pair("WeaponWheel", &CrimsonConfig::WeaponWheel),
             std::make_pair("CrimsonHudAddons", &CrimsonConfig::CrimsonHudAddons),
 			std::make_pair("HudOptions", &CrimsonConfig::HudOptions),
+			std::make_pair("VisualStyle", &CrimsonConfig::VisualStyle),
             std::make_pair("Camera", &CrimsonConfig::Camera),
             std::make_pair("StyleSwitchFX", &CrimsonConfig::StyleSwitchFX),
 			std::make_pair("VFX", &CrimsonConfig::VFX),
             std::make_pair("SFX", &CrimsonConfig::SFX),
+			std::make_pair("Visual", &CrimsonConfig::Visual),
 			std::make_pair("Sound", &CrimsonConfig::Sound),
 			std::make_pair("PlayerProperties", &CrimsonConfig::PlayerProperties),
 			std::make_pair("System", &CrimsonConfig::System),
-			std::make_pair("CachedSettings", &CrimsonConfig::CachedSettings)
+			std::make_pair("CachedSettings", &CrimsonConfig::CachedSettings),
+			std::make_pair("Onboarding", &CrimsonConfig::Onboarding)
 		);
 	}
 };

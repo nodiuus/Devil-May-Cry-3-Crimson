@@ -12,7 +12,15 @@ void HUD_UpdateDevilTriggerExplosion(uint8 character);
 
 bool HUD_UpdateWeaponIcon(uint8 index, uint8 weapon);
 
+void HUD_UpdateHPBar(uint8 character);
+
+void HUD_UpdateLockOn(uint8 character);
+
+extern byte8* g_dynamicHUD_id100;
+extern byte8* g_dynamicHUD_id100V;
+
 void HUD_Init();
+void HUD_ReloadIcons();
 void ToggleHideMainHUD(bool enable);
 void ToggleHideBossHUD(bool enable);
 

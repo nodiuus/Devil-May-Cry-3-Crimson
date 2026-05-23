@@ -23,6 +23,11 @@
 #include "CrimsonUtil.hpp"
 #include "CrimsonTimers.hpp"
 #include "CrimsonConfigGameplay.hpp"
+#include "CrimsonGameplay.hpp"
+#include "Arcade.hpp"
+#include "Scene.hpp"
+#include "Training.hpp"
+#include "HUD.hpp"
 #include "CrimsonGameModes.hpp"
 #include "CrimsonConfigGameplayMask.hpp"
 
@@ -51,9 +56,12 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = false;
 	general.sprint = false;
+	general.multiplayerDamageScaling = false;
+	general.extramoves = false;
 	general.freeformSoftLock = false;
 	general.bufferlessReversals = false;
-	general.dmc4LockOnDirection = false;
+	general.reversalWindow = false;
+	general.dmc4LockOnDirection = true;
 	general.holdToCrazyCombo = false;
 	general.disableHeightRestriction = false;
 	general.improvedBufferedReversals = false;
@@ -62,6 +70,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	general.increasedEnemyJuggleTime = false;
 	general.fasterTurnRate = false;
 	general.disableSoulEaterInvis = false;
+	general.consecutiveDirectionalMoves = false;
 
 	// Dante section
 	auto& dante = preset.Gameplay.Dante;
@@ -73,7 +82,7 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	dante.aerialMovesTweaks = false;
 	dante.downertiaD = false;
 	dante.shotgunAirShotTweaks = false;
-	dante.driveTweaks = false;
+	dante.driveRework = false;
 	dante.disableAirSlashKnockback = false;
 	dante.airStinger = false;
 	dante.airRevolver = false;
@@ -88,6 +97,9 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	dante.groundTrick = false;
 	dante.swapDancePierceInputs = false;
 	dante.swapArtemisMultiLockNormalShot = false;
+	dante.chargedShotgunLifts = false;
+	dante.doppelgangerSplitSync = false;
+	dante.quickGrapple = false;
 
 	// Vergil section
 	auto& vergil = preset.Gameplay.Vergil;
@@ -97,9 +109,8 @@ CrimsonConfigGameplay CreateVanillaPreset() {
 	vergil.airStinger = false;
 	vergil.airRisingSun = false;
 	vergil.airLunarPhase = false;
-	vergil.altJudgementCutInput = false;
-	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
-	//vergil.adjustLunarPhasePos = "Off";
+	vergil.judgementCutRework = false;
+	vergil.noAirLunarPhaseLift = false;
 
 	// Cheats: disabled
 	preset.Cheats = defaultCrimsonGameplay.Cheats;
@@ -116,6 +127,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = false;
 	general.sprint = true;
+	general.extramoves = false;
 	general.freeformSoftLock = true;
 	general.holdToCrazyCombo = true;
 	general.dmc4LockOnDirection = true;
@@ -125,7 +137,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	general.disableSoulEaterInvis = false;
 	general.disableHeightRestriction = true;
 	general.fasterTurnRate = true;
-
+	general.consecutiveDirectionalMoves = false;
 
 	// Dante section
 	auto& dante = preset.Gameplay.Dante;
@@ -137,7 +149,7 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	dante.aerialMovesTweaks = false;
 	dante.downertiaD = false;
 	dante.shotgunAirShotTweaks = false;
-	dante.driveTweaks = false;
+	dante.driveRework = false;
 	dante.disableAirSlashKnockback = false;
 	dante.airStinger = false;
 	dante.airRevolver = true;
@@ -152,6 +164,9 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	dante.artemisRework = true;
 	dante.groundTrick = false;
 	//dante.swapDancePierceInputs = false;
+	dante.chargedShotgunLifts = false;
+	dante.doppelgangerSplitSync = false;
+	dante.quickGrapple = false;
 
 	// Vergil section
 	auto& vergil = preset.Gameplay.Vergil;
@@ -161,13 +176,12 @@ CrimsonConfigGameplay CreateStyleSwitcherPreset() {
 	vergil.airStinger = true;
 	vergil.airRisingSun = true;
 	vergil.airLunarPhase = true;
-	vergil.altJudgementCutInput = true;
+	vergil.judgementCutRework = false;
 	vergil.yamatoRisingStar = false;
 	vergil.yamatoHighTime = false;
 	vergil.airTauntRisingSun = false;
 	vergil.mirageTrigger = false;
-	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
-	//vergil.adjustLunarPhasePos = "Off";
+	vergil.noAirLunarPhaseLift = false;
 
 	// Cheats section
 	preset.Cheats.General = defaultCrimsonGameplay.Cheats.General;
@@ -197,8 +211,9 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	auto& general = preset.Gameplay.General;
 	general.inertia = true;
 	general.sprint = true;
+	general.extramoves = true;
 	general.freeformSoftLock = true;
-	//general.bufferlessReversals = false;
+	//general.bufferlessReversals = false
 	general.dmc4LockOnDirection = true;
 	general.holdToCrazyCombo = true;
 	general.crazyComboMashRequirement = 3;
@@ -209,6 +224,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	general.increasedEnemyJuggleTime = true;
 	general.disableSoulEaterInvis = true;
 	general.fasterTurnRate = true;
+	general.consecutiveDirectionalMoves = true;
 
 	// Dante section
 	auto& dante = preset.Gameplay.Dante;
@@ -220,7 +236,7 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	dante.aerialMovesTweaks = true;
 	dante.downertiaD = true;
 	dante.shotgunAirShotTweaks = true;
-	dante.driveTweaks = true;
+	dante.driveRework = true;
 	dante.disableAirSlashKnockback = true;
 	dante.airStinger = true;
 	dante.airRevolver = true;
@@ -244,14 +260,12 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	vergil.airStinger = true;
 	vergil.airRisingSun = true;
 	vergil.airLunarPhase = true;
-	vergil.altJudgementCutInput = true;
+	vergil.judgementCutRework = true;
 	vergil.yamatoRisingStar = true;
 	vergil.yamatoHighTime = true;
 	vergil.airTauntRisingSun = true;
 	vergil.mirageTrigger = true;
-	
-	//vergil.adjustRisingSunPos = "Off"; // or whatever vanilla used
-	//vergil.adjustLunarPhasePos = "Off";
+	vergil.noAirLunarPhaseLift = true;
 
 	preset.Cheats.General = defaultCrimsonGameplay.Cheats.General;
 	preset.Cheats.Damage = defaultCrimsonGameplay.Cheats.Damage;
@@ -276,6 +290,9 @@ CrimsonConfigGameplay CreateCrimsonPreset() {
 	mobility.vergilAirTrickCount[0] = 1; mobility.vergilAirTrickCount[1] = 1;
 	mobility.trickUpCount[0] = 1;  mobility.trickUpCount[1] = 1;
 	mobility.trickDownCount[0] = 1; mobility.trickDownCount[1] = 1;
+	auto& judgementCutCount = preset.Cheats.Vergil.judgementCutCount;
+	judgementCutCount[0] = 2;
+	judgementCutCount[1] = 3;
 
 	// Game mode preset marker
 	preset.GameMode.preset = GAMEMODEPRESETS::CRIMSON;
@@ -294,6 +311,7 @@ const CrimsonConfigGameplayMask VANILLA_MASK = [] {
 	mask.Gameplay.General.charHotswap = false;
 	mask.Gameplay.General.crazyComboMashRequirement = false;
 	mask.Gameplay.General.holdToShoot = false;
+	mask.Gameplay.General.dmc4LockOnDirection = false;
 	mask.Gameplay.General.vanillaWeaponSwitchDelay = false;
 	mask.Gameplay.General.multiplayerDamageScaling = false;
 	mask.Gameplay.Dante.swapArtemisMultiLockNormalShot = false;
@@ -302,6 +320,7 @@ const CrimsonConfigGameplayMask VANILLA_MASK = [] {
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;
 	mask.Gameplay.ExtraDifficulty.mustStyleMode = false;
 	mask.Gameplay.ExtraDifficulty.enemyDTMode = false;
+	mask.Gameplay.ExtraDifficulty.betterArkham2 = false;
 	mask.Gameplay.ExtraDifficulty.forceDifficultyMode = false;
 
 	mask.Gameplay.Vergil.trickUpNoLockOn = false;
@@ -315,6 +334,8 @@ const CrimsonConfigGameplayMask VANILLA_MASK = [] {
 	mask.Cheats.Damage.playerReceivedDmgMult = false;
 	mask.Cheats.Damage.enemyReceivedDmgMult = false;
 	mask.Cheats.General.customSpeed = false;
+	mask.Cheats.Speed.defaultGame = false;
+	mask.Cheats.Speed.turboGame = false;
 	mask.Cheats.Speed.enemy = false;
 	mask.Cheats.Speed.human = false;
 	mask.Cheats.Speed.dTDante = false;
@@ -332,6 +353,7 @@ const CrimsonConfigGameplayMask VANILLA_MASK = [] {
 	mask.Cheats.Mobility.trickUpCount = false;
 	mask.Cheats.Mobility.trickDownCount = false;
 	mask.Debug.debugTools = false;
+	mask.Debug.showHitboxes = false;
 	mask.Cheats.General.enemySpawnerTool = false;
 	mask.Cheats.General.teleporterTool = false;
 
@@ -347,30 +369,19 @@ const CrimsonConfigGameplayMask STYLE_SWITCHER_MASK = [] {
 	mask.Gameplay.General.holdToShoot = false;
 	mask.Gameplay.General.crazyComboMashRequirement = false;
 	mask.Gameplay.General.bufferlessReversals = false;
+	mask.Gameplay.General.reversalWindow = false;
 	mask.Gameplay.General.dmc4LockOnDirection = false;
 	mask.Gameplay.General.fasterTurnRate = false;
 	mask.Gameplay.Dante.swapArtemisMultiLockNormalShot = false;
 	mask.Gameplay.Dante.swapDancePierceInputs = false;
 	mask.Gameplay.Dante.swapHammerVocalnoInputs = false;
 	
-	// NEW MOVES are optional
-	mask.Gameplay.Dante.airRevolver = false;
-	mask.Gameplay.Dante.airTornado = false;
-	mask.Gameplay.Dante.airRisingDragonLaunch = false;
-	mask.Gameplay.Dante.airAgniRudraWhirlwind = false;
-	mask.Gameplay.Dante.skyLaunchAirTaunt = false;
-	mask.Gameplay.Dante.airStinger = false;
-	mask.Gameplay.Vergil.airLunarPhase = false;
-	mask.Gameplay.Vergil.airRisingSun = false;
-	mask.Gameplay.Vergil.airStinger = false;
-	mask.Gameplay.Vergil.yamatoRisingStar = false;
-	mask.Gameplay.Vergil.yamatoHighTime = false;
-	mask.Gameplay.Vergil.airTauntRisingSun = false;
 	mask.Gameplay.Vergil.trickUpNoLockOn = false;
 
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;
 	mask.Gameplay.ExtraDifficulty.mustStyleMode = false;
 	mask.Gameplay.ExtraDifficulty.enemyDTMode = false;
+	mask.Gameplay.ExtraDifficulty.betterArkham2 = false;
 	mask.Gameplay.ExtraDifficulty.forceDifficultyMode = false;
 
 	mask.Cheats.Vergil.chronoSwords = false;
@@ -383,6 +394,8 @@ const CrimsonConfigGameplayMask STYLE_SWITCHER_MASK = [] {
 	mask.Cheats.Damage.playerReceivedDmgMult = false;
 	mask.Cheats.Damage.enemyReceivedDmgMult = false;
 	mask.Cheats.General.customSpeed = false;
+	mask.Cheats.Speed.defaultGame = false;
+	mask.Cheats.Speed.turboGame = false;
 	mask.Cheats.Speed.enemy = false;
 	mask.Cheats.Speed.human = false;
 	mask.Cheats.Speed.dTDante = false;
@@ -400,6 +413,7 @@ const CrimsonConfigGameplayMask STYLE_SWITCHER_MASK = [] {
 	mask.Cheats.Mobility.trickUpCount = false;
 	mask.Cheats.Mobility.trickDownCount = false;
 	mask.Debug.debugTools = false;
+	mask.Debug.showHitboxes = false;
 	mask.Cheats.General.enemySpawnerTool = false;
 	mask.Cheats.General.teleporterTool = false;
 
@@ -413,14 +427,16 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Gameplay.General.charHotswap = false;
 	mask.Gameplay.General.holdToShoot = false;
 	mask.Gameplay.General.crazyComboMashRequirement = false;
+	mask.Gameplay.General.dmc4LockOnDirection = false;
 	mask.Gameplay.General.bufferlessReversals = false;
+	mask.Gameplay.General.reversalWindow = false;
 	mask.Gameplay.General.fasterTurnRate = false;
 	mask.Gameplay.Dante.swapArtemisMultiLockNormalShot = false;
 	mask.Gameplay.Dante.swapDancePierceInputs = false;
 	mask.Gameplay.Dante.swapHammerVocalnoInputs = false;
+	mask.Gameplay.Dante.chargedShotgunLifts = false;
 
 	mask.Gameplay.Dante.downertiaD = false; // This should be optional
-	// NEW MOVES are optional
 	mask.Gameplay.Dante.airRevolver = false;
 	mask.Gameplay.Dante.airTornado = false;
 	mask.Gameplay.Dante.airRisingDragonLaunch = false;
@@ -439,6 +455,7 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Gameplay.ExtraDifficulty.ldkMode = false;
 	mask.Gameplay.ExtraDifficulty.mustStyleMode = false;
 	mask.Gameplay.ExtraDifficulty.enemyDTMode = false;
+	mask.Gameplay.ExtraDifficulty.betterArkham2 = false;
 	mask.Gameplay.ExtraDifficulty.forceDifficultyMode = false;
 
 	mask.Cheats.Vergil.quicksilverStyle = false;
@@ -452,6 +469,8 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Cheats.Damage.playerReceivedDmgMult = false;
 	mask.Cheats.Damage.enemyReceivedDmgMult = false;
 	mask.Cheats.General.customSpeed = false;
+	mask.Cheats.Speed.defaultGame = false;
+	mask.Cheats.Speed.turboGame = false;
 	mask.Cheats.Speed.enemy = false;
 	mask.Cheats.Speed.human = false;
 	mask.Cheats.Speed.dTDante = false;
@@ -469,6 +488,7 @@ const CrimsonConfigGameplayMask CRIMSON_MASK = [] {
 	mask.Cheats.Mobility.trickUpCount = false;
 	mask.Cheats.Mobility.trickDownCount = false;
 	mask.Debug.debugTools = false;
+	mask.Debug.showHitboxes = false;
 	mask.Cheats.General.enemySpawnerTool = false;
 	mask.Cheats.General.teleporterTool = false;
 
@@ -502,6 +522,109 @@ const CrimsonConfigGameplay& GetCurrentPreset(uint8 mode) {
 	}
 }
 
+void UpdateCheatsPostPreset() {
+
+	Actor::Toggle(activeConfig.Actor.enable);
+	ToggleBossLadyFixes(activeConfig.enableBossLadyFixes);
+	ToggleBossVergilFixes(activeConfig.enableBossVergilFixes);
+	//ToggleDergil(activeConfig.dergil);
+	Camera::ToggleInvertX(activeCrimsonConfig.Camera.invertX);
+	Camera::ToggleDisableBossCamera(activeCrimsonConfig.Camera.disableBossCamera);
+	//ToggleNoDevilForm(activeConfig.noDevilForm);
+
+	UpdateCrazyComboLevelMultiplier();
+
+	ToggleAirHikeCoreAbility(activeCrimsonGameplay.Gameplay.Dante.airHikeCoreAbility);
+	CrimsonPatches::ToggleRoyalguardForceJustFrameRelease(activeCrimsonGameplay.Cheats.Dante.forceRoyalRelease);
+	CrimsonPatches::DisableAirSlashKnockback(activeCrimsonGameplay.Gameplay.Dante.disableAirSlashKnockback);
+	CrimsonPatches::ToggleDisableSoulEaterInvis(activeCrimsonGameplay.Gameplay.General.disableSoulEaterInvis);
+	ToggleRebellionInfiniteSwordPierce(activeCrimsonGameplay.Cheats.Dante.infiniteSwordPierce);
+	ToggleYamatoForceEdgeInfiniteRoundTrip(activeCrimsonGameplay.Cheats.Vergil.infiniteRoundTrip);
+	ToggleEbonyIvoryFoursomeTime(activeCrimsonGameplay.Gameplay.Dante.foursomeTime);
+	ToggleEbonyIvoryInfiniteRainStorm(activeCrimsonGameplay.Gameplay.Dante.infiniteRainstorm);
+	ToggleArtemisSwapNormalShotAndMultiLock(activeCrimsonGameplay.Gameplay.Dante.swapArtemisMultiLockNormalShot);
+	CrimsonDetours::ToggleArtemisInstantFullCharge(activeCrimsonGameplay.Gameplay.Dante.artemisRework);
+	CrimsonPatches::ReduceArtemisProjectileDamage(activeCrimsonGameplay.Gameplay.Dante.artemisRework);
+	ToggleChronoSwords(activeCrimsonGameplay.Cheats.Vergil.chronoSwords);
+	UI::g_UIContext.SelectedGameMode = (UI::UIContext::GameModes)activeCrimsonGameplay.GameMode.preset;
+	CrimsonGameModes::SetGameModeMasked(activeCrimsonGameplay.GameMode.preset);
+	CrimsonGameplay::AdjustDMC4MobilitySettings();
+	//Arcade::Toggle(activeConfig.Arcade.enable);
+
+	if (!activeCrimsonGameplay.Cheats.General.enemySpawnerTool) {
+		activeConfig.enemyAutoSpawn = false;
+		queuedConfig.enemyAutoSpawn = false;
+	}
+
+
+
+	//ToggleSkipIntro(activeConfig.skipIntro);
+	//ToggleSkipCutscenes(activeConfig.skipCutscenes);
+
+	//ToggleHideMainHUD(activeCrimsonConfig.HudOptions.hideMainHUD);
+
+
+	CrimsonPatches::ToggleHideLockOn(activeCrimsonConfig.HudOptions.hideLockOn || activeCrimsonConfig.CrimsonHudAddons.lockOn);
+	CrimsonDetours::ToggleHideStyleRankHUD(activeCrimsonConfig.HudOptions.hideStyleMeter);
+
+	//ToggleHideBossHUD(false);
+	//ToggleHideBossHUD(activeCrimsonConfig.HudOptions.hideBossHUD);
+
+	//ToggleForceVisibleHUD(false);
+	//ToggleForceVisibleHUD(activeCrimsonConfig.HudOptions.forceVisibleHUD);
+
+	// Overriding default additional player bars positions so as not to spawn them together in a mush initially.
+	//defaultConfig.barsData[1].pos = { 900, 60 };
+	//defaultConfig.barsData[2].pos = { 1180, 60 };
+	//defaultConfig.barsData[3].pos = { 1180, 140 };
+
+	//Scene::Toggle(false);
+	//Scene::Toggle(true);
+
+	//Speed::Toggle(false);
+	//Speed::Toggle(true);
+
+
+	ToggleInfiniteHitPoints(activeCrimsonGameplay.Cheats.Training.infiniteHP);
+	ToggleInfiniteMagicPoints(activeCrimsonGameplay.Cheats.Training.infiniteDT);
+	CrimsonPatches::DisableRegularEnemyAttacks(activeCrimsonGameplay.Cheats.Training.disableRegularEnemyAttacks);
+	ToggleDisableTimer(activeCrimsonGameplay.Cheats.Training.disableTimers);
+	ToggleInfiniteBullets(activeCrimsonGameplay.Cheats.Training.infiniteBossLadyBullets);
+
+
+	// Why are we calling these with false first???? - Answer: See Line 119
+	//ToggleForceWindowFocus(activeConfig.forceWindowFocus);
+
+	ToggleDisablePlayerActorIdleTimer(false);
+	ToggleDisablePlayerActorIdleTimer(activeConfig.disablePlayerActorIdleTimer);
+
+	ToggleRebellionInfiniteShredder(false);
+	ToggleRebellionInfiniteShredder(activeCrimsonGameplay.Cheats.Dante.infiniteShredder);
+
+	if (activeConfig.Actor.enable) {
+		CrimsonDetours::ToggleHoldToCrazyCombo(activeCrimsonGameplay.Gameplay.General.holdToCrazyCombo);
+	}
+	else {
+		CrimsonDetours::ToggleHoldToCrazyCombo(false);
+	}
+
+	if (queuedConfig.Actor.playerCount > 1) {
+		activeCrimsonConfig.Camera.multiplayerCamera = true;
+		queuedCrimsonConfig.Camera.multiplayerCamera = true;
+		activeCrimsonConfig.Camera.thirdPersonCamera = true;
+		queuedCrimsonConfig.Camera.thirdPersonCamera = true;
+	}
+
+
+	CrimsonPatches::HoldToAutoFire(activeCrimsonGameplay.Gameplay.General.holdToShoot);
+	CrimsonDetours::ToggleClassicHUDPositionings(!activeCrimsonConfig.CrimsonHudAddons.positionings);
+	CrimsonDetours::ToggleStyleRankHudNoFadeout(activeCrimsonConfig.HudOptions.disableStyleRankHudFadeout);
+	CrimsonDetours::ToggleDMC4LockOnDirection(activeCrimsonGameplay.Gameplay.General.dmc4LockOnDirection);
+
+	CrimsonPatches::ToggleIncreasedEnemyJuggleTime(activeCrimsonGameplay.Gameplay.General.increasedEnemyJuggleTime);
+	//CrimsonPatches::SetEnemyDTMode(activeCrimsonGameplay.Gameplay.ExtraDifficulty.enemyDTMode);
+}
+
 void CrimsonGameModes::SetGameModePreset(uint8 mode) {
 	// This function sets the game mode using full assignment,
 	// meaning it updates all fields in the Gameplay and Cheats structures,
@@ -531,6 +654,7 @@ void CrimsonGameModes::SetGameModePreset(uint8 mode) {
 	// Set the preset field explicitly
 	activeCrimsonGameplay.GameMode.preset = mode;
 	queuedCrimsonGameplay.GameMode.preset = mode;
+	UpdateCheatsPostPreset();
 }
 
 void CrimsonGameModes::SetGameModeMasked(uint8 mode) {
@@ -677,12 +801,19 @@ void CrimsonGameModes::TrackCheats() {
 		activeCheats.General.customDamage != currentPreset.Cheats.General.customDamage ||
 		activeCheats.Damage.playerReceivedDmgMult != currentPreset.Cheats.Damage.playerReceivedDmgMult ||
 		activeCheats.Damage.enemyReceivedDmgMult != currentPreset.Cheats.Damage.enemyReceivedDmgMult;
-
-	updateCheatFlag(damageChanged, CHEATS::DAMAGE);
+	if (activeCrimsonGameplay.Gameplay.General.multiplayerDamageScaling && !activeCheats.General.customDamage) {
+		updateCheatFlag(false, CHEATS::DAMAGE);
+	}
+	else {
+		updateCheatFlag(damageChanged, CHEATS::DAMAGE);
+	}
+	
 
 	// === CHEATS::SPEED ===
 	bool speedChanged =
 		activeCheats.General.customSpeed != currentPreset.Cheats.General.customSpeed ||
+		activeCheats.Speed.defaultGame != currentPreset.Cheats.Speed.defaultGame ||
+		activeCheats.Speed.turboGame != currentPreset.Cheats.Speed.turboGame ||
 		activeCheats.Speed.enemy != currentPreset.Cheats.Speed.enemy ||
 		activeCheats.Speed.human != currentPreset.Cheats.Speed.human ||
 		activeCheats.Speed.quicksilverPlayer != currentPreset.Cheats.Speed.quicksilverPlayer ||
