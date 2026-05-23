@@ -81,6 +81,7 @@ struct CrimsonConfigGameplayMask {
 			bool swapDancePierceInputs = true;
 			bool swapHammerVocalnoInputs = true;
 			bool chargedShotgunLifts = true;
+			bool doppelgangerRework = true;
 
 			static constexpr auto Metadata() {
 				return std::make_tuple(
@@ -109,7 +110,8 @@ struct CrimsonConfigGameplayMask {
 					std::make_pair("swapArtemisMultiLockNormalShot", &Dante::swapArtemisMultiLockNormalShot),
 					std::make_pair("swapDancePierceInputs", &Dante::swapDancePierceInputs),
 					std::make_pair("swapHammerVocalnoInputs", &Dante::swapHammerVocalnoInputs),
-					std::make_pair("chargedShotgunLifts", &Dante::chargedShotgunLifts)
+					std::make_pair("chargedShotgunLifts", &Dante::chargedShotgunLifts),
+					std::make_pair("doppelgangerRework", &Dante::doppelgangerRework)
 				);
 			}
 		} Dante;

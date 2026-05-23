@@ -2167,7 +2167,34 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 	bool isSwitchingButtonDown = actorData.buttons[1] & GetBinding(isMelee ? BINDING::CHANGE_DEVIL_ARMS : BINDING::CHANGE_GUN);
 	bool isSwitchButtonDown = (actorData.buttons[0] & playerData.switchButton) ||
 		(actorData.buttons[2] & playerData.switchButton);
-	bool suppressWheel = isSwitchButtonDown && isSwitchingButtonDown;
+
+	auto GetDanteDoppelSwitchCondition = [](PlayerActorData& actorData) {
+		if (!activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework)
+			return false;
+		auto& gamepad = GetGamepad(actorData.newGamepad);
+		bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
+			|| (gamepad.buttons[2] & GetBinding(BINDING::STYLE_ACTION));
+		if (!styleDown)
+			return false;
+		if (actorData.newEntityIndex != ENTITY::MAIN) {
+			auto& mainActorData = *reinterpret_cast<PlayerActorData*>(GetNewActorData(actorData.newPlayerIndex, actorData.newCharacterIndex, ENTITY::MAIN).baseAddr);
+			//if lockCloneStyle set only allow switch if main actor is currently in doppelganger style
+			if (mainActorData == nullptr) return false;
+			if (mainActorData.character != CHARACTER::DANTE) return false;
+			if ((mainActorData.style == STYLE::DOPPELGANGER && styleDown)) {
+				return true;
+			}
+		}
+		if (actorData.newEntityIndex == ENTITY::MAIN) {
+			if (actorData.character != CHARACTER::DANTE) return false;
+			if ((actorData.style == STYLE::DOPPELGANGER && styleDown)) {
+				return true;
+			}
+		}
+		return false;
+	};
+	bool danteCondition = GetDanteDoppelSwitchCondition(actorData);
+	bool suppressWheel = (isSwitchButtonDown || danteCondition) && isSwitchingButtonDown;
 
 	if (suppressWheel) {
 		if (pWeaponWheel->GetAnalogSwitchingMode()) {
@@ -12056,7 +12083,16 @@ void DanteGameplayOptions() {
 			ImGui::SameLine();
 			TooltipHelper("(?)", "Makes Charged Shots Shotgun lift enemies instead of knocking them back,"
 				"\nharkening to the old DMC1 days. Makes shotgun charge slightly faster.");
+			ImGui::TableNextColumn();
 
+			GUI_Checkbox2("Dante Doppelganger Rework",
+				activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework,
+				queuedCrimsonGameplay.Gameplay.Dante.doppelgangerRework,
+				activeCrimsonGameplayMask.Gameplay.Dante.doppelgangerRework);
+			ImGui::SameLine();
+			TooltipHelper("(?)", "Expands current doppelganger functionality."
+				"\nLock-on + Style to summon/unsummon doppelganger."
+				"\nWhile holding style in doppelganger, use the style, melee & ranged weapon switch buttons to adjust the doppelganger's loadout.");
 			ImGui::EndTable();
 		}
 	}
