@@ -2169,7 +2169,7 @@ bool WeaponWheelController(PlayerActorData& actorData, IDXGISwapChain* pSwapChai
 		(actorData.buttons[2] & playerData.switchButton);
 
 	auto GetDanteDoppelSwitchCondition = [](PlayerActorData& actorData) {
-		if (!activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework)
+		if (!activeCrimsonGameplay.Gameplay.Dante.doppelgangerSplitSync)
 			return false;
 		auto& gamepad = GetGamepad(actorData.newGamepad);
 		bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION))
@@ -12085,14 +12085,15 @@ void DanteGameplayOptions() {
 				"\nharkening to the old DMC1 days. Makes shotgun charge slightly faster.");
 			ImGui::TableNextColumn();
 
-			GUI_Checkbox2("Dante Doppelganger Rework",
-				activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework,
-				queuedCrimsonGameplay.Gameplay.Dante.doppelgangerRework,
-				activeCrimsonGameplayMask.Gameplay.Dante.doppelgangerRework);
+			GUI_Checkbox2("Doppelganger Split Sync",
+				activeCrimsonGameplay.Gameplay.Dante.doppelgangerSplitSync,
+				queuedCrimsonGameplay.Gameplay.Dante.doppelgangerSplitSync,
+				activeCrimsonGameplayMask.Gameplay.Dante.doppelgangerSplitSync);
 			ImGui::SameLine();
-			TooltipHelper("(?)", "Expands current doppelganger functionality."
-				"\nLock-on + Style to summon/unsummon doppelganger."
-				"\nWhile holding style in doppelganger, use the style, melee & ranged weapon switch buttons to adjust the doppelganger's loadout.");
+			TooltipHelper("(?)", "(Dante Only) Doppelganger spawns fully synchronized with your current Style setup. \n"
+				"While in Doppelganger Style, press Lock-On + Style Action to summon or dismiss Doppelganger. \n"
+				"Pressing Style Action without Lock-On lets you change Weapons and Styles exclusively for Doppelganger,\n"
+				"causing it to desync from Dante’s current Style configuration until resummoned.");
 			ImGui::EndTable();
 		}
 	}
