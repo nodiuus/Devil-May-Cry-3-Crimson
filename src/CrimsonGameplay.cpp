@@ -2489,7 +2489,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		chargeInitialized[playerIndex][entityIndex] = false;
 
 		// JUST FRAME RELEASE LOGIC
-		if (jCut.isJustFrameCharged && jCut.consecutiveJdcCount < jdcLimit) {
+		if (jCut.isJustFrameCharged && jCut.consecutiveJdcCount < jdcLimit && !actorData.dead) {
 			jCut.consecutiveJdcCount++;
 			pendingJustFrameJDC[playerIndex][entityIndex] = true;
 
@@ -2517,7 +2517,7 @@ void VergilJudgementCutRework(byte8* actorBaseAddr) {
 		else if (jCut.isAfterJustFrameCharged && actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_2 &&
 			actorData.action != YAMATO_JUDGEMENT_CUT_LEVEL_1 &&
 			actorData.motionArchives[MOTION_GROUP_VERGIL::YAMATO] != newJudgementCutAir_pl021_00_3 &&
-			jCut.consecutiveJdcCount < jdcLimit) {
+			jCut.consecutiveJdcCount < jdcLimit && !actorData.dead) {
 			jCut.consecutiveJdcCount++;
 			pendingJustFrameJDC[playerIndex][entityIndex] = false;
 
