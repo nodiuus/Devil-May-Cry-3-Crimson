@@ -3343,7 +3343,7 @@ void StyleSwitch(byte8* actorBaseAddr, int style) {
     auto& gamepad = GetGamepad(actorData.newGamepad);
     bool styleDown = (gamepad.buttons[0] & GetBinding(BINDING::STYLE_ACTION)) != 0;
     if (actorData.character == CHARACTER::DANTE && actorData.style == STYLE::DOPPELGANGER) {
-        if (styleDown && actorData.newEntityIndex == ENTITY::MAIN) {
+        if (styleDown && actorData.newEntityIndex == ENTITY::MAIN && activeCrimsonGameplay.Gameplay.Dante.doppelgangerRework) {
             crimsonPlayer[playerIndex].lockCloneStyle = true;
             return;
         }
